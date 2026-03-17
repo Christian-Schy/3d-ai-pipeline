@@ -1,0 +1,94 @@
+# config/config.yaml — Central configuration for the 3D-AI-Pipeline
+#
+# Rule: no magic numbers or model names anywhere in code.
+# Everything that might change lives here.
+
+# --- Ollama ---
+ollama:
+  base_url: "http://localhost:11434"
+  timeout_seconds: 600
+  # Global defaults for every agent call:
+  think: false        # qwen3/qwen3.5: false = skip chain-of-thought → viel schneller für JSON
+  temperature: 0.15   # 0.0–1.0 | niedrig = deterministischer JSON, hoch = kreativer
+  num_ctx: 8192       # Kontextfenster in Tokens (Standard 2048 ist oft zu wenig)
+
+# Per-Agent Overrides — nur abweichende Werte eintragen, Rest kommt von ollama-Defaults
+# Verfügbare Felder: think (true/false), temperature (0.0–1.0), num_ctx (int)
+agent_options:
+  planner:
+    think: false      # 27b ohne Thinking ist schnell genug; Thinking → regelmäßige Timeouts
+    num_ctx: 12288    # Etwas mehr Kontext für komplexe Blueprints
+  coder:
+    think: false      # qwen3-coder unterstützt 'think' nicht → weglassen
+    temperature: 0.05 # Code soll sehr deterministisch sein
+    num_ctx: 16384    # Coder braucht Blueprint + Code History im Kontext
+  task_classifier:
+    think: false
+    temperature: 0.05  # Klassifikation soll deterministisch sein
+    num_ctx: 4096
+  plan_validator:
+    think: false
+    temperature: 0.1
+    num_ctx: 8192
+
+# --- Model routing ---
+# Each agent uses the model best suited for its task.
+# Adjust these to match your 'ollama list' output.
+models:
+  interpreter:              "qwen3.5:9b"
+  planner:                  "qwen3.5:35b"
+  planner_patch:            "qwen3.5:9b"
+  planner_revise:           "qwen3.5:35b"
+  coder:                    "qwen3-coder:30b"
+  validator:                "qwen3.5:9b"
+  code_fixer:               "qwen3.5:9b"
+  visioner:                 "qwen3.5:35b"
+  modification_interpreter: "qwen3.5:9b"
+  task_classifier:          "qwen3.5:9b"
+  plan_validator:           "qwen3.5:9b"
+
+# --- RAG ---
+rag:
+  embedding_model: "all-MiniLM-L6-v2"
+  db_path: "data/rag_db"
+  n_results:
+    coder:       4   # Coder benefits most from code examples
+    planner:     2   # Planner has full schema in system prompt — fewer examples needed
+    validator:   3
+    interpreter: 3
+    visioner:    2
+  knowledge:
+    coder:       "data/knowledge/coder"
+    planner:     "data/knowledge/planner"
+    validator:   "data/knowledge/validator"
+    interpreter: "data/knowledge/interpreter"
+    visioner:    "data/knowledge/visioner"
+
+# --- Sandbox ---
+sandbox:
+  timeout_seconds: 60
+  output_dir: "data/output"
+
+# --- Error loop ---
+error_loop:
+  max_attempts: 6
+  max_semantic_retries: 3
+
+# --- UI ---
+ui:
+  server_host: "0.0.0.0"
+  server_port: 7860
+  share: false
+  log_lines_visible: 50
+
+plan_validator:
+  max_retries: 2
+
+bambu:
+  serial: ""
+  access_code: ""
+  region: "eu"
+  orca_path: "~/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.3.1.AppImage"
+  printer_profile: "Bambu Lab P1S 0.4 nozzle"
+  filament_profile: "Bambu PLA Basic @BBL P1S"
+  ams_slot: 1
