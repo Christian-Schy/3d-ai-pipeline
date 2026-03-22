@@ -251,6 +251,38 @@ def _chat_event_from_log(line: str) -> dict | None:
         return {"role": "agent", "icon": "🧠", "name": "Interpreter",
                 "content": f"✓ Specification:\n{spec}", "type": "agent"}
 
+    # Feature Tagger: features identified
+    if "feature_tagger_done" in line:
+        count = _extract_val(line, "features_count").split()[0] if "features_count=" in line else "?"
+        task = _extract_val(line, "task_type").split()[0] if "task_type=" in line else ""
+        detail = f" ({task})" if task else ""
+        return {"role": "agent", "icon": "🏷️", "name": "Feature Tagger",
+                "content": f"✓ {count} feature(s) identified{detail}", "type": "agent"}
+
+    # Coordinate Validator: issues found
+    if "node_coordinate_validator_failed" in line:
+        errors = _extract_val(line, "errors").split()[0] if "errors=" in line else "?"
+        return {"role": "agent", "icon": "📏", "name": "Coord. Validator",
+                "content": f"⚠️ {errors} coordinate issue(s) — sending back to Planner", "type": "agent"}
+
+    # Plan Validator: failed
+    if "node_plan_validator_quick_fail" in line or (
+        "plan_valid" in line and "False" in line and "node_plan_validator" not in line
+    ):
+        issues = _extract_val(line, "issues")
+        if issues:
+            return {"role": "agent", "icon": "📋", "name": "Plan Validator",
+                    "content": f"⚠️ Plan issues: {issues[:120]}", "type": "agent"}
+
+    # Code Review: issues found (sends back to Coder)
+    if "code_review_failed" in line or (
+        "code_review_approved" in line and "False" in line
+    ):
+        issues = _extract_val(line, "issues")
+        return {"role": "agent", "icon": "🔎", "name": "Code Review",
+                "content": f"⚠️ Code issues found — sending back to Coder\n{issues[:200]}" if issues
+                else "⚠️ Code issues found — sending back to Coder", "type": "agent"}
+
     # Planner: blueprint done
     if "planner_done" in line:
         bp_compact = _extract_val(line, "blueprint_json")
@@ -306,15 +338,21 @@ def _chat_event_from_log(line: str) -> dict | None:
 
     # ── Status-only events ─────────────────────────────────────────────
     status_checks = [
-        ("node_entry_router",    "🔀", "Router",       "Analyzing request type…"),
-        ("node_interpreter",     "🧠", "Interpreter", "Analyzing your request…"),
-        ("node_planner",         "📐", "Planner",      "Building blueprint…"),
-        ("coder_generate_start", "💻", "Coder",        "Writing code…"),
-        ("coder_fix_start",      "🔧", "Coder",        "Fixing previous attempt…"),
-        ("node_executor",        "⚙️", "Executor",     "Executing in sandbox…"),
-        ("node_validator",       "🔍", "Validator",    "Checking geometry…"),
-        ("node_code_fixer",      "🛠️", "CodeFixer",   "Diagnosing failure…"),
-        ("node_visioner",        "👁️", "Visioner",    "Extracting spec from image…"),
+        ("node_entry_router",          "🔀", "Router",            "Analyzing request type…"),
+        ("node_interpreter",           "🧠", "Interpreter",       "Analyzing your request…"),
+        ("node_feature_tagger",        "🏷️", "Feature Tagger",   "Identifying features…"),
+        ("node_planner",               "📐", "Planner",           "Building blueprint…"),
+        ("node_coordinate_validator",  "📏", "Coord. Validator",  "Checking coordinates…"),
+        ("node_plan_validator",        "📋", "Plan Validator",    "Validating plan…"),
+        ("node_function_decomposer",   "🔩", "Decomposer",        "Decomposing into functions…"),
+        ("coder_generate_start",       "💻", "Coder",             "Writing code…"),
+        ("coder_fill_skeleton",        "💻", "Coder",             "Filling code skeleton…"),
+        ("coder_fix_start",            "🔧", "Coder",             "Fixing previous attempt…"),
+        ("node_code_review",           "🔎", "Code Review",       "Reviewing generated code…"),
+        ("node_executor",              "⚙️", "Executor",          "Executing in sandbox…"),
+        ("node_validator",             "🔍", "Validator",         "Checking geometry…"),
+        ("node_code_fixer",            "🛠️", "CodeFixer",         "Diagnosing failure…"),
+        ("node_visioner",              "👁️", "Visioner",          "Extracting spec from image…"),
     ]
 
     for key, icon, name, text in status_checks:
@@ -365,16 +403,29 @@ def _format_stats(result: dict) -> str:
         lines.append(dim_line)
 
     blueprint = result.get("blueprint") or {}
-    holes = _cylinders_in_cuts(blueprint.get("root", {}))
-    if holes:
-        hole_parts = []
-        for h in holes:
-            dia = round(h["radius"] * 2, 1)
-            pos = h.get("position") or {}
-            px, py = pos.get("x", 0), pos.get("y", 0)
-            pos_str = f"({px:+.1f}, {py:+.1f})" if (px or py) else "center"
-            hole_parts.append(f"⌀{dia} mm @ {pos_str}")
-        lines.append("Holes: " + "  ·  ".join(hole_parts))
+
+    # Feature Tree format
+    if "build_order" in blueprint and "features" in blueprint:
+        features = blueprint.get("features", {})
+        build_order = blueprint.get("build_order", [])
+        if build_order:
+            feature_types = [
+                features.get(fid, {}).get("type", fid)
+                for fid in build_order
+            ]
+            lines.append("Features: " + "  ·  ".join(feature_types))
+    else:
+        # Legacy CSG-Tree format
+        holes = _cylinders_in_cuts(blueprint.get("root", {}))
+        if holes:
+            hole_parts = []
+            for h in holes:
+                dia = round(h["radius"] * 2, 1)
+                pos = h.get("position") or {}
+                px, py = pos.get("x", 0), pos.get("y", 0)
+                pos_str = f"({px:+.1f}, {py:+.1f})" if (px or py) else "center"
+                hole_parts.append(f"⌀{dia} mm @ {pos_str}")
+            lines.append("Holes: " + "  ·  ".join(hole_parts))
 
     return "\n".join(lines)
 
@@ -388,8 +439,12 @@ def _build_traces_html(traces: list[dict]) -> str:
 
     AGENT_ICONS = {
         "interpreter": "🧠", "modification_interpreter": "🧠",
-        "task_classifier": "🔍", "planner": "📐", "plan_validator": "✅",
-        "coder": "💻", "executor": "⚙️", "validator": "🔍", "code_fixer": "🛠️",
+        "feature_tagger": "🏷️",
+        "planner": "📐", "coordinate_validator": "📏",
+        "plan_validator": "📋", "function_decomposer": "🔩",
+        "coder": "💻", "code_review": "🔎",
+        "executor": "⚙️", "geometry_precheck": "📐",
+        "validator": "🔍", "code_fixer": "🛠️",
     }
 
     parts = ['<div style="font-family:monospace;font-size:12px;padding:4px 0;">']
@@ -1133,6 +1188,15 @@ def build_ui() -> gr.Blocks:
         )
         description_input.submit(**_submit_chain).then(
             fn=stream_logs, inputs=[], outputs=_stream_outputs,
+        )
+
+        # Populate history dropdown from disk on startup
+        demo.load(
+            fn=lambda: gr.update(
+                choices=_session.get_history_choices(),
+                value=_session.get_history_choices()[0] if _session.history else None,
+            ),
+            outputs=[history_dropdown],
         )
 
         new_model_btn.click(

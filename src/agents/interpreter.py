@@ -22,14 +22,15 @@ Model: qwen3:8b — dialog doesn't need the big model, speed matters here.
 
 import json
 import structlog
-from pathlib import Path
 from src.agents.base import BaseAgent
 from src.rag.interpreter_rag import InterpreterRAG
 from src.graph.state import PipelineState
+from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
 
-SYSTEM_PROMPT = Path("data/prompts/agents/interpreter.md").read_text(encoding="utf-8")
+_prompt = load_prompt("prompt_interpreter.py")
+SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 
 
 class InterpreterAgent(BaseAgent):
@@ -90,8 +91,8 @@ class InterpreterAgent(BaseAgent):
         try:
             result = self.call_json(prompt, system=SYSTEM_PROMPT)
             is_complete = bool(result.get("is_complete", False))
-            question = result.get("question", "").strip()
-            specification = result.get("specification", "").strip()
+            question = (result.get("question") or "").strip()
+            specification = (result.get("specification") or "").strip()
 
             self.log.info("interpreter_response",
                           is_complete=is_complete,
@@ -104,10 +105,15 @@ class InterpreterAgent(BaseAgent):
             elif question:
                 self.log.info("interpreter_question_text", question=question[:300])
 
+            features_found = result.get("features_found", [])
+            if not isinstance(features_found, list):
+                features_found = []
+
             return {
                 "is_complete": is_complete,
                 "question": question,
                 "specification": specification,
+                "interpreter_features": features_found,
             }
 
         except (ValueError, ConnectionRefusedError) as e:
@@ -117,6 +123,7 @@ class InterpreterAgent(BaseAgent):
                 "is_complete": True,
                 "question": "",
                 "specification": description,
+                "interpreter_features": [],
             }
 
     # ------------------------------------------------------------------

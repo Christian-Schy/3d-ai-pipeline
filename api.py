@@ -58,7 +58,7 @@ let _lastImg      = null;   // original image file  (for question retry)
 
 // ── Agent icon map (declared early so renderTraces always has it) ─────────────
 const _ICONS = {
-  interpreter:'🧠', task_classifier:'🔍', planner:'📐',
+  interpreter:'🧠', planner:'📐',
   plan_validator:'✅', coder:'💻', executor:'⚙️',
   validator:'🔍', code_fixer:'🛠️'
 };

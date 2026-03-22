@@ -1,31 +1,36 @@
-## Fillet / Chamfer Rules
+# Fillet- und Chamfer-Regeln
 
-- Fillets/chamfers ALWAYS wrap their parent node — never inside a cut tool.
-- Apply AFTER all boolean operations and features.
-- fillet radius must be ≤ half the smallest adjacent edge length.
-- chamfer distance must be ≤ half the smallest adjacent edge length.
+## Typen
+- chamfer: Fase (45°), params={size: float}
+- fillet: Verrundung, params={radius: float}
 
-Edge selectors (valid CadQuery strings — do NOT use "all", it is invalid):
-  ""        → ALL edges (no filter — use this when the spec says "all edges")
-  "|Z"      → vertical edges only (parallel to Z — the 4 side corner edges of a box)
-  "#Z"      → horizontal edges only (top + bottom perimeter of a box)
-  ">Z"      → top-most edges only
-  "<Z"      → bottom-most edges only
-  "%CIRCLE" → circular edges only
+## Wichtigste Regel: IMMER ZULETZT in build_order
+Fillet/Chamfer MÜSSEN das letzte (oder die letzten) Features in build_order sein.
+Boolean-Ops (Union/Cut) NACH einem Fillet würden die Verrundungen zerstören.
 
-For "all edges": set edges="" (empty string). Coder generates .edges().fillet(r) or .edges().chamfer(d).
-For "vertical edges only": set edges="|Z"
-For "top edges only": set edges=">Z"
+## Placement für Fillet/Chamfer
+- Alle Kanten: placement=null, notes="edges().chamfer(size)"
+- Nur obere Kanten: notes="edges('>Z').chamfer(size)"
+- Nur vertikale Kanten: notes="edges('|Z').fillet(radius)"
+- operation: "modify" (kein Union, kein Cut)
 
-⚠ Do NOT set edges="|Z" when the spec says "all edges" — that only selects 4 vertical corner edges!
+## Blueprint-Beispiel: Würfel mit Fase
+{
+  "build_order": ["base", "chamfer_all"],
+  "features": {
+    "base": {"type": "box", "params": {"x": 30, "y": 30, "z": 30}, "parent": null},
+    "chamfer_all": {
+      "type": "chamfer",
+      "params": {"size": 2.0},
+      "parent": "base",
+      "placement": null,
+      "notes": "edges().chamfer(2.0) — alle 12 Kanten"
+    }
+  }
+}
 
-Structure: modifier wraps the complete geometry:
-  {"type": "chamfer", "distance": 2.0, "edges": "",
-   "child": {"type": "box", "x": 30, "y": 30, "z": 30, ...}}   ← all edges
-
-  {"type": "fillet", "radius": 2.0, "edges": "|Z",
-   "child": {"type": "box", "x": 30, "y": 30, "z": 10, ...}}   ← vertical only
-
-Shell (hollow box with open top):
-  {"type": "shell", "thickness": 2.0, "open_face": ">Z",
-   "child": <box or union>}
+## Häufige Fehler
+- Fillet/Chamfer nicht am Ende → Boolean danach zerstört sie
+- size/radius > kleinste Kante → Topologiefehler
+- Fillet mit radius > Wandstärke/2 → unmöglich
+- chamfer und fillet auf gleichen Kanten → Konflikte

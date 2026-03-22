@@ -22,12 +22,24 @@ STAGES = [
 ]
 
 # Map log keys → stage index (1-based)
+# New architecture nodes are grouped into the existing 5 stages:
+#   Stage 1 (Interpreter): interpreter + feature_tagger
+#   Stage 2 (Planner):     planner + coordinate_validator + plan_validator + function_decomposer
+#   Stage 3 (Coder):       coder + code_review
+#   Stage 4 (Executor):    executor
+#   Stage 5 (Validator):   validator
 LOG_TO_STAGE: dict[str, int] = {
-    "node_interpreter": 1,
-    "node_planner":     2,
-    "node_coder":       3,
-    "node_executor":    4,
-    "node_validator":   5,
+    "node_interpreter":           1,
+    "node_feature_tagger":        1,
+    "node_planner":               2,
+    "node_coordinate_validator":  2,
+    "node_plan_validator":        2,
+    "node_function_decomposer":   2,
+    "coder_generate_start":       3,
+    "coder_fill_skeleton":        3,
+    "node_code_review":           3,
+    "node_executor":              4,
+    "node_validator":             5,
 }
 
 

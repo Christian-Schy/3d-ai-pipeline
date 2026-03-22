@@ -18,11 +18,14 @@ from src.graph.nodes import (
     entry_router_node,
     visioner_node,
     interpreter_node,
-    task_classifier_node,
+    feature_tagger_node,
     prompt_assembler_node,
+    coordinate_validator_node,
     plan_validator_node,
     planner_node,
+    function_decomposer_node,
     coder_node,
+    code_review_node,
     executor_node,
     validator_node,
     error_router_node,
@@ -39,23 +42,57 @@ log = structlog.get_logger()
 
 
 def route_after_interpreter(state: PipelineState) -> str:
-    """After interpreter: complete → task_classifier, not complete → loop back."""
+    """After interpreter: complete → feature_tagger, not complete → loop back."""
     if state.get("is_complete"):
-        return "task_classifier"
+        return "feature_tagger"
     return "interpreter"  # run interpreter again with extended message history
 
 
+def route_after_coordinate_validator(state: PipelineState) -> str:
+    """After coordinate_validator: valid → plan_validator, invalid → planner."""
+    if state.get("coordinate_valid", True):
+        return "plan_validator"
+    # Own retry counter — plan_validation_attempts is only incremented by plan_validator_node,
+    # so it stays 0 in the coord_validator → planner → coord_validator loop.
+    from src.config.loader import get_config
+    max_retries = get_config().plan_validator.max_retries
+    attempts = state.get("coordinate_validation_attempts", 0)
+    if attempts >= max_retries:
+        log.warning("route_coordinate_validator", decision="plan_validator",
+                    reason="max_retries_exceeded", attempts=attempts)
+        return "plan_validator"
+    log.info("route_coordinate_validator", decision="planner",
+             attempts=attempts,
+             issues=state.get("coordinate_validation_issues", "")[:60])
+    return "planner"
+
+
+def route_after_code_review(state: PipelineState) -> str:
+    """After code_review: approved → executor, issues found → coder (max 2 retries)."""
+    if state.get("code_review_approved", True):
+        return "executor"
+    cr_attempts = state.get("code_review_attempts", 0)
+    if cr_attempts >= 2:
+        # Max 2 review→coder cycles — proceed to executor regardless
+        log.warning("route_code_review", decision="executor",
+                    reason="max_retries_exceeded", attempts=cr_attempts)
+        return "executor"
+    log.info("route_code_review", decision="coder",
+             issues=state.get("code_review_issues", "")[:60])
+    return "coder"
+
+
 def route_after_plan_validator(state: PipelineState) -> str:
-    """After plan_validator: valid → coder, invalid → planner (up to max_retries)."""
+    """After plan_validator: valid → function_decomposer, invalid → planner."""
     from src.config.loader import get_config
     if state.get("plan_valid", True):
-        return "coder"
+        return "function_decomposer"
     max_retries = get_config().plan_validator.max_retries
     if state.get("plan_validation_attempts", 0) >= max_retries:
-        log.warning("route_plan_validator", decision="coder",
+        log.warning("route_plan_validator", decision="function_decomposer",
                     reason="max_retries_exceeded",
                     attempts=state.get("plan_validation_attempts"))
-        return "coder"  # give up validating, let Coder try
+        return "function_decomposer"  # give up validating, proceed anyway
     log.info("route_plan_validator", decision="planner",
              issues=state.get("plan_validation_issues", "")[:60])
     return "planner"
@@ -72,11 +109,14 @@ def build_graph() -> StateGraph:
     graph.add_node("entry_router", entry_router_node)
     graph.add_node("visioner", visioner_node)
     graph.add_node("interpreter", interpreter_node)
-    graph.add_node("task_classifier", task_classifier_node)
+    graph.add_node("feature_tagger", feature_tagger_node)
     graph.add_node("prompt_assembler", prompt_assembler_node)
+    graph.add_node("coordinate_validator", coordinate_validator_node)
     graph.add_node("plan_validator", plan_validator_node)
     graph.add_node("planner", planner_node)
+    graph.add_node("function_decomposer", function_decomposer_node)
     graph.add_node("coder", coder_node)
+    graph.add_node("code_review", code_review_node)
     graph.add_node("executor", executor_node)
     graph.add_node("validator", validator_node)
     graph.add_node("error_router", error_router_node)
@@ -84,35 +124,49 @@ def build_graph() -> StateGraph:
 
     graph.set_entry_point("entry_router")
 
-    # Entry router: modification → task_classifier, fresh → interpreter
+    # Entry router: modification → feature_tagger, fresh → interpreter
     graph.add_conditional_edges(
         "entry_router",
         route_after_entry_router,
         {
-            "task_classifier": "task_classifier",
+            "feature_tagger": "feature_tagger",
             "interpreter": "interpreter",
             "visioner": "visioner",
         },
     )
 
-    # Interpreter loops until spec is complete, then → task_classifier
+    # Interpreter loops until spec is complete, then → feature_tagger
     graph.add_conditional_edges(
         "interpreter",
         route_after_interpreter,
-        {"task_classifier": "task_classifier", "interpreter": "interpreter"},
+        {"feature_tagger": "feature_tagger", "interpreter": "interpreter"},
     )
 
-    # V4 chain: task_classifier → prompt_assembler → planner → plan_validator → coder
+    # Phase 1+2 chain:
+    #   feature_tagger → prompt_assembler → planner
+    #   → coordinate_validator → plan_validator → function_decomposer
+    #   → coder → code_review → executor
     graph.add_edge("visioner", "interpreter")
-    graph.add_edge("task_classifier", "prompt_assembler")
+    graph.add_edge("feature_tagger", "prompt_assembler")
     graph.add_edge("prompt_assembler", "planner")
-    graph.add_edge("planner", "plan_validator")
+    graph.add_edge("planner", "coordinate_validator")
+    graph.add_conditional_edges(
+        "coordinate_validator",
+        route_after_coordinate_validator,
+        {"plan_validator": "plan_validator", "planner": "planner"},
+    )
     graph.add_conditional_edges(
         "plan_validator",
         route_after_plan_validator,
-        {"coder": "coder", "planner": "planner"},
+        {"function_decomposer": "function_decomposer", "planner": "planner"},
     )
-    graph.add_edge("coder", "executor")
+    graph.add_edge("function_decomposer", "coder")
+    graph.add_edge("coder", "code_review")           # always review after coder
+    graph.add_conditional_edges(
+        "code_review",
+        route_after_code_review,
+        {"executor": "executor", "coder": "coder"},  # FAIL → back to coder, PASS → executor
+    )
     graph.add_edge("code_fixer", "coder")
 
     graph.add_conditional_edges(
@@ -123,7 +177,7 @@ def build_graph() -> StateGraph:
     graph.add_conditional_edges(
         "validator",
         route_after_validator,
-        {"end": END, "planner": "planner"},
+        {"end": END, "planner": "planner", "coder": "coder"},
     )
     graph.add_conditional_edges(
         "error_router",
@@ -220,6 +274,18 @@ class PipelineRunner:
             "geometry_state": {},
             "geometry_precheck_report": "",
             "agent_traces": [],
+            # Phase 1 fields
+            "feature_tree": {},
+            "code_skeleton": "",
+            "feature_specs": [],
+            "per_feature_rules": {},
+            # Phase 2 fields
+            "coordinate_validation_issues": "",
+            "coordinate_valid": True,
+            "coordinate_validation_attempts": 0,
+            "code_review_issues": "",
+            "code_review_approved": True,
+            "code_review_attempts": 0,
         }
 
         log.info("pipeline_run_start", description=description[:80])
@@ -340,6 +406,18 @@ class PipelineRunner:
             "geometry_state": previous_state.get("geometry_state", {}),
             "geometry_precheck_report": "",
             "agent_traces": [],
+            # Phase 1 fields
+            "feature_tree": {},
+            "code_skeleton": "",
+            "feature_specs": [],
+            "per_feature_rules": {},
+            # Phase 2 fields
+            "coordinate_validation_issues": "",
+            "coordinate_valid": True,
+            "coordinate_validation_attempts": 0,
+            "code_review_issues": "",
+            "code_review_approved": True,
+            "code_review_attempts": 0,
         }
 
         # Always use a fresh thread_id — never reuse a previous run's checkpoint.

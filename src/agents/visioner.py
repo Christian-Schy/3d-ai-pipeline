@@ -27,10 +27,12 @@ import structlog
 from src.agents.base import BaseAgent
 from src.config.loader import get_config
 from src.graph.state import PipelineState
+from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
 
-VISIONER_SYSTEM_PROMPT = Path("data/prompts/agents/visioner.md").read_text(encoding="utf-8")
+_prompt = load_prompt("prompt_visioner.py")
+VISIONER_SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 
 
 class VisionerAgent(BaseAgent):

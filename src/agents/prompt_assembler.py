@@ -197,6 +197,78 @@ class PromptAssembler:
 
         return "\n\n".join(rule_sections)
 
+    # --- Per-Feature Planning: feature-type → rule files mapping ---
+    FEATURE_TYPE_TO_RULES = {
+        # Subtractive features
+        "hole_single":            ["rules_holes.md", "rules_workplane.md"],
+        "hole_counterbore":       ["rules_holes.md", "rules_workplane.md"],
+        "hole_countersink":       ["rules_holes.md", "rules_workplane.md"],
+        "hole_pattern_grid":      ["rules_holes.md", "rules_patterns.md", "rules_workplane.md"],
+        "hole_pattern_circular":  ["rules_holes.md", "rules_patterns.md", "rules_workplane.md"],
+        "pocket_rect":            ["rules_grooves.md", "rules_workplane.md"],
+        "pocket_round":           ["rules_grooves.md", "rules_workplane.md"],
+        "slot":                   ["rules_grooves.md", "rules_workplane.md"],
+        "cutout":                 ["rules_workplane.md"],
+        # Additive features
+        "extrusion_rect":         ["rules_workplane.md"],
+        "extrusion_round":        ["rules_workplane.md"],
+        "extrusion_custom":       ["rules_workplane.md"],
+        "step":                   ["rules_workplane.md"],
+        # Modifiers
+        "fillet":                 ["rules_fillets.md"],
+        "chamfer":                ["rules_fillets.md"],
+        "shell":                  [],
+        # Patterns
+        "pattern_linear":         ["rules_patterns.md"],
+        "pattern_polar":          ["rules_patterns.md"],
+        "pattern_mirror":         ["rules_patterns.md"],
+        # Boolean
+        "base_plate":             [],
+        "base_cylinder":          [],
+        "base_sphere":            [],
+    }
+
+    def assemble_per_feature(self, state: dict) -> dict:
+        """Build per-feature rule snippets for the per-feature planner.
+
+        Reads feature_specs from state.
+        Returns {"per_feature_rules": {feature_id: str}}.
+        """
+        feature_specs = state.get("feature_specs", [])
+        if not feature_specs:
+            return {"per_feature_rules": {}}
+
+        per_feature_rules: dict[str, str] = {}
+
+        for spec in feature_specs:
+            fid = spec.get("id", "")
+            ftype = spec.get("type", "")
+            rag_tags = spec.get("rag_tags", [])
+
+            # Load type-specific rules
+            rule_files = self.FEATURE_TYPE_TO_RULES.get(ftype, [])
+            seen: set[str] = set()
+            sections: list[str] = []
+
+            for filename in rule_files:
+                if filename in seen:
+                    continue
+                seen.add(filename)
+                path = RULES_DIR / filename
+                if path.exists():
+                    content = path.read_text(encoding="utf-8").strip()
+                    if content:
+                        sections.append(content)
+
+            rules_text = "\n\n".join(sections) if sections else ""
+            per_feature_rules[fid] = rules_text
+
+        log.info("prompt_assembler_per_feature_done",
+                 features=len(per_feature_rules),
+                 features_with_rules=sum(1 for v in per_feature_rules.values() if v))
+
+        return {"per_feature_rules": per_feature_rules}
+
     def _query_rag(self, specification: str, rag_categories: list[str],
                    n: int = 2, template: str = "") -> str:
         """Query PlannerRAG for examples relevant to the specification.

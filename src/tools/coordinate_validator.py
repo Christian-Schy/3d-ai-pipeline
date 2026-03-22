@@ -1,0 +1,462 @@
+"""
+src/tools/coordinate_validator.py — Regelbasierter Koordinaten- und Dimensions-Check.
+
+Läuft NACH dem Planner, VOR dem Plan Validator.
+Prüft rein mathematisch ob die Feature-Tree-Geometrie physikalisch Sinn ergibt.
+Kein LLM — deterministisch, schnell, kostenlos.
+
+Prüfungen:
+  1. Feature kleiner als sein Parent (Bounding Box)
+  2. Bohrung nicht tiefer als verfügbares Material
+  3. Feature ragt nicht vollständig aus Parent-BBox heraus
+  4. Lochkreis: circle_d/2 + hole_d/2 < Parent-Hälfte
+  5. Wandstärke bei Bohrungen ≥ 2mm
+  6. Alle Dimensionen > 0
+  7. build_order: Parent vor Child
+  8. Offset-Bounds: Feature-Zentrum + Radius innerhalb Parent
+  9. Build-Order-Sortierung: Additive Features vor subtraktiven
+  10. Hole-Pattern-Spacing: Passt das Raster in den Parent?
+
+Nur für Feature-Tree-Blueprints. CSG-Trees werden übersprungen.
+"""
+
+from __future__ import annotations
+
+import math
+import structlog
+from dataclasses import dataclass, field
+
+log = structlog.get_logger()
+
+
+@dataclass
+class CoordIssue:
+    severity: str          # "ERROR" or "WARNING"
+    feature_id: str
+    check: str
+    message: str
+
+    def as_text(self) -> str:
+        return f"  [{self.severity}] {self.feature_id} — {self.check}: {self.message}"
+
+
+def _get_bbox(feature: dict) -> tuple[float, float, float] | None:
+    """Returns (x, y, z) dimensions of a feature, or None if not determinable."""
+    params = feature.get("params", {})
+    ftype = feature.get("type", "")
+
+    # Explicit box dimensions (all three must be non-None numbers)
+    if all(params.get(k) is not None for k in ("x", "y", "z")):
+        try:
+            return (float(params["x"]), float(params["y"]), float(params["z"]))
+        except (TypeError, ValueError):
+            pass
+
+    # Cylinder / hole → approximate as bounding box
+    if params.get("diameter") is not None and "depth" in params:
+        try:
+            d = float(params["diameter"])
+            depth = params.get("depth")
+            z = float(depth) if depth is not None else None
+            if d > 0 and z:
+                return (d, d, z)
+        except (TypeError, ValueError):
+            pass
+
+    # hole_pattern_circular → use circle_diameter as bounding
+    if params.get("circle_diameter") is not None and params.get("diameter") is not None:
+        try:
+            cd = float(params["circle_diameter"])
+            depth_val = params.get("depth", 1) or 1
+            return (cd * 2, cd * 2, float(depth_val))
+        except (TypeError, ValueError):
+            pass
+
+    return None
+
+
+def run_coordinate_check(blueprint: dict) -> list[CoordIssue]:
+    """Run all coordinate/dimension checks on a Feature Tree blueprint.
+
+    Returns a list of CoordIssue objects. Empty list = all checks passed.
+    Only runs on Feature Tree blueprints (has build_order + features dict).
+    """
+    from src.graph.feature_tree import FeatureTree
+
+    if not FeatureTree.is_feature_tree(blueprint):
+        return []  # CSG-Tree: skip, handled by old quick_check
+
+    features: dict = blueprint.get("features", {})
+    build_order: list = blueprint.get("build_order", [])
+    issues: list[CoordIssue] = []
+
+    # ─── Check 7: build_order integrity (parent before child) ───
+    seen_ids: set[str] = set()
+    for fid in build_order:
+        feat = features.get(fid, {})
+        parent = feat.get("parent")
+        if parent and parent not in seen_ids:
+            issues.append(CoordIssue(
+                severity="ERROR", feature_id=fid,
+                check="build_order",
+                message=f"Parent '{parent}' not in build_order before '{fid}'"
+            ))
+        seen_ids.add(fid)
+
+    # ─── Check 9: build_order sorting — adds before subtracts per parent ───
+    _check_build_order_sorting(build_order, features, issues)
+
+    # ─── Per-feature checks ───
+    for fid in build_order:
+        try:
+            _check_feature(fid, features, issues)
+        except Exception as _e:
+            log.warning("coordinate_check_feature_error", feature=fid, error=str(_e))
+
+    log.info("coordinate_check_done",
+             features=len(build_order),
+             issues=len(issues),
+             errors=sum(1 for i in issues if i.severity == "ERROR"))
+    return issues
+
+
+def _check_feature(fid: str, features: dict, issues: list) -> None:
+    """Run all per-feature checks. Called inside a try/except in run_coordinate_check."""
+    feat = features.get(fid)
+    if not isinstance(feat, dict):
+        return
+
+    params = feat.get("params") or {}
+    ftype = feat.get("type", "unknown")
+    parent_id = feat.get("parent")
+
+    # Check 6: all dimensions > 0
+    for key, val in params.items():
+        if val is None:
+            continue  # null depth = through-hole, valid
+        try:
+            f = float(val)
+            if f < 0:
+                issues.append(CoordIssue(
+                    severity="ERROR", feature_id=fid,
+                    check="dimensions_positive",
+                    message=f"Parameter '{key}' is negative: {val}"
+                ))
+        except (TypeError, ValueError):
+            pass
+
+    # Skip further geometry checks if no parent (root feature)
+    if parent_id is None:
+        return
+
+    parent_feat = features.get(parent_id, {})
+    parent_bbox = _get_bbox(parent_feat)
+    my_bbox = _get_bbox(feat)
+
+    # Check 1: feature smaller than parent — only for subtractive features!
+    # Additive features (union/add) are allowed to be larger than their parent.
+    operation = feat.get("operation", "add")
+    is_subtractive = operation in ("subtract", "cut") or "hole" in ftype or ftype in (
+        "pocket_rect", "pocket_round", "slot", "cutout"
+    )
+    if parent_bbox and my_bbox and is_subtractive:
+        px, py, pz = parent_bbox
+        fx, fy, fz = my_bbox
+        if fx > px * 1.05 and fy > py * 1.05:
+            issues.append(CoordIssue(
+                severity="WARNING", feature_id=fid,
+                check="feature_fits_parent",
+                message=(
+                    f"{ftype} ({fx}×{fy}) is larger than parent '{parent_id}' "
+                    f"({px}×{py}) in both X and Y"
+                )
+            ))
+
+    # Check 2: hole depth vs parent material
+    if "hole" in ftype or ftype in ("pocket_rect", "pocket_round", "slot", "cutout"):
+        depth = params.get("depth")
+        if depth is not None and parent_bbox:
+            pz = parent_bbox[2]
+            if float(depth) > pz:
+                issues.append(CoordIssue(
+                    severity="ERROR", feature_id=fid,
+                    check="depth_vs_material",
+                    message=(
+                        f"Depth {depth}mm exceeds parent '{parent_id}' "
+                        f"height {pz}mm"
+                    )
+                ))
+
+    # Check 4: bolt circle geometry
+    if ftype in ("hole_pattern_circular",) or "circle" in ftype:
+        cd = params.get("circle_diameter")
+        hd = params.get("diameter")
+        if cd and hd and parent_bbox:
+            circle_r = float(cd) / 2
+            hole_r = float(hd) / 2
+            px, py, _ = parent_bbox
+            parent_r = min(px, py) / 2
+            if circle_r + hole_r > parent_r:
+                issues.append(CoordIssue(
+                    severity="ERROR", feature_id=fid,
+                    check="bolt_circle_fits",
+                    message=(
+                        f"Bolt circle: circle_r({circle_r}) + hole_r({hole_r}) = "
+                        f"{circle_r + hole_r:.1f} > parent_r({parent_r:.1f})"
+                    )
+                ))
+
+    # Check 5: min wall thickness for holes
+    if "hole" in ftype:
+        hd = params.get("diameter")
+        if hd and parent_bbox:
+            px, py, _ = parent_bbox
+            min_wall = min(px, py) / 2 - float(hd) / 2
+            if 0 < min_wall < 2.0:
+                issues.append(CoordIssue(
+                    severity="WARNING", feature_id=fid,
+                    check="wall_thickness",
+                    message=(
+                        f"Wall thickness ~{min_wall:.1f}mm after hole ∅{hd}mm "
+                        f"in '{parent_id}' ({px}×{py}) — minimum recommended 2mm"
+                    )
+                ))
+
+    # Check 8: offset bounds — feature center + half-size must be inside parent
+    _check_offset_bounds(fid, feat, parent_feat, parent_bbox, issues)
+
+    # Check 10: hole pattern spacing fits parent
+    if ftype == "hole_pattern_grid":
+        _check_pattern_spacing(fid, params, parent_bbox, parent_id, issues)
+
+
+def _check_offset_bounds(
+    fid: str, feat: dict, parent_feat: dict,
+    parent_bbox: tuple[float, float, float] | None, issues: list
+) -> None:
+    """Check 8: Feature center + half-size must stay inside parent bounds.
+
+    Uses placement.offset_x / offset_y and the feature's own size to verify
+    the feature doesn't hang over the edge. This catches the common LLM error
+    of computing offset = -X instead of -(Parent/2 - X).
+
+    For additive features (union/add), overhang is only a WARNING — plates and
+    pads commonly sit on_top with flush edges that extend beyond the parent face.
+    For subtractive features (holes, pockets), overhang is an ERROR.
+    """
+    if parent_bbox is None:
+        return
+
+    placement = feat.get("placement", {})
+    if not isinstance(placement, dict):
+        return
+
+    offset_x = placement.get("offset_x")
+    offset_y = placement.get("offset_y")
+    if offset_x is None and offset_y is None:
+        return  # centered, no check needed
+
+    params = feat.get("params", {}) or {}
+    ftype = feat.get("type", "")
+    operation = feat.get("operation", "add")
+    is_subtractive = operation in ("subtract", "cut") or "hole" in ftype or ftype in (
+        "pocket_rect", "pocket_round", "slot", "cutout"
+    )
+    # Additive features that overhang are only warnings, not errors
+    severity = "ERROR" if is_subtractive else "WARNING"
+
+    px, py, pz = parent_bbox
+
+    # Determine the feature's half-size in X and Y on the placement face
+    face = placement.get("face", ">Z")
+    if face in (">Z", "<Z"):
+        parent_half_x, parent_half_y = px / 2, py / 2
+    elif face in (">X", "<X"):
+        parent_half_x, parent_half_y = py / 2, pz / 2
+    elif face in (">Y", "<Y"):
+        parent_half_x, parent_half_y = px / 2, pz / 2
+    else:
+        parent_half_x, parent_half_y = px / 2, py / 2
+
+    # Feature half-size: use diameter for holes, x/y for boxes
+    if "hole" in ftype and params.get("diameter"):
+        feat_half = float(params["diameter"]) / 2
+        feat_half_x = feat_half
+        feat_half_y = feat_half
+    elif params.get("x") and params.get("y"):
+        feat_half_x = float(params["x"]) / 2
+        feat_half_y = float(params["y"]) / 2
+    elif params.get("width") and params.get("length"):
+        feat_half_x = float(params["width"]) / 2
+        feat_half_y = float(params["length"]) / 2
+    else:
+        return  # can't determine size
+
+    # Check X offset
+    if offset_x is not None:
+        ox = abs(float(offset_x))
+        if ox + feat_half_x > parent_half_x + 0.1:  # 0.1mm tolerance
+            issues.append(CoordIssue(
+                severity=severity, feature_id=fid,
+                check="offset_bounds_x",
+                message=(
+                    f"Feature exceeds parent in X: |offset_x|={ox:.1f} + "
+                    f"half_size={feat_half_x:.1f} = {ox + feat_half_x:.1f} > "
+                    f"parent_half={parent_half_x:.1f}"
+                )
+            ))
+
+    # Check Y offset
+    if offset_y is not None:
+        oy = abs(float(offset_y))
+        if oy + feat_half_y > parent_half_y + 0.1:
+            issues.append(CoordIssue(
+                severity=severity, feature_id=fid,
+                check="offset_bounds_y",
+                message=(
+                    f"Feature exceeds parent in Y: |offset_y|={oy:.1f} + "
+                    f"half_size={feat_half_y:.1f} = {oy + feat_half_y:.1f} > "
+                    f"parent_half={parent_half_y:.1f}"
+                )
+            ))
+
+
+def _check_build_order_sorting(
+    build_order: list, features: dict, issues: list
+) -> None:
+    """Check 9: All additive features should come before subtractive ones per parent.
+
+    If a hole is built before an add (pad/extrusion), the hole won't go through
+    the added material. This is a common Planner error.
+
+    Rather than just warning, this FIXES the build_order in-place by sorting:
+    additive operations first, then subtractive.
+    """
+    _SUBTRACTIVE_TYPES = {
+        "hole", "hole_pattern_grid", "hole_pattern_circular",
+        "pocket_rect", "pocket_round", "slot", "cutout",
+        "chamfer", "fillet",
+    }
+
+    # Group features by parent
+    by_parent: dict[str | None, list[str]] = {}
+    for fid in build_order:
+        feat = features.get(fid, {})
+        parent = feat.get("parent")
+        by_parent.setdefault(parent, []).append(fid)
+
+    reordered = False
+    for parent, children in by_parent.items():
+        if len(children) < 2:
+            continue
+
+        adds = []
+        subs = []
+        for fid in children:
+            feat = features.get(fid, {})
+            ftype = feat.get("type", "")
+            operation = feat.get("operation", "add")
+            if ftype in _SUBTRACTIVE_TYPES or operation in ("subtract", "cut"):
+                subs.append(fid)
+            else:
+                adds.append(fid)
+
+        # Check: any subtract appears before an add?
+        if subs and adds:
+            first_sub_idx = None
+            last_add_idx = None
+            for i, fid in enumerate(children):
+                if fid in subs and first_sub_idx is None:
+                    first_sub_idx = i
+                if fid in adds:
+                    last_add_idx = i
+
+            if first_sub_idx is not None and last_add_idx is not None and first_sub_idx < last_add_idx:
+                reordered = True
+                # Fix: reorder children so adds come first
+                correct_order = adds + subs
+                issues.append(CoordIssue(
+                    severity="WARNING", feature_id=subs[0],
+                    check="build_order_sorting",
+                    message=(
+                        f"Subtractive feature before additive on parent '{parent}' — "
+                        f"reordered: adds {adds} before subtracts {subs}"
+                    )
+                ))
+
+                # Apply fix in-place on build_order
+                # Replace the children segment with correct order
+                for old_fid in children:
+                    build_order.remove(old_fid)
+                # Find insertion point (after parent in build_order, or at the end)
+                if parent and parent in build_order:
+                    insert_at = build_order.index(parent) + 1
+                else:
+                    insert_at = len(build_order)
+                for i, fid in enumerate(correct_order):
+                    build_order.insert(insert_at + i, fid)
+
+    if reordered:
+        log.info("build_order_reordered", new_order=build_order)
+
+
+def _check_pattern_spacing(
+    fid: str, params: dict, parent_bbox: tuple[float, float, float] | None,
+    parent_id: str | None, issues: list
+) -> None:
+    """Check 10: Hole pattern grid fits within parent dimensions.
+
+    For rArray: spacing_x * (count_x - 1) + hole_diameter must fit parent X,
+    and same for Y.
+    """
+    if parent_bbox is None:
+        return
+
+    px, py, _ = parent_bbox
+    spacing_x = params.get("spacing_x") or params.get("x_spacing")
+    spacing_y = params.get("spacing_y") or params.get("y_spacing")
+    count_x = params.get("count_x") or params.get("x_count")
+    count_y = params.get("count_y") or params.get("y_count")
+    diameter = params.get("diameter")
+
+    if not all([spacing_x, count_x, diameter]):
+        return
+
+    try:
+        sx, cx, d = float(spacing_x), int(count_x), float(diameter)
+        pattern_x = sx * (cx - 1) + d
+        if pattern_x > px + 0.1:
+            issues.append(CoordIssue(
+                severity="ERROR", feature_id=fid,
+                check="pattern_fits_x",
+                message=(
+                    f"Hole pattern too wide: spacing({sx}) × ({cx}-1) + ∅{d} = "
+                    f"{pattern_x:.1f}mm > parent '{parent_id}' width {px}mm"
+                )
+            ))
+    except (TypeError, ValueError):
+        pass
+
+    if spacing_y and count_y:
+        try:
+            sy, cy, d = float(spacing_y), int(count_y), float(diameter)
+            pattern_y = sy * (cy - 1) + d
+            if pattern_y > py + 0.1:
+                issues.append(CoordIssue(
+                    severity="ERROR", feature_id=fid,
+                    check="pattern_fits_y",
+                    message=(
+                        f"Hole pattern too tall: spacing({sy}) × ({cy}-1) + ∅{d} = "
+                        f"{pattern_y:.1f}mm > parent '{parent_id}' height {py}mm"
+                    )
+                ))
+        except (TypeError, ValueError):
+            pass
+
+
+def format_issues_for_planner(issues: list[CoordIssue]) -> str:
+    """Format coordinate issues as a text block for the Planner to fix."""
+    lines = ["Coordinate-Validator found these issues (fix before continuing):"]
+    for issue in issues:
+        lines.append(issue.as_text())
+    return "\n".join(lines)

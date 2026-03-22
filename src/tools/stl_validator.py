@@ -103,7 +103,20 @@ class STLValidator:
                 edge_face_count[face] += 1
             nm_edge_count = int(np.sum(edge_face_count > 2))
             total_edges = len(mesh.edges_unique)
-            if mesh.euler_number == 2 and nm_edge_count <= 20:
+            nm_pct = nm_edge_count / total_edges * 100 if total_edges else 100
+
+            # Tier 1: Very few nm-edges (≤5) with positive volume — CadQuery
+            # boolean unions at flush edges produce exactly this pattern
+            # (typically 2 edges, euler=1). Geometry is correct and printable.
+            if nm_edge_count <= 5 and abs(mesh.volume) > 0:
+                _practically_watertight = True
+                warnings.append(
+                    f"Mesh has {nm_edge_count} non-manifold edges "
+                    f"({nm_pct:.3f}% of {total_edges}), euler={mesh.euler_number} — "
+                    "minimal tessellation artifact, geometry is printable"
+                )
+            # Tier 2: euler=2 (topologically closed) with moderate nm-edges
+            elif mesh.euler_number == 2 and nm_edge_count <= 20:
                 _practically_watertight = True
                 warnings.append(
                     f"Mesh has {nm_edge_count} tessellation artifact edges "
@@ -111,10 +124,46 @@ class STLValidator:
                     "topology is valid (euler=2), geometry is printable"
                 )
             else:
-                issues.append(
-                    "Mesh is not watertight (non-manifold) — "
-                    "has open edges or holes that make it unprintable"
-                )
+                # --- Attempt mesh repair before declaring failure ---
+                # CadQuery/OCCT often produces fixable non-manifold geometry
+                # at boolean junctions. trimesh can repair many of these.
+                mesh_repaired = False
+                try:
+                    trimesh.repair.fix_normals(mesh)
+                    trimesh.repair.fix_winding(mesh)
+                    trimesh.repair.fill_holes(mesh)
+                    # Re-check after repair
+                    if mesh.is_watertight:
+                        mesh_repaired = True
+                        warnings.append(
+                            "Mesh was non-manifold but repaired successfully "
+                            f"(fixed {nm_edge_count} non-manifold edges)"
+                        )
+                        # Save repaired mesh back to file
+                        mesh.export(str(path))
+                        log.info("stl_mesh_repaired",
+                                 nm_edges_before=nm_edge_count,
+                                 path=str(path))
+                    elif mesh.euler_number == 2:
+                        # Repair improved topology even if not fully watertight
+                        mesh_repaired = True
+                        _practically_watertight = True
+                        warnings.append(
+                            "Mesh repaired to euler=2 (topologically valid), "
+                            f"had {nm_edge_count} non-manifold edges"
+                        )
+                        mesh.export(str(path))
+                        log.info("stl_mesh_repair_partial",
+                                 euler=mesh.euler_number,
+                                 path=str(path))
+                except Exception as e:
+                    log.warning("stl_mesh_repair_failed", error=str(e))
+
+                if not mesh_repaired:
+                    issues.append(
+                        "Mesh is not watertight (non-manifold) — "
+                        "has open edges or holes that make it unprintable"
+                    )
 
         # --- Check 3: Volume ---
         # Negative or zero volume means inside-out or empty geometry

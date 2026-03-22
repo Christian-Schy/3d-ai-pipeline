@@ -1,19 +1,33 @@
-## Pattern / Array Rules
+# Muster- und Pattern-Regeln
 
-MULTIPLE HOLES AT SPECIFIC POSITIONS → hole_pattern:
-  Use ONE hole_pattern node with a positions list.
-  ⚠ Do NOT use separate hole nodes for each position.
-  positions: [[x1,y1],[x2,y2],...] — absolute from face bbox center.
+## Wann welcher Pattern-Typ
+- Gleichmäßiges Raster (NxM): hole_pattern_grid
+- Kreis/Lochkreis: hole_pattern_circular
+- "4 Löcher in den Ecken": hole_pattern_grid, x_count=2, y_count=2
+- "Löcher alle Xmm": hole_pattern_grid mit x_spacing=X
 
-REGULAR GRID → hole_grid:
-  x_spacing: distance between holes in X direction
-  y_spacing: distance between holes in Y direction
-  x_count: number of holes along X
-  y_count: number of holes along Y
-  Grid is centered on the face — total span = spacing*(count-1)
-  Example: 3×2 grid, 20mm spacing → spans 40mm×20mm, centered at origin.
+## hole_pattern_grid Parameter
+- x_count: Anzahl Löcher in X-Richtung
+- y_count: Anzahl Löcher in Y-Richtung
+- x_spacing: Abstand Mitte-Mitte in X (mm)
+- y_spacing: Abstand Mitte-Mitte in Y (mm)
+- diameter: Lochdurchmesser
+- depth: Tiefe (null=durch)
 
-CORNER HOLES (most common pattern):
-  Use hole_pattern with 4 positions computed from corner formula:
-  x = ±(W/2 - D),  y = ±(L/2 - D)   (D = distance from edge)
-  positions: [[+x,+y],[-x,+y],[+x,-y],[-x,-y]]
+Raster-Breite = (x_count-1) * x_spacing
+Raster-Position auf Fläche: offset_x/y zum Raster-Mittelpunkt
+
+## hole_pattern_circular Parameter
+- circle_diameter: Durchmesser des Lochkreises (Mitte-zu-Mitte der Löcher)
+- n_holes: Anzahl gleichmäßig verteilter Löcher
+- diameter: Lochdurchmesser
+- depth: Tiefe (null=durch)
+Lochkreis Regel: circle_d/2 + hole_d/2 < parent_min_dim/2
+
+## Ecklöcher-Berechnung
+Loch in Ecke mit Randabstand r:
+- Basis: W x L
+- offset_x = W/2 - r (Abstand von Mitte)
+- offset_y = L/2 - r
+- x_spacing = W - 2*r (Abstand zwischen den 2 Löchern in X)
+- y_spacing = L - 2*r

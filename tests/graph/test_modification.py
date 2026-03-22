@@ -19,10 +19,10 @@ class TestEntryRouting:
         state = {"change_description": "", "previous_blueprint": {}}
         assert route_after_entry_router(state) == "interpreter"
 
-    def test_modification_routes_to_task_classifier(self):
-        """change_description set = modification → skip interpreter, go to task_classifier (V4)."""
+    def test_modification_routes_to_feature_tagger(self):
+        """change_description set = modification → skip interpreter, go to feature_tagger (V4)."""
         state = {"change_description": "Increase hole diameter to 5mm"}
-        assert route_after_entry_router(state) == "task_classifier"
+        assert route_after_entry_router(state) == "feature_tagger"
 
     def test_empty_string_routes_to_interpreter(self):
         state = {"change_description": ""}

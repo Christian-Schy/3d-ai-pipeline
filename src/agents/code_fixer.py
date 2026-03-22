@@ -20,13 +20,14 @@ Model: qwen3:8b — diagnosis doesn't need the big model, Coder does the heavy l
 
 import json
 import structlog
-from pathlib import Path
 from src.agents.base import BaseAgent
 from src.graph.state import PipelineState
+from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
 
-SYSTEM_PROMPT = Path("data/prompts/agents/code_fixer.md").read_text(encoding="utf-8")
+_prompt = load_prompt("prompt_code_fixer.py")
+SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 
 
 class CodeFixerAgent(BaseAgent):
@@ -107,4 +108,109 @@ class CodeFixerAgent(BaseAgent):
                 "2. Do NOT replace fillet with chamfer — omit edge treatment entirely.\n"
                 "3. Keep the rest of the code unchanged."
             )
+
+        if "NearestToPointSelector" in error and "NameError" in error:
+            return (
+                "Root cause: NearestToPointSelector ist nicht importiert.\n\n"
+                "Fix plan:\n"
+                "1. Stelle sicher, dass ganz oben im Code steht: "
+                "from cadquery.selectors import NearestToPointSelector\n"
+                "2. Nichts anderes am Code ändern."
+            )
+
+        if "Workplane.__init__() got an unexpected keyword argument" in error:
+            return (
+                "Root cause: cq.Workplane() bekommt ungültige kwargs (z.B. centerOption).\n\n"
+                "Fix plan:\n"
+                "1. cq.Workplane() akzeptiert NUR einen Ebenen-String, z.B. cq.Workplane('XY')\n"
+                "2. centerOption gehört zu .workplane() bei Face-Selektion, NICHT zu cq.Workplane()\n"
+                "3. FALSCH: cq.Workplane('XY', centerOption='CenterOfBoundBox')\n"
+                "4. RICHTIG: body.faces('>Z').workplane(centerOption='CenterOfBoundBox')\n"
+                "5. Restlichen Code unverändert lassen."
+            )
+
+        if "got an unexpected keyword argument" in error and any(
+            k in error for k in ("slot2D", "rect", "circle", "polygon", "ellipse")
+        ):
+            return (
+                "Root cause: CadQuery 2D-Primitiv mit ungültigem Keyword-Argument aufgerufen.\n\n"
+                "Fix plan:\n"
+                "1. slot2D(length, diameter) — NUR Positionsargumente! KEIN centered, KEIN width, KEIN height!\n"
+                "2. rect(xLen, yLen) — NUR Positionsargumente! KEIN length, KEIN width als Kwarg!\n"
+                "3. circle(radius) — NUR Positionsargument! KEIN diameter, KEIN r als Kwarg!\n"
+                "4. Alle erfundenen Keyword-Arguments entfernen — NUR die dokumentierten Positionsargumente verwenden.\n"
+                "5. Restlicher Code unverändert lassen."
+            )
+
+        if "'tuple' object has no attribute" in error and "cylinder" in code.lower():
+            return (
+                "Root cause: Zylinder-Stapelung über neues cq.Workplane() + union() "
+                "statt face-basiertem .circle().extrude().\n\n"
+                "Fix plan:\n"
+                "1. NIEMALS eine neue cq.Workplane()-Instanz für gestapelte Zylinder erstellen\n"
+                "2. RICHTIG für jeden add_*() Zylinder auf vorherigem Zylinder:\n"
+                "   return (body.faces('>Z')\n"
+                "           .workplane(centerOption='CenterOfBoundBox')\n"
+                "           .circle(RADIUS)\n"
+                "           .extrude(HEIGHT))\n"
+                "3. Nach Union-Operationen: NearestToPointSelector statt '>Z' verwenden\n"
+                "4. Alle add_*() Funktionen nach diesem Schema umschreiben."
+            )
+
+        if "not watertight" in error.lower() or "watertight" in error.lower():
+            # Non-manifold mesh — CadQuery/OCCT tessellation problem.
+            # Strategy depends on what code approach was used.
+            return (
+                "Root cause: CadQuery/OCCT erzeugt non-manifold Tessellation bei "
+                "Boolean-Operationen (besonders bei flush-edge Kontakt).\n\n"
+                "Fix plan — 3 SCHRITTE:\n"
+                "1. .clean() nach JEDER .union() und .cut() Operation hinzufügen\n"
+                "2. Bei Aufsätzen die bündig an einer Kante sitzen:\n"
+                "   Vermeide exakte Kantenkontakt-Geometrie — verwende 0.01mm Inset:\n"
+                "   STATT: .translate((20, 0, BASE_Z))  # exakt bündig\n"
+                "   BESSER: .translate((19.99, 0, BASE_Z))  # minimaler Inset\n"
+                "3. Export mit engerer Toleranz am Ende:\n"
+                "   cq.exporters.export(result, OUTPUT_PATH, tolerance=0.001)\n\n"
+                "WICHTIG: Ändere NUR diese 3 Dinge. Keine strukturelle Umschreibung nötig."
+            )
+
+        # --- Hole pattern anti-patterns ---
+        # Manual pushPoints loop instead of rArray for grid patterns
+        if ("Null TopoDS_Shape" in error or "No pending wires" in error) and (
+            "pushPoints" in code or "push_points" in code
+        ):
+            return (
+                "Root cause: Manueller pushPoints-Loop statt .rArray() für Lochraster.\n"
+                "pushPoints erzeugt Punkte, keine Solids — body.cut(wp) schlägt fehl.\n\n"
+                "Fix plan:\n"
+                "1. LÖSCHE den gesamten manuellen Loop (for i in range... pushPoints...)\n"
+                "2. Ersetze durch die korrekte CadQuery-Methode .rArray():\n"
+                "   result = (body.faces('>Z')\n"
+                "             .workplane(centerOption='CenterOfBoundBox')\n"
+                "             .center(OFFSET_X, OFFSET_Y)\n"
+                "             .rArray(X_SPACING, Y_SPACING, X_COUNT, Y_COUNT)\n"
+                "             .hole(DIAMETER))       # ohne depth = Durchgangsbohrung\n"
+                "             .hole(DIAMETER, DEPTH)  # mit depth = Sackloch\n"
+                "3. rArray zentriert das Raster automatisch — KEIN manuelles ±spacing/2 nötig\n"
+                "4. KEIN .cut() nötig — .hole() schneidet direkt\n"
+                "5. Ergebnis direkt zurückgeben: return result.clean()"
+            )
+
+        # Discarded return values (immutable CadQuery API)
+        if "Null TopoDS_Shape" in error and ".cut(" in code:
+            return (
+                "Root cause: CadQuery-Methoden geben ein NEUES Objekt zurück.\n"
+                "Ergebnis von .hole()/.extrude()/.cut() wurde nicht zugewiesen.\n\n"
+                "Fix plan:\n"
+                "1. CadQuery ist immutable — jede Operation gibt ein neues Objekt zurück\n"
+                "2. FALSCH: wp.hole(10)  ← Ergebnis geht verloren!\n"
+                "3. RICHTIG: result = wp.hole(10)  ← Ergebnis speichern!\n"
+                "4. Am besten: Methoden-Chain verwenden:\n"
+                "   return (body.faces('>Z')\n"
+                "           .workplane(centerOption='CenterOfBoundBox')\n"
+                "           .hole(DIAMETER, DEPTH)\n"
+                "           .clean())\n"
+                "5. Prüfe JEDE Zeile: wird das Ergebnis zugewiesen oder geht es verloren?"
+            )
+
         return ""

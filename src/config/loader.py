@@ -53,26 +53,31 @@ class ModelsConfig(BaseModel):
     code_fixer: str = "qwen3.5:9b"
     visioner: str = "qwen3.5:27b"
     modification_interpreter: str = "qwen3.5:9b"
-    task_classifier: str = "qwen3.5:9b"
     plan_validator: str = "qwen3.5:9b"
+    # Phase 1 — new agents
+    feature_tagger: str = "qwen3.5:9b"
 
 
 class RagKnowledgeConfig(BaseModel):
-    coder: str = "data/knowledge/coder"
-    planner: str = "data/knowledge/planner"
-    validator: str = "data/knowledge/validator"
-    interpreter: str = "data/knowledge/interpreter"
-    visioner: str = "data/knowledge/visioner"
+    model_config = {"extra": "ignore"}
+    coder: str = "data/knowledge/rag"
+    planner: str = "data/knowledge/rag_agents/21_planner_geometry"
+    validator: str = "data/knowledge/rag_agents/22_plan_validation"
+    interpreter: str = "data/knowledge/rag/16_interpreter_knowledge"
+    visioner: str = "data/knowledge/rag"
 
 
 class RagNResultsConfig(BaseModel):
     """Per-agent chunk count. Planner needs fewer examples than Coder."""
     model_config = {"extra": "ignore"}
     coder: int = 4
-    planner: int = 2
+    planner: int = 3
     validator: int = 3
-    interpreter: int = 3
+    interpreter: int = 2
     visioner: int = 2
+    feature_tagger: int = 1
+    plan_validator: int = 2
+    code_review: int = 2
 
 
 class RagConfig(BaseModel):

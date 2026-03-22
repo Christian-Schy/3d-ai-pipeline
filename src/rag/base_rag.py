@@ -302,6 +302,31 @@ class BaseRAG:
                       chunks_injected=len(chunks))
         return enriched
 
+    def add_example(
+        self,
+        doc_text: str,
+        doc_id: str = "",
+        metadata: dict | None = None,
+    ) -> bool:
+        """Add a single document to the collection (used for auto-learning).
+
+        Skips silently if the document already exists (idempotent).
+        Returns True if added, False if already present or empty.
+        """
+        if not doc_text.strip():
+            return False
+        if not doc_id:
+            doc_id = hashlib.md5(doc_text.encode()).hexdigest()
+        if self._chunk_exists(doc_id):
+            return False
+        self._collection.add(
+            documents=[doc_text],
+            ids=[doc_id],
+            metadatas=[metadata or {"source": "auto_learned.py", "type": "auto_learned"}],
+        )
+        self.log.info("rag_example_added", doc_id=doc_id[:8])
+        return True
+
     @property
     def chunk_count(self) -> int:
         return self._collection.count()

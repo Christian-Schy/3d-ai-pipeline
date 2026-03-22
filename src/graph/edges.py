@@ -27,23 +27,23 @@ log = structlog.get_logger()
 
 
 def route_after_entry_router(state: PipelineState) -> str:
-    """After entry_router: modification → task_classifier, image → visioner, fresh → interpreter.
+    """After entry_router: modification → feature_tagger, image → visioner, fresh → interpreter.
 
-    Modifications go through task_classifier for a focused Planner prompt.
+    Modifications go through feature_tagger for a focused Planner prompt.
     If modification_interpreter classified as new request, skip interpreter and
-    go to task_classifier for a fresh build (avoids questions about visible model).
+    go to feature_tagger for a fresh build (avoids questions about visible model).
     """
     change_desc = state.get("change_description", "")
     image_path = state.get("image_path", "")
     if change_desc:
-        log.info("route_entry_router", decision="task_classifier", mode="modification")
-        return "task_classifier"
+        log.info("route_entry_router", decision="feature_tagger", mode="modification")
+        return "feature_tagger"
     if image_path:
         log.info("route_entry_router", decision="visioner", mode="image")
         return "visioner"
     if state.get("modification", ""):
-        log.info("route_entry_router", decision="task_classifier", mode="modify_as_fresh")
-        return "task_classifier"
+        log.info("route_entry_router", decision="feature_tagger", mode="modify_as_fresh")
+        return "feature_tagger"
     log.info("route_entry_router", decision="interpreter", mode="fresh")
     return "interpreter"
 
@@ -76,8 +76,16 @@ def route_after_executor(state: PipelineState) -> str:
     return "error_router"
 
 
+_PLACEMENT_ERROR_KEYWORDS = (
+    "position", "offset", "floating", "centered", "misplaced", "placement",
+    "wrong place", "not centered", "too far", "falsch platziert",
+    "verschoben", "falsche position", "nicht zentriert", "falsch positioniert",
+    "schweben", "zu weit", "wrong offset", "wrong location",
+)
+
+
 def route_after_validator(state: PipelineState) -> str:
-    """After Validator: ok → end, not ok → planner (max 2x) or end."""
+    """After Validator: ok → end, not ok → coder (placement error) or planner (max 2x) or end."""
     feedback = state.get("validator_feedback", "")
 
     if not feedback:
@@ -90,6 +98,14 @@ def route_after_validator(state: PipelineState) -> str:
         log.warning("route_validator", decision="end",
                     reason="max_semantic_retries", attempts=semantic_attempts)
         return "end"
+
+    # Placement/position errors: the blueprint is likely correct but the coder
+    # generated wrong offset code. Planner can't fix this — route to coder instead.
+    feedback_lower = feedback.lower()
+    if any(kw in feedback_lower for kw in _PLACEMENT_ERROR_KEYWORDS):
+        log.info("route_validator", decision="coder",
+                 reason="placement_error", feedback=feedback[:80])
+        return "coder"
 
     log.info("route_validator", decision="planner",
              semantic_attempts=semantic_attempts,

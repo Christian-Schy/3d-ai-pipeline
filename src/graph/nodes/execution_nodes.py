@@ -1,4 +1,4 @@
-"""Execution nodes: coder_node, code_fixer_node, executor_node."""
+"""Execution nodes: coder_node, code_fixer_node, code_review_node, executor_node."""
 from __future__ import annotations
 import os
 import hashlib
@@ -8,6 +8,7 @@ import structlog
 from src.graph.state import PipelineState
 from src.agents.coder import CoderAgent
 from src.agents.code_fixer import CodeFixerAgent
+from src.agents.code_review import CodeReviewAgent
 from src.tools.sandbox import Sandbox
 from ._registry import get_agent
 from ._tracing import _make_trace
@@ -84,6 +85,75 @@ def code_fixer_node(state: PipelineState) -> dict:
     return result
 
 
+def code_review_node(state: PipelineState) -> dict:
+    """Static code review: checks generated code against the blueprint.
+
+    Runs between Coder and Executor. First runs the deterministic linter
+    (syntax, export, modular structure, uncaptured booleans). If the linter
+    finds ERRORs, returns immediately without LLM cost.
+
+    On ERROR → routes back to Coder with specific fix instructions.
+    On WARNING / PASS → continues to Executor.
+    """
+    _t0 = time.time()
+    _step = len(state.get("agent_traces", [])) + 1
+    code = state.get("code", "")
+
+    if not code:
+        log.warning("node_code_review_no_code")
+        return {"code_review_approved": True, "code_review_issues": ""}
+
+    log.info("node_code_review",
+             code_lines=code.count("\n") + 1,
+             attempt=state.get("attempts", 0))
+
+    # ── Fast deterministic linter (no LLM) ───────────────────────────
+    try:
+        from src.tools.cq_linter import lint_cadquery_code, format_lint_issues, has_errors
+        lint_issues = lint_cadquery_code(code)
+        if has_errors(lint_issues):
+            issues_text = format_lint_issues(lint_issues)
+            log.warning("node_code_review_lint_fail",
+                        errors=sum(1 for i in lint_issues if i.severity == "ERROR"),
+                        warnings=sum(1 for i in lint_issues if i.severity == "WARNING"))
+            _trace = _make_trace(
+                agent="code_review", step=_step,
+                input_data={"code_lines": code.count("\n") + 1, "source": "linter"},
+                output_data={"approved": False, "issues": issues_text[:200]},
+                start_time=_t0,
+            )
+            return {
+                "code_review_approved": False,
+                "code_review_issues": issues_text,
+                "code_review_attempts": state.get("code_review_attempts", 0) + 1,
+                "agent_traces": [_trace],
+            }
+        elif lint_issues:
+            log.info("node_code_review_lint_warnings",
+                     warnings=len(lint_issues))
+    except Exception as _lint_err:
+        log.warning("node_code_review_lint_error", error=str(_lint_err))
+
+    result = get_agent(CodeReviewAgent).review(state)
+
+    # Increment attempt counter so route_after_code_review can enforce max_retries
+    result["code_review_attempts"] = state.get("code_review_attempts", 0) + 1
+
+    from src.config.loader import get_config as _gc
+    _trace = _make_trace(
+        agent="code_review", step=_step,
+        input_data={"code_lines": code.count("\n") + 1,
+                    "blueprint_features": list(
+                        state.get("blueprint", {}).get("features", {}).keys()
+                    )},
+        output_data={"approved": result.get("code_review_approved", True),
+                     "issues": result.get("code_review_issues", "")[:200]},
+        start_time=_t0, model=_gc().models.plan_validator,
+    )
+    result["agent_traces"] = [_trace]
+    return result
+
+
 def executor_node(state: PipelineState) -> dict:
     """Run the code in the sandbox and validate the resulting STL geometry."""
     code = state.get("code", "")
@@ -155,16 +225,40 @@ def executor_node(state: PipelineState) -> dict:
     else:
         error_msg = result.error
         is_geometry_error = "STL geometry invalid" in error_msg
+
+        # Progressive build: identify the failing function when modular code fails
+        progressive_info = ""
+        if not is_geometry_error and "def assemble(" in code:
+            blueprint = state.get("blueprint", {})
+            try:
+                from src.tools.progressive_build import run_progressive_build, format_progressive_error
+                pb_result = run_progressive_build(
+                    code=code,
+                    blueprint=blueprint,
+                    sandbox=_get_sandbox_instance(),
+                    base_output_path=output_path,
+                )
+                if pb_result.get("failing_function"):
+                    progressive_info = format_progressive_error(pb_result)
+                    log.info("executor_progressive_build_done",
+                             failing_function=pb_result["failing_function"],
+                             step=pb_result["step"])
+            except Exception as _pb_err:
+                log.warning("executor_progressive_build_failed", error=str(_pb_err))
+
+        final_error = progressive_info if progressive_info else error_msg
+
         _exec_trace = _make_trace(
             agent="executor", step=_step_exec,
             input_data=code[:200],
-            output_data={"success": False, "error": error_msg[:200]},
+            output_data={"success": False, "error": final_error[:200],
+                         "progressive": bool(progressive_info)},
             start_time=_t0,
             error_tag="syntax_error" if not is_geometry_error else "geometry_error",
         )
         return {
             "stl_path": "",
-            "execution_error": "" if is_geometry_error else error_msg,
+            "execution_error": "" if is_geometry_error else final_error,
             "validation_error": error_msg if is_geometry_error else "",
             "agent_traces": [_exec_trace],
         }

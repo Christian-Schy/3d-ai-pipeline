@@ -22,10 +22,10 @@ agent_options:
     think: false      # qwen3-coder unterstützt 'think' nicht → weglassen
     temperature: 0.05 # Code soll sehr deterministisch sein
     num_ctx: 16384    # Coder braucht Blueprint + Code History im Kontext
-  task_classifier:
-    think: false
-    temperature: 0.05  # Klassifikation soll deterministisch sein
-    num_ctx: 4096
+  interpreter:
+    think: false      # 35b: Reasoning reicht ohne Thinking für diese Aufgabe
+    temperature: 0.1  # Etwas Spielraum für natürliche Sprache, aber deterministisch
+    num_ctx: 8192
   plan_validator:
     think: false
     temperature: 0.1
@@ -35,7 +35,7 @@ agent_options:
 # Each agent uses the model best suited for its task.
 # Adjust these to match your 'ollama list' output.
 models:
-  interpreter:              "qwen3.5:9b"
+  interpreter:              "qwen3.5:35b"
   planner:                  "qwen3.5:35b"
   planner_patch:            "qwen3.5:9b"
   planner_revise:           "qwen3.5:35b"
@@ -44,25 +44,29 @@ models:
   code_fixer:               "qwen3.5:9b"
   visioner:                 "qwen3.5:35b"
   modification_interpreter: "qwen3.5:9b"
-  task_classifier:          "qwen3.5:9b"
   plan_validator:           "qwen3.5:9b"
+  # Phase 1 — new agents
+  feature_tagger:           "qwen3.5:9b"   # identification only, no geometry knowledge
 
 # --- RAG ---
 rag:
   embedding_model: "all-MiniLM-L6-v2"
   db_path: "data/rag_db"
   n_results:
-    coder:       4   # Coder benefits most from code examples
-    planner:     2   # Planner has full schema in system prompt — fewer examples needed
-    validator:   3
-    interpreter: 3
-    visioner:    2
+    coder:          4   # Coder benefits most from code examples
+    planner:        3   # Planner uses 21_planner_geometry — focused geometry docs
+    validator:      3
+    interpreter:    2   # 16_interpreter_knowledge is small
+    visioner:       2
+    feature_tagger: 1   # Catalog fits in system prompt — 1 edge-case example
+    plan_validator: 2   # 22_plan_validation checklist docs
+    code_review:    2   # 23_code_review anti-pattern docs
   knowledge:
-    coder:       "data/knowledge/coder"
-    planner:     "data/knowledge/planner"
-    validator:   "data/knowledge/validator"
-    interpreter: "data/knowledge/interpreter"
-    visioner:    "data/knowledge/visioner"
+    coder:       "data/knowledge/rag"                    # numbered collections 01-15
+    planner:     "data/knowledge/rag_agents/21_planner_geometry"
+    validator:   "data/knowledge/rag_agents/22_plan_validation"
+    interpreter: "data/knowledge/rag/16_interpreter_knowledge"
+    visioner:    "data/knowledge/rag"
 
 # --- Sandbox ---
 sandbox:

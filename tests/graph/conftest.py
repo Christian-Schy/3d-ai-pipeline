@@ -16,6 +16,7 @@ def _make_interpreter_stub():
         "specification": "A 30mm cube with flat top",
         "messages": [],
         "is_complete": True,
+        "interpreter_features": [],
     }
     stub._format_history = MagicMock(return_value="")
     stub._rag = None
@@ -80,15 +81,22 @@ def _make_mod_interp_stub():
     stub = MagicMock()
     stub.classify.return_value = {
         "is_modification": False,
+        "is_additive": False,
         "change_description": "",
+        "changed_features": [],
         "reasoning": "stub",
     }
     return stub
 
 
-def _make_task_clf_stub():
+def _make_feature_tagger_stub():
     stub = MagicMock()
-    stub.classify.return_value = {
+    stub.tag.return_value = {
+        "feature_tree": {
+            "features_identified": [],
+            "dependencies": [],
+            "rag_queries": [],
+        },
         "task_classification": {
             "task_type": "primitive_single",
             "difficulty": "low",
@@ -96,8 +104,14 @@ def _make_task_clf_stub():
             "rag_categories": [],
             "planner_template": "template_simple",
             "warnings": [],
-        }
+        },
     }
+    return stub
+
+
+def _make_function_decomposer_stub():
+    stub = MagicMock()
+    stub.decompose.return_value = {"code_skeleton": ""}
     return stub
 
 
@@ -128,7 +142,8 @@ def stub_all_nodes(monkeypatch):
     from src.agents.validator import ValidatorAgent
     from src.agents.code_fixer import CodeFixerAgent
     from src.agents.modification_interpreter import ModificationInterpreterAgent
-    from src.agents.task_classifier import TaskClassifierAgent
+    from src.agents.feature_tagger import FeatureTaggerAgent
+    from src.agents.function_decomposer import FunctionDecomposerAgent
     from src.agents.prompt_assembler import PromptAssembler
     from src.agents.plan_validator import PlanValidatorAgent
 
@@ -140,7 +155,8 @@ def stub_all_nodes(monkeypatch):
         ValidatorAgent: _make_validator_stub(),
         CodeFixerAgent: _make_code_fixer_stub(),
         ModificationInterpreterAgent: _make_mod_interp_stub(),
-        TaskClassifierAgent: _make_task_clf_stub(),
+        FeatureTaggerAgent: _make_feature_tagger_stub(),
+        FunctionDecomposerAgent: _make_function_decomposer_stub(),
         PromptAssembler: _make_prompt_asm_stub(),
         PlanValidatorAgent: _make_plan_val_stub(),
     }

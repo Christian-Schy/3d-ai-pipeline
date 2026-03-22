@@ -45,6 +45,22 @@ def validator_node(state: PipelineState) -> dict:
             output_data={"is_valid": True, "stats": result.stats},
             start_time=_t0, model=_gc().models.validator,
         )
+
+        # Auto-learn: save successful blueprint→code pair as a new RAG example.
+        # Non-blocking — a RAG failure must never fail the pipeline.
+        try:
+            from src.rag.coder_rag import CoderRAG
+            _rag = CoderRAG()
+            _saved = _rag.save_successful_code(
+                blueprint=state.get("blueprint", {}),
+                code=state.get("code", ""),
+            )
+            if _saved:
+                log.info("rag_auto_learn_saved",
+                         description=(state.get("blueprint") or {}).get("description", "")[:60])
+        except Exception as _rag_err:
+            log.warning("rag_auto_learn_failed", error=str(_rag_err))
+
         # Preserve the successful blueprint, code, and STL path for iterative editing
         return {
             "validator_feedback": "",
@@ -81,11 +97,43 @@ def error_router_node(state: PipelineState) -> dict:
     Phase 3 (attempts 5+):  Give up.
 
     The phase is just a number — routing decisions live in edges.py.
+
+    Also detects when the same geometry error repeats across attempts
+    and injects a strategy-change hint into fix_plan.
     """
     attempts = state.get("attempts", 0) + 1
     phase = 1 if attempts <= 2 else (2 if attempts <= 4 else 3)
 
-    log.info("node_error_router", attempts=attempts, phase=phase,
-             error=state.get("execution_error", "")[:60])
+    current_error = state.get("validation_error", "") or state.get("execution_error", "")
+    prev_error = state.get("previous_validation_error", "")
 
-    return {"attempts": attempts, "phase": phase}
+    result = {
+        "attempts": attempts,
+        "phase": phase,
+        "code_review_attempts": 0,
+        "previous_validation_error": current_error,
+    }
+
+    # Detect repeated geometry errors — same error type 2+ times means
+    # the coder's approach is fundamentally flawed, not just a typo.
+    if (current_error and prev_error
+            and "watertight" in current_error.lower()
+            and "watertight" in prev_error.lower()):
+        strategy_hint = (
+            "\n\n★ WIEDERHOLTER GEOMETRY-ERROR: Non-manifold Mesh tritt wiederholt auf.\n"
+            "Das ist ein CadQuery/OCCT Tessellation-Problem, KEIN Code-Fehler.\n"
+            "Strategie-Wechsel:\n"
+            "1. .clean() nach JEDER .union() und .cut() Operation\n"
+            "2. Keine exakte Kantenkontakt-Geometrie — 0.01mm Inset bei flush edges\n"
+            "3. Alternativ: Basis + Aufsatz als face-based .extrude() statt separate box + union\n"
+            "4. Export mit engerer Toleranz: cq.exporters.export(result, OUTPUT_PATH, tolerance=0.001)"
+        )
+        existing_fix = state.get("fix_plan", "")
+        result["fix_plan"] = existing_fix + strategy_hint
+        log.warning("error_router_repeated_geometry",
+                    attempts=attempts, hint="watertight_strategy_change")
+
+    log.info("node_error_router", attempts=attempts, phase=phase,
+             error=current_error[:60])
+
+    return result

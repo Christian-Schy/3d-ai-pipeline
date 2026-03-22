@@ -21,5 +21,5 @@ class InterpreterRAG(BaseRAG):
     """
 
     collection_name = "interpreter_knowledge"
-    knowledge_dir = "data/knowledge/interpreter"
+    knowledge_dir = "data/knowledge/rag/16_interpreter_knowledge"
     agent_name = "interpreter"

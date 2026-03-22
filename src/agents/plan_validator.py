@@ -18,14 +18,16 @@ Model: qwen3.5:9b — logic validation, no CadQuery knowledge needed.
 
 import json
 import structlog
-from pathlib import Path
 from src.agents.base import BaseAgent
 from src.config.loader import get_config
 from src.graph.state import PipelineState
+from src.utils.prompt_loader import load_prompt
+from src.rag.plan_validator_rag import PlanValidatorRAG
 
 log = structlog.get_logger()
 
-SYSTEM_PROMPT = Path("data/prompts/agents/plan_validator.md").read_text(encoding="utf-8")
+_prompt = load_prompt("prompt_plan_validator.py")
+SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 
 
 class PlanValidatorAgent(BaseAgent):
@@ -40,6 +42,20 @@ class PlanValidatorAgent(BaseAgent):
     @property
     def model(self) -> str:
         return get_config().models.plan_validator
+
+    def __init__(self):
+        super().__init__()
+        self._rag = PlanValidatorRAG()
+        self._rag_ready = False
+
+    def _ensure_rag(self):
+        if not self._rag_ready:
+            try:
+                self._rag.build()
+            except FileNotFoundError:
+                self.log.warning("plan_validator_rag_missing",
+                                 path="data/knowledge/rag_agents/22_plan_validation")
+            self._rag_ready = True
 
     def validate(self, state: PipelineState) -> dict:
         """Validate the current blueprint.
@@ -57,43 +73,57 @@ class PlanValidatorAgent(BaseAgent):
                 "plan_validation_issues": "",
             }
 
+        feature_types = " ".join(
+            f.get("type", "") for f in blueprint.get("features", {}).values()
+            if isinstance(f, dict)
+        ) or blueprint.get("description", "blueprint validation")
+
+        # Truncate top-level notes to avoid token bloat (LLM sometimes writes essays here)
+        blueprint_trimmed = dict(blueprint)
+        if isinstance(blueprint_trimmed.get("notes"), str):
+            blueprint_trimmed["notes"] = blueprint_trimmed["notes"][:150]
+
         prompt = (
-            f"Validate this CSG-Tree Blueprint:\n"
-            f"```json\n{json.dumps(blueprint, indent=2)}\n```\n\n"
+            f"Validate this Blueprint:\n"
+            f"```json\n{json.dumps(blueprint_trimmed, indent=2)}\n```\n\n"
             "Check all rules and report any errors."
         )
 
+        self._ensure_rag()
+        prompt = self._rag.enrich_prompt(prompt, feature_types)
+
         try:
             result = self.call_json(prompt, system=SYSTEM_PROMPT)
-            is_valid = bool(result.get("is_valid", True))
-            issues = result.get("issues", [])
-            fixes = result.get("suggested_fixes", [])
+            # New prompt uses "valid"/"errors"; legacy used "is_valid"/"issues"
+            is_valid = bool(result.get("valid", result.get("is_valid", True)))
+            errors = result.get("errors", result.get("issues", []))
+            summary = result.get("summary", "")
 
             if is_valid:
                 self.log.info("plan_validator_ok",
-                              blueprint_desc=blueprint.get("description", "")[:60])
+                              blueprint_desc=blueprint.get("description", "")[:60],
+                              summary=summary[:60])
                 return {
                     "plan_valid": True,
                     "plan_validation_issues": "",
                 }
             else:
-                # Format issues as a clear text block for the Planner
-                issue_lines = ["Plan-Validator found these errors in the blueprint:"]
-                for issue in issues:
-                    sev = issue.get("severity", "error").upper()
-                    desc = issue.get("description", "")
-                    itype = issue.get("issue_type", "")
-                    issue_lines.append(f"  [{sev}] {itype}: {desc}")
-                if fixes:
-                    issue_lines.append("\nSuggested fixes:")
-                    for fix in fixes:
-                        issue_lines.append(f"  - {fix}")
+                # Format errors as a clear text block for the Planner
+                error_lines = ["Plan-Validator found these errors in the blueprint:"]
+                for err in errors:
+                    sev = err.get("severity", "ERROR").upper()
+                    msg = err.get("message", err.get("description", ""))
+                    check = err.get("check", err.get("issue_type", ""))
+                    check_str = f"[Check {check}] " if check else ""
+                    error_lines.append(f"  [{sev}] {check_str}{msg}")
+                if summary:
+                    error_lines.append(f"\nSummary: {summary}")
 
-                issues_text = "\n".join(issue_lines)
+                issues_text = "\n".join(error_lines)
                 current_attempts = state.get("plan_validation_attempts", 0)
 
                 self.log.warning("plan_validator_failed",
-                                 issues_count=len(issues),
+                                 errors_count=len(errors),
                                  attempt=current_attempts + 1)
                 return {
                     "plan_valid": False,

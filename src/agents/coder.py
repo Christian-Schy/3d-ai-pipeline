@@ -15,17 +15,19 @@ Model: qwen3:30b — code quality is critical.
 
 import json
 import structlog
-from pathlib import Path
 from src.config.loader import get_config
 from src.agents.base import BaseAgent
 from src.rag.coder_rag import CoderRAG
 from src.tools.code_extractor import CodeExtractor
 from src.graph.state import PipelineState
+from src.graph.feature_tree import FeatureTree
+from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
 
-SYSTEM_PROMPT = Path("data/prompts/agents/coder.md").read_text(encoding="utf-8")
-FIX_SYSTEM_PROMPT = Path("data/prompts/agents/coder_fix.md").read_text(encoding="utf-8")
+_prompt = load_prompt("prompt_coder.py")
+SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
+FIX_PROMPT_TEMPLATE = _prompt.FIX_PROMPT_TEMPLATE
 
 
 class CoderAgent(BaseAgent):
@@ -50,6 +52,60 @@ class CoderAgent(BaseAgent):
             self._rag.build()
             self._rag_ready = True
 
+    def _enrich(self, prompt: str, description: str, state: PipelineState) -> str:
+        """Enrich the prompt with RAG context.
+
+        Phase 3: uses multi-tag queries from Feature Tagger when available.
+        Falls back to single description query for legacy blueprints.
+        """
+        self._ensure_rag()
+        rag_queries = (state.get("feature_tree") or {}).get("rag_queries", [])
+        is_feature_tree = FeatureTree.is_feature_tree(state.get("blueprint", {}))
+
+        if rag_queries and is_feature_tree:
+            self.log.info("coder_rag_multi_tag", queries=len(rag_queries))
+            return self._rag.enrich_prompt_with_tags(prompt, rag_queries, include_always=True)
+
+        return self._rag.enrich_prompt(prompt, description)
+
+    @staticmethod
+    def _fix_imports(code: str) -> str:
+        """Deterministic post-processing: add missing imports.
+
+        The Coder LLM often drops imports even when they're in the skeleton.
+        The sandbox prepends 'import cadquery as cq' but NOT NearestToPointSelector.
+        """
+        import re
+
+        ntp_import = "from cadquery.selectors import NearestToPointSelector"
+
+        # NearestToPointSelector used but not imported
+        if "NearestToPointSelector" in code:
+            has_import = bool(re.search(
+                r"from\s+cadquery\.selectors\s+import\s+NearestToPointSelector",
+                code,
+            ))
+            if not has_import:
+                # Try inserting after "import cadquery as cq"
+                new_code = re.sub(
+                    r"(import cadquery as cq\s*\n)",
+                    r"\1" + ntp_import + "\n",
+                    code,
+                    count=1,
+                )
+                if new_code != code:
+                    code = new_code
+                else:
+                    # Coder dropped cadquery import too (sandbox adds it) —
+                    # prepend both at the very top of the file
+                    code = f"import cadquery as cq\n{ntp_import}\n{code}"
+
+        # Ensure 'import cadquery as cq' is present (Coder sometimes drops it)
+        elif "import cadquery" not in code and "cq." in code:
+            code = f"import cadquery as cq\n{code}"
+
+        return code
+
     def _log_code_preview(self, code: str):
         """Log first 6 non-empty, non-comment lines for the UI chat display.
 
@@ -63,9 +119,13 @@ class CoderAgent(BaseAgent):
         """Generate code from the Blueprint. Returns {"code": "..."}.
 
         If execution_error is set in state, we're in fix mode.
+        Phase 1: if code_skeleton is set (Feature Tree pipeline), fills the skeleton.
         """
         if state.get("execution_error") or state.get("validation_error"):
             return self._fix(state)
+        skeleton = state.get("code_skeleton", "")
+        if skeleton and FeatureTree.is_feature_tree(state.get("blueprint", {})):
+            return self._fill_skeleton(state)
         return self._generate(state)
 
     # ------------------------------------------------------------------
@@ -81,9 +141,25 @@ class CoderAgent(BaseAgent):
           'unchanged' — feature identical, must copy code verbatim
           'changed'   — feature exists in both but values differ
           'new'       — feature only in curr_bp (added)
+
+        Handles both Feature Tree (dict) and CSG-Tree (list) formats.
         """
-        prev = prev_bp.get("features", [])
-        curr = curr_bp.get("features", [])
+        prev_raw = prev_bp.get("features", [])
+        curr_raw = curr_bp.get("features", [])
+
+        # Normalize Feature Tree dict → ordered list using build_order
+        if isinstance(curr_raw, dict):
+            build_order = curr_bp.get("build_order", list(curr_raw.keys()))
+            curr = [curr_raw[fid] for fid in build_order if fid in curr_raw]
+        else:
+            curr = list(curr_raw)
+
+        if isinstance(prev_raw, dict):
+            prev_build = prev_bp.get("build_order", list(prev_raw.keys()))
+            prev = [prev_raw[fid] for fid in prev_build if fid in prev_raw]
+        else:
+            prev = list(prev_raw)
+
         result = []
         for i, feat in enumerate(curr):
             if i < len(prev):
@@ -185,28 +261,143 @@ class CoderAgent(BaseAgent):
                           new=[i for i, s, _ in feature_diff if s == "new"])
         else:
             # --- Fresh generation ---
-            features = clean_blueprint.get("features", [])
+            features_raw = clean_blueprint.get("features", [])
             feature_hint = ""
-            if features:
-                feature_types = [f.get("type", "?") for f in features]
+            if features_raw:
+                # Feature Tree: features is a dict {id → entry}
+                # CSG-Tree:     features is a list of dicts
+                if isinstance(features_raw, dict):
+                    build_order = clean_blueprint.get("build_order", list(features_raw.keys()))
+                    feature_types = [
+                        features_raw.get(fid, {}).get("type", fid)
+                        for fid in build_order
+                    ]
+                else:
+                    feature_types = [f.get("type", "?") for f in features_raw]
                 feature_hint = (
-                    f"\n\nThis blueprint has {len(features)} feature(s): {', '.join(feature_types)}.\n"
+                    f"\n\nThis blueprint has {len(feature_types)} feature(s): {', '.join(feature_types)}.\n"
                     f"Build root first, then apply features in the listed order.\n"
                     f"⚠ Feature order is already correct — do NOT reorder (holes before slots)."
                 )
+            # If routed here from validator (placement error), inject the feedback
+            validator_feedback = state.get("validator_feedback", "")
+            validator_hint = (
+                f"\n\n## ⚠ VALIDATOR FEEDBACK (placement error — fix the code, blueprint is correct)\n"
+                f"{validator_feedback}\n"
+                f"Fix the placement/offset code so the feature ends up at the correct position."
+            ) if validator_feedback else ""
+
             prompt = (
                 f"Translate this Blueprint into CadQuery Python code."
-                f"{feature_hint}{notes_hint}\n\n```json\n{blueprint_text}\n```"
+                f"{feature_hint}{notes_hint}{validator_hint}\n\n```json\n{blueprint_text}\n```"
             )
 
-        # Enrich with relevant examples from RAG
-        self._ensure_rag()
-        prompt = self._rag.enrich_prompt(prompt, description)
+        # Enrich with relevant examples from RAG (multi-tag if Feature Tree)
+        prompt = self._enrich(prompt, description, state)
 
         raw_response = self.call(prompt, system=SYSTEM_PROMPT)
-        code = self._extractor.extract(raw_response)
+        code = self._fix_imports(self._extractor.extract(raw_response))
 
         self.log.info("coder_generate_done", code_lines=code.count("\n") + 1)
+        self._log_code_preview(code)
+        return {"code": code}
+
+    # ------------------------------------------------------------------
+    # Skeleton-filling mode (Phase 1: Feature Tree pipeline)
+    # ------------------------------------------------------------------
+
+    def _fill_skeleton(self, state: PipelineState) -> dict:
+        """Fill in a code skeleton generated by FunctionDecomposer.
+
+        Each function stub (containing `pass`) is filled with correct
+        CadQuery code based on the Feature Tree blueprint and the
+        function's docstring.
+        """
+        skeleton = state.get("code_skeleton", "")
+        blueprint = state.get("blueprint", {})
+        description = blueprint.get("description", state.get("description", ""))
+        change_desc = state.get("change_description", "")
+
+        self.log.info("coder_fill_skeleton",
+                      description=description[:60],
+                      skeleton_lines=len(skeleton.splitlines()))
+
+        clean_blueprint = {k: v for k, v in blueprint.items() if not k.startswith("_")}
+        blueprint_text = json.dumps(clean_blueprint, indent=2)
+        notes = clean_blueprint.get("notes", "")
+        notes_hint = f"\n\nPLANNER NOTES: {notes}" if notes else ""
+
+        review_issues = state.get("code_review_issues", "")
+        current_code = state.get("code", "")
+
+        if review_issues and current_code:
+            # Code Review sent us back — fix specific issues in existing code
+            prompt = (
+                f"## Code Review Issues — fix ONLY these problems:\n{review_issues}\n\n"
+                f"## Current Code (fix in place, keep working parts)\n"
+                f"```python\n{current_code}\n```\n\n"
+                f"## Feature Tree Blueprint (reference)\n```json\n{blueprint_text}\n```\n\n"
+                f"Rules:\n"
+                f"- Fix ONLY the listed issues — do not rewrite unaffected functions\n"
+                f"- Keep ALL function signatures EXACTLY as given\n"
+                f"- Use .faces(face).workplane(centerOption='CenterOfBoundBox') for face selection — NOT in cq.Workplane('XY')!\n"
+                f"- Always .clean() after .union() and .cut()\n"
+                f"- Keep cq.exporters.export(result, OUTPUT_PATH) at the end as-is"
+                f"{notes_hint}"
+            )
+        else:
+            # If routed here from validator (placement error), inject the feedback
+            validator_feedback = state.get("validator_feedback", "")
+            validator_hint = (
+                f"\n## ⚠ VALIDATOR FEEDBACK (placement error — fix the code, blueprint is correct)\n"
+                f"{validator_feedback}\n"
+                f"Fix the placement/offset code so the feature ends up at the correct position.\n"
+            ) if validator_feedback else ""
+
+            prompt = (
+                f"## Feature Tree Blueprint\n```json\n{blueprint_text}\n```\n\n"
+                f"## Code Skeleton — fill in each function (replace `pass` with CadQuery code)\n"
+                f"```python\n{skeleton}\n```\n"
+                f"{validator_hint}\n"
+                f"Rules:\n"
+                f"- Keep ALL function signatures EXACTLY as given\n"
+                f"- Each function docstring describes what it must do — follow it precisely\n"
+                f"- Root function (make_*): create the base shape, return cq.Workplane\n"
+                f"- Add functions (add_*): union the new shape onto body, return body\n"
+                f"- Drill/cut functions: cut the feature from body, return body\n"
+                f"- Use .faces(face).workplane(centerOption='CenterOfBoundBox') for face selection — NOT in cq.Workplane('XY')!\n"
+                f"- Always .clean() after .union() and .cut()\n"
+                f"- The final result variable is set in assemble() — do NOT add export here\n"
+                f"- Keep cq.exporters.export(result, OUTPUT_PATH) at the end as-is"
+                f"{notes_hint}"
+            )
+
+        # Modification Guard: if changed_features is set and previous_code exists,
+        # tell the LLM to only regenerate the affected functions.
+        changed_features = state.get("changed_features", [])
+        previous_code = state.get("previous_code", "")
+        if change_desc and changed_features and previous_code and not review_issues:
+            changed_list = ", ".join(f'"{f}"' for f in changed_features)
+            guard_section = (
+                f"\n## Modification Guard — Partial Regeneration\n"
+                f"Only regenerate functions for changed features: {changed_list}\n"
+                f"For ALL other features: copy their function bodies EXACTLY from the reference code below — "
+                f"do NOT modify any value, position, or parameter.\n"
+                f"Always rewrite assemble() to match the current build_order.\n\n"
+                f"## Reference code (previous working version)\n"
+                f"```python\n{previous_code}\n```\n"
+            )
+            prompt = guard_section + prompt
+        elif change_desc:
+            prompt = f"## Change context\n{change_desc}\n\n" + prompt
+
+        # Enrich with multi-tag RAG (always uses Feature Tree path here)
+        prompt = self._enrich(prompt, description, state)
+
+        raw_response = self.call(prompt, system=SYSTEM_PROMPT)
+        code = self._fix_imports(self._extractor.extract(raw_response))
+
+        self.log.info("coder_fill_skeleton_done", code_lines=code.count("\n") + 1)
         self._log_code_preview(code)
         return {"code": code}
 
@@ -253,8 +444,8 @@ class CoderAgent(BaseAgent):
 
         prompt += "Fix the code so it runs correctly."
 
-        raw_response = self.call(prompt, system=FIX_SYSTEM_PROMPT)
-        code = self._extractor.extract(raw_response)
+        raw_response = self.call(prompt, system=SYSTEM_PROMPT)
+        code = self._fix_imports(self._extractor.extract(raw_response))
 
         self.log.info("coder_fix_done", code_lines=code.count("\n") + 1)
         self._log_code_preview(code)

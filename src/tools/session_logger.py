@@ -108,6 +108,9 @@ class SessionLogger:
             "task_id": task_id or "",
             "success": bool(state.get("stl_path")) and not state.get("validator_feedback"),
             "stats": state.get("validator_stats", {}),
+            "execution_error": state.get("execution_error", ""),
+            "validation_error": state.get("validation_error", ""),
+            "validator_feedback": state.get("validator_feedback", ""),
             "modification": state.get("modification", ""),
             "agent_traces": state.get("agent_traces", []),
         }

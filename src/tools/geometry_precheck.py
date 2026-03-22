@@ -268,8 +268,13 @@ def check_feature_count(specification: str, blueprint: dict) -> list[dict]:
     Ignoriert negierte Erwähnungen ("no holes", "ohne Fillet", etc.)
     """
     spec_lower = specification.lower()
-    bp_features = blueprint.get("features", [])
-    bp_types = [f.get("type", "") for f in bp_features]
+    bp_features_raw = blueprint.get("features", [])
+    # Feature Tree: features is a dict {id → entry}; CSG-Tree: list
+    if isinstance(bp_features_raw, dict):
+        bp_features = list(bp_features_raw.values())
+    else:
+        bp_features = bp_features_raw
+    bp_types = [f.get("type", "") for f in bp_features if isinstance(f, dict)]
     root = blueprint.get("root", {})
 
     issues = []
@@ -317,9 +322,17 @@ def check_depth_consistency(specification: str, blueprint: dict) -> list[dict]:
     if matches:
         specified_depths = [float(m) for m in matches]
 
-        for feat in blueprint.get("features", []):
-            if feat.get("type") in ("hole", "slot", "cbore_hole", "csk_hole"):
-                bp_depth = feat.get("depth")
+        feats_raw = blueprint.get("features", [])
+        if isinstance(feats_raw, dict):
+            feats_raw = list(feats_raw.values())
+        for feat in feats_raw:
+            if not isinstance(feat, dict):
+                continue
+            # Feature Tree stores params nested; CSG-Tree stores them flat
+            feat_flat = feat.get("params", feat)
+            if feat.get("type") in ("hole", "slot", "cbore_hole", "csk_hole",
+                                    "hole_blind", "pocket_rect"):
+                bp_depth = feat_flat.get("depth") if isinstance(feat_flat, dict) else feat.get("depth")
                 if bp_depth is None and specified_depths:
                     issues.append({
                         "type": "depth_mismatch",
@@ -335,6 +348,67 @@ def check_depth_consistency(specification: str, blueprint: dict) -> list[dict]:
 
 
 # ─── Main Function ───────────────────────────────────────────────
+
+def _feature_tree_to_csg_inputs(blueprint: dict) -> tuple[dict, list[dict]]:
+    """Convert a Feature Tree blueprint to (root_node, features_list) for the checker.
+
+    Extracts the base feature as a pseudo-CSG root node and converts
+    subtractive features to the legacy feature-list format.
+    Returns (root_dict, features_list).
+    """
+    features_dict: dict = blueprint.get("features", {})
+    build_order: list = blueprint.get("build_order", [])
+
+    # Find root feature (parent=null)
+    root_feat = None
+    root_id = None
+    for fid in build_order:
+        f = features_dict.get(fid, {})
+        if f.get("parent") is None:
+            root_feat = f
+            root_id = fid
+            break
+
+    # Build CSG-compatible root node from base feature params
+    root_node: dict = {}
+    if root_feat:
+        params = root_feat.get("params", {})
+        if "x" in params and "y" in params and "z" in params:
+            root_node = {"type": "box",
+                         "x": float(params["x"]),
+                         "y": float(params["y"]),
+                         "z": float(params["z"])}
+        elif "diameter" in params and "height" in params:
+            root_node = {"type": "cylinder",
+                         "radius": float(params["diameter"]) / 2,
+                         "height": float(params["height"])}
+
+    # Convert subtractive features to legacy format
+    features_list: list[dict] = []
+    for fid in build_order:
+        if fid == root_id:
+            continue
+        f = features_dict.get(fid, {})
+        if not isinstance(f, dict):
+            continue
+        ftype = f.get("type", "")
+        params = f.get("params", {})
+        if "hole" in ftype:
+            legacy: dict = {"type": "hole",
+                            "diameter": float(params.get("diameter", 0)),
+                            "depth": params.get("depth")}
+            if "circle_diameter" in params:
+                legacy["type"] = "hole_grid"
+                n = int(params.get("n_holes", params.get("count", 1)))
+                legacy["x_count"] = n
+                legacy["y_count"] = 1
+            features_list.append(legacy)
+        elif ftype in ("pocket_rect", "slot", "cutout"):
+            features_list.append({"type": "slot",
+                                   "width": float(params.get("x", params.get("width", 0))),
+                                   "depth": params.get("depth")})
+    return root_node, features_list
+
 
 def run_geometry_precheck(
     blueprint: dict,
@@ -358,11 +432,20 @@ def run_geometry_precheck(
     Returns:
         GeometryReport mit allen Checks und formatted output
     """
+    from src.graph.feature_tree import FeatureTree
+
     width, depth_dim, height = bbox_dims
     root_dims = {"width": width, "depth": depth_dim, "height": height}
 
+    # Adapt Feature Tree blueprints to legacy CSG-Tree format for the checker
+    if FeatureTree.is_feature_tree(blueprint):
+        root, features = _feature_tree_to_csg_inputs(blueprint)
+    else:
+        root = blueprint.get("root", {})
+        features = blueprint.get("features", [])
+
     # 1. Erwartetes Solid-Volumen
-    volume_solid = _node_volume(blueprint.get("root", {}))
+    volume_solid = _node_volume(root)
     volume_delta = volume_solid - volume_actual
 
     # 2. Feature-Count-Check (Spec vs Blueprint)
@@ -373,14 +456,13 @@ def run_geometry_precheck(
     count_issues.extend(depth_issues)
 
     # 4. Feature-Präsenz-Check (Volume-basiert)
-    features = blueprint.get("features", [])
+    # features already set above (adapted for Feature Tree or raw CSG-Tree list)
     feature_checks = _check_features_by_volume(
         volume_actual, volume_solid, features, root_dims, tolerance
     )
 
     # 5. BBox vs Root prüfen
     issues = []
-    root = blueprint.get("root", {})
     if root.get("type") == "box":
         expected = sorted([root.get("x", 0), root.get("y", 0), root.get("z", 0)])
         actual = sorted([width, depth_dim, height])

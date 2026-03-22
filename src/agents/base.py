@@ -135,13 +135,43 @@ class BaseAgent:
         try:
             return json.loads(clean)
         except json.JSONDecodeError as e:
-            self.log.error("agent_json_parse_failed",
-                           error=str(e), raw_response=raw[:200])
-            raise ValueError(
-                f"{self.name}: Ollama returned invalid JSON.\n"
-                f"Error: {e}\n"
-                f"Response start: {raw[:200]}"
-            ) from e
+            self.log.warning("agent_json_parse_failed_retry",
+                             error=str(e), raw_chars=len(raw))
+            # One retry — LLMs sometimes produce truncated or malformed JSON
+            # on first attempt but succeed on the second.
+            try:
+                raw2 = self.call(prompt, system=system, json_mode=True)
+                clean2 = raw2.strip()
+                if clean2.startswith("```"):
+                    lines2 = clean2.split("\n")
+                    s2 = 1
+                    e2 = len(lines2)
+                    for i2 in range(len(lines2) - 1, 0, -1):
+                        if lines2[i2].strip().startswith("```"):
+                            e2 = i2
+                            break
+                    clean2 = "\n".join(lines2[s2:e2]).strip()
+                if clean2 and clean2[0] in "{[":
+                    bracket2 = "{" if clean2[0] == "{" else "["
+                    close2 = "}" if bracket2 == "{" else "]"
+                    depth2 = 0
+                    for i2, ch2 in enumerate(clean2):
+                        if ch2 == bracket2:
+                            depth2 += 1
+                        elif ch2 == close2:
+                            depth2 -= 1
+                            if depth2 == 0:
+                                clean2 = clean2[:i2 + 1]
+                                break
+                return json.loads(clean2)
+            except (json.JSONDecodeError, Exception) as e2:
+                self.log.error("agent_json_parse_failed",
+                               error=str(e), raw_response=raw[:200])
+                raise ValueError(
+                    f"{self.name}: Ollama returned invalid JSON (2 attempts).\n"
+                    f"Error: {e}\n"
+                    f"Response start: {raw[:200]}"
+                ) from e
 
     def load_prompt(self, filename: str) -> str:
         """Load a prompt from the prompts/ directory.

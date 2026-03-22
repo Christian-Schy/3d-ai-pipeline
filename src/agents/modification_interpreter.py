@@ -17,13 +17,14 @@ Model: qwen3:8b — classification + extraction, no big model needed.
 """
 
 import structlog
-from pathlib import Path
 from src.agents.base import BaseAgent
 from src.graph.state import PipelineState
+from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
 
-SYSTEM_PROMPT = Path("data/prompts/agents/modification_interpreter.md").read_text(encoding="utf-8")
+_prompt = load_prompt("prompt_modification_interpreter.py")
+SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 
 
 class ModificationInterpreterAgent(BaseAgent):
@@ -54,7 +55,8 @@ class ModificationInterpreterAgent(BaseAgent):
         if not previous_blueprint:
             self.log.info("modification_classifier", result="new_request",
                           reason="no_previous_blueprint")
-            return {"is_modification": False, "change_description": ""}
+            return {"is_modification": False, "is_additive": False,
+                    "change_description": "", "changed_features": []}
 
         import json
         prompt = (
@@ -68,24 +70,39 @@ class ModificationInterpreterAgent(BaseAgent):
             result = self.call_json(prompt, system=SYSTEM_PROMPT)
             is_mod = bool(result.get("is_modification", False))
             is_additive = bool(result.get("is_additive", False))
-            change_desc = result.get("change_description", "").strip()
+            change_desc = (result.get("change_description") or "").strip()
+
+            changed_features = result.get("changed_features", [])
+            if not isinstance(changed_features, list):
+                changed_features = []
+            # Only propagate changed_features for actual modifications
+            if not is_mod:
+                changed_features = []
 
             self.log.info("modification_classifier",
                           result="modification" if is_mod else "new_request",
                           is_additive=is_additive,
-                          change=change_desc[:80])
+                          change=change_desc[:80],
+                          changed_features=changed_features)
             # UI chat: show what the modification interpreter understood
             if is_mod:
                 self.log.info("modification_interpreter_done",
                               change=change_desc[:300],
-                              is_additive=is_additive)
+                              is_additive=is_additive,
+                              changed_features=changed_features)
             return {
                 "is_modification": is_mod,
                 "is_additive": is_additive,
                 "change_description": change_desc,
+                "changed_features": changed_features,
             }
 
         except (ValueError, ConnectionRefusedError) as e:
             # Fallback: treat as new request to be safe
             self.log.warning("modification_classifier_fallback", error=str(e))
-            return {"is_modification": False, "is_additive": False, "change_description": ""}
+            return {
+                "is_modification": False,
+                "is_additive": False,
+                "change_description": "",
+                "changed_features": [],
+            }

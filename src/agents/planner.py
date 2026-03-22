@@ -16,179 +16,444 @@ Model: qwen3:30b — geometric reasoning needs capacity.
 
 import json
 import structlog
-from pathlib import Path
 from src.config.loader import get_config
 from pydantic import ValidationError
 from src.agents.base import BaseAgent
 from src.rag.planner_rag import PlannerRAG
 from src.graph.csg_tree import Blueprint
+from src.graph.feature_tree import FeatureTree
 from src.graph.state import PipelineState
 from src.graph.blueprint_utils import apply_patch
+from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
 
-SYSTEM_PROMPT = """You are a 3D modeling planner. Convert a model specification
-into a Blueprint using this exact JSON schema.
+_prompt = load_prompt("prompt_planner.py")
+SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 
-## Root node (base solid — CSG tree)
+# Patch-mode system prompt — compact instructions for value-only diffs
+PATCH_SYSTEM_PROMPT = (
+    "You are a JSON patch assistant. Return ONLY a JSON object with a 'changes' list.\n"
+    "Each change: {\"path\": \"dot.notation.path\", \"value\": <new_value>}\n"
+    "Example: {\"changes\": [{\"path\": \"features.base.params.x\", \"value\": 50}]}\n"
+    "Change ONLY the values mentioned. Keep all other fields exactly as-is.\n"
+    "Respond with valid JSON only — no explanation, no markdown."
+)
 
-Primitives (leaves):
-  {"type": "box",      "x": float, "y": float, "z": float, "position": {"x":0,"y":0,"z":0}}
-  {"type": "cylinder", "radius": float, "height": float,   "position": {"x":0,"y":0,"z":0}}
-  {"type": "sphere",   "radius": float,                    "position": {"x":0,"y":0,"z":0}}
+# Feature Tree output schema appended to assembled prompts
+FEATURE_TREE_OUTPUT_SCHEMA = """
+---
+## OUTPUT FORMAT: Feature Tree JSON
 
-Boolean operations (for stacking boxes, compound shapes):
-  {"type": "union",     "target": <node>, "tool": <node>}
-  {"type": "cut",       "target": <node>, "tool": <node>}
-  {"type": "intersect", "target": <node>, "tool": <node>}
+You MUST output a Feature Tree (not a CSG-Tree). Use this exact JSON schema:
 
-Modifiers (wrap a child — applied last):
-  {"type": "fillet",  "radius": float, "edges": "", "child": <node>}   ← "" = all edges, "|Z" = vertical only
-  {"type": "chamfer", "distance": float, "edges": "", "child": <node>}  ← "" = all edges, ">Z" = top only
-  {"type": "shell",   "thickness": float, "open_face": ">Z", "child": <node>}
-
-Root rules:
-- Root = base solid ONLY. Do NOT put holes or slots in the root — use features list.
-- Fillets/chamfers ALWAYS wrap their parent, never inside a cut tool.
-- For stacking (feature ON TOP): z_center = base_height/2 + feature_height/2
-  20mm plate + 20mm box on top → union tool: position z = 10 + 10 = 20
-
-## Features list (CadQuery operations — applied in order after root)
-
-⚠ ALWAYS use feature nodes for holes and slots. NEVER encode them as cut+cylinder or cut+box.
-
-Holes — diameter is in mm directly (NOT radius):
-  Single hole:
-    {"type": "hole", "diameter": float, "depth": float_or_null,
-     "position": {"x": 0, "y": 0}, "face": ">Z"}
-    depth=null → through-hole.
-
-  Multiple holes at specific positions:
-    {"type": "hole_pattern", "diameter": float, "depth": float_or_null,
-     "positions": [[x1,y1], [x2,y2], ...], "face": ">Z"}
-
-  Regular grid:
-    {"type": "hole_grid", "diameter": float, "depth": float_or_null,
-     "x_spacing": float, "y_spacing": float, "x_count": int, "y_count": int, "face": ">Z"}
-
-  Counterbore (socket-head screws — large flat-bottomed recess + through hole):
-    {"type": "cbore_hole", "diameter": float, "cbore_diameter": float, "cbore_depth": float,
-     "depth": float_or_null, "position": {"x":0,"y":0}, "face": ">Z"}
-
-  Countersink (flat-head screws — tapered recess):
-    {"type": "csk_hole", "diameter": float, "csk_diameter": float, "csk_angle": 82.0,
-     "depth": float_or_null, "position": {"x":0,"y":0}, "face": ">Z"}
-
-Slot / Groove:
-  {"type": "slot", "length": float, "width": float, "depth": float_or_null,
-   "angle": 0, "position": {"x":0,"y":0}, "face": ">Z"}
-  depth=null → through-slot.  angle=0 = X-axis slot, angle=90 = Y-axis slot.
-  Slot direction: "along X-axis" / "entlang X" → angle=0
-                  "along Y-axis" / "entlang Y" → angle=90
-  Coder uses rect().cutBlind(-depth) for fixed-depth, slot2D().cutThruAll() for through.
-  ⚠ LENGTH FORMULA — to avoid visible walls at the slot ends:
-    length = solid_dimension_along_slot + slot_width + 2
-    5mm slot through 30mm cube (Y): length = 30 + 5 + 2 = 37
-    8mm slot through 40mm plate:    length = 40 + 8 + 2 = 50
-
-Regular polygon extrusion (hex peg, square boss, etc.):
-  {"type": "polygon", "sides": 6, "diameter": float, "height": float,
-   "position": {"x":0,"y":0,"z":0}, "subtract": false}
-  subtract=true cuts shape from solid; subtract=false adds to solid.
-
-Corner cut (right-angle triangular prism removed from a face corner):
-  {"type": "corner_cut", "corner_x": float, "corner_y": float,
-   "x_leg": float, "y_leg": float, "depth": float, "face": ">Z"}
-  corner_x / corner_y: the exact corner coordinates on the face (= ±half dimension of the solid).
-  x_leg / y_leg: how far inward to cut along each axis.
-  ⚠ Use corner_cut for "remove/cut corner", "Ecke abschneiden", "triangle at corner" — NOT polygon!
-  Example: "cut rear-right corner 10mm×10mm, 10mm deep" on 30mm cube (half=15):
-    {"type": "corner_cut", "corner_x": 15, "corner_y": -15, "x_leg": 10, "y_leg": 10, "depth": 10, "face": ">Z"}
-  Corner key: +X/-Y = rear-right, -X/-Y = rear-left, +X/+Y = front-right, -X/+Y = front-left
-
-Engraved / embossed text:
-  {"type": "text", "text": "string", "font_size": float, "depth": float,
-   "cut": true, "face": ">Z"}
-  cut=true engraves; cut=false embosses.
-
-## Ordering rule — CRITICAL
-List ALL hole/* features BEFORE slot features on the same face.
-slot2D splits the face — holes listed after a slot may land on the wrong sub-face.
-
-## Positioning rules
-
-EDGE-RELATIVE POSITIONING — "Xmm from the [edge]" or "at corner":
-  ⚠ Models are CENTERED at origin — edges are at ±HALF the dimension!
-  Formula for -Y/near edge: center = -(half_dim) + offset
-  Formula for +X/far edge:  center = +(half_dim) - offset
-  Examples:
-    "10mm from -Y edge" on 30mm cube (half=15): y = -15 + 10 = -5
-    "20mm from edge"    on 200×200 plate (half=100): offset = 100-20 = 80 → x = ±80, y = ±80
-  ⚠ NEVER default to (0,0) when spec says "from edge".
-  ⚠ "Xmm from edge" means distance D from the WALL, NOT from center. Offset = half_dim - D.
-     Do NOT subtract hole radius — D is the gap from the wall to the hole CENTER.
-
-CORNER PATTERN — plate W×L, holes at distance D from corners:
-  x_offset = W/2 - D,  y_offset = L/2 - D
-  positions: [[+x_off,+y_off], [-x_off,+y_off], [+x_off,-y_off], [-x_off,-y_off]]
-  Example: "20mm from edge" on 200×200mm plate → x_offset = 100-20 = 80, y_offset = 80
-    positions: [[80,80],[-80,80],[80,-80],[-80,-80]]
-
-FACE SELECTOR FOR STACKED UNIONS — when a box/cylinder is stacked ON TOP of the base plate:
-  The base plate and the stacked part have DIFFERENT top-face Z heights.
-  faces(">Z") selects the HIGHEST Z face — which is the stacked PART's top, NOT the plate.
-  ⚠ If a hole belongs to the BASE PLATE (not the stacked part), use face: ">Z[-2]"
-    to select the second-highest Z face (= the plate's top surface).
-  Example: 200×200×10mm plate with a 100×100×20mm cube on top (cube top at Z=30, plate top at Z=10):
-    - Holes in the PLATE → face: ">Z[-2]"  (selects Z=10 plate top)
-    - Holes in the CUBE  → face: ">Z"      (selects Z=30 cube top)
-
-RESIZE CORNER FEATURE — when resizing a box/feature at a corner, recompute center:
-  new_center = ±(half_plate - half_NEW_feature)  NOT the old coordinates!
-
-## Depth handling — CRITICAL
-- Spec says "Xmm tief/deep" → depth=X (blind), NEVER depth=null
-- Spec says "durchgehend/through/komplett durch" → depth=null
-- Spec does NOT mention depth → depth=null (through by default)
-- NEVER silently change a specified depth to null or vice versa
-Examples:
-  "Bohrung 10mm Durchmesser, 29mm tief" → {"type":"hole", "diameter":10, "depth":29}
-  "Bohrung 10mm durchgehend"            → {"type":"hole", "diameter":10, "depth":null}
-  "Bohrung 10mm"                        → {"type":"hole", "diameter":10, "depth":null}
-
-## Feature completeness — MANDATORY
-Before outputting the blueprint:
-1. Count ALL features mentioned in the specification
-2. Verify EACH feature appears in the "features" list
-3. If spec says "hole AND slot" → features list MUST contain BOTH
-
-SELF-CHECK before responding:
-- Spec mentions N features → my features list has N entries?
-- Each feature type matches? (hole→hole, slot→slot, not hole→slot)
-- Each feature has ALL required parameters? hole: diameter + depth. slot: length + width + depth + angle.
-
-## Output format
 {
-  "description": "Short human-readable summary",
-  "root": { ...base solid... },
-  "features": [ ...ordered hole/slot/polygon/text operations... ],
-  "notes": "Optional: tolerances, assembly notes, tricky geometry"
+  "description": "Short model summary",
+  "build_order": ["base", "feature_1", "feature_2"],
+  "features": {
+    "base": {
+      "id": "base",
+      "type": "box",
+      "params": {"x": 100.0, "y": 100.0, "z": 20.0},
+      "parent": null,
+      "origin": "global",
+      "position": {"x": 0, "y": 0, "z": 0},
+      "operation": "add",
+      "notes": ""
+    },
+    "steg": {
+      "id": "steg",
+      "type": "box",
+      "params": {"x": 10.0, "y": 100.0, "z": 20.0},
+      "parent": "base",
+      "origin": "relative",
+      "placement": {
+        "face": ">X",
+        "alignment": "flush",
+        "z_position": "on_top",
+        "position": "center",
+        "notes": "wall along full Y, flush to +X edge"
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "bohrung": {
+      "id": "bohrung",
+      "type": "hole",
+      "params": {"diameter": 10.0, "depth": null},
+      "parent": "steg",
+      "origin": "relative",
+      "placement": {
+        "face": ">X",
+        "position": "center",
+        "notes": "through-hole on right face"
+      },
+      "operation": "subtract",
+      "notes": "depth=null = through-hole"
+    }
+  },
+  "notes": "max 150 chars — brief summary only, NO calculations here"
 }
 
 Rules:
-- Respond with valid JSON only — no explanation, no markdown.
-- features=[] when the model has no holes/slots/text.
-- All dimensions in mm. Positions relative to model center origin."""
+- build_order: parent features before their children
+- Root feature: parent=null, origin="global", position={x:0,y:0,z:0}
+- Child features: parent=<parent id>, origin="relative", use placement (no global coords!)
+- placement.face: >Z top, <Z bottom, >X right, <X left, >Y front, <Y back
+- placement.position: center / offset(dx,dy) / corner_TL / corner_TR / corner_BL / corner_BR
+- placement.alignment: flush_right, flush_left, flush_top, flush_bottom, centered
+- placement.z_position: on_top, flush, below
+- depth=null means through-hole / through-slot
+- Respond with valid JSON only — no markdown, no explanation.
+"""
+
+# --- Per-Feature Planning: single FeatureEntry output schema ---
+FEATURE_ENTRY_OUTPUT_SCHEMA = """\
+Output ONLY a single FeatureEntry JSON (not a full tree):
+
+{
+  "type": "box|cylinder|hole|slot|fillet|chamfer|...",
+  "params": {"x": float, "y": float, "z": float, "diameter": float, "depth": float|null},
+  "placement": {
+    "face": ">Z|>X|<X|>Y|<Y",
+    "alignment": "flush_right|flush_left|flush_top|flush_bottom|flush_right_top|flush_right_bottom|flush_left_top|flush_left_bottom|centered|null",
+    "z_position": "on_top|flush|below|null",
+    "position": "center|offset",
+    "offset_x": 0.0,
+    "offset_y": 0.0,
+    "notes": "max 80 chars — brief hint for Coder"
+  },
+  "operation": "add|subtract|modify"
+}
+
+Rules:
+- placement.face = die Fläche des Parents, AUF DER das Feature angebracht wird.
+  ★ NICHT die Richtung! face bestimmt WO, alignment bestimmt die genaue Position.
+
+  Für Extrusionen (operation=add):
+    face=">Z" → Feature wird AUF die Oberseite des Parents gebaut
+    face=">X" → Feature wird AN die rechte Seite des Parents gebaut (ragt nach +X raus!)
+    "Platte oben rechts" = face: ">Z", alignment: "flush_right"
+    "Platte seitlich an rechter Wand" = face: ">X", alignment: "centered"
+
+  Für Bohrungen (operation=subtract):
+    face = die Fläche, durch die der Bohrer EINTRITT
+    face=">Y" → Bohrung tritt durch Vorderseite (+Y) ein, bohrt in -Y Richtung
+    face=">X" → Bohrung tritt durch rechte Seite (+X) ein, bohrt in -X Richtung
+    face=">Z" → Bohrung von oben nach unten
+
+- alignment: Position auf der gewählten Face.
+  Auf >Z Face: X-Achse = links/rechts, Y-Achse = vorne/hinten
+    flush_right = bündig an +X Kante (rechts)
+    flush_left  = bündig an -X Kante (links)
+    flush_top   = bündig an +Y Kante (hinten)
+    flush_bottom = bündig an -Y Kante (vorne)
+  Kombinationen:
+    flush_right_top = rechts+hinten (Ecke +X/+Y)
+    flush_right_bottom = rechts+vorne (Ecke +X/-Y)
+    flush_left_top = links+hinten (Ecke -X/+Y)
+    flush_left_bottom = links+vorne (Ecke -X/-Y)
+  centered = zentriert auf der Face
+  ★ Benutze NUR diese exakten Werte! Keine eigenen Kombinationen erfinden!
+
+- ★ Berechne KEINE Offsets! Setze offset_x=0 und offset_y=0.
+  Die Offsets werden automatisch aus alignment berechnet.
+  NUR bei expliziter Positionsangabe ("10mm von Kante") setze offset_x/offset_y.
+- depth=null means through-hole / through-slot
+- Respond with valid JSON only — no markdown, no explanation.
+"""
+
+# Known alignment values that FunctionDecomposer can process
+_KNOWN_ALIGNMENTS = {
+    "flush_right", "flush_left", "flush_top", "flush_bottom",
+    "flush_right_top", "flush_right_bottom", "flush_left_top", "flush_left_bottom",
+    "corner_TR", "corner_TL", "corner_BR", "corner_BL",
+    "centered",
+}
+
+# Map common LLM-invented alignments to known values
+_ALIGNMENT_FIXES = {
+    "flush_right_centered": "flush_right",
+    "flush_left_centered": "flush_left",
+    "flush_top_centered": "flush_top",
+    "flush_bottom_centered": "flush_bottom",
+    "flush_right_back": "flush_right_top",
+    "flush_left_back": "flush_left_top",
+    "flush_right_front": "flush_right_bottom",
+    "flush_left_front": "flush_left_bottom",
+    "right": "flush_right",
+    "left": "flush_left",
+    "top": "flush_top",
+    "bottom": "flush_bottom",
+    "center": "centered",
+    "flush": "centered",
+}
 
 
-PATCH_SYSTEM_PROMPT = Path("data/prompts/agents/planner_patch.md").read_text(encoding="utf-8")
+def _normalize_alignment(alignment: str | None) -> str | None:
+    """Normalize LLM-invented alignment values to known FunctionDecomposer values."""
+    if not alignment:
+        return alignment
+    a = alignment.strip().lower()
+    if a in _KNOWN_ALIGNMENTS:
+        return a
+    if a in _ALIGNMENT_FIXES:
+        log.debug("alignment_normalized", original=alignment, fixed=_ALIGNMENT_FIXES[a])
+        return _ALIGNMENT_FIXES[a]
+    # Unknown — log and default to centered
+    log.warning("alignment_unknown", original=alignment, fallback="centered")
+    return "centered"
+
+
+def _validate_face_choice(face: str, operation: str, parent_params: dict,
+                          feature_params: dict, desc_rel: str,
+                          logger=None) -> str:
+    """Validate and potentially correct the LLM's face choice.
+
+    Catches common LLM errors:
+    1. Through-hole on the thinnest dimension (likely wrong direction)
+    2. "Von vorne/seitlich" hints mismatched with face choice
+    3. Extrusion on side face when "oben" was intended
+
+    Returns corrected face string.
+    """
+    desc_lower = desc_rel.lower() if desc_rel else ""
+    px = float(parent_params.get("x", 0))
+    py = float(parent_params.get("y", 0))
+    pz = float(parent_params.get("z", 0))
+
+    if not (px and py and pz):
+        return face
+
+    # --- Directional hints from description ---
+    if operation == "subtract":
+        # "Von vorne" → face should involve Y axis
+        if any(kw in desc_lower for kw in ("von vorne", "vorderseite", "front")):
+            if face not in (">Y", "<Y"):
+                if logger:
+                    logger.info("face_corrected", original=face, corrected=">Y",
+                                reason="desc says 'von vorne'")
+                return ">Y"
+        # "Von der Seite", "seitlich" → face should be >X or <X (or >Y/<Y)
+        if any(kw in desc_lower for kw in ("von der seite", "seitlich", "quer durch")):
+            if face in (">Z", "<Z"):
+                # Drill through thinnest horizontal dimension
+                better = ">X" if px <= py else ">Y"
+                if logger:
+                    logger.info("face_corrected", original=face, corrected=better,
+                                reason="desc says 'seitlich' but face was Z")
+                return better
+        # "Von oben" → keep >Z
+        if any(kw in desc_lower for kw in ("von oben", "oberseite")):
+            return face
+
+        # Plausibility: through-hole on >Z but Z is the thinnest dimension
+        # AND the description mentions a face dimension hint
+        depth_dim = feature_params.get("depth")
+        if depth_dim is None and face in (">Z", "<Z"):
+            # Through-hole: check if Z is much thinner than X/Y
+            # If the description mentions a specific face size, use that
+            import re
+            face_hint = re.search(r"(\d+)\s*[x×]\s*(\d+)\s*(?:seite|fläche|face)",
+                                  desc_lower)
+            if face_hint:
+                d1, d2 = float(face_hint.group(1)), float(face_hint.group(2))
+                # Match face dimensions to parent axes
+                # The face the drill enters should have those dimensions
+                if _dims_match(d1, d2, px, py):
+                    pass  # >Z face is px × py → correct
+                elif _dims_match(d1, d2, px, pz):
+                    if logger:
+                        logger.info("face_corrected", original=face, corrected=">Y",
+                                    reason=f"face hint {d1}x{d2} matches >Y face {px}x{pz}")
+                    return ">Y"
+                elif _dims_match(d1, d2, py, pz):
+                    if logger:
+                        logger.info("face_corrected", original=face, corrected=">X",
+                                    reason=f"face hint {d1}x{d2} matches >X face {py}x{pz}")
+                    return ">X"
+
+    return face
+
+
+def _dims_match(d1: float, d2: float, a1: float, a2: float) -> bool:
+    """Check if two dimension pairs match (order-independent)."""
+    return (abs(d1 - a1) < 0.1 and abs(d2 - a2) < 0.1) or \
+           (abs(d1 - a2) < 0.1 and abs(d2 - a1) < 0.1)
+
+
+def _resolve_plate_orientation(params: dict, desc_rel: str, specification: str,
+                                logger=None) -> dict:
+    """Resolve plate orientation from 'X×Y Fläche liegt auf' hints.
+
+    When user says "die 20×80 Fläche liegt auf" for a plate 80×40×20,
+    we need to remap params so the contact face becomes the XY plane
+    and the remaining dimension becomes Z (height).
+
+    Returns corrected params dict.
+    """
+    import re
+
+    text = f"{desc_rel} {specification}".lower().replace("×", "x")
+    px = float(params.get("x", 0))
+    py = float(params.get("y", 0))
+    pz = float(params.get("z", 0))
+    dims = {px, py, pz}
+
+    if len(dims) < 2 or not all(d > 0 for d in dims):
+        return params
+
+    # Look for "AxB Fläche liegt auf" or "AxB Auflagefläche"
+    m = re.search(
+        r"(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*(?:fläche|auflagefläche|seite)?\s*"
+        r"(?:liegt\s*auf|aufliegt|kontakt|auflage)",
+        text
+    )
+    if not m:
+        return params
+
+    contact_d1 = float(m.group(1))
+    contact_d2 = float(m.group(2))
+
+    # Find which plate dimension is NOT in the contact face → that's the height (Z)
+    plate_dims = sorted([px, py, pz])
+    contact_sorted = sorted([contact_d1, contact_d2])
+
+    # Match contact dimensions to plate dimensions
+    remaining = list(plate_dims)
+    matched = []
+    for cd in contact_sorted:
+        best = min(remaining, key=lambda d: abs(d - cd))
+        if abs(best - cd) < 1.0:  # tolerance 1mm
+            matched.append(best)
+            remaining.remove(best)
+
+    if len(matched) == 2 and len(remaining) == 1:
+        height = remaining[0]
+        # Contact face = X × Y, height = Z
+        # ★ Preserve USER's dimension order from "AxB Fläche liegt auf":
+        #   "20×80 Fläche liegt auf" → x=20, y=80 (not x=80, y=20)
+        #   This matters for flush_right: x=20 → narrow plate on right edge
+        new_x = contact_d1
+        new_y = contact_d2
+        new_z = height
+
+        if abs(new_x - px) > 0.1 or abs(new_y - py) > 0.1 or abs(new_z - pz) > 0.1:
+            if logger:
+                logger.info("plate_orientation_corrected",
+                            original=f"{px}x{py}x{pz}",
+                            corrected=f"{new_x}x{new_y}x{new_z}",
+                            contact_face=f"{contact_d1}x{contact_d2}",
+                            height=height)
+            return {**params, "x": new_x, "y": new_y, "z": height}
+
+    return params
+
+
+def _parse_root_dimensions(desc_rel: str, specification: str) -> dict | None:
+    """Try to extract root body dimensions deterministically from text.
+
+    Looks for patterns like "100x100x20", "∅30mm Höhe 50mm", "Platte 100×100×20mm".
+    Returns {"type": "box"|"cylinder", "params": {...}} or None if not parseable.
+    """
+    import re
+
+    text = f"{desc_rel} {specification}".replace("×", "x").replace("X", "x")
+
+    # Pattern: AxBxC (box dimensions)
+    m = re.search(r"(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)", text)
+    if m:
+        dims = sorted([float(m.group(1)), float(m.group(2)), float(m.group(3))], reverse=True)
+        # Convention: largest two → X,Y (horizontal), smallest → Z (height)
+        # Unless explicitly stated otherwise
+        x, y, z = dims[0], dims[1], dims[2]
+
+        # Check for explicit height indicators
+        text_lower = text.lower()
+        if "höhe" in text_lower or "hoch" in text_lower:
+            h_match = re.search(r"(?:höhe|hoch)\s*[:=]?\s*(\d+(?:\.\d+)?)", text_lower)
+            if h_match:
+                h = float(h_match.group(1))
+                remaining = [d for d in dims if d != h]
+                if len(remaining) >= 2:
+                    x, y = remaining[0], remaining[1]
+                    z = h
+
+        return {"type": "box", "params": {"x": x, "y": y, "z": z}}
+
+    # Pattern: ∅D Höhe H or Durchmesser D Höhe H (cylinder)
+    m_cyl = re.search(
+        r"(?:∅|durchmesser|⌀)\s*(\d+(?:\.\d+)?)\s*(?:mm)?\s*(?:,?\s*)?(?:höhe|h)\s*[:=]?\s*(\d+(?:\.\d+)?)",
+        text, re.IGNORECASE
+    )
+    if m_cyl:
+        d = float(m_cyl.group(1))
+        h = float(m_cyl.group(2))
+        return {"type": "cylinder", "params": {"radius": d / 2, "height": h}}
+
+    return None
+
+
+# Root feature schema — even simpler
+ROOT_FEATURE_SCHEMA = """\
+Output ONLY a single root FeatureEntry JSON:
+
+{
+  "type": "box|cylinder|sphere",
+  "params": {"x": float, "y": float, "z": float},
+  "operation": "add"
+}
+
+Respond with valid JSON only — no markdown, no explanation.
+"""
+
+
+def _format_parent_context(feature_id: str, params: dict,
+                           parent_placement: dict | None = None,
+                           parent_parent_params: dict | None = None) -> str:
+    """Build a deterministic parent context string for per-feature planning.
+
+    Shows the parent's dimensions and available faces with their areas,
+    so the LLM can reason about face selection and offset calculation
+    without needing to understand the global assembly.
+    """
+    px = float(params.get("x", 0))
+    py = float(params.get("y", 0))
+    pz = float(params.get("z", 0))
+    pr = float(params.get("radius", 0))
+    ph = float(params.get("height", 0))
+
+    lines = [f'Parent "{feature_id}":']
+
+    if pr > 0 and ph > 0:
+        # Cylinder
+        d = pr * 2
+        lines.append(f"  Typ: Zylinder, ∅{d}mm, Höhe {ph}mm")
+        lines.append(f"  Top (>Z): z={ph}, Kreisfläche ∅{d}")
+        lines.append(f"  Mantel: Höhe {ph}, Umfang {d*3.14159:.1f}")
+    elif px > 0 and py > 0 and pz > 0:
+        # Box
+        lines.append(f"  Typ: Box {px}×{py}×{pz}mm (X×Y×Z)")
+        lines.append(f"  Verfügbare Flächen (face → was darauf platziert wird):")
+        lines.append(f"    >Z (Oberseite):     Fläche {px}×{py}mm — für Features die OBEN drauf kommen")
+        lines.append(f"    <Z (Unterseite):    Fläche {px}×{py}mm — für Features an der Unterseite")
+        lines.append(f"    >X (rechte Seite):  Fläche {py}×{pz}mm — für Features die SEITLICH nach +X ragen")
+        lines.append(f"    <X (linke Seite):   Fläche {py}×{pz}mm — für Features die SEITLICH nach -X ragen")
+        lines.append(f"    >Y (Vorderseite):   Fläche {px}×{pz}mm — für Features die nach VORNE ragen / Bohrung von vorne")
+        lines.append(f"    <Y (Rückseite):     Fläche {px}×{pz}mm — für Features die nach HINTEN ragen / Bohrung von hinten")
+        lines.append(f"  ★ 'oben rechts' = face >Z + alignment flush_right (NICHT face >X!)")
+    else:
+        lines.append(f"  Params: {params}")
+
+    return "\n".join(lines)
 
 
 class PlannerAgent(BaseAgent):
-    """Converts a model specification into a validated CSG-Tree Blueprint.
+    """Converts a model specification into a Feature Tree Blueprint.
 
+    Phase 1: outputs Feature Tree JSON (build_order + features dict).
     The Blueprint is validated with Pydantic before being stored in state.
-    If validation fails, a clear error is returned rather than a silent bad blueprint.
+    Falls back to raw dict on validation failure so the pipeline continues.
     """
 
     model = get_config().models.planner  # set from config.yaml
@@ -234,15 +499,44 @@ class PlannerAgent(BaseAgent):
         change_desc = state.get("change_description", "")
         previous_bp = state.get("previous_blueprint", {})
 
-        # V4: use focused assembled system prompt when available
-        active_system = state.get("assembled_system_prompt", "") or SYSTEM_PROMPT
+        # Debug: log which branch will be taken
+        _fs = state.get("feature_specs", [])
+        self.log.info("planner_run_debug",
+                      has_plan_issues=bool(plan_issues),
+                      has_feedback=bool(feedback),
+                      has_change_desc=bool(change_desc),
+                      has_previous_bp=bool(previous_bp),
+                      feature_specs_count=len(_fs),
+                      feature_specs_has_children=any(s.get("parent") for s in _fs) if _fs else False,
+                      plan_issues_preview=plan_issues[:60] if plan_issues else "")
+
+        # V4: use focused assembled system prompt when available.
+        # Phase 1: always append FEATURE_TREE_OUTPUT_SCHEMA to ensure Feature Tree output.
+        _assembled = state.get("assembled_system_prompt", "")
+        if _assembled:
+            # Assembled prompt provides task-specific context + RAG examples.
+            # Append Feature Tree output schema so LLM outputs correct format.
+            active_system = _assembled + FEATURE_TREE_OUTPUT_SCHEMA
+        else:
+            active_system = SYSTEM_PROMPT
         # prompt_assembler already injected RAG examples into the system prompt —
         # skip the redundant enrich_prompt() on the user prompt to avoid duplicates.
-        _has_assembled = bool(state.get("assembled_system_prompt", ""))
+        _has_assembled = bool(_assembled)
 
         # --- Plan-fix mode: Plan-Validator found logic errors in the blueprint ---
         current_bp = state.get("blueprint", {})
         if plan_issues and not feedback:
+            # Try targeted re-planning: extract affected feature IDs from issues
+            feature_specs = state.get("feature_specs", [])
+            if feature_specs and FeatureTree.is_feature_tree(current_bp):
+                affected_ids = self._extract_affected_features(plan_issues, current_bp)
+                if affected_ids:
+                    self.log.info("planner_plan_fix_targeted",
+                                  affected=affected_ids, issues=plan_issues[:80])
+                    return self._replan_features(
+                        state, feature_specs, current_bp, affected_ids, plan_issues)
+
+            # Fallback: full re-plan
             self.log.info("planner_plan_fix", issues=plan_issues[:80])
             import json as _json3
             bp_context = (
@@ -254,7 +548,7 @@ class PlannerAgent(BaseAgent):
                 f"Specification: {specification}\n\n"
                 f"{bp_context}"
                 f"{plan_issues}\n\n"
-                "Return a corrected CSG-Tree Blueprint with all issues fixed."
+                "Return a corrected Feature Tree Blueprint with all issues fixed."
             )
             if not _has_assembled:
                 self._ensure_rag()
@@ -276,7 +570,7 @@ class PlannerAgent(BaseAgent):
                 f"Specification: {specification}\n\n"
                 f"{bp_context}"
                 f"Validator rejected this blueprint:\n{feedback}\n\n"
-                "Return a corrected CSG-Tree Blueprint. "
+                "Return a corrected Feature Tree Blueprint. "
                 "Keep all dimensions and geometry from the current blueprint unless the feedback says otherwise."
             )
             if not _has_assembled:
@@ -302,7 +596,7 @@ class PlannerAgent(BaseAgent):
                 f"```json\n{_json.dumps(previous_bp, indent=2)}\n```\n\n"
                 f"Existing node types that MUST remain: {existing_summary}\n\n"
                 f"Change to ADD: {change_desc}\n\n"
-                f"Return a complete new CSG-Tree Blueprint that includes ALL existing "
+                f"Return a complete new Feature Tree Blueprint that includes ALL existing "
                 f"geometry (every node above) AND wraps it with the new addition. "
                 f"Do NOT remove or restructure any existing nodes."
             )
@@ -338,7 +632,7 @@ class PlannerAgent(BaseAgent):
                     f"Existing Blueprint:\n```json\n{_json.dumps(previous_bp, indent=2)}\n```\n\n"
                     f"Existing node types to preserve: {existing_summary2}\n\n"
                     f"Change: {change_desc}\n\n"
-                    "Return a complete updated Blueprint with ONLY the requested change applied. "
+                    "Return a complete updated Feature Tree Blueprint with ONLY the requested change applied. "
                     "Keep ALL other dimensions, positions, and geometry unchanged — do NOT remove any existing nodes."
                 )
                 if not _has_assembled:
@@ -346,32 +640,416 @@ class PlannerAgent(BaseAgent):
                     prompt = self._rag.enrich_prompt(prompt, change_desc)
                 raw = self.call_json(prompt, system=active_system)
 
-        # --- Fresh mode: build from scratch ---
+        # --- Fresh mode: per-feature or single-call ---
         else:
-            self.log.info("planner_fresh", specification=specification[:80])
-            prompt = f"Create a CSG-Tree Blueprint for:\n\n{specification}"
-            if not _has_assembled:
-                self._ensure_rag()
-                prompt = self._rag.enrich_prompt(prompt, specification)
-            raw = self.call_json(prompt, system=active_system)
+            feature_specs = state.get("feature_specs", [])
+            # Per-feature planning: 2+ features with parent-child depth >= 2
+            has_children = any(s.get("parent") for s in feature_specs)
+            if feature_specs and len(feature_specs) >= 2 and has_children:
+                self.log.info("planner_per_feature",
+                              specification=specification[:80],
+                              feature_count=len(feature_specs))
+                return self._plan_per_feature(state, feature_specs)
+            else:
+                self.log.info("planner_fresh", specification=specification[:80])
+                prompt = f"Create a Feature Tree Blueprint for:\n\n{specification}"
+                if not _has_assembled:
+                    self._ensure_rag()
+                    prompt = self._rag.enrich_prompt(prompt, specification)
+                raw = self.call_json(prompt, system=active_system)
 
-        # Validate with Pydantic — catches structural errors immediately
+        # Validate with Pydantic — try Feature Tree first, then CSG-Tree fallback
+        if FeatureTree.is_feature_tree(raw):
+            try:
+                ft = FeatureTree.model_validate(raw)
+                bp_dict = ft.to_dict()
+                self.log.info("planner_done_feature_tree",
+                              description=ft.description[:60],
+                              build_order=ft.build_order,
+                              feature_count=len(ft.features))
+                return {"blueprint": bp_dict}
+            except ValidationError as e:
+                self.log.error("planner_feature_tree_validation_failed",
+                               error=str(e)[:200],
+                               raw_keys=list(raw.keys()))
+                _err_lines = [l for l in str(e).splitlines()
+                              if "pydantic.dev" not in l and l.strip()]
+                raw["_validation_error"] = "\n".join(_err_lines)[:300]
+                return {"blueprint": raw}
+        else:
+            # Legacy CSG-Tree fallback (backward compat)
+            try:
+                blueprint = Blueprint.model_validate(raw)
+                bp_dict = blueprint.to_dict()
+                self.log.info("planner_done_csg_tree",
+                              description=blueprint.description[:60],
+                              root_type=blueprint.root.type)
+                return {"blueprint": bp_dict}
+            except ValidationError as e:
+                self.log.error("planner_validation_failed",
+                               error=str(e)[:200],
+                               raw_keys=list(raw.keys()))
+                _err_lines = [l for l in str(e).splitlines()
+                              if "pydantic.dev" not in l and l.strip()]
+                raw["_validation_error"] = "\n".join(_err_lines)[:300]
+                return {"blueprint": raw}
+
+    # ------------------------------------------------------------------
+    # Per-Feature Planning
+    # ------------------------------------------------------------------
+
+    def _plan_per_feature(self, state: PipelineState, feature_specs: list[dict]) -> dict:
+        """Plan each feature individually, building context incrementally.
+
+        Each feature is planned with only its parent's resolved geometry as context.
+        This ensures the LLM reasons locally (relative to parent) not globally.
+
+        Returns {"blueprint": dict} — a complete FeatureTree blueprint.
+        """
+        specification = state.get("specification") or state.get("description", "")
+        per_feature_rules = state.get("per_feature_rules", {})
+
+        planned: dict[str, dict] = {}  # feature_id → FeatureEntry dict
+        build_order: list[str] = []
+
+        for spec in feature_specs:
+            fid = spec["id"]
+            ftype = spec.get("type", "unknown")
+            parent_id = spec.get("parent")
+            desc_rel = spec.get("description_relative", "")
+
+            build_order.append(fid)
+
+            # --- Root feature (no parent) ---
+            if parent_id is None:
+                # Try deterministic extraction first — root dimensions are
+                # usually explicit in the specification ("Platte 100x100x20mm").
+                parsed = _parse_root_dimensions(desc_rel, specification)
+                if parsed:
+                    self.log.info("planner_pf_root_deterministic",
+                                  feature=fid, params=parsed)
+                    planned[fid] = {
+                        "id": fid,
+                        "type": parsed.get("type", "box"),
+                        "params": parsed["params"],
+                        "parent": None,
+                        "origin": "global",
+                        "position": {"x": 0, "y": 0, "z": 0},
+                        "operation": "add",
+                        "notes": "",
+                    }
+                else:
+                    # Fallback: ask LLM
+                    system = self._get_per_feature_system(
+                        ftype, is_root=True,
+                        rules_text=per_feature_rules.get(fid, ""))
+                    prompt = (
+                        f"Gesamtbeschreibung: {specification}\n\n"
+                        f"Erstelle das Basis-Feature:\n{desc_rel}\n\n"
+                        f"Bestimme Typ und exakte Dimensionen (params)."
+                    )
+                    original_model = self.model
+                    self.model = get_config().models.planner_revise
+                    self.log.info("planner_pf_root_llm", feature=fid, type=ftype,
+                                  model=self.model)
+                    raw_entry = self.call_json(prompt, system=system)
+                    self.model = original_model
+
+                    planned[fid] = {
+                        "id": fid,
+                        "type": raw_entry.get("type", ftype),
+                        "params": raw_entry.get("params", {}),
+                        "parent": None,
+                        "origin": "global",
+                        "position": {"x": 0, "y": 0, "z": 0},
+                        "operation": "add",
+                        "notes": raw_entry.get("notes", ""),
+                    }
+                continue
+
+            # --- Child feature (has parent) ---
+            parent_entry = planned.get(parent_id)
+            if not parent_entry:
+                self.log.error("planner_pf_missing_parent",
+                               feature=fid, parent=parent_id)
+                continue
+
+            parent_context = _format_parent_context(
+                parent_id, parent_entry.get("params", {}))
+
+            # Sibling summary: other children already placed on the same parent
+            siblings = [
+                f'  - "{sid}": {s.get("type")} ({s.get("params", {})})'
+                for sid, s in planned.items()
+                if s.get("parent") == parent_id and sid != fid
+            ]
+            sibling_text = ""
+            if siblings:
+                sibling_text = (
+                    f"\nBereits auf Parent platziert:\n"
+                    + "\n".join(siblings) + "\n"
+                )
+
+            system = self._get_per_feature_system(
+                ftype, is_root=False,
+                rules_text=per_feature_rules.get(fid, ""))
+            prompt = (
+                f"Gesamtbeschreibung: {specification}\n\n"
+                f"{parent_context}\n"
+                f"{sibling_text}\n"
+                f"Plane dieses Feature relativ zum Parent:\n"
+                f"  ID: {fid}\n"
+                f"  Beschreibung: {desc_rel}\n\n"
+                f"Bestimme: type, params, placement (face, alignment, offset_x, offset_y), operation."
+            )
+
+            # Per-feature calls are focused enough for the smaller model
+            original_model = self.model
+            self.model = get_config().models.planner_revise
+            self.log.info("planner_pf_child", feature=fid, type=ftype,
+                          parent=parent_id, model=self.model)
+            raw_entry = self.call_json(prompt, system=system)
+            self.model = original_model
+
+            # Normalize the response into a FeatureEntry dict
+            placement = raw_entry.get("placement", {})
+            alignment = placement.get("alignment")
+
+            # Normalize invented alignments to known values
+            alignment = _normalize_alignment(alignment)
+
+            # When alignment is set, let FunctionDecomposer compute offsets
+            # (LLM-computed offsets are often wrong). Only keep explicit offsets
+            # when no alignment is set (manual positioning).
+            ox = placement.get("offset_x", 0.0)
+            oy = placement.get("offset_y", 0.0)
+            if alignment and alignment not in ("centered", ""):
+                ox = None
+                oy = None
+
+            face = placement.get("face", ">Z")
+            operation = raw_entry.get("operation", "add")
+            feature_params = raw_entry.get("params", {})
+
+            # Resolve plate orientation from "AxB Fläche liegt auf" hints
+            if operation == "add" and feature_params:
+                feature_params = _resolve_plate_orientation(
+                    feature_params, desc_rel, specification, self.log)
+
+            # Post-LLM plausibility: validate face choice against parent geometry
+            face = _validate_face_choice(
+                face, operation, parent_entry.get("params", {}),
+                feature_params, desc_rel, self.log)
+
+            planned[fid] = {
+                "id": fid,
+                "type": raw_entry.get("type", ftype),
+                "params": feature_params,
+                "parent": parent_id,
+                "origin": "relative",
+                "placement": {
+                    "face": face,
+                    "alignment": alignment,
+                    "z_position": placement.get("z_position", "on_top"),
+                    "position": placement.get("position", "center"),
+                    "offset_x": ox,
+                    "offset_y": oy,
+                    "notes": placement.get("notes", ""),
+                },
+                "operation": operation,
+                "notes": raw_entry.get("notes", ""),
+            }
+
+        # Assemble into a FeatureTree blueprint
+        return self._assemble_tree(planned, build_order, specification)
+
+    def _get_per_feature_system(self, feature_type: str, is_root: bool,
+                                 rules_text: str = "") -> str:
+        """Build a focused system prompt for a single feature planning call.
+
+        Much smaller than the monolithic SYSTEM_PROMPT — only contains
+        the output schema + type-specific rules.
+        """
+        if is_root:
+            base = (
+                "Du bist ein CAD-Planner. Plane EIN Basis-Feature (Grundkörper).\n"
+                "Bestimme den Typ und die exakten Dimensionen.\n\n"
+            )
+            return base + ROOT_FEATURE_SCHEMA
+
+        base = (
+            "Du bist ein CAD-Planner. Plane EIN Feature relativ zu seinem Parent.\n"
+            "Du siehst NUR den Parent-Körper und dein Feature — nichts anderes.\n\n"
+            "WICHTIG:\n"
+            "- Denke NUR relativ zum Parent, NICHT global!\n"
+            "- face = die Fläche des Parents, AUF/DURCH die das Feature kommt\n"
+            "- alignment = die Position auf dieser Fläche (flush_right, centered, etc.)\n\n"
+            "★ TYPISCHE FEHLER VERMEIDEN:\n"
+            "- 'Platte oben auf der rechten Seite' → face='>Z' (oben!), alignment='flush_right'\n"
+            "  NICHT face='>X'! '>X' bedeutet die Platte ragt seitlich raus!\n"
+            "- 'Bohrung von vorne durch die Platte' → face='>Y' (Bohrer tritt vorne ein)\n"
+            "  NICHT face='>Z'! '>Z' bohrt von oben nach unten!\n"
+            "- 'Bohrung seitlich durch' → face der Seite, durch die der Bohrer eintritt\n"
+            "  Bei Box 80×40×20: 'durch die 80×40 Seite' → face='>Y' (40mm Tiefe)\n"
+            "  'durch die 80×20 Seite' → face='>Z' (20mm Tiefe)\n"
+        )
+
+        if rules_text:
+            base += f"\n## Regeln für {feature_type}\n{rules_text}\n"
+
+        base += f"\n{FEATURE_ENTRY_OUTPUT_SCHEMA}"
+        return base
+
+    def _assemble_tree(self, planned: dict[str, dict],
+                       build_order: list[str],
+                       specification: str) -> dict:
+        """Combine individually planned features into a FeatureTree blueprint.
+
+        Validates with Pydantic. Falls back to raw dict on validation failure.
+        """
+        description = specification[:80] if specification else "Model"
+
+        blueprint = {
+            "description": description,
+            "build_order": build_order,
+            "features": planned,
+        }
+
         try:
-            blueprint = Blueprint.model_validate(raw)
-            bp_dict = blueprint.to_dict()
-            self.log.info("planner_done",
-                          description=blueprint.description[:60],
-                          root_type=blueprint.root.type,
-                          blueprint_json=json.dumps(bp_dict, ensure_ascii=False, separators=(',', ':')))
+            ft = FeatureTree.model_validate(blueprint)
+            bp_dict = ft.to_dict()
+            self.log.info("planner_per_feature_done",
+                          description=ft.description[:60],
+                          build_order=ft.build_order,
+                          feature_count=len(ft.features))
             return {"blueprint": bp_dict}
-
         except ValidationError as e:
-            # Log what was wrong — return raw dict as fallback so pipeline continues
-            self.log.error("planner_validation_failed",
-                           error=str(e)[:200],
-                           raw_keys=list(raw.keys()))
-            # Store compact error (strip pydantic URL lines, truncate)
+            self.log.error("planner_per_feature_validation_failed",
+                           error=str(e)[:200])
             _err_lines = [l for l in str(e).splitlines()
                           if "pydantic.dev" not in l and l.strip()]
-            raw["_validation_error"] = "\n".join(_err_lines)[:300]
-            return {"blueprint": raw}
+            blueprint["_validation_error"] = "\n".join(_err_lines)[:300]
+            return {"blueprint": blueprint}
+
+    def _extract_affected_features(self, issues_text: str,
+                                    blueprint: dict) -> list[str]:
+        """Extract feature IDs mentioned in validation issues text.
+
+        Looks for known feature IDs from the blueprint in the issues string.
+        Returns list of affected feature IDs, or empty list if none found.
+        """
+        features = blueprint.get("features", {})
+        affected = []
+        issues_lower = issues_text.lower()
+        for fid in features:
+            if fid.lower() in issues_lower:
+                affected.append(fid)
+        return affected
+
+    def _replan_features(self, state: PipelineState,
+                          feature_specs: list[dict],
+                          current_bp: dict,
+                          affected_ids: list[str],
+                          issues_text: str) -> dict:
+        """Re-plan only the affected features, keeping all others unchanged.
+
+        Uses the same per-feature planning approach but only for the features
+        that failed validation. Parent context comes from the existing blueprint.
+        """
+        specification = state.get("specification") or state.get("description", "")
+        per_feature_rules = state.get("per_feature_rules", {})
+
+        # Start with existing features
+        planned = dict(current_bp.get("features", {}))
+        build_order = list(current_bp.get("build_order", []))
+
+        # Build spec lookup
+        spec_map = {s["id"]: s for s in feature_specs}
+
+        for fid in affected_ids:
+            spec = spec_map.get(fid)
+            if not spec:
+                continue
+
+            parent_id = spec.get("parent")
+            desc_rel = spec.get("description_relative", "")
+            ftype = spec.get("type", "unknown")
+
+            if parent_id is None:
+                # Re-plan root — unlikely but handle it
+                system = self._get_per_feature_system(
+                    ftype, is_root=True,
+                    rules_text=per_feature_rules.get(fid, ""))
+                prompt = (
+                    f"Gesamtbeschreibung: {specification}\n\n"
+                    f"Erstelle das Basis-Feature:\n{desc_rel}\n\n"
+                    f"Vorheriger Fehler: {issues_text}\n\n"
+                    f"Bestimme Typ und exakte Dimensionen (params)."
+                )
+                original_model = self.model
+                self.model = get_config().models.planner_revise
+                raw_entry = self.call_json(prompt, system=system)
+                self.model = original_model
+
+                planned[fid] = {
+                    "id": fid,
+                    "type": raw_entry.get("type", ftype),
+                    "params": raw_entry.get("params", {}),
+                    "parent": None,
+                    "origin": "global",
+                    "position": {"x": 0, "y": 0, "z": 0},
+                    "operation": "add",
+                    "notes": raw_entry.get("notes", ""),
+                }
+            else:
+                parent_entry = planned.get(parent_id, {})
+                parent_context = _format_parent_context(
+                    parent_id, parent_entry.get("params", {}))
+
+                system = self._get_per_feature_system(
+                    ftype, is_root=False,
+                    rules_text=per_feature_rules.get(fid, ""))
+                prompt = (
+                    f"Gesamtbeschreibung: {specification}\n\n"
+                    f"{parent_context}\n\n"
+                    f"Plane dieses Feature relativ zum Parent:\n"
+                    f"  ID: {fid}\n"
+                    f"  Beschreibung: {desc_rel}\n\n"
+                    f"Vorheriger Fehler: {issues_text}\n\n"
+                    f"Bestimme: type, params, placement (face, alignment, offset_x, offset_y), operation."
+                )
+                original_model = self.model
+                self.model = get_config().models.planner_revise
+                self.log.info("planner_replan_feature", feature=fid,
+                              parent=parent_id, model=self.model)
+                raw_entry = self.call_json(prompt, system=system)
+                self.model = original_model
+
+                placement = raw_entry.get("placement", {})
+                alignment = placement.get("alignment")
+                ox = placement.get("offset_x", 0.0)
+                oy = placement.get("offset_y", 0.0)
+                if alignment and alignment not in ("centered", ""):
+                    ox = None
+                    oy = None
+
+                planned[fid] = {
+                    "id": fid,
+                    "type": raw_entry.get("type", ftype),
+                    "params": raw_entry.get("params", {}),
+                    "parent": parent_id,
+                    "origin": "relative",
+                    "placement": {
+                        "face": placement.get("face", ">Z"),
+                        "alignment": alignment,
+                        "z_position": placement.get("z_position", "on_top"),
+                        "position": placement.get("position", "center"),
+                        "offset_x": ox,
+                        "offset_y": oy,
+                        "notes": placement.get("notes", ""),
+                    },
+                    "operation": raw_entry.get("operation", "add"),
+                    "notes": raw_entry.get("notes", ""),
+                }
+
+        return self._assemble_tree(planned, build_order, specification)

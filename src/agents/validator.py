@@ -28,10 +28,12 @@ from pathlib import Path
 
 from src.agents.base import BaseAgent
 from src.graph.state import PipelineState
+from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
 
-SEMANTIC_SYSTEM_PROMPT = Path("data/prompts/agents/validator.md").read_text(encoding="utf-8")
+_prompt = load_prompt("prompt_validator.py")
+SEMANTIC_SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 
 
 @dataclass
@@ -142,7 +144,30 @@ class ValidatorAgent(BaseAgent):
             issues.append(f"Only {len(mesh.faces)} triangles — model is likely empty.")
 
         if not mesh.is_watertight:
-            issues.append("Mesh is not watertight (has holes) — unprintable.")
+            # Delegate to STLValidator which has the full repair + tolerance logic.
+            # The Validator agent should NOT duplicate the watertight decision —
+            # if Sandbox/STLValidator already accepted the mesh, trust that.
+            import numpy as np
+            edge_face_count = np.zeros(len(mesh.edges_unique), dtype=int)
+            for face in mesh.faces_unique_edges:
+                edge_face_count[face] += 1
+            nm_edge_count = int(np.sum(edge_face_count > 2))
+            euler = getattr(mesh, 'euler_number', None)
+
+            # Same tiers as STLValidator: ≤5 nm-edges with volume → accept,
+            # euler=2 with ≤20 nm-edges → accept
+            if nm_edge_count <= 5 and abs(mesh.volume) > 0:
+                self.log.info("validator_watertight_tier1_accept",
+                              nm_edges=nm_edge_count, euler=euler)
+                stats["watertight"] = True
+                stats["volume_mm3"] = round(float(abs(mesh.volume)), 2)
+            elif euler == 2 and nm_edge_count <= 20:
+                self.log.info("validator_watertight_tier2_accept",
+                              nm_edges=nm_edge_count, euler=euler)
+                stats["watertight"] = True
+                stats["volume_mm3"] = round(float(abs(mesh.volume)), 2)
+            else:
+                issues.append("Mesh is not watertight (has holes) — unprintable.")
 
         if mesh.is_watertight and mesh.volume <= 0:
             issues.append(f"Volume is {mesh.volume:.2f}mm³ — geometry may be inside-out.")
@@ -183,10 +208,38 @@ class ValidatorAgent(BaseAgent):
     def _extract_root_dims(self, blueprint: dict) -> list[float]:
         """Extract expected bounding-box dims from Blueprint.
 
-        Handles both:
+        Handles:
+          - Feature Tree format: blueprint["features"][root_id]["params"]
           - CSG-Tree format: blueprint["root"]["x"/"y"/"z"] or ["radius"/"height"]
           - Legacy flat format: blueprint["dimensions"]["x"/"y"/"z"]
         """
+        # Feature Tree format: find the root feature (parent=null)
+        features = blueprint.get("features", {})
+        if features and isinstance(features, dict):
+            # Multi-feature blueprints: total STL extent > root feature dims → skip check.
+            # Comparing base dims (e.g. z=20) against full STL (z=60=base+boss) is always wrong.
+            if len(features) > 1:
+                return []
+            for feat in features.values():
+                if isinstance(feat, dict) and feat.get("parent") is None:
+                    params = feat.get("params", {}) or {}
+                    ftype = feat.get("type", "")
+                    if all(params.get(k) for k in ("x", "y", "z")):
+                        try:
+                            x, y, z = float(params["x"]), float(params["y"]), float(params["z"])
+                            if x > 0 and y > 0 and z > 0:
+                                return [x, y, z]
+                        except (TypeError, ValueError):
+                            pass
+                    elif "diameter" in params and "height" in params:
+                        try:
+                            d = float(params["diameter"])
+                            h = float(params["height"])
+                            if d > 0 and h > 0:
+                                return [d, d, h]
+                        except (TypeError, ValueError):
+                            pass
+
         # Legacy flat format
         dims = blueprint.get("dimensions", {})
         if dims:
@@ -277,6 +330,104 @@ class ValidatorAgent(BaseAgent):
         return [x_max - x_min, y_max - y_min, z_max - z_min]
 
     # ------------------------------------------------------------------
+    # Rule-based volume check (no LLM)
+    # ------------------------------------------------------------------
+
+    def _compute_expected_volume(self, blueprint: dict) -> float | None:
+        """Compute expected volume from Feature Tree blueprint params.
+
+        Returns expected volume in mm³ or None if not computable.
+        Only used for Feature Tree blueprints with numeric params.
+        Additive features add volume, subtractive features subtract.
+        """
+        import math
+        features = blueprint.get("features", {})
+        build_order = blueprint.get("build_order", [])
+        if not features or not isinstance(features, dict):
+            return None
+
+        total = 0.0
+        for fid in build_order:
+            feat = features.get(fid)
+            if not feat or not isinstance(feat, dict):
+                continue
+            params = feat.get("params", {}) or {}
+            ftype = feat.get("type", "")
+            op = feat.get("operation", "add")
+
+            vol = None
+            # Box / plate / step / extrusion
+            if all(params.get(k) for k in ("x", "y", "z")):
+                try:
+                    vol = float(params["x"]) * float(params["y"]) * float(params["z"])
+                except (TypeError, ValueError):
+                    pass
+            # Cylinder / boss_cylindrical
+            elif params.get("radius") and params.get("height"):
+                try:
+                    r = float(params["radius"])
+                    h = float(params["height"])
+                    vol = math.pi * r * r * h
+                except (TypeError, ValueError):
+                    pass
+            elif params.get("diameter") and params.get("height"):
+                try:
+                    r = float(params["diameter"]) / 2
+                    h = float(params["height"])
+                    vol = math.pi * r * r * h
+                except (TypeError, ValueError):
+                    pass
+            # Hole
+            elif any(kw in ftype for kw in ("hole", "drill", "bore")) and params.get("diameter"):
+                try:
+                    r = float(params["diameter"]) / 2
+                    # Use depth if given, else estimate as parent z (don't block on unknown)
+                    depth = params.get("depth")
+                    if depth:
+                        vol = math.pi * r * r * float(depth)
+                except (TypeError, ValueError):
+                    pass
+            # Pocket / slot / groove
+            elif any(kw in ftype for kw in ("pocket", "slot", "groove")) and params.get("depth"):
+                try:
+                    depth = float(params["depth"])
+                    if params.get("x") and params.get("y"):
+                        vol = float(params["x"]) * float(params["y"]) * depth
+                    elif params.get("length") and params.get("width"):
+                        vol = float(params["length"]) * float(params["width"]) * depth
+                except (TypeError, ValueError):
+                    pass
+
+            if vol is not None:
+                if op == "subtract":
+                    total -= vol
+                else:
+                    total += vol
+
+        return total if total > 0 else None
+
+    def _volume_check_passes(self, blueprint: dict, actual_volume: float | None) -> bool:
+        """Return True if actual STL volume matches expected blueprint volume (±20%).
+
+        If volume cannot be computed from blueprint, returns True (don't block).
+        If actual_volume is None (e.g. non-watertight mesh), returns False so
+        the semantic LLM check runs as a fallback.
+        """
+        if actual_volume is None or actual_volume <= 0:
+            return False
+        expected = self._compute_expected_volume(blueprint)
+        if expected is None or expected <= 0:
+            return True
+        ratio = abs(actual_volume - expected) / expected
+        within = ratio <= 0.20
+        self.log.info("validator_volume_check",
+                      expected_mm3=round(expected, 0),
+                      actual_mm3=round(actual_volume, 0),
+                      ratio_pct=round(ratio * 100, 1),
+                      passes=within)
+        return within
+
+    # ------------------------------------------------------------------
     # Semantic check (LLM)
     # ------------------------------------------------------------------
 
@@ -290,6 +441,21 @@ class ValidatorAgent(BaseAgent):
         Falls back to ok=True if LLM call fails — we don't want a
         connectivity issue to block an otherwise valid model.
         """
+        # Rule-based volume check: if computed blueprint volume matches STL ±20%, accept.
+        # The 9b LLM often misinterprets total bounding box vs individual feature dims.
+        # Only skip for Feature Tree blueprints (where we can compute volume reliably).
+        actual_volume = stats.get("volume_mm3")
+        if (
+            "build_order" in blueprint
+            and isinstance(blueprint.get("features"), dict)
+            and not (state or {}).get("change_description")  # modifications still need LLM
+        ):
+            if self._volume_check_passes(blueprint, actual_volume):
+                self.log.info("validator_volume_rule_pass",
+                              volume_mm3=actual_volume,
+                              msg="Volume matches blueprint — skipping LLM semantic check")
+                return True, ""
+
         change_desc = state.get("change_description", "") if state else ""
         if change_desc:
             intent_section = (
@@ -335,7 +501,8 @@ class ValidatorAgent(BaseAgent):
 
         try:
             result = self.call_json(prompt, system=SEMANTIC_SYSTEM_PROMPT)
-            ok = bool(result.get("ok", True))
+            # Prompt uses "is_valid"; fall back to "ok" for backward compat
+            ok = bool(result.get("is_valid", result.get("ok", True)))
             feedback = result.get("feedback", "")
             return ok, feedback
         except (ValueError, ConnectionRefusedError) as e:

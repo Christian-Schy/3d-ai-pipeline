@@ -113,6 +113,16 @@ class CodeAnalyzer:
             warnings.append("Auto-injected .clean() after .cut()/.union() calls")
             log.info("code_analyzer_clean_injected")
 
+        # --- Check 5b: Replace export with multi-tolerance retry ---
+        # Some boolean operations (e.g. slot + through-hole overlap) produce
+        # non-watertight STL at the default tolerance=0.1. Trying finer tessellation
+        # often resolves the topology artifact without code changes.
+        retry_code = self._inject_export_tolerance_retry(working_code)
+        if retry_code != working_code:
+            working_code = retry_code
+            warnings.append("Auto-wrapped export with tolerance retry")
+            log.info("code_analyzer_export_retry_injected")
+
         # --- Check 6: Common bad patterns ---
         pattern_issues = self._check_bad_patterns(working_code)
         issues.extend(pattern_issues)
@@ -266,6 +276,36 @@ class CodeAnalyzer:
             else:
                 result_lines.append(line)
         return "\n".join(result_lines)
+
+    def _inject_export_tolerance_retry(self, code: str) -> str:
+        """Replace cq.exporters.export(result, OUTPUT_PATH) with a tolerance retry loop.
+
+        Some OCCT booleans produce non-watertight STL at default tolerance=0.1mm.
+        Retrying with finer tessellation (0.01) resolves most artifacts.
+        Already-parameterized export calls (with tolerance=...) are left unchanged.
+        """
+        # Only inject if there's a plain export call without tolerance kwarg
+        plain_export = re.compile(
+            r"cq\.exporters\.export\s*\(\s*result\s*,\s*OUTPUT_PATH\s*\)"
+        )
+        if not plain_export.search(code):
+            return code  # already has custom params or no export — skip
+
+        retry_block = (
+            "# Auto-injected: try multiple tolerances for watertight export\n"
+            "for _export_tol in [0.1, 0.01, 0.5]:\n"
+            "    cq.exporters.export(result, OUTPUT_PATH,\n"
+            "                        tolerance=_export_tol, angularTolerance=0.2)\n"
+            "    try:\n"
+            "        import trimesh as _tm\n"
+            "        _m = _tm.load(OUTPUT_PATH, force='mesh')\n"
+            "        if _m.is_watertight or getattr(_m, 'euler_number', 0) == 2:\n"
+            "            break\n"
+            "    except Exception:\n"
+            "        break  # trimesh unavailable — use first export"
+        )
+
+        return plain_export.sub(retry_block, code)
 
     def _remove_forbidden_imports(self, code: str) -> str:
         """Remove import lines for things we inject (cadquery, OUTPUT_PATH)."""

@@ -1,17 +1,30 @@
-## Workplane / Face Selector Rules
+# Workplane- und Face-Selektionsregeln
 
-ALWAYS specify face for every feature (default: ">Z" = top face).
-  ">Z"     = top face (highest Z)
-  "<Z"     = bottom face
-  ">Z[-2]" = second-highest Z face (base plate top in a stacked union)
-  ">X"     = rightmost face. "<X" = leftmost. ">Y" = back. "<Y" = front.
+## Einfache Selektoren (sicher VOR Union)
+- ">Z" → höchste Z-Fläche (Oberseite)
+- "<Z" → tiefste Z-Fläche (Unterseite)
+- ">X" → rechteste X-Fläche
+- "<X" → linkeste X-Fläche
+- ">Y" → vorderste Y-Fläche
+- "<Y" → hinterste Y-Fläche
 
-STACKED UNIONS — face selector matters:
-  When a tool is stacked ON TOP of a target at different Z height:
-  - features on BASE target → use face: ">Z[-2]"
-  - features on STACKED tool → use face: ">Z"
+## NearestToPoint (nach Union erforderlich)
+Wenn nach einer Union mehrere gleichhohe Flächen existieren:
+selector_point = [center_x, center_y, top_z]
 
-WORKPLANE INDEPENDENCE (Coder rule — for reference):
-  Each feature uses centerOption='CenterOfBoundBox' so origin always
-  resets to face bbox center. Position coordinates in blueprint are
-  ABSOLUTE from face center — never relative to each other.
+Beispiel: Steg der Breite 20 auf Basis-Top bei z=10, Steg-Höhe=15:
+- Steg-Mitte: center_x, center_y (Positionskoordinaten)
+- Steg-Top: top_z = 10 + 15 = 25
+- selector_point = [center_x, center_y, 25]
+
+## Placement-Werte im Blueprint
+placement.face: ">Z" | ">X" | "<X" | ">Y" | "<Y" | "NearestToPoint"
+placement.selector_point: [x, y, z] — nur wenn face="NearestToPoint"
+placement.position: "center" | "flush_right" | "flush_left" | "corners" | "offset"
+placement.offset_x: float — Abstand von Flächenmitte in X
+placement.offset_y: float — Abstand von Flächenmitte in Y
+
+## Wann NearestToPoint zwingend?
+- Nach jeder Union (body.union())
+- Wenn mehrere Flächen auf gleicher Höhe existieren
+- Für Features auf aufgesetzten Körpern (Steg, Boss)
