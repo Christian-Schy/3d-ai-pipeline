@@ -113,13 +113,20 @@ class SessionState:
         if any(e["state"].get("stl_path") == stl for e in self.history):
             return
         label = state.get("description", "Model")[:60]
-        self.history.append({"label": label, "state": state})
+        # Store run_id for identification in history
+        run_id = self.last_run_id or ""
+        self.history.append({"label": label, "state": state, "run_id": run_id})
         if len(self.history) > self.MAX_HISTORY:
             self.history.pop(0)
         save_history(self.history)
 
     def get_history_choices(self) -> list[str]:
-        return [f"[{i + 1}] {e['label']}" for i, e in enumerate(reversed(self.history))]
+        choices = []
+        for i, e in enumerate(reversed(self.history)):
+            run_id = e.get("run_id", "")
+            rid_str = f" ({run_id[:8]})" if run_id else ""
+            choices.append(f"[{i + 1}]{rid_str} {e['label']}")
+        return choices
 
     def restore(self, choice: str) -> dict | None:
         choices = self.get_history_choices()
@@ -336,11 +343,54 @@ def _chat_event_from_log(line: str) -> dict | None:
         return {"role": "agent", "icon": "🔄", "name": "Error Loop",
                 "content": f"Attempt {n}{phase} — retrying…", "type": "agent"}
 
+    # Feature Assigner: assignments done
+    if "feature_assigner_done" in line:
+        count = _extract_val(line, "assignments").split()[0] if "assignments=" in line else "?"
+        return {"role": "agent", "icon": "🔗", "name": "Feature Assigner",
+                "content": f"✓ {count} feature(s) assigned", "type": "agent"}
+
+    # Agent Dispatcher: routing decision
+    if "agent_dispatcher" in line and "active=" in line:
+        active = _extract_val(line, "active")
+        flags = _extract_val(line, "flags")
+        parts = [f"Active: {active}"]
+        if flags and flags != "[]":
+            parts.append(f"Flags: {flags}")
+        return {"role": "agent", "icon": "🔀", "name": "Dispatcher",
+                "content": " · ".join(parts), "type": "agent"}
+
+    # Feature Position Assigner done
+    if "feature_position_done" in line:
+        count = _extract_val(line, "features").split()[0] if "features=" in line else "?"
+        return {"role": "agent", "icon": "📍", "name": "Feature Pos. Assigner",
+                "content": f"✓ {count} position(s) assigned", "type": "agent"}
+
+    # Part Position Assigner done
+    if "part_position_done" in line:
+        count = _extract_val(line, "features").split()[0] if "features=" in line else "?"
+        return {"role": "agent", "icon": "📌", "name": "Part Pos. Assigner",
+                "content": f"✓ {count} position(s) assigned", "type": "agent"}
+
+    # Blueprint Assembler done
+    if "blueprint_assembler_done" in line:
+        count = _extract_val(line, "features").split()[0] if "features=" in line else "?"
+        order = _extract_val(line, "build_order")
+        content = f"✓ Blueprint assembled ({count} features)"
+        if order:
+            content += f"\nBuild order: {order}"
+        return {"role": "agent", "icon": "🏗️", "name": "Blueprint Assembler",
+                "content": content, "type": "agent"}
+
     # ── Status-only events ─────────────────────────────────────────────
     status_checks = [
         ("node_entry_router",          "🔀", "Router",            "Analyzing request type…"),
         ("node_interpreter",           "🧠", "Interpreter",       "Analyzing your request…"),
         ("node_feature_tagger",        "🏷️", "Feature Tagger",   "Identifying features…"),
+        ("agent_dispatcher",           "🔀", "Dispatcher",        "Routing agents…"),
+        ("node_feature_assigner",      "🔗", "Feature Assigner",  "Assigning features…"),
+        ("node_feature_position",      "📍", "Feature Pos.",      "Assigning positions…"),
+        ("node_part_position",         "📌", "Part Pos.",         "Assigning part positions…"),
+        ("node_blueprint_assembler",   "🏗️", "Assembler",        "Assembling blueprint…"),
         ("node_planner",               "📐", "Planner",           "Building blueprint…"),
         ("node_coordinate_validator",  "📏", "Coord. Validator",  "Checking coordinates…"),
         ("node_plan_validator",        "📋", "Plan Validator",    "Validating plan…"),
@@ -440,6 +490,11 @@ def _build_traces_html(traces: list[dict]) -> str:
     AGENT_ICONS = {
         "interpreter": "🧠", "modification_interpreter": "🧠",
         "feature_tagger": "🏷️",
+        "feature_assigner": "🔗",
+        "feature_position_assigner": "📍", "part_position_assigner": "📌",
+        "position_assigner": "📍",
+        "agent_dispatcher": "🔀",
+        "blueprint_assembler": "🏗️",
         "planner": "📐", "coordinate_validator": "📏",
         "plan_validator": "📋", "function_decomposer": "🔩",
         "coder": "💻", "code_review": "🔎",
@@ -462,6 +517,7 @@ def _build_traces_html(traces: list[dict]) -> str:
 
         inp = trace.get("input", {})
         out = trace.get("output", {})
+        raw = trace.get("raw_response", "")
         inp_str = _html.escape(
             json.dumps(inp, ensure_ascii=False, indent=2)[:2000]
             if isinstance(inp, dict) else str(inp)[:2000]
@@ -470,6 +526,21 @@ def _build_traces_html(traces: list[dict]) -> str:
             json.dumps(out, ensure_ascii=False, indent=2)[:2000]
             if isinstance(out, dict) else str(out)[:2000]
         )
+
+        # Raw response section (collapsible, only if present)
+        raw_section = ""
+        if raw:
+            raw_str = _html.escape(str(raw)[:5000])
+            raw_section = (
+                f'<details style="margin-top:6px;">'
+                f'<summary style="cursor:pointer;color:#f59e0b;font-size:10px;">'
+                f'Raw LLM Response ({len(raw)} chars)</summary>'
+                f'<pre style="background:rgba(0,0,0,0.4);padding:6px;border-radius:3px;'
+                f'overflow-x:auto;white-space:pre-wrap;word-break:break-all;'
+                f'font-size:11px;max-height:400px;overflow-y:auto;'
+                f'border:1px solid rgba(245,158,11,0.3);">{raw_str}</pre>'
+                f'</details>'
+            )
 
         parts.append(
             f'<details style="margin:3px 0;border:1px solid rgba(100,116,139,0.2);'
@@ -485,6 +556,7 @@ def _build_traces_html(traces: list[dict]) -> str:
             f'<pre style="background:rgba(0,0,0,0.3);padding:6px;border-radius:3px;'
             f'overflow-x:auto;white-space:pre-wrap;word-break:break-all;'
             f'font-size:11px;max-height:200px;overflow-y:auto;">{out_str}</pre>'
+            f'{raw_section}'
             f'</div></details>'
         )
 
@@ -786,7 +858,7 @@ def stream_logs():
 
     traces_html = _build_traces_html(
         (_session.last_result or {}).get("agent_traces", [])
-    ) if success else ""
+    )
 
     yield (
         "\n".join(log_lines),
@@ -807,17 +879,56 @@ def stream_logs():
         gr.update(visible=success),
         gr.update(value=stl_to_iframe_html(stl)),
         gr.update(value=build_progress_html(6, error=not success)),
-        gr.update(visible=success),                    # agent_traces_accordion
+        gr.update(visible=True),                         # agent_traces_accordion (always show)
         gr.update(value=traces_html),                  # agent_traces_display
-        gr.update(visible=success),                    # error_feedback_row
+        gr.update(visible=True),                       # error_feedback_row (always show)
     )
+
+
+def on_select_error_agent(agent_choice: str) -> tuple:
+    """When user selects an agent in the error feedback, show that agent's trace output."""
+    if not agent_choice or not _session.last_result:
+        return gr.update(visible=False), gr.update(value="")
+
+    # Map radio label to agent name in traces
+    agent_map = {
+        "Interpreter": "interpreter",
+        "Feature-Tagger": "feature_tagger",
+        "Dispatcher": "agent_dispatcher",
+        "Feature-Assigner": "feature_assigner",
+        "Feature-Position-Assigner": "feature_position_assigner",
+        "Part-Position-Assigner": "part_position_assigner",
+        "Blueprint-Assembler": "blueprint_assembler",
+        "Planner": "planner",
+        "Plan-Validator": "plan_validator",
+        "Coder": "coder",
+        "Code-Review": "code_review",
+        "Validator": "validator",
+    }
+    agent_name = agent_map.get(agent_choice, "")
+    traces = (_session.last_result or {}).get("agent_traces", [])
+
+    # Filter traces for the selected agent
+    agent_traces = [t for t in traces if t.get("agent") == agent_name]
+    if not agent_traces:
+        return gr.update(visible=True), gr.update(
+            value=f'<p style="color:#888;padding:8px;">Kein Trace für {agent_choice} gefunden.</p>'
+        )
+
+    html = _build_traces_html(agent_traces)
+    return gr.update(visible=True), gr.update(value=html)
 
 
 def on_restore_history(choice: str):
     state = _session.restore(choice)
     if state is None:
-        return (gr.update(),) * 8
+        return (gr.update(),) * 11
     _session.last_result = state
+    # Try to restore run_id from history entry
+    choices = _session.get_history_choices()
+    if choice in choices:
+        idx = len(_session.history) - 1 - choices.index(choice)
+        _session.last_run_id = _session.history[idx].get("run_id", "")
     stl = os.path.abspath(state["stl_path"]) if state.get("stl_path") else None
     stats_text = _format_stats(state)
     fig = stl_to_iframe_html(stl)
@@ -827,6 +938,7 @@ def on_restore_history(choice: str):
         {"role": "user", "content": desc},
         {"role": "system", "content": f"✅ Restored: {desc}", "success": True},
     ]
+    traces_html = _build_traces_html(state.get("agent_traces", []))
     return (
         gr.update(value=fig),
         gr.update(value=stats_text),
@@ -836,6 +948,9 @@ def on_restore_history(choice: str):
         gr.update(visible=False),
         gr.update(visible=True),
         gr.update(value=fig),
+        gr.update(visible=True),              # agent_traces_accordion
+        gr.update(value=traces_html),         # agent_traces_display
+        gr.update(visible=True),              # error_feedback_row
     )
 
 
@@ -1064,10 +1179,20 @@ def build_ui() -> gr.Blocks:
                                     lines=2,
                                 )
                                 error_agent_radio = gr.Radio(
-                                    choices=["Interpreter", "Task-Classifier", "Planner",
-                                             "Plan-Validator", "Coder", "Validator"],
+                                    choices=["Interpreter", "Feature-Tagger",
+                                             "Dispatcher", "Feature-Assigner",
+                                             "Feature-Position-Assigner",
+                                             "Part-Position-Assigner",
+                                             "Blueprint-Assembler", "Planner",
+                                             "Plan-Validator", "Coder", "Code-Review",
+                                             "Validator"],
                                     label="Fehler verursacht durch:",
                                     value=None,
+                                )
+                                # Agent output preview (shown when selecting an agent)
+                                agent_output_preview = gr.HTML(
+                                    value="", visible=False,
+                                    label="Agent Output",
                                 )
                                 with gr.Row():
                                     save_error_btn = gr.Button(
@@ -1212,6 +1337,7 @@ def build_ui() -> gr.Blocks:
                 result_viewer, result_stats, blueprint_output, code_output,
                 chat_display,    # ← was status_text
                 image_group, preview_group, inline_viewer,
+                agent_traces_accordion, agent_traces_display, error_feedback_row,
             ],
         )
 
@@ -1231,6 +1357,13 @@ def build_ui() -> gr.Blocks:
             fn=on_submit_error,
             inputs=[error_note_input, error_agent_radio],
             outputs=[error_status, error_note_input, error_agent_radio],
+        )
+
+        # Show agent output when selecting an agent in error feedback
+        error_agent_radio.change(
+            fn=on_select_error_agent,
+            inputs=[error_agent_radio],
+            outputs=[agent_output_preview, agent_output_preview],
         )
 
         print_btn.click(fn=on_print, outputs=[print_status])

@@ -57,6 +57,7 @@ class CoderAgent(BaseAgent):
 
         Phase 3: uses multi-tag queries from Feature Tagger when available.
         Falls back to single description query for legacy blueprints.
+        Also injects feature-specific RAG based on agent_flags from Dispatcher.
         """
         self._ensure_rag()
         rag_queries = (state.get("feature_tree") or {}).get("rag_queries", [])
@@ -64,9 +65,50 @@ class CoderAgent(BaseAgent):
 
         if rag_queries and is_feature_tree:
             self.log.info("coder_rag_multi_tag", queries=len(rag_queries))
-            return self._rag.enrich_prompt_with_tags(prompt, rag_queries, include_always=True)
+            prompt = self._rag.enrich_prompt_with_tags(prompt, rag_queries, include_always=True)
+        else:
+            prompt = self._rag.enrich_prompt(prompt, description)
 
-        return self._rag.enrich_prompt(prompt, description)
+        # Inject feature-specific RAG based on Dispatcher flags
+        agent_flags = state.get("agent_flags", [])
+        if "inject_cylinder_rag" in agent_flags:
+            prompt = self._inject_extra_rag(prompt, description, "cylinder")
+        if "inject_shape_rag" in agent_flags:
+            prompt = self._inject_extra_rag(prompt, description, "shape")
+
+        return prompt
+
+    def _inject_extra_rag(self, prompt: str, query: str, rag_type: str) -> str:
+        """Inject additional feature-specific RAG chunks into the prompt."""
+        if rag_type == "cylinder":
+            from src.rag.cylinder_rag import CylinderRAG
+            if not hasattr(self, "_cylinder_rag"):
+                self._cylinder_rag = CylinderRAG()
+                try:
+                    self._cylinder_rag.build()
+                except FileNotFoundError:
+                    self.log.warning("cylinder_rag_missing")
+                    return prompt
+            extra = self._cylinder_rag.enrich_prompt("", query)
+            if extra.strip():
+                self.log.info("coder_cylinder_rag_injected",
+                              chars=len(extra))
+                prompt += f"\n\n--- ZYLINDER-SPEZIFISCHE BEISPIELE ---\n{extra}"
+        elif rag_type == "shape":
+            from src.rag.shape_cutting_rag import ShapeCuttingRAG
+            if not hasattr(self, "_shape_rag"):
+                self._shape_rag = ShapeCuttingRAG()
+                try:
+                    self._shape_rag.build()
+                except FileNotFoundError:
+                    self.log.warning("shape_cutting_rag_missing")
+                    return prompt
+            extra = self._shape_rag.enrich_prompt("", query)
+            if extra.strip():
+                self.log.info("coder_shape_rag_injected",
+                              chars=len(extra))
+                prompt += f"\n\n--- SHAPE-CUTTING BEISPIELE ---\n{extra}"
+        return prompt
 
     @staticmethod
     def _fix_imports(code: str) -> str:

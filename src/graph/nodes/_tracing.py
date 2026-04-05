@@ -13,6 +13,7 @@ def _make_trace(
     error_tag: str = None,
     error_note: str = None,
     revision: bool = False,
+    raw_response: str = None,
 ) -> dict:
     """Build one agent_traces entry."""
     trace: dict = {
@@ -30,4 +31,6 @@ def _make_trace(
         trace["error_tag"] = error_tag
     if error_note is not None:
         trace["error_note"] = error_note
+    if raw_response is not None:
+        trace["raw_response"] = raw_response
     return trace

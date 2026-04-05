@@ -1,7 +1,13 @@
 """Node functions for the 3D AI Pipeline LangGraph graph."""
 from .input_nodes import entry_router_node, interpreter_node
+from .dispatcher_node import agent_dispatcher_node
 from .planning_nodes import (
     feature_tagger_node,
+    feature_assigner_node,
+    feature_position_assigner_node,
+    part_position_assigner_node,
+    position_assigner_node,
+    blueprint_assembler_node,
     prompt_assembler_node,
     planner_node,
     coordinate_validator_node,
@@ -15,7 +21,13 @@ from .visioner_node import visioner_node
 __all__ = [
     "entry_router_node",
     "interpreter_node",
+    "agent_dispatcher_node",
     "feature_tagger_node",
+    "feature_assigner_node",
+    "feature_position_assigner_node",
+    "part_position_assigner_node",
+    "position_assigner_node",
+    "blueprint_assembler_node",
     "prompt_assembler_node",
     "planner_node",
     "coordinate_validator_node",

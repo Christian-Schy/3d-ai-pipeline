@@ -49,12 +49,52 @@ ERROR_TAGS = {
         "hallucinated_feature", # Feature erfunden das User nicht wollte
         "ambiguity_not_asked",  # Hätte nachfragen sollen
     ],
+    "feature_tagger": [
+        "feature_missing",      # Feature nicht erkannt
+        "wrong_type",           # Falscher Feature-Typ zugewiesen
+        "hallucinated_feature", # Feature erfunden
+    ],
+    "feature_assigner": [
+        "wrong_parent",         # Falscher Parent zugewiesen
+        "wrong_operation",      # add statt subtract oder umgekehrt
+        "wrong_dimensions",     # Maße falsch aus Spec extrahiert
+        "wrong_build_order",    # Build-Order inkorrekt
+    ],
+    "position_assigner": [
+        "wrong_face",           # Falsche Face gewählt (legacy)
+        "wrong_alignment",      # Alignment falsch interpretiert (legacy)
+        "wrong_offset",         # Expliziter Offset falsch berechnet (legacy)
+        "empty_response",       # 0 Positionen zurückgegeben (legacy)
+    ],
+    "feature_position_assigner": [
+        "wrong_face",           # Falsche Face für Bohrung/Nut
+        "wrong_alignment",      # Alignment falsch interpretiert
+        "wrong_offset",         # Expliziter Offset falsch berechnet
+        "empty_response",       # 0 Positionen zurückgegeben
+    ],
+    "part_position_assigner": [
+        "wrong_face",           # Falsche Face für Bauteil
+        "wrong_alignment",      # Alignment falsch interpretiert
+        "wrong_distance",       # distance_mm/gap_mm falsch
+        "wrong_orientation",    # Orientierung falsch interpretiert
+        "empty_response",       # 0 Positionen zurückgegeben
+    ],
+    "blueprint_assembler": [
+        "wrong_offset_calc",    # Offset-Berechnung falsch
+        "orientation_wrong",    # Orientierung nicht korrekt aufgelöst
+        "face_hint_wrong",      # Face-Hint falsch aufgelöst
+    ],
     "planner": [
         "depth_null_wrong",     # depth=null statt explizitem Wert
         "feature_dropped",      # Feature aus Spec nicht im Blueprint
         "wrong_dimensions",     # Maße falsch berechnet
         "bad_csg_order",        # Boolesche Reihenfolge falsch
         "position_calc_wrong",  # Positionsberechnung falsch
+        "overrode_correct",     # Korrekte Werte vom Häppchen-Flow überschrieben
+    ],
+    "plan_validator": [
+        "false_positive",       # Gültigen Blueprint abgelehnt
+        "false_negative",       # Fehlerhaften Blueprint durchgelassen
     ],
     "coder": [
         "syntax_error",         # CadQuery Syntax falsch
@@ -62,6 +102,11 @@ ERROR_TAGS = {
         "feature_not_coded",    # Blueprint-Feature nicht implementiert
         "position_offset",      # center() falsch berechnet
         "workplane_wrong",      # Falsche Face-Selektion
+        "ignored_docstring",    # Face-Selektor aus Docstring ignoriert
+    ],
+    "code_review": [
+        "false_positive",       # Korrekten Code abgelehnt
+        "false_negative",       # Fehlerhaften Code durchgelassen
     ],
     "validator": [
         "false_positive",       # Meldet Fehler wo keiner ist

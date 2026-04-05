@@ -54,8 +54,10 @@ class ModelsConfig(BaseModel):
     visioner: str = "qwen3.5:27b"
     modification_interpreter: str = "qwen3.5:9b"
     plan_validator: str = "qwen3.5:9b"
-    # Phase 1 — new agents
+    # Phase 1 — Häppchen agents
     feature_tagger: str = "qwen3.5:9b"
+    feature_assigner: str = "qwen3.5:9b"
+    position_assigner: str = "qwen3.5:9b"
 
 
 class RagKnowledgeConfig(BaseModel):

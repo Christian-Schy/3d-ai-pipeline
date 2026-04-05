@@ -35,18 +35,20 @@ agent_options:
 # Each agent uses the model best suited for its task.
 # Adjust these to match your 'ollama list' output.
 models:
-  interpreter:              "qwen3.5:35b"
+  interpreter:              "qwen3.5:9b"
   planner:                  "qwen3.5:35b"
   planner_patch:            "qwen3.5:9b"
   planner_revise:           "qwen3.5:35b"
-  coder:                    "qwen3-coder:30b"
+  coder:                    "qwen3-coder-next:latest"
   validator:                "qwen3.5:9b"
   code_fixer:               "qwen3.5:9b"
   visioner:                 "qwen3.5:35b"
   modification_interpreter: "qwen3.5:9b"
   plan_validator:           "qwen3.5:9b"
-  # Phase 1 — new agents
+  # Phase 1 — Häppchen agents
   feature_tagger:           "qwen3.5:9b"   # identification only, no geometry knowledge
+  feature_assigner:         "qwen3.5:9b"   # parent/operation/params assignment
+  position_assigner:        "qwen3.5:9b"   # face/alignment/hints assignment
 
 # --- RAG ---
 rag:
@@ -58,9 +60,11 @@ rag:
     validator:      3
     interpreter:    2   # 16_interpreter_knowledge is small
     visioner:       2
-    feature_tagger: 1   # Catalog fits in system prompt — 1 edge-case example
-    plan_validator: 2   # 22_plan_validation checklist docs
-    code_review:    2   # 23_code_review anti-pattern docs
+    feature_tagger:    1   # Catalog fits in system prompt — 1 edge-case example
+    feature_assigner:  3   # Per-part thinking + parent rules examples
+    position_assigner: 3   # Face calculation + placement + alignment examples
+    plan_validator:    2   # 22_plan_validation checklist docs
+    code_review:       2   # 23_code_review anti-pattern docs
   knowledge:
     coder:       "data/knowledge/rag"                    # numbered collections 01-15
     planner:     "data/knowledge/rag_agents/21_planner_geometry"

@@ -5,7 +5,7 @@ import structlog
 
 from src.graph.state import PipelineState
 from src.agents.validator import ValidatorAgent
-from ._registry import get_agent
+from ._registry import get_agent, get_raw_response
 from ._tracing import _make_trace
 
 log = structlog.get_logger()
@@ -44,6 +44,7 @@ def validator_node(state: PipelineState) -> dict:
                         "stl_path": state.get("stl_path", "")},
             output_data={"is_valid": True, "stats": result.stats},
             start_time=_t0, model=_gc().models.validator,
+            raw_response=get_raw_response(ValidatorAgent),
         )
 
         # Auto-learn: save successful blueprint→code pair as a new RAG example.
@@ -81,6 +82,7 @@ def validator_node(state: PipelineState) -> dict:
                         "stl_path": state.get("stl_path", "")},
             output_data={"is_valid": False, "feedback": result.feedback},
             start_time=_t0, model=_gc().models.validator,
+            raw_response=get_raw_response(ValidatorAgent),
         )
         return {
             "validator_feedback": result.feedback,

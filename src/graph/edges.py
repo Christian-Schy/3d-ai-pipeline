@@ -85,11 +85,10 @@ _PLACEMENT_ERROR_KEYWORDS = (
 
 
 def route_after_validator(state: PipelineState) -> str:
-    """After Validator: ok → end, not ok → coder (placement error) or planner (max 2x) or end."""
+    """After Validator: ok → end, not ok → coder (placement/code error) or feature_assigner (blueprint error) or end."""
     feedback = state.get("validator_feedback", "")
 
     if not feedback:
-        # validator_feedback is empty = validator said OK
         log.info("route_validator", decision="end")
         return "end"
 
@@ -100,17 +99,20 @@ def route_after_validator(state: PipelineState) -> str:
         return "end"
 
     # Placement/position errors: the blueprint is likely correct but the coder
-    # generated wrong offset code. Planner can't fix this — route to coder instead.
+    # generated wrong offset code. Route to coder.
     feedback_lower = feedback.lower()
     if any(kw in feedback_lower for kw in _PLACEMENT_ERROR_KEYWORDS):
         log.info("route_validator", decision="coder",
                  reason="placement_error", feedback=feedback[:80])
         return "coder"
 
-    log.info("route_validator", decision="planner",
+    # Blueprint-level errors: route back to feature_assigner to restart
+    # the specialist chain. The specialists will re-run with the
+    # validator_feedback in state for context.
+    log.info("route_validator", decision="feature_assigner",
              semantic_attempts=semantic_attempts,
              feedback=feedback[:60])
-    return "planner"
+    return "feature_assigner"
 
 
 def route_after_error_router(state: PipelineState) -> str:

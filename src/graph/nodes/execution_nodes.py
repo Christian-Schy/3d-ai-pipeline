@@ -10,7 +10,7 @@ from src.agents.coder import CoderAgent
 from src.agents.code_fixer import CodeFixerAgent
 from src.agents.code_review import CodeReviewAgent
 from src.tools.sandbox import Sandbox
-from ._registry import get_agent
+from ._registry import get_agent, get_raw_response
 from ._tracing import _make_trace
 
 log = structlog.get_logger()
@@ -58,6 +58,7 @@ def coder_node(state: PipelineState) -> dict:
         output_data=result.get("code", ""),
         start_time=_t0, model=_gc().models.coder,
         revision=_revision, rag_chunks_used=_rag_chunks,
+        raw_response=get_raw_response(CoderAgent),
     )
     result["agent_traces"] = [_trace]
     return result
@@ -80,6 +81,7 @@ def code_fixer_node(state: PipelineState) -> dict:
                     "code": state.get("code", "")[:200]},
         output_data={"fix_plan": result.get("fix_plan", "")},
         start_time=_t0, model=_gc().models.code_fixer,
+        raw_response=get_raw_response(CodeFixerAgent),
     )
     result["agent_traces"] = [_trace]
     return result
@@ -149,6 +151,7 @@ def code_review_node(state: PipelineState) -> dict:
         output_data={"approved": result.get("code_review_approved", True),
                      "issues": result.get("code_review_issues", "")[:200]},
         start_time=_t0, model=_gc().models.plan_validator,
+        raw_response=get_raw_response(CodeReviewAgent),
     )
     result["agent_traces"] = [_trace]
     return result

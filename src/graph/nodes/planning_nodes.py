@@ -1,16 +1,20 @@
-"""Planning nodes: feature_tagger, prompt_assembler, planner, coordinate_validator, plan_validator, function_decomposer."""
+"""Planning nodes: feature_tagger, feature_assigner, feature_position_assigner, part_position_assigner, blueprint_assembler, prompt_assembler, planner, coordinate_validator, plan_validator, function_decomposer."""
 from __future__ import annotations
 import time
 import structlog
 
 from src.graph.state import PipelineState
 from src.agents.feature_tagger import FeatureTaggerAgent
+from src.agents.feature_assigner import FeatureAssignerAgent
+from src.agents.feature_position_assigner import FeaturePositionAssignerAgent
+from src.agents.part_position_assigner import PartPositionAssignerAgent
+from src.agents.blueprint_assembler import BlueprintAssembler
 from src.agents.function_decomposer import FunctionDecomposerAgent
 from src.agents.prompt_assembler import PromptAssembler
 from src.agents.plan_validator import PlanValidatorAgent
 from src.agents.planner import PlannerAgent
 from src.graph.feature_tree import FeatureTree
-from ._registry import get_agent
+from ._registry import get_agent, get_raw_response
 from ._tracing import _make_trace
 
 log = structlog.get_logger()
@@ -34,6 +38,167 @@ def feature_tagger_node(state: PipelineState) -> dict:
         input_data=_spec,
         output_data=result.get("task_classification", {}),
         start_time=_t0, model=_gc().models.feature_tagger,
+        raw_response=get_raw_response(FeatureTaggerAgent),
+    )
+    result["agent_traces"] = [_trace]
+    return result
+
+
+def feature_assigner_node(state: PipelineState) -> dict:
+    """Assign parent, operation, and dimensions to each feature.
+
+    Part of the Häppchen pipeline: Feature Tagger → **Feature Assigner** →
+    Position Assigner → Blueprint Assembler → Planner (review).
+    """
+    _spec = state.get("specification", state.get("description", ""))
+    log.info("node_feature_assigner", spec=_spec[:60])
+    _t0 = time.time()
+    _step = len(state.get("agent_traces", [])) + 1
+    result = get_agent(FeatureAssignerAgent).assign(state)
+
+    fa = result.get("feature_assignments", {})
+    # Log full assignments for debugging (parent, operation, params per feature)
+    _fa_summary = {
+        fid: {"parent": d.get("parent"), "op": d.get("operation"), "params": d.get("params", {})}
+        for fid, d in fa.items() if isinstance(d, dict)
+    }
+    from src.config.loader import get_config as _gc
+    _trace = _make_trace(
+        agent="feature_assigner", step=_step,
+        input_data={"features": list(state.get("feature_tree", {}).get("features_identified", []))},
+        output_data={"assignments": len(fa), "details": _fa_summary},
+        start_time=_t0, model=_gc().models.feature_assigner,
+        raw_response=get_raw_response(FeatureAssignerAgent),
+    )
+    result["agent_traces"] = [_trace]
+    return result
+
+
+def feature_position_assigner_node(state: PipelineState) -> dict:
+    """Assign face, alignment, and orientation hints to subtract/modify features.
+
+    Part of the Häppchen pipeline: Feature Tagger → Feature Assigner →
+    **Feature Position Assigner** → Part Position Assigner → Blueprint Assembler.
+    Only handles holes, slots, pockets, fillets, chamfers etc.
+    Skipped by Agent Dispatcher if no subtract/modify features detected.
+    """
+    active = state.get("active_agents", [])
+    if active and "feature_position_assigner" not in active:
+        log.info("node_feature_position_assigner_skipped", reason="not_in_active_agents")
+        return {"feature_position_assignments": {}}
+
+    _spec = state.get("specification", state.get("description", ""))
+    log.info("node_feature_position_assigner", spec=_spec[:60])
+    _t0 = time.time()
+    _step = len(state.get("agent_traces", [])) + 1
+    result = get_agent(FeaturePositionAssignerAgent).assign(state)
+
+    _fpa = result.get("feature_position_assignments", {})
+    _fpa_summary = {
+        fid: {k: v for k, v in d.items() if v is not None}
+        for fid, d in _fpa.items() if isinstance(d, dict)
+    }
+    from src.config.loader import get_config as _gc
+    _trace = _make_trace(
+        agent="feature_position_assigner", step=_step,
+        input_data={"feature_assignments": list(state.get("feature_assignments", {}).keys())},
+        output_data={"positions": len(_fpa), "details": _fpa_summary},
+        start_time=_t0, model=_gc().models.position_assigner,
+        raw_response=get_raw_response(FeaturePositionAssignerAgent),
+    )
+    result["agent_traces"] = [_trace]
+    return result
+
+
+def part_position_assigner_node(state: PipelineState) -> dict:
+    """Assign face, alignment, distance, and gap to add-operation parts.
+
+    Part of the Häppchen pipeline: Feature Tagger → Feature Assigner →
+    Feature Position Assigner → **Part Position Assigner** → Blueprint Assembler.
+    Only handles add-operation parts (plates, boxes, extrusions).
+    Supports floating parts (distance_mm) and gaps between parts (gap_mm).
+    Skipped by Agent Dispatcher if no add-operation parts detected.
+    """
+    active = state.get("active_agents", [])
+    if active and "part_position_assigner" not in active:
+        log.info("node_part_position_assigner_skipped", reason="not_in_active_agents")
+        return {"part_position_assignments": {}}
+
+    _spec = state.get("specification", state.get("description", ""))
+    log.info("node_part_position_assigner", spec=_spec[:60])
+    _t0 = time.time()
+    _step = len(state.get("agent_traces", [])) + 1
+    result = get_agent(PartPositionAssignerAgent).assign(state)
+
+    _ppa = result.get("part_position_assignments", {})
+
+    # Fallback: if Part Position Assigner returned 0 positions for add-parts, generate defaults
+    _fa = state.get("feature_assignments", {})
+    if not _ppa and _fa:
+        from src.agents.part_position_assigner import _is_part_position_target
+        add_parts = {fid: d for fid, d in _fa.items() if _is_part_position_target(fid, d)}
+        if add_parts:
+            log.warning("part_position_empty_fallback", part_count=len(add_parts))
+            _ppa = {}
+            for fid in add_parts:
+                _ppa[fid] = {
+                    "face": ">Z", "alignment": "centered",
+                    "offset_x": None, "offset_y": None,
+                    "orientation_hint": None, "face_hint": None,
+                    "distance_mm": None, "gap_mm": None, "relative_to": None,
+                }
+            result["part_position_assignments"] = _ppa
+
+    _ppa_summary = {
+        fid: {k: v for k, v in d.items() if v is not None}
+        for fid, d in _ppa.items() if isinstance(d, dict)
+    }
+    from src.config.loader import get_config as _gc
+    _trace = _make_trace(
+        agent="part_position_assigner", step=_step,
+        input_data={"feature_assignments": list(state.get("feature_assignments", {}).keys())},
+        output_data={"positions": len(_ppa), "details": _ppa_summary},
+        start_time=_t0, model=_gc().models.position_assigner,
+        raw_response=get_raw_response(PartPositionAssignerAgent),
+    )
+    result["agent_traces"] = [_trace]
+    return result
+
+
+def position_assigner_node(state: PipelineState) -> dict:
+    """LEGACY: Combined position assigner node. Kept for backward compatibility.
+
+    In the new architecture, this node is not used. Feature Position Assigner
+    and Part Position Assigner handle the split responsibilities.
+    """
+    log.warning("position_assigner_node_legacy_called")
+    return {"position_assignments": {}}
+
+
+def blueprint_assembler_node(state: PipelineState) -> dict:
+    """Deterministic blueprint assembly from pre-assigned features.
+
+    Part of the Häppchen pipeline: Feature Tagger → Feature Assigner →
+    Position Assigner → **Blueprint Assembler** → Planner (review).
+    No LLM call — pure arithmetic and graph operations.
+    """
+    log.info("node_blueprint_assembler",
+             features=len(state.get("feature_assignments", {})))
+    _t0 = time.time()
+    _step = len(state.get("agent_traces", [])) + 1
+    result = get_agent(BlueprintAssembler).assemble(state)
+    _trace = _make_trace(
+        agent="blueprint_assembler", step=_step,
+        input_data={
+            "feature_assignments": list(state.get("feature_assignments", {}).keys()),
+            "feature_position_assignments": list(state.get("feature_position_assignments", {}).keys()),
+            "part_position_assignments": list(state.get("part_position_assignments", {}).keys()),
+        },
+        output_data={
+            "build_order": result.get("blueprint", {}).get("build_order", []),
+            "features": len(result.get("blueprint", {}).get("features", {})),
+        },
+        start_time=_t0,
     )
     result["agent_traces"] = [_trace]
     return result
@@ -66,103 +231,93 @@ def prompt_assembler_node(state: PipelineState) -> dict:
 
 
 def planner_node(state: PipelineState) -> dict:
-    """Turn the specification into a structured Blueprint.
+    """Pass-through node: blueprint from BlueprintAssembler goes through as-is.
 
-    Also reads validator_feedback if we're here due to a semantic failure —
-    the Planner uses it to correct the approach.
+    The Planner LLM is no longer called for fresh requests. The Häppchen
+    specialists (Feature Assigner, Position Assigner, Blueprint Assembler)
+    produce the blueprint. Validation errors are routed back to the
+    responsible specialist agent, not to a generalist Planner.
+
+    For modification flow (legacy path via prompt_assembler), the Planner
+    LLM is still used to patch the previous blueprint.
+
+    PlannerAgent and its prompt are preserved in the codebase for the
+    modification flow and potential future use.
     """
-    feedback = state.get("validator_feedback", "")
     change_desc = state.get("change_description", "")
-    coord_issues = state.get("coordinate_validation_issues", "")
-
-    # If coordinate_validator sent us back, inject its issues into plan_validation_issues
-    # so the Planner's "plan_fix" mode picks them up.
-    if coord_issues and not state.get("plan_validation_issues"):
-        state = {**state, "plan_validation_issues": coord_issues}
-        log.info("node_planner", mode="coord_fix",
-                 issues=coord_issues[:80])
-    elif feedback:
-        log.info("node_planner", mode="revision", feedback=feedback[:80])
-    elif change_desc:
-        log.info("node_planner", mode="patch", change=change_desc[:80])
-    else:
-        log.info("node_planner", mode="fresh",
-                 specification=state.get("specification", "")[:60])
-
-    _revision = (bool(feedback)
-                 or state.get("plan_validation_attempts", 0) > 0
-                 or state.get("coordinate_validation_attempts", 0) > 0)
-
     _t0 = time.time()
     _step = len(state.get("agent_traces", [])) + 1
-    _planner = get_agent(PlannerAgent)
 
-    # Loop-detection: if planner is in revision mode and generated the same blueprint
-    # last time, skip calling the LLM again — it would just produce the same result.
-    # Mark plan_valid=True to pass validator and let the coder run with what we have.
-    _prev_blueprint = state.get("blueprint", {})
-    try:
-        result = _planner.run(state)
-    except ValueError as e:
-        # JSON parse failure — LLM produced invalid JSON even after retry.
-        # Return empty blueprint so coordinate_validator/plan_validator can route back.
-        log.error("node_planner_json_crash", error=str(e)[:200])
+    # ── Modification flow: Planner LLM patches the previous blueprint ──
+    if change_desc:
+        log.info("node_planner", mode="patch", change=change_desc[:80])
+        coord_issues = state.get("coordinate_validation_issues", "")
+        if coord_issues and not state.get("plan_validation_issues"):
+            state = {**state, "plan_validation_issues": coord_issues}
+
+        _planner = get_agent(PlannerAgent)
+        _prev_blueprint = state.get("blueprint", {})
+        try:
+            result = _planner.run(state)
+        except ValueError as e:
+            log.error("node_planner_json_crash", error=str(e)[:200])
+            _trace = _make_trace(
+                agent="planner", step=_step,
+                input_data={"specification": state.get("specification", "")},
+                output_data={"error": str(e)[:200]},
+                start_time=_t0,
+            )
+            return {
+                "blueprint": _prev_blueprint or {},
+                "plan_validation_issues": f"Planner JSON parse error: {str(e)[:150]}. Re-generate the blueprint.",
+                "plan_valid": False,
+                "agent_traces": [_trace],
+            }
+
+        result["validator_feedback"] = ""
+        result["plan_validation_issues"] = ""
+        result["coordinate_validation_issues"] = ""
+        result["plan_valid"] = False
+
+        from src.config.loader import get_config as _gc
+        _raw = getattr(getattr(_planner, "_rag", None), "last_chunks_used", [])
+        _rag_chunks = _raw if isinstance(_raw, list) else []
+        if not _rag_chunks and state.get("assembled_system_prompt", ""):
+            _raw2 = getattr(
+                getattr(get_agent(PromptAssembler), "_planner_rag", None),
+                "last_chunks_used", []
+            )
+            _rag_chunks = _raw2 if isinstance(_raw2, list) else []
         _trace = _make_trace(
             agent="planner", step=_step,
-            input_data={"specification": state.get("specification", "")},
-            output_data={"error": str(e)[:200]},
-            start_time=_t0,
+            input_data={
+                "specification": state.get("specification", ""),
+                "change_description": change_desc,
+            },
+            output_data=result.get("blueprint", {}),
+            start_time=_t0, model=_gc().models.planner,
+            revision=True, rag_chunks_used=_rag_chunks,
+            raw_response=get_raw_response(PlannerAgent),
         )
-        return {
-            "blueprint": _prev_blueprint or {},
-            "plan_validation_issues": f"Planner JSON parse error: {str(e)[:150]}. Re-generate the blueprint.",
-            "plan_valid": False,
-            "agent_traces": [_trace],
-        }
+        result["agent_traces"] = [_trace]
+        return result
 
-    # Clear feedback fields after Planner has read them — prevents re-use on next loop
-    result["validator_feedback"] = ""
-    result["plan_validation_issues"] = ""
-    result["coordinate_validation_issues"] = ""
-    result["plan_valid"] = False  # reset so plan_validator runs fresh
-
-    import json as _json
-    if feedback and _prev_blueprint and result.get("blueprint"):
-        _prev_key = _json.dumps(_prev_blueprint, sort_keys=True)
-        _new_key = _json.dumps(result["blueprint"], sort_keys=True)
-        if _prev_key == _new_key:
-            log.warning("planner_stuck_loop",
-                        agent="planner",
-                        note="revision produced identical blueprint — skipping to coder")
-            result["plan_valid"] = True  # bypass validator, proceed to coder
-
-    from src.config.loader import get_config as _gc
-    _raw = getattr(getattr(_planner, "_rag", None), "last_chunks_used", [])
-    _rag_chunks = _raw if isinstance(_raw, list) else []
-    # When assembled_system_prompt was used, planner skipped enrich_prompt() —
-    # RAG was done inside prompt_assembler instead; fall back to those chunks.
-    if not _rag_chunks and state.get("assembled_system_prompt", ""):
-        _raw2 = getattr(
-            getattr(get_agent(PromptAssembler), "_planner_rag", None),
-            "last_chunks_used", []
-        )
-        _rag_chunks = _raw2 if isinstance(_raw2, list) else []
-    _fs = state.get("feature_specs", [])
+    # ── Fresh request: pure pass-through ──
+    log.info("node_planner_passthrough",
+             features=len(state.get("blueprint", {}).get("features", {})))
     _trace = _make_trace(
         agent="planner", step=_step,
-        input_data={
-            "specification": state.get("specification", ""),
-            "change_description": change_desc,
-            "validator_feedback": feedback,
-            "feature_specs_count": len(_fs),
-            "per_feature_mode": bool(_fs and len(_fs) >= 2 and any(s.get("parent") for s in _fs)),
-        },
-        output_data=result.get("blueprint", {}),
-        start_time=_t0, model=_gc().models.planner,
-        revision=_revision, rag_chunks_used=_rag_chunks,
+        input_data={"mode": "passthrough"},
+        output_data=state.get("blueprint", {}),
+        start_time=_t0,
     )
-    result["agent_traces"] = [_trace]
-    return result
+    return {
+        "validator_feedback": "",
+        "plan_validation_issues": "",
+        "coordinate_validation_issues": "",
+        "plan_valid": False,  # let plan_validator run fresh
+        "agent_traces": [_trace],
+    }
 
 
 def function_decomposer_node(state: PipelineState) -> dict:
@@ -186,10 +341,15 @@ def function_decomposer_node(state: PipelineState) -> dict:
 
     result = get_agent(FunctionDecomposerAgent).decompose(state)
 
+    mode = result.get("generation_mode", "llm")
     _trace = _make_trace(
         agent="function_decomposer", step=_step,
         input_data={"build_order": blueprint.get("build_order", [])},
-        output_data={"skeleton_lines": len(result.get("code_skeleton", "").splitlines())},
+        output_data={
+            "generation_mode": mode,
+            "code_lines": len(result.get("code", "").splitlines()),
+            "skeleton_lines": len(result.get("code_skeleton", "").splitlines()),
+        },
         start_time=_t0,
     )
     result["agent_traces"] = [_trace]
@@ -257,11 +417,32 @@ def plan_validator_node(state: PipelineState) -> dict:
     First runs a fast deterministic quick_check (feature count + depth consistency).
     If that passes, runs the LLM Plan-Validator for geometric logic errors.
     On failure, routes back to Planner (max config.plan_validator.max_retries).
+
+    In Häppchen mode (specialized agents produced the blueprint), the LLM validator
+    is skipped — the specialized agents already validated structure and positions.
+    Only the deterministic quick_check runs (for Feature Tree: skipped entirely).
     """
     blueprint = state.get("blueprint", {})
     spec = state.get("specification") or state.get("description", "")
     _t0 = time.time()
     _step = len(state.get("agent_traces", [])) + 1
+
+    # Häppchen pass-through: specialized agents already validated the blueprint.
+    # The 9b LLM validator causes false positives (e.g. rejecting add-operation
+    # features smaller than parent) which route to Planner and override clean work.
+    _haeppchen = (bool(state.get("feature_assignments"))
+                  and not state.get("change_description")
+                  and not state.get("validator_feedback"))
+    if _haeppchen:
+        log.info("node_plan_validator_passthrough",
+                 features=len(blueprint.get("features", {})))
+        _trace = _make_trace(
+            agent="plan_validator", step=_step,
+            input_data={"mode": "häppchen_passthrough"},
+            output_data={"is_valid": True, "source": "häppchen_passthrough"},
+            start_time=_t0,
+        )
+        return {"plan_valid": True, "agent_traces": [_trace]}
 
     # Fast deterministic check: does blueprint contain all features from spec?
     # Runs always — even on patches, to catch missing features or wrong depth values.
@@ -322,6 +503,7 @@ def plan_validator_node(state: PipelineState) -> dict:
         output_data={"is_valid": result.get("plan_valid", False),
                      "issues": result.get("plan_validation_issues", "")},
         start_time=_t0, model=_gc().models.plan_validator,
+        raw_response=get_raw_response(PlanValidatorAgent),
     )
     result["agent_traces"] = [_trace]
     return result

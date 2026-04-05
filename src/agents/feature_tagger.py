@@ -1,16 +1,16 @@
 """
-src/agents/feature_tagger.py — Identifies all features and their relationships.
+src/agents/feature_tagger.py — Identifies all features and classifies the task.
 
-Identifies all features and their relationships.
+Part of the "Häppchen" architecture:
+  Interpreter → **Feature Tagger** → Feature Assigner → Position Assigner → ...
 
-Outputs two things:
-  feature_tree:       Preliminary feature list (IDs, types, rag_tags, dependencies)
-                      Used by PromptAssembler for targeted RAG queries.
-                      Stored in state.feature_tree.
+Simplified role (v2):
+  - Identify features (IDs + types)
+  - Assign RAG tags per feature
+  - Classify the task (template selection, difficulty)
 
-  task_classification: Dict for PromptAssembler template selection.
-                      task_type, difficulty, rag_categories, planner_template,
-                      warnings, requires_current_geometry.
+Does NOT assign parents, dimensions, positions, or build order.
+Those are handled by Feature Assigner and Position Assigner.
 
 Model: qwen3.5:9b — identification only, no geometry calculation needed.
 """
@@ -29,12 +29,10 @@ SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 
 
 class FeatureTaggerAgent(BaseAgent):
-    """Identifies all geometric features and their parent-child relationships.
+    """Identifies all geometric features and classifies the task.
 
-    The Feature Tagger identifies ALL features, assigns RAG tags per feature,
-    and builds a dependency tree that guides the Planner.
-
-    Also emits task_classification for backward-compat with PromptAssembler.
+    Outputs a feature list (IDs + types + RAG tags) and task classification.
+    Parent assignment and dimensions are handled by downstream agents.
     """
 
     name = "feature_tagger"
@@ -57,6 +55,61 @@ class FeatureTaggerAgent(BaseAgent):
                                  path="data/knowledge/rag_agents/20_feature_catalog")
             self._rag_ready = True
 
+    @staticmethod
+    def _consolidate_patterns(features: list) -> list:
+        """Merge duplicate hole entries into a single hole_pattern_grid.
+
+        The 9b model sometimes splits "4 Eckbohrungen" into 4 separate
+        hole_single entries. This merges them into one hole_pattern_grid.
+        """
+        if not features or not isinstance(features, list):
+            return features
+
+        # Find groups of hole_single with similar IDs (hole_corner_1..4, etc.)
+        import re
+        hole_groups: dict[str, list[int]] = {}  # base_name → [indices]
+        for i, f in enumerate(features):
+            if not isinstance(f, dict):
+                continue
+            ftype = f.get("type", "")
+            fid = f.get("id", "")
+            if ftype == "hole_single" and re.match(r"(.+?)_?\d+$", fid):
+                base = re.match(r"(.+?)_?\d+$", fid).group(1)
+                hole_groups.setdefault(base, []).append(i)
+
+        # Merge groups with 3+ entries into one hole_pattern_grid
+        indices_to_remove = set()
+        inserts = []
+        for base, indices in hole_groups.items():
+            if len(indices) < 3:
+                continue
+            # Merge: keep the first entry, change type, remove the rest
+            first = features[indices[0]]
+            merged = {
+                "id": base.rstrip("_"),
+                "type": "hole_pattern_grid",
+                "rag_tags": first.get("rag_tags", ["corner_holes", "pattern"]),
+            }
+            inserts.append((indices[0], merged))
+            indices_to_remove.update(indices)
+
+        if not indices_to_remove:
+            return features
+
+        # Rebuild feature list
+        result = []
+        for i, f in enumerate(features):
+            if i in indices_to_remove:
+                # Check if this index has a replacement
+                for ins_idx, ins_feat in inserts:
+                    if ins_idx == i:
+                        result.append(ins_feat)
+                        break
+            else:
+                result.append(f)
+
+        return result
+
     def tag(self, state: PipelineState) -> dict:
         """Identify features and classify the task.
 
@@ -66,25 +119,7 @@ class FeatureTaggerAgent(BaseAgent):
         change_desc = state.get("change_description", "")
         text_to_analyze = change_desc if change_desc else specification
 
-        context = ""
-        previous_bp = state.get("previous_blueprint", {})
-        if previous_bp and change_desc:
-            context = (
-                f"\nExisting model: {previous_bp.get('description', '')}\n"
-                f"Features: {len(previous_bp.get('features', []) or previous_bp.get('features', {}))}\n"
-            )
-
-        # Use interpreter pre-analysis as a starting hint (avoids duplicate work)
-        interpreter_features = state.get("interpreter_features", [])
-        hint_section = ""
-        if interpreter_features:
-            hint_lines = "\n".join(f"  - {f}" for f in interpreter_features)
-            hint_section = (
-                f"\nInterpreter pre-analysis (already resolved positions — use as starting point):\n"
-                f"{hint_lines}\n"
-            )
-
-        prompt = f"Specification to analyze:\n{text_to_analyze}{context}{hint_section}"
+        prompt = f"Specification to analyze:\n{text_to_analyze}"
 
         self._ensure_rag()
         prompt = self._rag.enrich_prompt(prompt, text_to_analyze)
@@ -93,78 +128,39 @@ class FeatureTaggerAgent(BaseAgent):
             result = self.call_json(prompt, system=SYSTEM_PROMPT)
 
             features = result.get("features", [])
-            dependencies = result.get("dependencies", [])
-            build_order = result.get("build_order", [])
 
-            # Collect rag_tags from each feature into a flat query list.
-            rag_queries = result.get("rag_queries", [])
-            if not rag_queries:
-                for feat in features:
-                    if isinstance(feat, dict):
-                        rag_queries.extend(feat.get("rag_tags", []))
-                rag_queries = list(dict.fromkeys(rag_queries))  # deduplicate, preserve order
+            # Consolidate: if the LLM split a pattern into individual entries,
+            # merge them back into one hole_pattern_grid.
+            features = self._consolidate_patterns(features)
+
+            # Collect rag_tags from each feature
+            rag_queries = []
+            for feat in features:
+                if isinstance(feat, dict):
+                    rag_queries.extend(feat.get("rag_tags", []))
+            rag_queries = list(dict.fromkeys(rag_queries))
 
             tc = result.get("task_classification", {})
 
-            task_type = tc.get("task_type", "complex_multi_step")
-            difficulty = tc.get("difficulty", "medium")
-            requires_geo = bool(tc.get("requires_current_geometry", False))
-            rag_cats = tc.get("rag_categories", [])
-            template = tc.get("planner_template", "template_complex")
-            warnings = tc.get("warnings", [])
-
-            # --- Build feature_specs for per-feature planning ---
-            # Each spec contains: id, type, parent, rag_tags, description_relative
-            feature_specs = []
-            # Build parent lookup from dependencies
-            parent_map: dict[str, str | None] = {}
-            for dep in dependencies:
-                if isinstance(dep, dict):
-                    parent_map[dep.get("child", "")] = dep.get("parent")
-
-            # If build_order is missing, derive from features list order
-            if not build_order:
-                build_order = [f.get("id", f"f{i}") for i, f in enumerate(features)
-                               if isinstance(f, dict)]
-
-            for fid in build_order:
-                # Find the matching feature dict
-                feat_dict = next(
-                    (f for f in features if isinstance(f, dict) and f.get("id") == fid),
-                    None
-                )
-                if not feat_dict:
-                    continue
-                feature_specs.append({
-                    "id": fid,
-                    "type": feat_dict.get("type", "unknown"),
-                    "parent": parent_map.get(fid),
-                    "rag_tags": feat_dict.get("rag_tags", []),
-                    "description_relative": feat_dict.get("description_relative", ""),
-                })
-
             self.log.info("feature_tagger_done",
                           features_count=len(features),
-                          feature_specs_count=len(feature_specs),
-                          build_order=build_order,
-                          task_type=task_type,
-                          template=template,
-                          warnings=warnings)
+                          task_type=tc.get("task_type", "?"),
+                          template=tc.get("planner_template", "?"))
 
             return {
                 "feature_tree": {
                     "features_identified": features,
-                    "dependencies": dependencies,
+                    "dependencies": [],  # No longer assigned here
                     "rag_queries": rag_queries,
                 },
-                "feature_specs": feature_specs,
+                "feature_specs": [],  # No longer assigned here
                 "task_classification": {
-                    "task_type": task_type,
-                    "difficulty": difficulty,
-                    "requires_current_geometry": requires_geo,
-                    "rag_categories": rag_cats,
-                    "planner_template": template,
-                    "warnings": warnings,
+                    "task_type": tc.get("task_type", "complex_multi_step"),
+                    "difficulty": tc.get("difficulty", "medium"),
+                    "requires_current_geometry": bool(tc.get("requires_current_geometry", False)),
+                    "rag_categories": tc.get("rag_categories", []),
+                    "planner_template": tc.get("planner_template", "template_complex"),
+                    "warnings": tc.get("warnings", []),
                 },
             }
 

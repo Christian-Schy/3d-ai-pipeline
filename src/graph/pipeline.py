@@ -19,6 +19,11 @@ from src.graph.nodes import (
     visioner_node,
     interpreter_node,
     feature_tagger_node,
+    agent_dispatcher_node,
+    feature_assigner_node,
+    feature_position_assigner_node,
+    part_position_assigner_node,
+    blueprint_assembler_node,
     prompt_assembler_node,
     coordinate_validator_node,
     plan_validator_node,
@@ -48,12 +53,55 @@ def route_after_interpreter(state: PipelineState) -> str:
     return "interpreter"  # run interpreter again with extended message history
 
 
+def route_after_feature_tagger(state: PipelineState) -> str:
+    """After feature_tagger: fresh → agent_dispatcher (Häppchen), modification → prompt_assembler (legacy).
+
+    The Häppchen pipeline splits planning into focused agents:
+      agent_dispatcher → feature_assigner → feature_position_assigner →
+      part_position_assigner → blueprint_assembler → planner (pass-through)
+    The legacy path goes through prompt_assembler → planner (full generation).
+    """
+    change_desc = state.get("change_description", "")
+    if change_desc:
+        return "prompt_assembler"
+    return "agent_dispatcher"
+
+
+def _classify_validation_target(issues: str) -> str:
+    """Classify which specialist should fix the validation issue.
+
+    Returns one of: 'feature_assigner', 'feature_position_assigner',
+    'part_position_assigner', 'blueprint_assembler'.
+    """
+    issues_lower = issues.lower()
+    # Feature-level problems (wrong parent, wrong operation, wrong dimensions)
+    feature_keywords = ["parent", "operation", "dimension", "params", "typ"]
+    if any(kw in issues_lower for kw in feature_keywords):
+        return "feature_assigner"
+    # Position problems (wrong face, wrong alignment, wrong offset)
+    position_keywords = ["face", "alignment", "offset", "seite", "position"]
+    if any(kw in issues_lower for kw in position_keywords):
+        # Check if it's about add-parts or subtract-features
+        add_keywords = ["aufsatz", "platte", "teil", "add", "union", "schwebend", "abstand"]
+        if any(kw in issues_lower for kw in add_keywords):
+            return "part_position_assigner"
+        return "feature_position_assigner"
+    # Structure problems (build order, topology)
+    structure_keywords = ["build_order", "reihenfolge", "topolog", "assembl"]
+    if any(kw in issues_lower for kw in structure_keywords):
+        return "blueprint_assembler"
+    # Default: feature assigner (broadest scope)
+    return "feature_assigner"
+
+
 def route_after_coordinate_validator(state: PipelineState) -> str:
-    """After coordinate_validator: valid → plan_validator, invalid → planner."""
+    """After coordinate_validator: valid → plan_validator, invalid → back to specialist.
+
+    In the new architecture, validation errors are routed back to the
+    responsible specialist agent, not to a generalist Planner.
+    """
     if state.get("coordinate_valid", True):
         return "plan_validator"
-    # Own retry counter — plan_validation_attempts is only incremented by plan_validator_node,
-    # so it stays 0 in the coord_validator → planner → coord_validator loop.
     from src.config.loader import get_config
     max_retries = get_config().plan_validator.max_retries
     attempts = state.get("coordinate_validation_attempts", 0)
@@ -61,10 +109,13 @@ def route_after_coordinate_validator(state: PipelineState) -> str:
         log.warning("route_coordinate_validator", decision="plan_validator",
                     reason="max_retries_exceeded", attempts=attempts)
         return "plan_validator"
-    log.info("route_coordinate_validator", decision="planner",
-             attempts=attempts,
-             issues=state.get("coordinate_validation_issues", "")[:60])
-    return "planner"
+
+    # Route to the responsible specialist
+    issues = state.get("coordinate_validation_issues", "")
+    target = _classify_validation_target(issues)
+    log.info("route_coordinate_validator", decision=target,
+             attempts=attempts, issues=issues[:60])
+    return target
 
 
 def route_after_code_review(state: PipelineState) -> str:
@@ -82,8 +133,23 @@ def route_after_code_review(state: PipelineState) -> str:
     return "coder"
 
 
+def route_after_function_decomposer(state: PipelineState) -> str:
+    """After function_decomposer: template mode → executor (skip coder), else → coder."""
+    mode = state.get("generation_mode", "llm")
+    if mode == "template":
+        log.info("route_function_decomposer", decision="executor",
+                 reason="all_features_template")
+        return "executor"
+    log.info("route_function_decomposer", decision="coder", mode=mode)
+    return "coder"
+
+
 def route_after_plan_validator(state: PipelineState) -> str:
-    """After plan_validator: valid → function_decomposer, invalid → planner."""
+    """After plan_validator: valid → function_decomposer, invalid → back to specialist.
+
+    In the new architecture, validation errors go back to the responsible
+    specialist, not to the Planner.
+    """
     from src.config.loader import get_config
     if state.get("plan_valid", True):
         return "function_decomposer"
@@ -92,10 +158,14 @@ def route_after_plan_validator(state: PipelineState) -> str:
         log.warning("route_plan_validator", decision="function_decomposer",
                     reason="max_retries_exceeded",
                     attempts=state.get("plan_validation_attempts"))
-        return "function_decomposer"  # give up validating, proceed anyway
-    log.info("route_plan_validator", decision="planner",
-             issues=state.get("plan_validation_issues", "")[:60])
-    return "planner"
+        return "function_decomposer"
+
+    # Route to the responsible specialist
+    issues = state.get("plan_validation_issues", "")
+    target = _classify_validation_target(issues)
+    log.info("route_plan_validator", decision=target,
+             issues=issues[:60])
+    return target
 
 
 def build_graph() -> StateGraph:
@@ -110,6 +180,13 @@ def build_graph() -> StateGraph:
     graph.add_node("visioner", visioner_node)
     graph.add_node("interpreter", interpreter_node)
     graph.add_node("feature_tagger", feature_tagger_node)
+    graph.add_node("agent_dispatcher", agent_dispatcher_node)
+    # Häppchen pipeline nodes (fresh requests)
+    graph.add_node("feature_assigner", feature_assigner_node)
+    graph.add_node("feature_position_assigner", feature_position_assigner_node)
+    graph.add_node("part_position_assigner", part_position_assigner_node)
+    graph.add_node("blueprint_assembler", blueprint_assembler_node)
+    # Legacy path (modifications)
     graph.add_node("prompt_assembler", prompt_assembler_node)
     graph.add_node("coordinate_validator", coordinate_validator_node)
     graph.add_node("plan_validator", plan_validator_node)
@@ -143,24 +220,53 @@ def build_graph() -> StateGraph:
     )
 
     # Phase 1+2 chain:
-    #   feature_tagger → prompt_assembler → planner
-    #   → coordinate_validator → plan_validator → function_decomposer
-    #   → coder → code_review → executor
+    #   Fresh:  feature_tagger → feature_assigner → position_assigner
+    #           → blueprint_assembler → planner (review)
+    #   Modify: feature_tagger → prompt_assembler → planner (run)
+    #   Both:   → coordinate_validator → plan_validator → function_decomposer
+    #           → coder → code_review → executor
     graph.add_edge("visioner", "interpreter")
-    graph.add_edge("feature_tagger", "prompt_assembler")
+    graph.add_conditional_edges(
+        "feature_tagger",
+        route_after_feature_tagger,
+        {"agent_dispatcher": "agent_dispatcher", "prompt_assembler": "prompt_assembler"},
+    )
+    # Häppchen chain: dispatcher → feature_assigner → split position pipeline
+    graph.add_edge("agent_dispatcher", "feature_assigner")
+    graph.add_edge("feature_assigner", "feature_position_assigner")
+    graph.add_edge("feature_position_assigner", "part_position_assigner")
+    graph.add_edge("part_position_assigner", "blueprint_assembler")
+    graph.add_edge("blueprint_assembler", "planner")
+    # Legacy chain
     graph.add_edge("prompt_assembler", "planner")
     graph.add_edge("planner", "coordinate_validator")
     graph.add_conditional_edges(
         "coordinate_validator",
         route_after_coordinate_validator,
-        {"plan_validator": "plan_validator", "planner": "planner"},
+        {
+            "plan_validator": "plan_validator",
+            "feature_assigner": "feature_assigner",
+            "feature_position_assigner": "feature_position_assigner",
+            "part_position_assigner": "part_position_assigner",
+            "blueprint_assembler": "blueprint_assembler",
+        },
     )
     graph.add_conditional_edges(
         "plan_validator",
         route_after_plan_validator,
-        {"function_decomposer": "function_decomposer", "planner": "planner"},
+        {
+            "function_decomposer": "function_decomposer",
+            "feature_assigner": "feature_assigner",
+            "feature_position_assigner": "feature_position_assigner",
+            "part_position_assigner": "part_position_assigner",
+            "blueprint_assembler": "blueprint_assembler",
+        },
     )
-    graph.add_edge("function_decomposer", "coder")
+    graph.add_conditional_edges(
+        "function_decomposer",
+        route_after_function_decomposer,
+        {"executor": "executor", "coder": "coder"},
+    )
     graph.add_edge("coder", "code_review")           # always review after coder
     graph.add_conditional_edges(
         "code_review",
@@ -177,7 +283,7 @@ def build_graph() -> StateGraph:
     graph.add_conditional_edges(
         "validator",
         route_after_validator,
-        {"end": END, "planner": "planner", "coder": "coder"},
+        {"end": END, "feature_assigner": "feature_assigner", "coder": "coder"},
     )
     graph.add_conditional_edges(
         "error_router",
@@ -277,8 +383,14 @@ class PipelineRunner:
             # Phase 1 fields
             "feature_tree": {},
             "code_skeleton": "",
+            "generation_mode": "",
             "feature_specs": [],
             "per_feature_rules": {},
+            # Phase 1 — Häppchen fields
+            "feature_assignments": {},
+            "position_assignments": {},
+            "feature_position_assignments": {},
+            "part_position_assignments": {},
             # Phase 2 fields
             "coordinate_validation_issues": "",
             "coordinate_valid": True,
@@ -286,6 +398,9 @@ class PipelineRunner:
             "code_review_issues": "",
             "code_review_approved": True,
             "code_review_attempts": 0,
+            "validation_feedback_target": "",
+            "active_agents": [],
+            "agent_flags": [],
         }
 
         log.info("pipeline_run_start", description=description[:80])
@@ -409,8 +524,14 @@ class PipelineRunner:
             # Phase 1 fields
             "feature_tree": {},
             "code_skeleton": "",
+            "generation_mode": "",
             "feature_specs": [],
             "per_feature_rules": {},
+            # Phase 1 — Häppchen fields
+            "feature_assignments": {},
+            "position_assignments": {},
+            "feature_position_assignments": {},
+            "part_position_assignments": {},
             # Phase 2 fields
             "coordinate_validation_issues": "",
             "coordinate_valid": True,
@@ -418,6 +539,9 @@ class PipelineRunner:
             "code_review_issues": "",
             "code_review_approved": True,
             "code_review_attempts": 0,
+            "validation_feedback_target": "",
+            "active_agents": [],
+            "agent_flags": [],
         }
 
         # Always use a fresh thread_id — never reuse a previous run's checkpoint.

@@ -30,6 +30,8 @@ log = structlog.get_logger()
 
 _prompt = load_prompt("prompt_planner.py")
 SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
+REVIEW_PROMPT_TEMPLATE = _prompt.REVIEW_PROMPT_TEMPLATE
+FIX_PROMPT_TEMPLATE = _prompt.FIX_PROMPT_TEMPLATE
 
 # Patch-mode system prompt — compact instructions for value-only diffs
 PATCH_SYSTEM_PROMPT = (
@@ -471,6 +473,71 @@ class PlannerAgent(BaseAgent):
             except FileNotFoundError:
                 self.log.warning("planner_rag_missing", path="data/knowledge/planner")
             self._rag_ready = True
+
+    def review(self, state: PipelineState) -> dict:
+        """Review a pre-assembled blueprint and correct errors.
+
+        Called after the Häppchen pipeline (Feature Assigner → Position Assigner
+        → Blueprint Assembler) has produced a blueprint. The Planner acts as a
+        reviewer: checks the blueprint against the specification and corrects
+        only what's wrong. If everything looks good, returns it unchanged.
+
+        Returns {"blueprint": dict}.
+        """
+        import json as _json
+
+        specification = state.get("specification") or state.get("description", "")
+        blueprint = state.get("blueprint", {})
+        plan_issues = state.get("plan_validation_issues", "")
+
+        if not blueprint:
+            self.log.warning("planner_review_no_blueprint")
+            return {"blueprint": {}}
+
+        # If plan_validator or coordinate_validator sent us back with issues,
+        # use the fix template instead of the review template.
+        if plan_issues:
+            self.log.info("planner_review_fix", issues=plan_issues[:80])
+            prompt = FIX_PROMPT_TEMPLATE.format(
+                validation_errors=plan_issues,
+                previous_blueprint=_json.dumps(blueprint, indent=2),
+            )
+        else:
+            self.log.info("planner_review_fresh",
+                          features=len(blueprint.get("features", {})),
+                          build_order=blueprint.get("build_order", []))
+            prompt = REVIEW_PROMPT_TEMPLATE.format(
+                specification=specification,
+                blueprint_json=_json.dumps(blueprint, indent=2),
+            )
+
+        # Inject RAG geometry rules for the reviewer
+        self._ensure_rag()
+        prompt = self._rag.enrich_prompt(prompt, specification)
+
+        raw = self.call_json(prompt, system=SYSTEM_PROMPT)
+
+        # Validate with Pydantic
+        if FeatureTree.is_feature_tree(raw):
+            try:
+                ft = FeatureTree.model_validate(raw)
+                bp_dict = ft.to_dict()
+                self.log.info("planner_review_done",
+                              description=ft.description[:60],
+                              feature_count=len(ft.features))
+                return {"blueprint": bp_dict}
+            except ValidationError as e:
+                self.log.error("planner_review_validation_failed",
+                               error=str(e)[:200])
+                _err_lines = [l for l in str(e).splitlines()
+                              if "pydantic.dev" not in l and l.strip()]
+                raw["_validation_error"] = "\n".join(_err_lines)[:300]
+                return {"blueprint": raw}
+        else:
+            # Response doesn't look like Feature Tree — return as-is
+            self.log.warning("planner_review_not_feature_tree",
+                             keys=list(raw.keys())[:5])
+            return {"blueprint": raw}
 
     def _apply_diff(self, blueprint: dict, diff: dict, change_hint: str = "") -> tuple[dict, int]:
         """Apply a diff returned by the LLM to the existing blueprint.

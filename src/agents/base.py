@@ -10,7 +10,9 @@ Common logic lives here once — not repeated in every agent:
 """
 
 import json
+import socket
 import urllib.request
+import urllib.error
 import structlog
 from pathlib import Path
 from src.config.loader import get_config
@@ -88,13 +90,80 @@ class BaseAgent:
         if json_mode:
             payload["format"] = "json"
 
-        self.log.debug("agent_call_start", model=self.model,
-                       prompt_chars=len(prompt), json_mode=json_mode)
+        self.log.info("agent_call_start", model=self.model,
+                      prompt_chars=len(prompt), json_mode=json_mode)
 
         response_text = self._http_post(payload)
 
-        self.log.debug("agent_call_done", response_chars=len(response_text))
+        # Store raw response for trace inspection (before JSON parsing etc.)
+        self._last_raw_response: str = response_text
+
+        self.log.info("agent_call_done", response_chars=len(response_text))
         return response_text
+
+    @staticmethod
+    def _extract_json(text: str) -> str:
+        """Extract the first complete JSON object/array from text.
+
+        Handles:
+          - Clean JSON: '{"key": "value"}'
+          - Markdown fences: '```json\\n{...}\\n```'
+          - Freitext before JSON: 'Here is the result:\\n{...}'
+          - Trailing text after JSON: '{...}\\nSome explanation'
+        """
+        clean = text.strip()
+
+        # Step 1: Strip markdown code fences
+        if clean.startswith("```"):
+            lines = clean.split("\n")
+            start_idx = 1  # skip ```json or ```
+            end_idx = len(lines)
+            for i in range(len(lines) - 1, 0, -1):
+                if lines[i].strip().startswith("```"):
+                    end_idx = i
+                    break
+            clean = "\n".join(lines[start_idx:end_idx]).strip()
+
+        # Step 2: Find the first { or [ in the text (skip any preamble)
+        json_start = -1
+        for i, ch in enumerate(clean):
+            if ch in "{[":
+                json_start = i
+                break
+
+        if json_start < 0:
+            return clean  # no JSON found — return as-is, let json.loads fail
+
+        if json_start > 0:
+            clean = clean[json_start:]
+
+        # Step 3: Extract the first complete JSON object/array
+        if clean and clean[0] in "{[":
+            bracket = clean[0]
+            close = "}" if bracket == "{" else "]"
+            depth = 0
+            in_string = False
+            escape_next = False
+            for i, ch in enumerate(clean):
+                if escape_next:
+                    escape_next = False
+                    continue
+                if ch == "\\":
+                    escape_next = True
+                    continue
+                if ch == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+                if in_string:
+                    continue
+                if ch == bracket:
+                    depth += 1
+                elif ch == close:
+                    depth -= 1
+                    if depth == 0:
+                        return clean[:i + 1]
+
+        return clean
 
     def call_json(self, prompt: str, system: str = "") -> dict:
         """Like call(), but parses the response as JSON and returns a dict.
@@ -105,72 +174,26 @@ class BaseAgent:
         Raises ValueError if the response is not valid JSON.
         """
         raw = self.call(prompt, system=system, json_mode=True)
-        # Strip markdown code fences if model ignores json_mode
-        clean = raw.strip()
-        if clean.startswith("```"):
-            lines = clean.split("\n")
-            # Skip opening fence line, find last closing fence line
-            start_idx = 1  # skip ```json or ```
-            end_idx = len(lines)
-            for i in range(len(lines) - 1, 0, -1):
-                if lines[i].strip().startswith("```"):
-                    end_idx = i
-                    break
-            clean = "\n".join(lines[start_idx:end_idx]).strip()
-
-        # Extract first complete JSON object/array (ignore trailing text)
-        if clean and clean[0] in "{[":
-            bracket = "{" if clean[0] == "{" else "["
-            close = "}" if bracket == "{" else "]"
-            depth = 0
-            for i, ch in enumerate(clean):
-                if ch == bracket:
-                    depth += 1
-                elif ch == close:
-                    depth -= 1
-                    if depth == 0:
-                        clean = clean[:i + 1]
-                        break
+        clean = self._extract_json(raw)
 
         try:
             return json.loads(clean)
         except json.JSONDecodeError as e:
             self.log.warning("agent_json_parse_failed_retry",
-                             error=str(e), raw_chars=len(raw))
+                             error=str(e), raw_start=raw[:150])
             # One retry — LLMs sometimes produce truncated or malformed JSON
             # on first attempt but succeed on the second.
             try:
                 raw2 = self.call(prompt, system=system, json_mode=True)
-                clean2 = raw2.strip()
-                if clean2.startswith("```"):
-                    lines2 = clean2.split("\n")
-                    s2 = 1
-                    e2 = len(lines2)
-                    for i2 in range(len(lines2) - 1, 0, -1):
-                        if lines2[i2].strip().startswith("```"):
-                            e2 = i2
-                            break
-                    clean2 = "\n".join(lines2[s2:e2]).strip()
-                if clean2 and clean2[0] in "{[":
-                    bracket2 = "{" if clean2[0] == "{" else "["
-                    close2 = "}" if bracket2 == "{" else "]"
-                    depth2 = 0
-                    for i2, ch2 in enumerate(clean2):
-                        if ch2 == bracket2:
-                            depth2 += 1
-                        elif ch2 == close2:
-                            depth2 -= 1
-                            if depth2 == 0:
-                                clean2 = clean2[:i2 + 1]
-                                break
+                clean2 = self._extract_json(raw2)
                 return json.loads(clean2)
             except (json.JSONDecodeError, Exception) as e2:
                 self.log.error("agent_json_parse_failed",
-                               error=str(e), raw_response=raw[:200])
+                               error=str(e), raw_response=raw[:300])
                 raise ValueError(
                     f"{self.name}: Ollama returned invalid JSON (2 attempts).\n"
                     f"Error: {e}\n"
-                    f"Response start: {raw[:200]}"
+                    f"Response start: {raw[:300]}"
                 ) from e
 
     def load_prompt(self, filename: str) -> str:
@@ -255,7 +278,7 @@ class BaseAgent:
                     "Is 'ollama serve' running?"
                 ) from e
 
-            except TimeoutError as e:
+            except (TimeoutError, socket.timeout) as e:
                 if attempt < max_retries - 1:
                     delay = base_delay * (2 ** attempt)
                     structlog.get_logger().warning(
@@ -278,6 +301,48 @@ class BaseAgent:
                     f"Ollama did not respond after {max_retries} attempts. "
                     "Model may be overloaded."
                 ) from e
+
+            except urllib.error.URLError as e:
+                # urllib wraps socket.timeout in URLError on some Python versions
+                if isinstance(e.reason, (socket.timeout, TimeoutError)):
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)
+                        structlog.get_logger().warning(
+                            "ollama_retry",
+                            attempt=attempt + 1,
+                            max=max_retries,
+                            delay_s=delay,
+                            reason="URLError_Timeout",
+                        )
+                        import time; time.sleep(delay)
+                        req = urllib.request.Request(
+                            _ollama_url(),
+                            data=data,
+                            headers={"Content-Type": "application/json"},
+                            method="POST",
+                        )
+                        continue
+                    raise TimeoutError(
+                        f"Ollama did not respond after {max_retries} attempts. "
+                        "Model may be overloaded."
+                    ) from e
+                if isinstance(e.reason, ConnectionRefusedError):
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)
+                        structlog.get_logger().warning(
+                            "ollama_retry",
+                            attempt=attempt + 1,
+                            max=max_retries,
+                            delay_s=delay,
+                            reason="URLError_ConnectionRefused",
+                        )
+                        import time; time.sleep(delay)
+                        continue
+                    raise ConnectionRefusedError(
+                        f"Cannot reach Ollama at {_ollama_url()} after {max_retries} attempts. "
+                        "Is 'ollama serve' running?"
+                    ) from e
+                raise
 
             except urllib.error.HTTPError as e:
                 if e.code == 404:

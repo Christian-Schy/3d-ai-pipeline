@@ -1,0 +1,578 @@
+"""
+src/codegen/assembler.py — Assembles CadQuery code from Feature Tree + templates.
+
+Takes a Feature Tree blueprint (with pre-computed offsets from BlueprintAssembler)
+and generates a complete, executable Python file using templates.
+
+For standard features: deterministic template code.
+For complex features: function stubs with `pass` (LLM fills these).
+"""
+
+from __future__ import annotations
+from src.codegen.feature_classifier import is_standard
+from src.codegen import templates as T
+
+
+def generate_code(blueprint: dict) -> str:
+    """Generate complete CadQuery Python code from a Feature Tree blueprint.
+
+    Returns a complete, executable Python file as a string.
+    Complex features get `pass` stubs for LLM to fill.
+    """
+    build_order = blueprint.get("build_order", [])
+    features = blueprint.get("features", {})
+    description = blueprint.get("description", "")
+
+    if not build_order or not features:
+        return ""
+
+    # Identify root and sub-assembly structure
+    root_id = build_order[0]
+    root_feat = features.get(root_id, {})
+
+    # Collect all parts
+    lines: list[str] = []
+    lines.append("import cadquery as cq")
+    lines.append("from cadquery.selectors import NearestToPointSelector")
+    lines.append("")
+    lines.append(f"OUTPUT_PATH = 'output.stl'")
+    lines.append("")
+
+    # Phase 1: Generate constants
+    const_lines = _generate_constants(build_order, features)
+    if const_lines:
+        lines.extend(const_lines)
+        lines.append("")
+
+    # Phase 2: Generate function definitions
+    func_map: dict[str, str] = {}  # fid → func_name
+    sub_assemblies: list[dict] = []
+
+    for fid in build_order:
+        feat = features.get(fid, {})
+        ftype = feat.get("type", "box").lower()
+        operation = feat.get("operation", "add").lower()
+        parent = feat.get("parent")
+        params = feat.get("params", {})
+        placement = feat.get("placement") or {}
+
+        func_name = _make_func_name(fid, operation)
+        func_map[fid] = func_name
+
+        # Modifiers (fillet, chamfer, shell) are always treated as subtract/modify
+        # regardless of what operation field says
+        is_modifier = ftype in ("fillet", "chamfer", "shell")
+
+        if parent is None and not is_modifier:
+            # Root feature
+            code = _generate_root(func_name, ftype, params)
+        elif operation in ("add", "union") and not is_modifier:
+            # Sub-assembly part — build standalone
+            code = _generate_add_part(func_name, ftype, params)
+            sub_assemblies.append({
+                "fid": fid,
+                "func_name": func_name,
+                "parent": parent,
+                "placement": placement,
+                "params": params,
+            })
+        else:
+            # Subtract/modify feature
+            code = _generate_subtract(func_name, fid, ftype, params, placement, features)
+
+        if code:
+            lines.append(code)
+            lines.append("")
+
+    # Phase 3: Generate sub-assembly build functions
+    # Group: which subtract features belong to which add-part?
+    sa_builds = _generate_sub_assembly_builds(
+        build_order, features, func_map, sub_assemblies
+    )
+    if sa_builds:
+        lines.extend(sa_builds)
+
+    # Phase 4: Generate assemble() function
+    assemble_lines = _generate_assemble(
+        root_id, build_order, features, func_map, sub_assemblies
+    )
+    lines.extend(assemble_lines)
+
+    # Phase 5: Main
+    lines.append("")
+    lines.append("result = assemble()")
+    lines.append("cq.exporters.export(result, OUTPUT_PATH)")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+# ──────────────────────────────────────────────────────────────────
+# Internal helpers
+# ──────────────────────────────────────────────────────────────────
+
+def _make_func_name(fid: str, operation: str) -> str:
+    """Generate a function name from feature ID."""
+    clean = fid.replace("-", "_").replace(" ", "_")
+    if operation in ("subtract", "cut"):
+        if clean.startswith(("hole", "drill")):
+            return f"drill_{clean}"
+        elif clean.startswith(("slot", "groove", "nut")):
+            return f"cut_{clean}"
+        elif clean.startswith(("fillet", "chamfer")):
+            return f"apply_{clean}"
+        return f"cut_{clean}"
+    return f"make_{clean}"
+
+
+def _generate_constants(build_order: list, features: dict) -> list[str]:
+    """Generate parameter constants for all features."""
+    lines = []
+    for fid in build_order:
+        feat = features.get(fid, {})
+        params = feat.get("params", {})
+        placement = feat.get("placement") or {}
+        prefix = fid.upper().replace("-", "_").replace(" ", "_")
+
+        emitted = False
+        for k, v in params.items():
+            if isinstance(v, (int, float)) and v > 0:
+                lines.append(f"{prefix}_{k.upper()} = {v}")
+                emitted = True
+
+        # Offset constants from placement (default 0.0 for add-parts)
+        operation = feat.get("operation", "add").lower()
+        parent = feat.get("parent")
+        ox = placement.get("offset_x")
+        oy = placement.get("offset_y")
+        needs_offset = (parent is not None)  # all child features need offsets
+
+        if ox is not None:
+            lines.append(f"{prefix}_OFFSET_X = {round(float(ox), 4)}")
+            emitted = True
+        elif needs_offset:
+            lines.append(f"{prefix}_OFFSET_X = 0.0")
+            emitted = True
+
+        if oy is not None:
+            lines.append(f"{prefix}_OFFSET_Y = {round(float(oy), 4)}")
+            emitted = True
+        elif needs_offset:
+            lines.append(f"{prefix}_OFFSET_Y = 0.0")
+            emitted = True
+
+        if emitted:
+            lines.append("")
+
+    return lines
+
+
+def _generate_root(func_name: str, ftype: str, params: dict) -> str:
+    """Generate code for a root feature."""
+    if ftype in ("box", "base_plate", "extrusion_rect", "step"):
+        x = float(params.get("x") or 100)
+        y = float(params.get("y") or 100)
+        z = float(params.get("z") or 20)
+        return T.root_box(func_name, x, y, z)
+    elif ftype in ("cylinder", "base_cylinder", "extrusion_round"):
+        r = float(params.get("radius") or (params.get("diameter") or 50) / 2)
+        h = float(params.get("height") or params.get("z") or 50)
+        return T.root_cylinder(func_name, r, h)
+    elif ftype in ("sphere", "base_sphere"):
+        r = float(params.get("radius") or (params.get("diameter") or 50) / 2)
+        return T.root_sphere(func_name, r)
+    # Complex root — stub
+    return (
+        f"def {func_name}() -> cq.Workplane:\n"
+        f"    # TODO: Complex root type '{ftype}' — needs LLM\n"
+        f"    pass\n"
+    )
+
+
+def _generate_add_part(func_name: str, ftype: str, params: dict) -> str:
+    """Generate standalone add-part (sub-assembly build function)."""
+    if ftype in ("box", "base_plate", "extrusion_rect", "step"):
+        x = float(params.get("x") or 50)
+        y = float(params.get("y") or 50)
+        z = float(params.get("z") or 20)
+        return T.add_box(func_name, x, y, z)
+    elif ftype in ("cylinder", "base_cylinder", "extrusion_round"):
+        r = float(params.get("radius") or (params.get("diameter") or 25) / 2)
+        h = float(params.get("height") or params.get("z") or 30)
+        return T.add_cylinder(func_name, r, h)
+    # Complex add-part — stub
+    return (
+        f"def {func_name}() -> cq.Workplane:\n"
+        f"    # TODO: Complex add-part type '{ftype}' — needs LLM\n"
+        f"    pass\n"
+    )
+
+
+def _generate_subtract(
+    func_name: str,
+    fid: str,
+    ftype: str,
+    params: dict,
+    placement: dict,
+    all_features: dict,
+) -> str:
+    """Generate code for a subtract/modify feature."""
+    face = placement.get("face", ">Z")
+    ox = float(placement.get("offset_x", 0) or 0)
+    oy = float(placement.get("offset_y", 0) or 0)
+    # TODO: NTP detection based on build order position
+    use_ntp = False
+    ntp_point = None
+
+    if ftype in ("hole", "hole_single", "cylinder"):
+        # cylinder with subtract operation = cylindrical hole/cut
+        # Auto-detect grid/circular patterns by params
+        if params.get("inset") and params.get("count", 1) > 1:
+            # Actually a hole_pattern_grid mistyped as "hole"
+            return _generate_subtract(func_name, fid, "hole_pattern_grid",
+                                      params, placement, all_features)
+        if params.get("bolt_circle_diameter") or (params.get("count", 1) > 4 and not params.get("inset")):
+            # Actually a hole_pattern_circular
+            return _generate_subtract(func_name, fid, "hole_pattern_circular",
+                                      params, placement, all_features)
+        d = float(params.get("diameter") or params.get("hole_diameter") or (params.get("radius", 5) * 2))
+        depth = _safe_depth(params.get("depth") or params.get("height"))
+        return T.hole_single(func_name, d, depth, face, ox, oy, use_ntp, ntp_point)
+
+    elif ftype == "hole_counterbore":
+        d = float(params.get("diameter") or 10)
+        depth = _safe_depth(params.get("depth"))
+        cbd = float(params.get("cbore_diameter") or d * 1.8)
+        cbdepth = float(params.get("cbore_depth") or 5)
+        return T.hole_counterbore(
+            func_name, d, depth, cbd, cbdepth, face, ox, oy, use_ntp, ntp_point
+        )
+
+    elif ftype == "hole_countersink":
+        d = float(params.get("diameter") or 10)
+        depth = _safe_depth(params.get("depth"))
+        csd = float(params.get("csk_diameter") or d * 2)
+        angle = float(params.get("csk_angle") or 82)
+        return T.hole_countersink(
+            func_name, d, depth, csd, angle, face, ox, oy, use_ntp, ntp_point
+        )
+
+    elif ftype == "hole_pattern_grid":
+        hd = float(params.get("hole_diameter") or params.get("diameter") or 10)
+        depth = _safe_depth(params.get("depth"))
+        count = int(params.get("count") or 4)
+        inset = float(params.get("inset") or 20)
+        parent_id = _find_parent(fid, all_features)
+        pp = all_features.get(parent_id, {}).get("params", {}) if parent_id else {}
+        px = float(pp.get("x") or 100)
+        py = float(pp.get("y") or 100)
+        pz = float(pp.get("z") or 10)
+        return T.hole_pattern_grid(
+            func_name, hd, depth, count, inset, px, py, pz,
+            face, ox, oy, use_ntp, ntp_point
+        )
+
+    elif ftype == "hole_pattern_circular":
+        hd = float(params.get("hole_diameter") or params.get("diameter") or 10)
+        depth = _safe_depth(params.get("depth"))
+        count = int(params.get("count", 6))
+        bolt_d = float(params.get("bolt_circle_diameter") or params.get("diameter") or 60)
+        return T.hole_pattern_circular(
+            func_name, hd, depth, count, bolt_d, face, ox, oy, use_ntp, ntp_point
+        )
+
+    elif ftype in ("slot", "groove"):
+        w = float(params.get("width") or 5)
+        d = float(params.get("depth") or 5)
+        # Determine axis from notes first, then translate to workplane angle per face.
+        # On top/bottom faces: workplane-X=globalX, workplane-Y=globalY → angle=0=X, 90=Y
+        # On left/right faces: workplane-X=globalY, workplane-Y=globalZ → angle=0=Y, 90=Z
+        # On front/back faces: workplane-X=globalX, workplane-Y=globalZ → angle=0=X, 90=Z
+        notes = placement.get("notes", "")
+        axis_hint = None
+        if "entlang Y" in notes or "along Y" in notes:
+            axis_hint = "Y"
+        elif "entlang X" in notes or "along X" in notes:
+            axis_hint = "X"
+
+        if axis_hint == "Y":
+            # On >X/<X faces, workplane-X IS the Y-axis → angle=0
+            # On all other faces, Y-axis = workplane-Y → angle=90
+            angle = 0 if face in (">X", "<X") else 90
+        elif axis_hint == "X":
+            # X-axis = workplane-X on >Z/<Z and >Y/<Y faces → angle=0
+            # X is perpendicular to >X/<X faces → treat as angle=0 (natural horizontal)
+            angle = 0
+        else:
+            angle = float(params.get("angle") or 0)
+
+        length = params.get("length")
+        if length is None:
+            # Full parent length — pick the parent dimension along the cutting direction in 3D
+            parent_id = _find_parent(fid, all_features)
+            pp = all_features.get(parent_id, {}).get("params", {}) if parent_id else {}
+            px = float(pp.get("x") or 100)
+            py = float(pp.get("y") or 100)
+            pz = float(pp.get("z") or 100)
+            if face in (">Z", "<Z"):
+                length = py if angle == 90 else px
+            elif face in (">X", "<X"):
+                # angle=0 → cuts along workplane-X = global Y; angle=90 → along Z
+                length = pz if angle == 90 else py
+            elif face in (">Y", "<Y"):
+                # angle=0 → cuts along workplane-X = global X; angle=90 → along Z
+                length = pz if angle == 90 else px
+            else:
+                length = py if angle == 90 else px
+        else:
+            length = float(length)
+        return T.slot(func_name, length, w, d, angle, face, ox, oy, use_ntp, ntp_point)
+
+    elif ftype in ("pocket_rect", "cutout", "box"):
+        # box with subtract operation = rectangular pocket/cutout
+        x = float(params.get("x") or 30)
+        y = float(params.get("y") or 30)
+        d = float(params.get("depth") or params.get("z") or 5)
+        return T.pocket_rect(func_name, x, y, d, face, ox, oy, use_ntp, ntp_point)
+
+    elif ftype == "fillet":
+        r = float(params.get("radius") or 2)
+        sel = params.get("edge_selector", "|Z")
+        return T.fillet(func_name, r, sel)
+
+    elif ftype == "chamfer":
+        s = float(params.get("size") or 2)
+        sel = params.get("edge_selector", "|Z")
+        return T.chamfer(func_name, s, sel)
+
+    elif ftype == "shell":
+        t = float(params.get("thickness") or 2)
+        face_rm = params.get("face", ">Z")
+        return T.shell(func_name, t, face_rm)
+
+    # Complex subtract — stub
+    return (
+        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
+        f"    # TODO: Complex type '{ftype}' — needs LLM\n"
+        f"    pass\n"
+    )
+
+
+def _safe_depth(value) -> float | None:
+    """Convert depth to float, treating 'through'/None as through-hole (None)."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        if value.lower() in ("through", "null", "none", ""):
+            return None
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return float(value)
+
+
+def _find_parent(fid: str, features: dict) -> str | None:
+    """Find the parent feature ID for a given feature."""
+    feat = features.get(fid, {})
+    return feat.get("parent")
+
+
+def _generate_sub_assembly_builds(
+    build_order: list,
+    features: dict,
+    func_map: dict,
+    sub_assemblies: list[dict],
+) -> list[str]:
+    """Generate build_XYZ() functions that chain sub-assembly operations.
+
+    Handles both subtract-children (holes, slots applied to the part)
+    and add-children (nested sub-assemblies translated+unioned onto the part).
+    """
+    lines = []
+    sa_fids = {sa["fid"] for sa in sub_assemblies}
+    sa_lookup = {sa["fid"]: sa for sa in sub_assemblies}
+
+    for sa in sub_assemblies:
+        sa_fid = sa["fid"]
+        sa_prefix = sa_fid.upper().replace("-", "_").replace(" ", "_")
+        sa_params = sa["params"]
+
+        # Find ALL children of this sub-assembly part (in build_order sequence)
+        subtract_children = []
+        add_children = []
+        for fid in build_order:
+            if fid == sa_fid:
+                continue
+            feat = features.get(fid, {})
+            if feat.get("parent") != sa_fid:
+                continue
+            op = feat.get("operation", "add").lower()
+            if op in ("subtract", "cut", "modify"):
+                subtract_children.append(fid)
+            elif op in ("add", "union"):
+                add_children.append(fid)
+
+        if not subtract_children and not add_children:
+            continue  # No build function needed — make_XYZ() suffices
+
+        make_func = func_map.get(sa_fid, f"make_{sa_fid}")
+        build_name = f"build_{sa_fid.replace('-', '_').replace(' ', '_')}"
+
+        lines.append(f"def {build_name}() -> cq.Workplane:")
+        lines.append(f"    result = {make_func}()")
+
+        # 1) Apply subtract-children (holes, slots, modifiers)
+        for child_fid in subtract_children:
+            child_func = func_map.get(child_fid)
+            if child_func:
+                lines.append(f"    result = {child_func}(result)")
+
+        # 2) Nested add-children (sub-assemblies on this part)
+        for child_fid in add_children:
+            child_feat = features.get(child_fid, {})
+            child_params = child_feat.get("params", {})
+            child_placement = child_feat.get("placement") or {}
+            child_prefix = child_fid.upper().replace("-", "_").replace(" ", "_")
+            clean_child = child_fid.replace("-", "_").replace(" ", "_")
+
+            # Does this nested SA itself have children? → use build_ or make_
+            nested_has_children = any(
+                fid2 != child_fid
+                and features.get(fid2, {}).get("parent") == child_fid
+                for fid2 in build_order
+            )
+            if nested_has_children:
+                child_build = f"build_{clean_child}"
+            else:
+                child_build = func_map.get(child_fid, f"make_{clean_child}")
+
+            face = child_placement.get("face", ">Z")
+            translate_code = _compute_translate(
+                face, sa_prefix, sa_params, child_prefix, child_params
+            )
+
+            lines.append(f"    {clean_child} = {child_build}()")
+            lines.append(f"    {clean_child} = {clean_child}.translate({translate_code})")
+            lines.append(f"    result = result.union({clean_child}).clean()")
+
+        lines.append(f"    return result")
+        lines.append("")
+
+    return lines
+
+
+def _generate_assemble(
+    root_id: str,
+    build_order: list,
+    features: dict,
+    func_map: dict,
+    sub_assemblies: list[dict],
+) -> list[str]:
+    """Generate the assemble() function."""
+    lines = []
+    root_func = func_map.get(root_id, f"make_{root_id}")
+    root_params = features.get(root_id, {}).get("params", {})
+    root_prefix = root_id.upper().replace("-", "_").replace(" ", "_")
+
+    lines.append("def assemble() -> cq.Workplane:")
+    lines.append(f"    result = {root_func}()")
+    lines.append("")
+
+    # Apply base subtracts (features directly on root, before any union)
+    sa_fids = {sa["fid"] for sa in sub_assemblies}
+    for fid in build_order:
+        if fid == root_id or fid in sa_fids:
+            continue
+        feat = features.get(fid, {})
+        if feat.get("parent") == root_id and feat.get("operation", "add").lower() in ("subtract", "cut", "modify"):
+            func = func_map.get(fid)
+            if func:
+                lines.append(f"    result = {func}(result)")
+
+    # Sub-assemblies: build, translate, union
+    # Process only root-level sub-assemblies here; nested ones are handled
+    # inside their parent's build_ function
+    for sa in sub_assemblies:
+        sa_fid = sa["fid"]
+        sa_parent = sa["parent"]
+
+        # Skip nested sub-assemblies (their parent is not root)
+        if sa_parent != root_id:
+            continue
+
+        placement = sa["placement"]
+        sa_params = sa["params"]
+        sa_prefix = sa_fid.upper().replace("-", "_").replace(" ", "_")
+
+        # Check if this sa has any children (subtract OR add)
+        has_children = any(
+            fid != sa_fid
+            and features.get(fid, {}).get("parent") == sa_fid
+            for fid in build_order
+        )
+        if has_children:
+            build_func = f"build_{sa_fid.replace('-', '_').replace(' ', '_')}"
+        else:
+            build_func = func_map.get(sa_fid, f"make_{sa_fid}")
+
+        clean_fid = sa_fid.replace("-", "_").replace(" ", "_")
+        lines.append(f"")
+        lines.append(f"    # --- Sub-assembly: {sa_fid} ---")
+        lines.append(f"    {clean_fid} = {build_func}()")
+
+        # Translate based on face — use PARENT dimensions, not always root
+        face = placement.get("face", ">Z")
+        translate_code = _compute_translate(
+            face, root_prefix, root_params, sa_prefix, sa_params
+        )
+        lines.append(f"    {clean_fid} = {clean_fid}.translate({translate_code})")
+        lines.append(f"    result = result.union({clean_fid}).clean()")
+
+    lines.append("")
+    lines.append("    return result")
+
+    return lines
+
+
+def _compute_translate(
+    face: str,
+    root_prefix: str,
+    root_params: dict,
+    sa_prefix: str,
+    sa_params: dict,
+) -> str:
+    """Compute translate tuple string for sub-assembly placement."""
+    root_z = f"{root_prefix}_Z" if "z" in root_params else f"{root_prefix}_HEIGHT"
+
+    if face == ">Z":
+        return f"({sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, {root_z})"
+    elif face == "<Z":
+        sa_z = f"{sa_prefix}_Z" if "z" in sa_params else f"{sa_prefix}_HEIGHT"
+        return f"({sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, -{sa_z})"
+    elif face == ">Y":
+        return (
+            f"({sa_prefix}_OFFSET_X, "
+            f"{root_prefix}_Y/2 - {sa_prefix}_Y/2, "
+            f"{root_z})"
+        )
+    elif face == "<Y":
+        return (
+            f"({sa_prefix}_OFFSET_X, "
+            f"-({root_prefix}_Y/2 - {sa_prefix}_Y/2), "
+            f"{root_z})"
+        )
+    elif face == ">X":
+        return (
+            f"({root_prefix}_X/2 - {sa_prefix}_X/2, "
+            f"{sa_prefix}_OFFSET_Y, "
+            f"{root_z})"
+        )
+    elif face == "<X":
+        return (
+            f"(-({root_prefix}_X/2 - {sa_prefix}_X/2), "
+            f"{sa_prefix}_OFFSET_Y, "
+            f"{root_z})"
+        )
+    # Fallback
+    return f"({sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, {root_z})"

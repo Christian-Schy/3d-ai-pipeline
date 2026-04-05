@@ -110,13 +110,21 @@ def _build_partial_test_script(
     # Build up to and including up_to_func
     lines.append("# === PROGRESSIVE BUILD TEST ===")
     for call_expr in build_sequence:
-        if "make_base" in call_expr or "make_" in call_expr:
+        func_name_match = re.match(r"(\w+)\(", call_expr)
+        func_name = func_name_match.group(1) if func_name_match else ""
+
+        # build_* functions return a standalone part — don't assign to result yet
+        if func_name.startswith("build_"):
+            part_var = func_name.replace("build_", "")
+            lines.append(f"{part_var} = {call_expr}")
+            # Progressive build can't test translate+union, just build the part
+            lines.append(f"result = {part_var}  # partial: standalone sub-assembly")
+        elif "make_" in call_expr:
             lines.append(f"result = {call_expr}")
         else:
             lines.append(f"result = {call_expr}")
 
-        func_name_match = re.match(r"(\w+)\(", call_expr)
-        if func_name_match and func_name_match.group(1) == up_to_func:
+        if func_name == up_to_func:
             break
 
     lines.append(f'cq.exporters.export(result, "{output_path}")')
@@ -129,8 +137,24 @@ def _infer_build_sequence(code: str, build_order: list[str]) -> list[str]:
     match = re.search(r"def assemble\(\)[^:]*:(.*?)(?=\ndef |\Z)", code, re.DOTALL)
     if match:
         body = match.group(1)
-        # Find all "result = func(...)" lines
-        calls = re.findall(r"result\s*=\s*(\w+\([^)]*\))", body)
+        # Only use lines that are indented (= inside the function body)
+        # This filters out "result = assemble()" at module level
+        indented_body = "\n".join(
+            line for line in body.splitlines()
+            if not line.strip() or line.startswith(" ") or line.startswith("\t")
+        )
+        # Find all "var = func(...)" lines — captures both "result = " and "part_name = "
+        calls = re.findall(r"\w+\s*=\s*(\w+\([^)]*\))", indented_body)
+        # Filter out: self-reference, method chains, translate, union, clean
+        calls = [
+            c for c in calls
+            if not c.startswith("assemble(")
+            and not c.startswith("result.")
+            and not c.startswith("cq.")
+            and ".translate" not in c
+            and ".union" not in c
+            and ".clean" not in c
+        ]
         if calls:
             return calls
 

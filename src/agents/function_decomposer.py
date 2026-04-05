@@ -21,6 +21,8 @@ import re
 import structlog
 from src.graph.state import PipelineState
 from src.graph.feature_tree import FeatureTree, FeatureEntry
+from src.codegen.assembler import generate_code as generate_template_code
+from src.codegen.feature_classifier import classify_blueprint
 
 log = structlog.get_logger()
 
@@ -67,9 +69,9 @@ def _compute_feature_positions(ft: FeatureTree) -> dict[str, dict]:
         params = feature.params or {}
 
         if feature.parent is None:
-            w = float(params.get("x", params.get("diameter", 0)))
-            l = float(params.get("y", params.get("diameter", 0)))
-            h = float(params.get("z", params.get("height", 0)))
+            w = float(params.get("x") or params.get("diameter") or 0)
+            l = float(params.get("y") or params.get("diameter") or 0)
+            h = float(params.get("z") or params.get("height") or 0)
             pos[fid] = {"center": (0.0, 0.0, h / 2), "half": (w / 2, l / 2, h / 2)}
             continue
 
@@ -88,14 +90,14 @@ def _compute_feature_positions(ft: FeatureTree) -> dict[str, dict]:
         pcx, pcy, pcz = parent_pos["center"]
         phx, phy, phz = parent_pos["half"]
 
-        fw = float(params.get("x", 0))
-        fl = float(params.get("y", 0))
-        fh = float(params.get("z", params.get("height", 0)))
+        fw = float(params.get("x") or 0)
+        fl = float(params.get("y") or 0)
+        fh = float(params.get("z") or params.get("height") or 0)
 
         parent_feat = ft.features.get(feature.parent)
         pp = (parent_feat.params or {}) if parent_feat else {}
-        pw = float(pp.get("x", 0))
-        py_dim = float(pp.get("y", 0))
+        pw = float(pp.get("x") or 0)
+        py_dim = float(pp.get("y") or 0)
 
         ox, oy = _compute_offsets_for_alignment(
             pl.alignment or "", pw, py_dim, fw, fl,
@@ -381,10 +383,10 @@ def _generate_param_constants(ft: FeatureTree) -> list[str]:
 
             parent_params_c = (parent.params or {}) if parent else {}
             feat_params_c = feature.params or {}
-            pw_c = float(parent_params_c.get("x", 0))
-            pl_c = float(parent_params_c.get("y", 0))
-            fw_c = float(feat_params_c.get("x", 0))
-            fl_c = float(feat_params_c.get("y", 0))
+            pw_c = float(parent_params_c.get("x") or 0)
+            pl_c = float(parent_params_c.get("y") or 0)
+            fw_c = float(feat_params_c.get("x") or 0)
+            fl_c = float(feat_params_c.get("y") or 0)
 
             # 1. Alignment FIRST — highest precedence (flush_right etc. override "center")
             if alignment and alignment not in ("centered", ""):
@@ -718,16 +720,66 @@ def _generate_sub_assembly_skeleton(ft: FeatureTree, groups: dict) -> str:
                 f"{sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, -{sa_prefix}_{_z_param_name(sa_params)}))"
             )
         else:
-            # Side face placement — more complex, use comment hint
-            lines.append(
-                f"    # ★ Side-face placement ({face}): translate + rotate to correct position"
-            )
-            lines.append(
-                f"    {sa_root_fid} = {sa_root_fid}.translate(("
-                f"{sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, "
-                f"{root_id.upper().replace('-', '_')}_{_z_param_name(root_params)}))"
-                f"  # TODO: adjust for {face} face"
-            )
+            # Side face placement — compute correct translate for the face
+            root_prefix = root_id.upper().replace("-", "_").replace(" ", "_")
+            sa_feature = ft.features[sa_root_fid]
+            sa_params = sa_feature.params or {}
+            root_z_param = _z_param_name(root_params)
+            sa_y_dim = sa_params.get("y", sa_params.get("height", 0))
+            sa_x_dim = sa_params.get("x", 0)
+            sa_z_dim = sa_params.get("z", sa_params.get("height", 0))
+
+            if face == ">Y":
+                # Back face: translate Y to parent back edge
+                lines.append(
+                    f"    # ★ Back-face placement ({face}): translate to back edge of parent"
+                )
+                lines.append(
+                    f"    {sa_root_fid} = {sa_root_fid}.translate(("
+                    f"{sa_prefix}_OFFSET_X, "
+                    f"{root_prefix}_Y/2 - {sa_prefix}_Y/2, "
+                    f"{root_prefix}_{root_z_param}))"
+                )
+            elif face == "<Y":
+                # Front face: translate Y to parent front edge
+                lines.append(
+                    f"    # ★ Front-face placement ({face}): translate to front edge of parent"
+                )
+                lines.append(
+                    f"    {sa_root_fid} = {sa_root_fid}.translate(("
+                    f"{sa_prefix}_OFFSET_X, "
+                    f"-({root_prefix}_Y/2 - {sa_prefix}_Y/2), "
+                    f"{root_prefix}_{root_z_param}))"
+                )
+            elif face == ">X":
+                # Right face: translate X to parent right edge
+                lines.append(
+                    f"    # ★ Right-face placement ({face}): translate to right edge of parent"
+                )
+                lines.append(
+                    f"    {sa_root_fid} = {sa_root_fid}.translate(("
+                    f"{root_prefix}_X/2 - {sa_prefix}_X/2, "
+                    f"{sa_prefix}_OFFSET_Y, "
+                    f"{root_prefix}_{root_z_param}))"
+                )
+            elif face == "<X":
+                # Left face: translate X to parent left edge
+                lines.append(
+                    f"    # ★ Left-face placement ({face}): translate to left edge of parent"
+                )
+                lines.append(
+                    f"    {sa_root_fid} = {sa_root_fid}.translate(("
+                    f"-({root_prefix}_X/2 - {sa_prefix}_X/2), "
+                    f"{sa_prefix}_OFFSET_Y, "
+                    f"{root_prefix}_{root_z_param}))"
+                )
+            else:
+                # Unknown face — fallback with TODO
+                lines.append(
+                    f"    {sa_root_fid} = {sa_root_fid}.translate(("
+                    f"{sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, "
+                    f"{root_prefix}_{root_z_param}))  # TODO: adjust for {face} face"
+                )
 
         lines.append(f"    result = result.union({sa_root_fid}).clean()")
 
@@ -893,25 +945,45 @@ class FunctionDecomposerAgent:
             self.log.info("function_decomposer_skipped",
                           reason="not_feature_tree",
                           keys=list(blueprint.keys())[:5])
-            return {"code_skeleton": ""}
+            return {"code_skeleton": "", "generation_mode": "llm"}
 
-        # Skip skeleton for single-feature models (base shape only, nothing to compose).
-        # Coder falls back to _generate() which writes a simpler flat script.
         build_order = blueprint.get("build_order", [])
+
+        # Classify: all standard → template, mixed, or llm-only
+        mode = classify_blueprint(blueprint)
+
+        if mode == "template":
+            # All features are standard — generate complete deterministic code.
+            # Coder will be skipped entirely.
+            code = generate_template_code(blueprint)
+            self.log.info("function_decomposer_template",
+                          features=len(build_order),
+                          code_lines=len(code.splitlines()))
+            return {"code": code, "code_skeleton": "", "generation_mode": "template"}
+
+        if mode == "mixed":
+            # Standard features get template code with `pass` stubs for complex ones.
+            # Coder only fills in the stubs.
+            code_with_stubs = generate_template_code(blueprint)
+            self.log.info("function_decomposer_mixed",
+                          features=len(build_order),
+                          skeleton_lines=len(code_with_stubs.splitlines()))
+            return {"code_skeleton": code_with_stubs, "generation_mode": "mixed"}
+
+        # mode == "llm" — all complex, fall back to legacy skeleton
         if len(build_order) <= 1:
             self.log.info("function_decomposer_skipped",
                           reason="single_feature",
                           features=len(build_order))
-            return {"code_skeleton": ""}
+            return {"code_skeleton": "", "generation_mode": "llm"}
 
         skeleton = generate_skeleton(blueprint)
 
         if skeleton:
-            build_order = blueprint.get("build_order", [])
             self.log.info("function_decomposer_done",
                           features=len(build_order),
                           skeleton_lines=len(skeleton.splitlines()))
         else:
             self.log.warning("function_decomposer_empty_skeleton")
 
-        return {"code_skeleton": skeleton}
+        return {"code_skeleton": skeleton, "generation_mode": "llm"}
