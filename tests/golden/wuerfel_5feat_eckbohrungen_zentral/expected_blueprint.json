@@ -1,0 +1,126 @@
+{
+  "description": "Wuerfel 80mm: 4 Eckbohrungen Ø6 (12mm von Ecken) + zentrale Bohrung Ø15, alle oben durch",
+  "build_order": [
+    "wuerfel",
+    "bohrung_oben_vl",
+    "bohrung_oben_vr",
+    "bohrung_oben_hl",
+    "bohrung_oben_hr",
+    "bohrung_zentral"
+  ],
+  "features": {
+    "wuerfel": {
+      "id": "wuerfel",
+      "type": "box",
+      "params": {
+        "x": 80,
+        "y": 80,
+        "z": 80
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "bohrung_oben_vl": {
+      "id": "bohrung_oben_vl",
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 80
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": -28.0,
+        "offset_y": 28.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": "vorne links"
+    },
+    "bohrung_oben_vr": {
+      "id": "bohrung_oben_vr",
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 80
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": 28.0,
+        "offset_y": 28.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": "vorne rechts"
+    },
+    "bohrung_oben_hl": {
+      "id": "bohrung_oben_hl",
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 80
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": -28.0,
+        "offset_y": -28.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": "hinten links"
+    },
+    "bohrung_oben_hr": {
+      "id": "bohrung_oben_hr",
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 80
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": 28.0,
+        "offset_y": -28.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": "hinten rechts"
+    },
+    "bohrung_zentral": {
+      "id": "bohrung_zentral",
+      "type": "hole_single",
+      "params": {
+        "diameter": 15,
+        "depth": 80
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    }
+  }
+}

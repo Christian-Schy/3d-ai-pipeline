@@ -1,0 +1,42 @@
+{
+  "description": "Platte 120x90x15 hochkant, Bohrung Ø6x20 oben, 30mm v. links, 5mm v. vorne",
+  "build_order": [
+    "platte",
+    "bohrung_oben_hk"
+  ],
+  "features": {
+    "platte": {
+      "id": "platte",
+      "type": "box",
+      "params": {
+        "x": 15.0,
+        "y": 90,
+        "z": 120.0
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "bohrung_oben_hk": {
+      "id": "bohrung_oben_hk",
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 20
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": -15.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    }
+  }
+}

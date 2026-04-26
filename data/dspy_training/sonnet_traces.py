@@ -1,0 +1,8754 @@
+"""
+sonnet_traces.py — Trainings-Traces generiert von Sonnet (Batch 1).
+
+Struktur: identisch zu reference_traces.py. Validierung:
+    .venv/bin/python data/dspy_training/sonnet_traces.py
+
+Batch-Plan:
+  Batch 1 (~26 Traces): Tier 1 — Single-Part, 1 Feature, alle FORM × FACE
+  Batch 2 (~25 Traces): Tier 1 Fortsetzung + Tier 2 Multi-Feature
+  Batch 3 (~25 Traces): Tier 3 Multi-Part P3/P4/P5
+"""
+
+from __future__ import annotations
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from agent_contracts import (
+    project_traces, validate_all, coverage_report, CONTRACTS
+)
+
+
+def _pos(side="oben", alignment="centered", edge_distances=None,
+         angle_deg=0, notes=""):
+    return {"side": side, "alignment": alignment,
+            "edge_distances": edge_distances, "angle_deg": angle_deg, "notes": notes}
+
+
+def _norm(parent, seite, ausrichtung="centered", orientierung="standard",
+          anliegende_flaeche=None, abstand=None, winkel=0,
+          anker=None, pre_rotation=None, notes=""):
+    return {"parent": parent, "seite": seite, "ausrichtung": ausrichtung,
+            "orientierung": orientierung, "anliegende_flaeche": anliegende_flaeche,
+            "abstand": abstand, "winkel": winkel, "anker": anker,
+            "pre_rotation": pre_rotation, "notes": notes}
+
+
+TRACES: list[dict] = []
+
+
+# ════════════════════════════════════════════════════════════
+# GRUPPE 1 — WUERFEL (50mm), alle 6 Seiten
+# ════════════════════════════════════════════════════════════
+
+# T01 — Wuerfel oben P1 (eine Achse vom Rand), Bohrung, umgangssprachlich
+TRACES.append({
+    "id": "t01_wuerfel_oben_p1_bohrung_umg",
+    "specification": "50mm Wuerfel, oben 'ne Bohrung 12er, vom linken Rand 15mm rein, durchgehend",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=oben, POSITION=P1(links 15)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "oben",
+                      "beschreibung": "Bohrung Ø12, 15mm von der linken Kante, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_links", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 50},
+             "position": _pos("oben", alignment="centered",
+                              edge_distances={"left": 15}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit Bohrung Ø12 oben, 15mm von links",
+        "build_order": ["wuerfel", "bohrung_links"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "bohrung_links": {"type": "hole_single", "params": {"diameter": 12, "depth": 50},
+                              "parent": "wuerfel",
+                              "position": _pos("oben", alignment="centered",
+                                              edge_distances={"left": 15}),
+                              "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 50],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T02 — Wuerfel unten P0, Tasche, knapp-technisch
+TRACES.append({
+    "id": "t02_wuerfel_unten_p0_tasche_kt",
+    "specification": "50mm Wuerfel, unten Tasche 20x20, 8mm tief, zentral",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, FACE=unten, POSITION=P0, F-TYP=pocket_rect"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "unten",
+                      "beschreibung": "Tasche 20x20, 8mm tief, zentral"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_unten", "type": "pocket_rect",
+             "params": {"width": 20, "length": 20, "depth": 8},
+             "position": _pos("unten"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit zentraler Tasche 20x20x8 unten",
+        "build_order": ["wuerfel", "tasche_unten"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "tasche_unten": {"type": "pocket_rect",
+                             "params": {"width": 20, "length": 20, "depth": 8},
+                             "parent": "wuerfel", "position": _pos("unten"),
+                             "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 50],
+        "expected_feature_count": {"box": 1, "pocket_rect": 1},
+    },
+})
+
+# T03 — Wuerfel rechts P2, Bohrung Sackloch, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t03_wuerfel_rechts_p2_sackloch_ta",
+    "specification": (
+        "50mm Wuerfel. Auf der rechten Seite eine Bohrung mit 8mm Durchmesser, "
+        "10mm von der oberen Kante und 20mm von der vorderen Kante entfernt, 15mm tief."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=rechts, POSITION=P2(oben 10, vorne 20)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "rechts",
+                      "beschreibung": "Bohrung Ø8, 10mm von oben, 20mm von vorne, 15mm tief"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_rechts", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("rechts", edge_distances={"top": 10, "front": 20}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit Sackloch Ø8x15 rechts, 10mm von oben, 20mm von vorne",
+        "build_order": ["wuerfel", "bohrung_rechts"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "bohrung_rechts": {"type": "hole_single",
+                               "params": {"diameter": 8, "depth": 15},
+                               "parent": "wuerfel",
+                               "position": _pos("rechts", edge_distances={"top": 10, "front": 20}),
+                               "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 50],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T04 — Wuerfel links P1, Nut durchgehend, umgangssprachlich
+TRACES.append({
+    "id": "t04_wuerfel_links_p1_nut_umg",
+    "specification": "50er Wuerfel, links eine Nut 6x4, von oben 20mm runter, laeuft durch",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=links, POSITION=P1(oben 20), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "links",
+                      "beschreibung": "Nut 6mm breit 4mm tief, 20mm von der oberen Kante, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "nut_links", "type": "slot",
+             "params": {"width": 6, "depth": 4, "length": None},
+             "position": _pos("links", edge_distances={"top": 20}, notes="durchgehend entlang Y"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit Nut 6x4 links, 20mm von oben, durchgehend",
+        "build_order": ["wuerfel", "nut_links"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "nut_links": {"type": "slot", "params": {"width": 6, "depth": 4, "length": None},
+                          "parent": "wuerfel",
+                          "position": _pos("links", edge_distances={"top": 20},
+                                          notes="durchgehend entlang Y"),
+                          "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 50],
+        "expected_feature_count": {"box": 1, "slot": 1},
+    },
+})
+
+# T05 — Wuerfel vorne P2, Bohrung Sackloch, knapp-technisch
+TRACES.append({
+    "id": "t05_wuerfel_vorne_p2_sackloch_kt",
+    "specification": "50mm Wuerfel, vorne Bohrung Ø10, 12mm v. rechts, 18mm v. unten, 20mm tief",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, FACE=vorne, POSITION=P2(rechts 12, unten 18)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "vorne",
+                      "beschreibung": "Bohrung Ø10, 12mm von rechts, 18mm von unten, 20mm tief"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_vorne", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 20},
+             "position": _pos("vorne", edge_distances={"right": 12, "bottom": 18}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit Sackloch Ø10x20 vorne, 12mm v. rechts, 18mm v. unten",
+        "build_order": ["wuerfel", "bohrung_vorne"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "bohrung_vorne": {"type": "hole_single",
+                              "params": {"diameter": 10, "depth": 20},
+                              "parent": "wuerfel",
+                              "position": _pos("vorne", edge_distances={"right": 12, "bottom": 18}),
+                              "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 50],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T06 — Wuerfel hinten P0, Fase (chamfer) alle Top-Kanten, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t06_wuerfel_hinten_p0_chamfer_ta",
+    "specification": (
+        "50mm Wuerfel. Auf der Rueckseite alle oberen Kanten mit einer "
+        "Fase von 2mm versehen."
+    ),
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=hinten, POSITION=P0, F-TYP=chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "hinten",
+                      "beschreibung": "Fase 2mm an allen oberen Kanten der Rueckseite"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "fase_hinten_oben", "type": "chamfer",
+             "params": {"size": 2, "edge_selector": ">Z"},
+             "position": _pos("hinten", notes="obere Kanten der Rueckseite"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit Fase 2mm an oberen Kanten hinten",
+        "build_order": ["wuerfel", "fase_hinten_oben"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "fase_hinten_oben": {"type": "chamfer",
+                                 "params": {"size": 2, "edge_selector": ">Z"},
+                                 "parent": "wuerfel",
+                                 "position": _pos("hinten", notes="obere Kanten der Rueckseite"),
+                                 "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 50],
+        "expected_feature_count": {"box": 1, "chamfer": 1},
+    },
+})
+
+
+# ════════════════════════════════════════════════════════════
+# GRUPPE 2 — QUADER (100x80x40), alle 6 Seiten
+# ════════════════════════════════════════════════════════════
+
+# T07 — Quader oben P2, Bohrung, knapp-technisch
+TRACES.append({
+    "id": "t07_quader_oben_p2_bohrung_kt",
+    "specification": "Quader 100x80x40, oben Bohrung Ø10 durchgehend, 25mm v. links, 20mm v. vorne",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, FACE=oben, POSITION=P2(links 25, vorne 20)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "oben",
+                      "beschreibung": "Bohrung Ø10 durchgehend, 25mm von links, 20mm von vorne"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 40},
+             "position": _pos("oben", edge_distances={"left": 25, "front": 20}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40 mit Bohrung Ø10 oben, 25mm v. links, 20mm v. vorne",
+        "build_order": ["quader", "bohrung_oben"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 10, "depth": 40},
+                             "parent": "quader",
+                             "position": _pos("oben", edge_distances={"left": 25, "front": 20}),
+                             "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [100, 80, 40],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T08 — Quader rechts P1, Nut, umgangssprachlich
+TRACES.append({
+    "id": "t08_quader_rechts_p1_nut_umg",
+    "specification": "100x80x40 Quader, rechts eine Nut 5 breit 5 tief, von unten 12mm hoch, laeuft durch",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, FACE=rechts, POSITION=P1(unten 12), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "rechts",
+                      "beschreibung": "Nut 5x5, 12mm von der unteren Kante, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 5, "depth": 5, "length": None},
+             "position": _pos("rechts", edge_distances={"bottom": 12}, notes="durchgehend entlang Y"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40 mit Nut 5x5 rechts, 12mm von unten, durchgehend",
+        "build_order": ["quader", "nut_rechts"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 5, "depth": 5, "length": None},
+                           "parent": "quader",
+                           "position": _pos("rechts", edge_distances={"bottom": 12},
+                                           notes="durchgehend entlang Y"),
+                           "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [100, 80, 40],
+        "expected_feature_count": {"box": 1, "slot": 1},
+    },
+})
+
+# T09 — Quader vorne P0, Tasche, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t09_quader_vorne_p0_tasche_ta",
+    "specification": (
+        "Quader mit den Abmessungen 100x80x40mm. "
+        "Auf der Vorderseite mittig eine rechteckige Tasche von 30mm Breite, "
+        "20mm Hoehe und 10mm Tiefe."
+    ),
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, FACE=vorne, POSITION=P0, F-TYP=pocket_rect"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "vorne",
+                      "beschreibung": "Tasche 30x20, 10mm tief, zentral"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_vorne", "type": "pocket_rect",
+             "params": {"width": 30, "length": 20, "depth": 10},
+             "position": _pos("vorne"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40 mit zentraler Tasche 30x20x10 vorne",
+        "build_order": ["quader", "tasche_vorne"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "tasche_vorne": {"type": "pocket_rect",
+                             "params": {"width": 30, "length": 20, "depth": 10},
+                             "parent": "quader", "position": _pos("vorne"),
+                             "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [100, 80, 40],
+        "expected_feature_count": {"box": 1, "pocket_rect": 1},
+    },
+})
+
+# T10 — Quader links P2, Bohrung, knapp-technisch
+TRACES.append({
+    "id": "t10_quader_links_p2_bohrung_kt",
+    "specification": "100x80x40 Quader, links Bohrung Ø6 durchgehend, 30mm v. oben, 15mm v. hinten",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, FACE=links, POSITION=P2(oben 30, hinten 15)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "links",
+                      "beschreibung": "Bohrung Ø6 durchgehend, 30mm von oben, 15mm von hinten"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_links", "type": "hole_single",
+             "params": {"diameter": 6, "depth": 100},
+             "position": _pos("links", edge_distances={"top": 30, "back": 15}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40 mit Bohrung Ø6 links, 30mm v. oben, 15mm v. hinten, durchgehend",
+        "build_order": ["quader", "bohrung_links"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_links": {"type": "hole_single", "params": {"diameter": 6, "depth": 100},
+                              "parent": "quader",
+                              "position": _pos("links", edge_distances={"top": 30, "back": 15}),
+                              "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [100, 80, 40],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T11 — Quader unten P1, Bohrung, umgangssprachlich
+TRACES.append({
+    "id": "t11_quader_unten_p1_bohrung_umg",
+    "specification": "100x80x40 Block, unten 'ne Bohrung 14er, 30mm vom vorderen Rand, ganz durch",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, FACE=unten, POSITION=P1(vorne 30)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "unten",
+                      "beschreibung": "Bohrung Ø14 durchgehend, 30mm von der vorderen Kante"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_unten", "type": "hole_single",
+             "params": {"diameter": 14, "depth": 40},
+             "position": _pos("unten", edge_distances={"front": 30}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40 mit Bohrung Ø14 unten, 30mm v. vorne, durchgehend",
+        "build_order": ["quader", "bohrung_unten"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_unten": {"type": "hole_single", "params": {"diameter": 14, "depth": 40},
+                              "parent": "quader",
+                              "position": _pos("unten", edge_distances={"front": 30}),
+                              "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [100, 80, 40],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T12 — Quader hinten P0, Fillet, knapp-technisch
+TRACES.append({
+    "id": "t12_quader_hinten_p0_fillet_kt",
+    "specification": "100x80x40 Quader, hinten alle Kanten R3 verrunden",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, FACE=hinten, POSITION=P0, F-TYP=fillet"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "hinten",
+                      "beschreibung": "Radius R3 an allen Kanten der Rueckseite"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "fillet_hinten", "type": "fillet",
+             "params": {"radius": 3, "edge_selector": "|Z"},
+             "position": _pos("hinten", notes="alle Vertikalkanten hinten"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40 mit Verrundung R3 an hinteren Kanten",
+        "build_order": ["quader", "fillet_hinten"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "fillet_hinten": {"type": "fillet",
+                              "params": {"radius": 3, "edge_selector": "|Z"},
+                              "parent": "quader",
+                              "position": _pos("hinten", notes="alle Vertikalkanten hinten"),
+                              "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [100, 80, 40],
+        "expected_feature_count": {"box": 1, "fillet": 1},
+    },
+})
+
+
+# ════════════════════════════════════════════════════════════
+# GRUPPE 3 — PLATTE (120x90x15), alle 6 Seiten
+# (P0/P1 auf oben schon abgedeckt durch ref_A/B — hier P1/P2/andere Seiten)
+# ════════════════════════════════════════════════════════════
+
+# T13 — Platte oben P1 (eine Kante), Bohrung, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t13_platte_oben_p1_bohrung_ta",
+    "specification": (
+        "Platte 120x90x15mm. Auf der Oberseite eine Bohrung mit 8mm Durchmesser, "
+        "30mm von der rechten Kante entfernt, senkrecht hindurch."
+    ),
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P1(rechts 30)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Bohrung Ø8 durchgehend, 30mm von der rechten Kante"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_rechts", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("oben", edge_distances={"right": 30}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 mit Bohrung Ø8 oben, 30mm v. rechts",
+        "build_order": ["platte", "bohrung_rechts"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_rechts": {"type": "hole_single", "params": {"diameter": 8, "depth": 15},
+                               "parent": "platte",
+                               "position": _pos("oben", edge_distances={"right": 30}),
+                               "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [120, 90, 15],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T14 — Platte unten P0, Tasche, knapp-technisch
+TRACES.append({
+    "id": "t14_platte_unten_p0_tasche_kt",
+    "specification": "120x90x15 Platte, unten Tasche 40x30, 6mm tief, mittig",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, FACE=unten, POSITION=P0, F-TYP=pocket_rect"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "unten",
+                      "beschreibung": "Tasche 40x30, 6mm tief, zentral"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_unten", "type": "pocket_rect",
+             "params": {"width": 40, "length": 30, "depth": 6},
+             "position": _pos("unten"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 mit zentraler Tasche 40x30x6 unten",
+        "build_order": ["platte", "tasche_unten"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "tasche_unten": {"type": "pocket_rect",
+                             "params": {"width": 40, "length": 30, "depth": 6},
+                             "parent": "platte", "position": _pos("unten"),
+                             "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [120, 90, 15],
+        "expected_feature_count": {"box": 1, "pocket_rect": 1},
+    },
+})
+
+# T15 — Platte rechts (Schmalseite 90x15) P0, Bohrung, umgangssprachlich
+TRACES.append({
+    "id": "t15_platte_rechts_p0_bohrung_umg",
+    "specification": "120x90x15 Platte, von rechts mittig 'ne Bohrung 6er, 20mm tief",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, FACE=rechts(Schmalseite 90x15), POSITION=P0"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "rechts",
+                      "beschreibung": "Bohrung Ø6, 20mm tief, zentral"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_rechts_schmal", "type": "hole_single",
+             "params": {"diameter": 6, "depth": 20},
+             "position": _pos("rechts"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 mit Sackloch Ø6x20 von rechts, zentral",
+        "build_order": ["platte", "bohrung_rechts_schmal"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_rechts_schmal": {"type": "hole_single",
+                                      "params": {"diameter": 6, "depth": 20},
+                                      "parent": "platte", "position": _pos("rechts"),
+                                      "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [120, 90, 15],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T16 — Platte links P1, Nut, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t16_platte_links_p1_nut_ta",
+    "specification": (
+        "Platte 120x90x15mm. An der linken Schmalseite eine Nut "
+        "4mm breit, 4mm tief, 30mm von der Oberkante entfernt, ueber die gesamte Laenge."
+    ),
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, FACE=links(Schmalseite 90x15), POSITION=P1(oben 30), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "links",
+                      "beschreibung": "Nut 4x4 durchgehend, 30mm von der oberen Kante"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "nut_links", "type": "slot",
+             "params": {"width": 4, "depth": 4, "length": None},
+             "position": _pos("links", edge_distances={"top": 30}, notes="durchgehend entlang Y"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 mit Nut 4x4 links, 30mm v. oben, durchgehend",
+        "build_order": ["platte", "nut_links"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "nut_links": {"type": "slot", "params": {"width": 4, "depth": 4, "length": None},
+                          "parent": "platte",
+                          "position": _pos("links", edge_distances={"top": 30},
+                                          notes="durchgehend entlang Y"),
+                          "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [120, 90, 15],
+        "expected_feature_count": {"box": 1, "slot": 1},
+    },
+})
+
+# T17 — Platte vorne (Schmalseite 120x15) P0, Nut, knapp-technisch
+TRACES.append({
+    "id": "t17_platte_vorne_p0_nut_kt",
+    "specification": "120x90x15 Platte, vorne Nut 8x5 mittig durchgehend",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, FACE=vorne(Schmalseite 120x15), POSITION=P0, F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "vorne",
+                      "beschreibung": "Nut 8x5, zentral, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "nut_vorne", "type": "slot",
+             "params": {"width": 8, "depth": 5, "length": None},
+             "position": _pos("vorne", notes="durchgehend entlang X"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 mit Nut 8x5 vorne, zentral, durchgehend",
+        "build_order": ["platte", "nut_vorne"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "nut_vorne": {"type": "slot", "params": {"width": 8, "depth": 5, "length": None},
+                          "parent": "platte",
+                          "position": _pos("vorne", notes="durchgehend entlang X"),
+                          "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [120, 90, 15],
+        "expected_feature_count": {"box": 1, "slot": 1},
+    },
+})
+
+# T18 — Platte hinten P2, Bohrung, umgangssprachlich
+TRACES.append({
+    "id": "t18_platte_hinten_p2_bohrung_umg",
+    "specification": "120x90er Platte 15mm dick, hinten Bohrung 8er, 25mm von links und 5mm von oben, durch",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, FACE=hinten, POSITION=P2(links 25, oben 5)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "hinten",
+                      "beschreibung": "Bohrung Ø8 durchgehend, 25mm von links, 5mm von oben"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_hinten", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 90},
+             "position": _pos("hinten", edge_distances={"left": 25, "top": 5}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 mit Bohrung Ø8 hinten, 25mm v. links, 5mm v. oben, durchgehend",
+        "build_order": ["platte", "bohrung_hinten"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_hinten": {"type": "hole_single", "params": {"diameter": 8, "depth": 90},
+                               "parent": "platte",
+                               "position": _pos("hinten", edge_distances={"left": 25, "top": 5}),
+                               "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [120, 90, 15],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+
+# ════════════════════════════════════════════════════════════
+# GRUPPE 4 — ZYLINDER (Ø50, H=80), Stirnseiten
+# ════════════════════════════════════════════════════════════
+
+# T19 — Zylinder oben P0, Bohrung, knapp-technisch
+TRACES.append({
+    "id": "t19_zylinder_oben_p0_bohrung_kt",
+    "specification": "Zylinder Ø50 Hoehe 80mm, oben zentrale Bohrung Ø10 durchgehend",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=zylinder, FACE=oben, POSITION=P0"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder",
+                   "beschreibung": "Zylinder Ø50 Hoehe 80",
+                   "raw_params": {"radius": 25, "height": 80}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "oben",
+                      "beschreibung": "Bohrung Ø10 zentral, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder",
+        "params": {"radius": 25, "height": 80},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 80},
+             "position": _pos("oben"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø50 H80 mit zentraler Bohrung Ø10 oben durchgehend",
+        "build_order": ["zylinder", "bohrung_zentral"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"radius": 25, "height": 80},
+                         "orientation": "standard", "parent": None,
+                         "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single",
+                                "params": {"diameter": 10, "depth": 80},
+                                "parent": "zylinder", "position": _pos("oben"),
+                                "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 80],
+        "expected_feature_count": {"cylinder": 1, "hole_single": 1},
+    },
+})
+
+# T20 — Zylinder oben P2, Lochkreis (4 Bohrungen), technisch-ausfuehrlich
+TRACES.append({
+    "id": "t20_zylinder_oben_p2_lochkreis_ta",
+    "specification": (
+        "Zylinder mit 50mm Durchmesser und 80mm Hoehe. Auf der Oberseite "
+        "4 Bohrungen mit je 6mm Durchmesser, gleichmaessig auf einem Lochkreis "
+        "mit 35mm Durchmesser verteilt, 15mm tief."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=zylinder, FACE=oben, POSITION=P2(Lochkreis R17.5), F-TYP=hole_pattern_circular"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder",
+                   "beschreibung": "Zylinder Ø50 Hoehe 80",
+                   "raw_params": {"radius": 25, "height": 80}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "oben",
+                      "beschreibung": "4 Bohrungen Ø6 auf Lochkreis Ø35, 15mm tief"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder",
+        "params": {"radius": 25, "height": 80},
+        "orientation": "standard",
+        "features": [
+            {"id": "lochkreis_oben", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 6, "depth": 15, "count": 4, "radius": 17.5},
+             "position": _pos("oben"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø50 H80 mit 4 Bohrungen Ø6 auf Lochkreis Ø35 oben",
+        "build_order": ["zylinder", "lochkreis_oben"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"radius": 25, "height": 80},
+                         "orientation": "standard", "parent": None,
+                         "operation": "add", "notes": ""},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 6, "depth": 15,
+                                          "count": 4, "radius": 17.5},
+                               "parent": "zylinder", "position": _pos("oben"),
+                               "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 80],
+        "expected_feature_count": {"cylinder": 1, "hole_pattern_circular": 1},
+    },
+})
+
+# T21 — Zylinder unten P1, Bohrung, umgangssprachlich
+TRACES.append({
+    "id": "t21_zylinder_unten_p1_bohrung_umg",
+    "specification": "Zylinder 50mm Durchmesser 80mm hoch, unten 'ne Bohrung 8er, 15mm vom Rand, 20mm tief",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=zylinder, FACE=unten, POSITION=P1(rand 15)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder",
+                   "beschreibung": "Zylinder Ø50 Hoehe 80",
+                   "raw_params": {"radius": 25, "height": 80}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "unten",
+                      "beschreibung": "Bohrung Ø8, 15mm vom Rand entfernt, 20mm tief"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder",
+        "params": {"radius": 25, "height": 80},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_unten_rand", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 20},
+             "position": _pos("unten", edge_distances={"edge": 15},
+                              notes="15mm vom Aussenrand entfernt"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø50 H80 mit Sackloch Ø8x20 unten, 15mm vom Rand",
+        "build_order": ["zylinder", "bohrung_unten_rand"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"radius": 25, "height": 80},
+                         "orientation": "standard", "parent": None,
+                         "operation": "add", "notes": ""},
+            "bohrung_unten_rand": {"type": "hole_single",
+                                   "params": {"diameter": 8, "depth": 20},
+                                   "parent": "zylinder",
+                                   "position": _pos("unten", edge_distances={"edge": 15},
+                                                   notes="15mm vom Aussenrand entfernt"),
+                                   "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 80],
+        "expected_feature_count": {"cylinder": 1, "hole_single": 1},
+    },
+})
+
+# T22 — Zylinder unten P0, Tasche, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t22_zylinder_unten_p0_tasche_ta",
+    "specification": (
+        "Zylinder mit 50mm Durchmesser, 80mm Hoehe. "
+        "Auf der Unterseite mittig eine rechteckige Tasche 20x20mm, 5mm tief."
+    ),
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=zylinder, FACE=unten, POSITION=P0, F-TYP=pocket_rect"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder",
+                   "beschreibung": "Zylinder Ø50 Hoehe 80",
+                   "raw_params": {"radius": 25, "height": 80}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "unten",
+                      "beschreibung": "Tasche 20x20, 5mm tief, zentral"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder",
+        "params": {"radius": 25, "height": 80},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_unten", "type": "pocket_rect",
+             "params": {"width": 20, "length": 20, "depth": 5},
+             "position": _pos("unten"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø50 H80 mit zentraler Tasche 20x20x5 unten",
+        "build_order": ["zylinder", "tasche_unten"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"radius": 25, "height": 80},
+                         "orientation": "standard", "parent": None,
+                         "operation": "add", "notes": ""},
+            "tasche_unten": {"type": "pocket_rect",
+                             "params": {"width": 20, "length": 20, "depth": 5},
+                             "parent": "zylinder", "position": _pos("unten"),
+                             "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 80],
+        "expected_feature_count": {"cylinder": 1, "pocket_rect": 1},
+    },
+})
+
+
+# ════════════════════════════════════════════════════════════
+# GRUPPE 5 — Spezielle F-TYPs + Varianten
+# ════════════════════════════════════════════════════════════
+
+# T23 — Quader oben P0, Senkbohrung (hole_counterbore), knapp-technisch
+TRACES.append({
+    "id": "t23_quader_oben_p0_counterbore_kt",
+    "specification": "80x60x30 Quader, oben zentrale Senkbohrung M6: Bohrung Ø6.5 durch, Senkung Ø11 8mm tief",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, FACE=oben, POSITION=P0, F-TYP=hole_counterbore"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x60x30",
+                   "raw_params": {"x": 80, "y": 60, "z": 30}}],
+        "aktionen": [{"teil_id": "quader", "seite": "oben",
+                      "beschreibung": "Senkbohrung M6: Ø6.5 durchgehend, Senkung Ø11 8mm tief, zentral"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 80, "y": 60, "z": 30},
+        "orientation": "standard",
+        "features": [
+            {"id": "senkbohrung_zentral", "type": "hole_counterbore",
+             "params": {"diameter": 6.5, "depth": 30, "cb_diameter": 11, "cb_depth": 8},
+             "position": _pos("oben"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 80x60x30 mit Senkbohrung M6 oben zentral",
+        "build_order": ["quader", "senkbohrung_zentral"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 30},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "senkbohrung_zentral": {"type": "hole_counterbore",
+                                    "params": {"diameter": 6.5, "depth": 30,
+                                               "cb_diameter": 11, "cb_depth": 8},
+                                    "parent": "quader", "position": _pos("oben"),
+                                    "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [80, 60, 30],
+        "expected_feature_count": {"box": 1, "hole_counterbore": 1},
+    },
+})
+
+# T24 — Platte oben P2, Lochraster 3x2, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t24_platte_oben_p2_lochraster_ta",
+    "specification": (
+        "Platte 120x90x15mm. Oben ein Lochraster 3x2 mit Bohrungen Ø8 durchgehend, "
+        "Abstand zwischen den Bohrungen je 25mm, das Raster mittig auf der Flaeche zentriert."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P2(Raster zentriert), F-TYP=hole_pattern_grid"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Lochraster 3x2, Bohrungen Ø8 durchgehend, Abstand 25mm, zentriert"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "lochraster_oben", "type": "hole_pattern_grid",
+             "params": {"hole_diameter": 8, "depth": 15,
+                        "count_x": 3, "count_y": 2,
+                        "spacing_x": 25, "spacing_y": 25},
+             "position": _pos("oben"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 mit Lochraster 3x2, Ø8 durchgehend, Abstand 25mm, oben zentriert",
+        "build_order": ["platte", "lochraster_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "lochraster_oben": {"type": "hole_pattern_grid",
+                                "params": {"hole_diameter": 8, "depth": 15,
+                                           "count_x": 3, "count_y": 2,
+                                           "spacing_x": 25, "spacing_y": 25},
+                                "parent": "platte", "position": _pos("oben"),
+                                "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [120, 90, 15],
+        "expected_feature_count": {"box": 1, "hole_pattern_grid": 1},
+    },
+})
+
+# T25 — Wuerfel oben P0, Fillet alle Kanten oben, umgangssprachlich
+TRACES.append({
+    "id": "t25_wuerfel_oben_p0_fillet_umg",
+    "specification": "50mm Wuerfel, oben alle Kanten rund R5 machen",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=oben, POSITION=P0, F-TYP=fillet"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "oben",
+                      "beschreibung": "Verrundung R5 an allen oberen Kanten"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "fillet_oben", "type": "fillet",
+             "params": {"radius": 5, "edge_selector": ">Z"},
+             "position": _pos("oben", notes="alle oberen Kanten"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit Verrundung R5 an allen oberen Kanten",
+        "build_order": ["wuerfel", "fillet_oben"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "fillet_oben": {"type": "fillet",
+                            "params": {"radius": 5, "edge_selector": ">Z"},
+                            "parent": "wuerfel",
+                            "position": _pos("oben", notes="alle oberen Kanten"),
+                            "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [50, 50, 50],
+        "expected_feature_count": {"box": 1, "fillet": 1},
+    },
+})
+
+# T26 — Platte oben P1, Fase an einer Kante, knapp-technisch
+TRACES.append({
+    "id": "t26_platte_oben_p1_chamfer_kt",
+    "specification": "120x90x15 Platte, oben rechte Kante Fase 3mm",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P1(rechts Kante), F-TYP=chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Fase 3mm an der rechten Oberkante"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "fase_rechts_oben", "type": "chamfer",
+             "params": {"size": 3, "edge_selector": ">Z"},
+             "position": _pos("oben", edge_distances={"right": 0},
+                              notes="rechte Oberkante"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 mit Fase 3mm an der rechten Oberkante",
+        "build_order": ["platte", "fase_rechts_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "fase_rechts_oben": {"type": "chamfer",
+                                 "params": {"size": 3, "edge_selector": ">Z"},
+                                 "parent": "platte",
+                                 "position": _pos("oben", edge_distances={"right": 0},
+                                                 notes="rechte Oberkante"),
+                                 "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [120, 90, 15],
+        "expected_feature_count": {"box": 1, "chamfer": 1},
+    },
+})
+
+# T27 — Platte hochkant oben P2, Bohrung, technisch-ausfuehrlich
+# "hochkant" bedeutet: Z-Achse wird getauscht — die 15mm-Seite wird zur neuen Y
+# Rohdimensionen bleiben im Inventar (raw_params), orientation="hochkant"
+TRACES.append({
+    "id": "t27_platte_hochkant_oben_p2_bohrung_ta",
+    "specification": (
+        "Platte 120x90x15mm hochkant gestellt. "
+        "Auf der Oberseite (jetzt die 120x15-Flaeche) eine Bohrung Ø6, "
+        "30mm von der linken Kante, 5mm von der vorderen Kante, 20mm tief."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte+hochkant, FACE=oben(120x15), POSITION=P2(links 30, vorne 5)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box",
+                   "beschreibung": "Platte 120x90x15 hochkant",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Bohrung Ø6, 30mm von links, 5mm von vorne, 20mm tief"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "hochkant",
+        "features": [
+            {"id": "bohrung_oben_hk", "type": "hole_single",
+             "params": {"diameter": 6, "depth": 20},
+             "position": _pos("oben", edge_distances={"left": 30, "front": 5}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 hochkant, Bohrung Ø6x20 oben, 30mm v. links, 5mm v. vorne",
+        "build_order": ["platte", "bohrung_oben_hk"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "hochkant", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_oben_hk": {"type": "hole_single",
+                                 "params": {"diameter": 6, "depth": 20},
+                                 "parent": "platte",
+                                 "position": _pos("oben", edge_distances={"left": 30, "front": 5}),
+                                 "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [120, 15, 90],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T28 — Lineares Bohrmuster, Quader oben P1, umgangssprachlich
+TRACES.append({
+    "id": "t28_quader_oben_p1_linear_umg",
+    "specification": "100x80x40 Quader, oben 4 Bohrungen 8er hintereinander mit 20mm Abstand, von links 10mm rein, durch",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, FACE=oben, POSITION=P1(links 10), F-TYP=hole_pattern_linear"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "oben",
+                      "beschreibung": "4 Bohrungen Ø8 linear, Abstand 20mm, Startpunkt 10mm von links, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrungen_linear", "type": "hole_pattern_linear",
+             "params": {"hole_diameter": 8, "depth": 40, "count": 4, "spacing": 20},
+             "position": _pos("oben", edge_distances={"left": 10},
+                              notes="Reihe entlang X-Achse"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40 mit 4 Bohrungen Ø8 linear oben, Abstand 20mm, 10mm v. links",
+        "build_order": ["quader", "bohrungen_linear"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrungen_linear": {"type": "hole_pattern_linear",
+                                 "params": {"hole_diameter": 8, "depth": 40,
+                                            "count": 4, "spacing": 20},
+                                 "parent": "quader",
+                                 "position": _pos("oben", edge_distances={"left": 10},
+                                                 notes="Reihe entlang X-Achse"),
+                                 "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [100, 80, 40],
+        "expected_feature_count": {"box": 1, "hole_pattern_linear": 1},
+    },
+})
+
+
+# ════════════════════════════════════════════════════════════
+# BATCH 2 — Tier 1 P3 Ecken + Tier 2 Multi-Feature
+# ════════════════════════════════════════════════════════════
+
+# T29 — Wuerfel oben P3 (obere rechte Ecke), Bohrung, umgangssprachlich
+TRACES.append({
+    "id": "t29_wuerfel_oben_p3_ecke_oben_rechts_umg",
+    "specification": "50mm Wuerfel, oben rechts oben in der Ecke eine Bohrung 10er durch",
+    "metadata": {"difficulty": "P3", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=oben, POSITION=P3(oben_rechts)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "oben",
+                      "beschreibung": "Bohrung Ø10 in der oberen rechten Ecke, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben_rechts", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 50},
+             "position": _pos("oben", alignment="top_right"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit Bohrung Ø10 in der oberen rechten Ecke der Oberseite",
+        "build_order": ["wuerfel", "bohrung_oben_rechts"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "bohrung_oben_rechts": {"type": "hole_single",
+                                    "params": {"diameter": 10, "depth": 50},
+                                    "parent": "wuerfel",
+                                    "position": _pos("oben", alignment="top_right"),
+                                    "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [50, 50, 50],
+                   "expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T30 — Platte oben P3 (unten links), Tasche, knapp-technisch
+TRACES.append({
+    "id": "t30_platte_oben_p3_unten_links_kt",
+    "specification": "120x90x15 Platte, oben unten links Tasche 25x20, 8mm tief",
+    "metadata": {"difficulty": "P3", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P3(unten_links), F-TYP=pocket_rect"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Tasche 25x20, 8mm tief, untere linke Ecke"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_unten_links", "type": "pocket_rect",
+             "params": {"width": 25, "length": 20, "depth": 8},
+             "position": _pos("oben", alignment="bottom_left"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15 mit Tasche 25x20x8 in der unteren linken Ecke oben",
+        "build_order": ["platte", "tasche_unten_links"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "tasche_unten_links": {"type": "pocket_rect",
+                                   "params": {"width": 25, "length": 20, "depth": 8},
+                                   "parent": "platte",
+                                   "position": _pos("oben", alignment="bottom_left"),
+                                   "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [120, 90, 15],
+                   "expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# T31 — Quader rechts P3 (oben links), Bohrung, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t31_quader_rechts_p3_oben_links_ta",
+    "specification": (
+        "Quader 100x80x40mm. Auf der rechten Seite, in der oberen linken Ecke, "
+        "eine Bohrung mit 8mm Durchmesser, 25mm tief."
+    ),
+    "metadata": {"difficulty": "P3", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, FACE=rechts, POSITION=P3(oben_links)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "rechts",
+                      "beschreibung": "Bohrung Ø8, obere linke Ecke, 25mm tief"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben_links", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 25},
+             "position": _pos("rechts", alignment="top_left"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40 mit Sackloch Ø8x25 rechts oben links",
+        "build_order": ["quader", "bohrung_oben_links"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_oben_links": {"type": "hole_single",
+                                   "params": {"diameter": 8, "depth": 25},
+                                   "parent": "quader",
+                                   "position": _pos("rechts", alignment="top_left"),
+                                   "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [100, 80, 40],
+                   "expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T32 — Wuerfel vorne P3 (unten rechts), Nut, umgangssprachlich
+TRACES.append({
+    "id": "t32_wuerfel_vorne_p3_unten_rechts_umg",
+    "specification": "50mm Wuerfel, vorne rechts unten ne kurze Nut 6x4, 30mm lang",
+    "metadata": {"difficulty": "P3", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=vorne, POSITION=P3(unten_rechts), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "vorne",
+                      "beschreibung": "Nut 6x4, 30mm lang, untere rechte Ecke"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "nut_vorne_unten_rechts", "type": "slot",
+             "params": {"width": 6, "depth": 4, "length": 30},
+             "position": _pos("vorne", alignment="bottom_right"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit Nut 6x4x30 vorne unten rechts",
+        "build_order": ["wuerfel", "nut_vorne_unten_rechts"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "nut_vorne_unten_rechts": {"type": "slot",
+                                       "params": {"width": 6, "depth": 4, "length": 30},
+                                       "parent": "wuerfel",
+                                       "position": _pos("vorne", alignment="bottom_right"),
+                                       "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [50, 50, 50],
+                   "expected_feature_count": {"box": 1, "slot": 1}},
+})
+
+# ── Tier 2: Multi-Feature (3–5 Features, Single-Part) ──────────
+
+# T33 — Wuerfel, 3 Features: oben Bohrung P0 + rechts Nut P1 + unten Tasche P0
+TRACES.append({
+    "id": "t33_wuerfel_3feat_bohrung_nut_tasche_kt",
+    "specification": (
+        "50mm Wuerfel. Oben zentrale Bohrung Ø12 durchgehend. "
+        "Rechts Nut 6x4 von oben 15mm, durchgehend. "
+        "Unten Tasche 20x20, 5mm tief, zentral."
+    ),
+    "metadata": {"difficulty": "P1", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, 3F: oben/rechts/unten, P0+P1+P0"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben",
+             "beschreibung": "Bohrung Ø12 zentral durchgehend"},
+            {"teil_id": "wuerfel", "seite": "rechts",
+             "beschreibung": "Nut 6x4 von oben 15mm, durchgehend"},
+            {"teil_id": "wuerfel", "seite": "unten",
+             "beschreibung": "Tasche 20x20, 5mm tief, zentral"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 50},
+             "position": _pos("oben"), "operation": "subtract"},
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 6, "depth": 4, "length": None},
+             "position": _pos("rechts", edge_distances={"top": 15},
+                              notes="durchgehend entlang Y"),
+             "operation": "subtract"},
+            {"id": "tasche_unten", "type": "pocket_rect",
+             "params": {"width": 20, "length": 20, "depth": 5},
+             "position": _pos("unten"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel: Bohrung Ø12 oben, Nut 6x4 rechts, Tasche 20x20x5 unten",
+        "build_order": ["wuerfel", "bohrung_oben", "nut_rechts", "tasche_unten"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 12, "depth": 50},
+                             "parent": "wuerfel", "position": _pos("oben"),
+                             "operation": "subtract", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 6, "depth": 4, "length": None},
+                           "parent": "wuerfel",
+                           "position": _pos("rechts", edge_distances={"top": 15},
+                                           notes="durchgehend entlang Y"),
+                           "operation": "subtract", "notes": ""},
+            "tasche_unten": {"type": "pocket_rect",
+                             "params": {"width": 20, "length": 20, "depth": 5},
+                             "parent": "wuerfel", "position": _pos("unten"),
+                             "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [50, 50, 50],
+                   "expected_feature_count": {"box": 1, "hole_single": 1,
+                                              "slot": 1, "pocket_rect": 1}},
+})
+
+# T34 — Platte, 4 Features: oben 2 Bohrungen (P2) + links Nut P1 + oben Fase P0
+TRACES.append({
+    "id": "t34_platte_4feat_umg",
+    "specification": (
+        "120x90x15 Platte. Oben links 'ne Bohrung 8er 20mm von links und 20mm von vorne, "
+        "und oben rechts nochmal 8er 20mm von rechts und 20mm von vorne, beide durch. "
+        "Links ne Nut 4x3 von oben 40mm, durchlaufend. "
+        "Oben alle Kanten R2 abrunden."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, 4F: 2xBohrung_P2 + Nut_P1 + Fillet_P0"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Bohrung Ø8 links, 20mm v. links, 20mm v. vorne, durchgehend"},
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Bohrung Ø8 rechts, 20mm v. rechts, 20mm v. vorne, durchgehend"},
+            {"teil_id": "platte", "seite": "links",
+             "beschreibung": "Nut 4x3 von oben 40mm, durchgehend"},
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Verrundung R2 alle oberen Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_links_vorne", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("oben", edge_distances={"left": 20, "front": 20}),
+             "operation": "subtract"},
+            {"id": "bohrung_rechts_vorne", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("oben", edge_distances={"right": 20, "front": 20}),
+             "operation": "subtract"},
+            {"id": "nut_links", "type": "slot",
+             "params": {"width": 4, "depth": 3, "length": None},
+             "position": _pos("links", edge_distances={"top": 40},
+                              notes="durchgehend entlang Y"),
+             "operation": "subtract"},
+            {"id": "fillet_oben", "type": "fillet",
+             "params": {"radius": 2, "edge_selector": ">Z"},
+             "position": _pos("oben", notes="alle oberen Kanten"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15: 2 Bohrungen Ø8 oben vorne links/rechts, Nut 4x3 links, Fillet R2 oben",
+        "build_order": ["platte", "bohrung_links_vorne", "bohrung_rechts_vorne",
+                        "nut_links", "fillet_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_links_vorne": {"type": "hole_single",
+                                    "params": {"diameter": 8, "depth": 15},
+                                    "parent": "platte",
+                                    "position": _pos("oben", edge_distances={"left": 20, "front": 20}),
+                                    "operation": "subtract", "notes": ""},
+            "bohrung_rechts_vorne": {"type": "hole_single",
+                                     "params": {"diameter": 8, "depth": 15},
+                                     "parent": "platte",
+                                     "position": _pos("oben", edge_distances={"right": 20, "front": 20}),
+                                     "operation": "subtract", "notes": ""},
+            "nut_links": {"type": "slot", "params": {"width": 4, "depth": 3, "length": None},
+                          "parent": "platte",
+                          "position": _pos("links", edge_distances={"top": 40},
+                                          notes="durchgehend entlang Y"),
+                          "operation": "subtract", "notes": ""},
+            "fillet_oben": {"type": "fillet", "params": {"radius": 2, "edge_selector": ">Z"},
+                            "parent": "platte",
+                            "position": _pos("oben", notes="alle oberen Kanten"),
+                            "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [120, 90, 15],
+                   "expected_feature_count": {"box": 1, "hole_single": 2,
+                                              "slot": 1, "fillet": 1}},
+})
+
+# T35 — Quader, 5 Features: 4 Seiten je ein Feature + Fase, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t35_quader_5feat_ta",
+    "specification": (
+        "Quader 100x80x40mm. "
+        "Oben zentrale Bohrung Ø16 durchgehend. "
+        "Rechts Tasche 30x25, 8mm tief, zentriert. "
+        "Links Nut 6x5 von oben 10mm, durchgehend. "
+        "Vorne Bohrung Ø8, 20mm von links, 15mm von unten, 30mm tief. "
+        "Alle oberen Kanten Fase 1.5mm."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, 5F: oben/rechts/links/vorne/chamfer, mix P0/P1/P2"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Bohrung Ø16 zentral durchgehend"},
+            {"teil_id": "quader", "seite": "rechts",
+             "beschreibung": "Tasche 30x25, 8mm tief, zentriert"},
+            {"teil_id": "quader", "seite": "links",
+             "beschreibung": "Nut 6x5 von oben 10mm, durchgehend"},
+            {"teil_id": "quader", "seite": "vorne",
+             "beschreibung": "Bohrung Ø8, 20mm von links, 15mm von unten, 30mm tief"},
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Fase 1.5mm alle oberen Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 16, "depth": 40},
+             "position": _pos("oben"), "operation": "subtract"},
+            {"id": "tasche_rechts", "type": "pocket_rect",
+             "params": {"width": 30, "length": 25, "depth": 8},
+             "position": _pos("rechts"), "operation": "subtract"},
+            {"id": "nut_links", "type": "slot",
+             "params": {"width": 6, "depth": 5, "length": None},
+             "position": _pos("links", edge_distances={"top": 10},
+                              notes="durchgehend entlang Y"),
+             "operation": "subtract"},
+            {"id": "bohrung_vorne", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 30},
+             "position": _pos("vorne", edge_distances={"left": 20, "bottom": 15}),
+             "operation": "subtract"},
+            {"id": "fase_oben", "type": "chamfer",
+             "params": {"size": 1.5, "edge_selector": ">Z"},
+             "position": _pos("oben", notes="alle oberen Kanten"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40: Bohrung oben, Tasche rechts, Nut links, Bohrung vorne, Fase oben",
+        "build_order": ["quader", "bohrung_oben", "tasche_rechts", "nut_links",
+                        "bohrung_vorne", "fase_oben"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 16, "depth": 40},
+                             "parent": "quader", "position": _pos("oben"),
+                             "operation": "subtract", "notes": ""},
+            "tasche_rechts": {"type": "pocket_rect",
+                              "params": {"width": 30, "length": 25, "depth": 8},
+                              "parent": "quader", "position": _pos("rechts"),
+                              "operation": "subtract", "notes": ""},
+            "nut_links": {"type": "slot", "params": {"width": 6, "depth": 5, "length": None},
+                          "parent": "quader",
+                          "position": _pos("links", edge_distances={"top": 10},
+                                          notes="durchgehend entlang Y"),
+                          "operation": "subtract", "notes": ""},
+            "bohrung_vorne": {"type": "hole_single", "params": {"diameter": 8, "depth": 30},
+                              "parent": "quader",
+                              "position": _pos("vorne", edge_distances={"left": 20, "bottom": 15}),
+                              "operation": "subtract", "notes": ""},
+            "fase_oben": {"type": "chamfer", "params": {"size": 1.5, "edge_selector": ">Z"},
+                          "parent": "quader",
+                          "position": _pos("oben", notes="alle oberen Kanten"),
+                          "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [100, 80, 40],
+                   "expected_feature_count": {"box": 1, "hole_single": 2,
+                                              "pocket_rect": 1, "slot": 1, "chamfer": 1}},
+})
+
+# T36 — Platte, 3 Features: Lochraster oben P0 + Nut vorne P0 + Fase alle Kanten
+TRACES.append({
+    "id": "t36_platte_3feat_lochraster_nut_fase_umg",
+    "specification": (
+        "120x90x15 Platte. Oben mittig ein 2x2 Lochraster Ø8 mit 30mm Abstand. "
+        "Vorne eine Nut 6x5 durchgehend. Alle oberen Kanten Fase 2mm."
+    ),
+    "metadata": {"difficulty": "P0", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, 3F: Raster_P0 + Nut_P0 + Chamfer_P0"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "2x2 Lochraster Ø8 Abstand 30mm, zentriert"},
+            {"teil_id": "platte", "seite": "vorne",
+             "beschreibung": "Nut 6x5 zentral durchgehend"},
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Fase 2mm alle oberen Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "lochraster_oben", "type": "hole_pattern_grid",
+             "params": {"hole_diameter": 8, "depth": 15,
+                        "count_x": 2, "count_y": 2, "spacing_x": 30, "spacing_y": 30},
+             "position": _pos("oben"), "operation": "subtract"},
+            {"id": "nut_vorne", "type": "slot",
+             "params": {"width": 6, "depth": 5, "length": None},
+             "position": _pos("vorne", notes="durchgehend entlang X"),
+             "operation": "subtract"},
+            {"id": "fase_oben_kanten", "type": "chamfer",
+             "params": {"size": 2, "edge_selector": ">Z"},
+             "position": _pos("oben", notes="alle oberen Kanten"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15: 2x2 Lochraster Ø8 oben, Nut 6x5 vorne, Fase 2mm oben",
+        "build_order": ["platte", "lochraster_oben", "nut_vorne", "fase_oben_kanten"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "lochraster_oben": {"type": "hole_pattern_grid",
+                                "params": {"hole_diameter": 8, "depth": 15,
+                                           "count_x": 2, "count_y": 2,
+                                           "spacing_x": 30, "spacing_y": 30},
+                                "parent": "platte", "position": _pos("oben"),
+                                "operation": "subtract", "notes": ""},
+            "nut_vorne": {"type": "slot", "params": {"width": 6, "depth": 5, "length": None},
+                          "parent": "platte",
+                          "position": _pos("vorne", notes="durchgehend entlang X"),
+                          "operation": "subtract", "notes": ""},
+            "fase_oben_kanten": {"type": "chamfer",
+                                 "params": {"size": 2, "edge_selector": ">Z"},
+                                 "parent": "platte",
+                                 "position": _pos("oben", notes="alle oberen Kanten"),
+                                 "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [120, 90, 15],
+                   "expected_feature_count": {"box": 1, "hole_pattern_grid": 1,
+                                              "slot": 1, "chamfer": 1}},
+})
+
+# T37 — Zylinder, 3 Features: oben Lochkreis P2 + unten Bohrung P0 + oben Fase P0
+TRACES.append({
+    "id": "t37_zylinder_3feat_ta",
+    "specification": (
+        "Zylinder Ø60 Hoehe 100mm. "
+        "Oben 6 Bohrungen Ø8 auf Lochkreis Ø46, 15mm tief. "
+        "Oben zentrale Bohrung Ø20 durchgehend. "
+        "Obere Kante Fase 2mm."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=zylinder, 3F: Lochkreis_P2 + Bohrung_P0 + Fase_P0"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder",
+                   "beschreibung": "Zylinder Ø60 Hoehe 100",
+                   "raw_params": {"radius": 30, "height": 100}}],
+        "aktionen": [
+            {"teil_id": "zylinder", "seite": "oben",
+             "beschreibung": "6 Bohrungen Ø8 auf Lochkreis Ø46, 15mm tief"},
+            {"teil_id": "zylinder", "seite": "oben",
+             "beschreibung": "Bohrung Ø20 zentral durchgehend"},
+            {"teil_id": "zylinder", "seite": "oben",
+             "beschreibung": "Fase 2mm obere Kante"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder",
+        "params": {"radius": 30, "height": 100},
+        "orientation": "standard",
+        "features": [
+            {"id": "lochkreis_oben", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 8, "depth": 15, "count": 6, "radius": 23},
+             "position": _pos("oben"), "operation": "subtract"},
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 20, "depth": 100},
+             "position": _pos("oben"), "operation": "subtract"},
+            {"id": "fase_oben", "type": "chamfer",
+             "params": {"size": 2, "edge_selector": ">Z"},
+             "position": _pos("oben", notes="obere Aussenkontur"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø60 H100: 6-Lochkreis Ø8 oben, Zentrumbohrung Ø20, Fase 2mm oben",
+        "build_order": ["zylinder", "lochkreis_oben", "bohrung_zentral", "fase_oben"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"radius": 30, "height": 100},
+                         "orientation": "standard", "parent": None,
+                         "operation": "add", "notes": ""},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 8, "depth": 15,
+                                          "count": 6, "radius": 23},
+                               "parent": "zylinder", "position": _pos("oben"),
+                               "operation": "subtract", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single",
+                                "params": {"diameter": 20, "depth": 100},
+                                "parent": "zylinder", "position": _pos("oben"),
+                                "operation": "subtract", "notes": ""},
+            "fase_oben": {"type": "chamfer", "params": {"size": 2, "edge_selector": ">Z"},
+                          "parent": "zylinder",
+                          "position": _pos("oben", notes="obere Aussenkontur"),
+                          "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [60, 60, 100],
+                   "expected_feature_count": {"cylinder": 1, "hole_pattern_circular": 1,
+                                              "hole_single": 1, "chamfer": 1}},
+})
+
+# T38 — Wuerfel hochkant, 4 Features: alle 4 Seiten je eine Nut
+TRACES.append({
+    "id": "t38_wuerfel_4nutten_alle_seiten_kt",
+    "specification": (
+        "50mm Wuerfel. Oben Nut 4x3 entlang X zentral. "
+        "Unten Nut 4x3 entlang X zentral. "
+        "Rechts Nut 4x3 entlang Y zentral. "
+        "Links Nut 4x3 entlang Y zentral."
+    ),
+    "metadata": {"difficulty": "P0", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, 4F: 4x Nut alle Seiten P0"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "Nut 4x3 entlang X, zentral"},
+            {"teil_id": "wuerfel", "seite": "unten", "beschreibung": "Nut 4x3 entlang X, zentral"},
+            {"teil_id": "wuerfel", "seite": "rechts", "beschreibung": "Nut 4x3 entlang Y, zentral"},
+            {"teil_id": "wuerfel", "seite": "links", "beschreibung": "Nut 4x3 entlang Y, zentral"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "nut_oben", "type": "slot",
+             "params": {"width": 4, "depth": 3, "length": None},
+             "position": _pos("oben", notes="entlang X"), "operation": "subtract"},
+            {"id": "nut_unten", "type": "slot",
+             "params": {"width": 4, "depth": 3, "length": None},
+             "position": _pos("unten", notes="entlang X"), "operation": "subtract"},
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 4, "depth": 3, "length": None},
+             "position": _pos("rechts", notes="entlang Y"), "operation": "subtract"},
+            {"id": "nut_links", "type": "slot",
+             "params": {"width": 4, "depth": 3, "length": None},
+             "position": _pos("links", notes="entlang Y"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "50mm Wuerfel mit Nut 4x3 zentral auf oben/unten/rechts/links",
+        "build_order": ["wuerfel", "nut_oben", "nut_unten", "nut_rechts", "nut_links"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "nut_oben": {"type": "slot", "params": {"width": 4, "depth": 3, "length": None},
+                         "parent": "wuerfel", "position": _pos("oben", notes="entlang X"),
+                         "operation": "subtract", "notes": ""},
+            "nut_unten": {"type": "slot", "params": {"width": 4, "depth": 3, "length": None},
+                          "parent": "wuerfel", "position": _pos("unten", notes="entlang X"),
+                          "operation": "subtract", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 4, "depth": 3, "length": None},
+                           "parent": "wuerfel", "position": _pos("rechts", notes="entlang Y"),
+                           "operation": "subtract", "notes": ""},
+            "nut_links": {"type": "slot", "params": {"width": 4, "depth": 3, "length": None},
+                          "parent": "wuerfel", "position": _pos("links", notes="entlang Y"),
+                          "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [50, 50, 50],
+                   "expected_feature_count": {"box": 1, "slot": 4}},
+})
+
+# T39 — Quader, 5 Features: komplexes Beispiel mit Senkbohrung, Nut, 2 Taschen, Fillet
+TRACES.append({
+    "id": "t39_quader_5feat_komplex_ta",
+    "specification": (
+        "Quader 100x80x40mm. "
+        "Oben links vorne Senkbohrung M8: Ø8.5 durch, Senkung Ø14 10mm tief, 20mm v. links, 15mm v. vorne. "
+        "Oben rechts vorne gleiche Senkbohrung, 20mm v. rechts, 15mm v. vorne. "
+        "Rechts zentrale Tasche 40x20, 10mm tief. "
+        "Vorne Nut 5x4, 20mm von oben, durchgehend. "
+        "Alle vertikalen Kanten R3 verrunden."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, 5F: 2xCounterbore_P2 + Tasche_P0 + Nut_P1 + Fillet_P0"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Senkbohrung M8 links vorne: Ø8.5 durch, Senkung Ø14x10, 20mm v. links, 15mm v. vorne"},
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Senkbohrung M8 rechts vorne: Ø8.5 durch, Senkung Ø14x10, 20mm v. rechts, 15mm v. vorne"},
+            {"teil_id": "quader", "seite": "rechts",
+             "beschreibung": "Tasche 40x20, 10mm tief, zentral"},
+            {"teil_id": "quader", "seite": "vorne",
+             "beschreibung": "Nut 5x4, 20mm von oben, durchgehend"},
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Verrundung R3 alle vertikalen Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "sbh_links_vorne", "type": "hole_counterbore",
+             "params": {"diameter": 8.5, "depth": 40, "cb_diameter": 14, "cb_depth": 10},
+             "position": _pos("oben", edge_distances={"left": 20, "front": 15}),
+             "operation": "subtract"},
+            {"id": "sbh_rechts_vorne", "type": "hole_counterbore",
+             "params": {"diameter": 8.5, "depth": 40, "cb_diameter": 14, "cb_depth": 10},
+             "position": _pos("oben", edge_distances={"right": 20, "front": 15}),
+             "operation": "subtract"},
+            {"id": "tasche_rechts", "type": "pocket_rect",
+             "params": {"width": 40, "length": 20, "depth": 10},
+             "position": _pos("rechts"), "operation": "subtract"},
+            {"id": "nut_vorne", "type": "slot",
+             "params": {"width": 5, "depth": 4, "length": None},
+             "position": _pos("vorne", edge_distances={"top": 20},
+                              notes="durchgehend entlang X"),
+             "operation": "subtract"},
+            {"id": "fillet_vertikal", "type": "fillet",
+             "params": {"radius": 3, "edge_selector": "|Z"},
+             "position": _pos("oben", notes="alle vertikalen Kanten"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40: 2 Senkbohrungen M8 oben, Tasche rechts, Nut vorne, Fillet R3",
+        "build_order": ["quader", "sbh_links_vorne", "sbh_rechts_vorne",
+                        "tasche_rechts", "nut_vorne", "fillet_vertikal"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "sbh_links_vorne": {"type": "hole_counterbore",
+                                "params": {"diameter": 8.5, "depth": 40,
+                                           "cb_diameter": 14, "cb_depth": 10},
+                                "parent": "quader",
+                                "position": _pos("oben", edge_distances={"left": 20, "front": 15}),
+                                "operation": "subtract", "notes": ""},
+            "sbh_rechts_vorne": {"type": "hole_counterbore",
+                                 "params": {"diameter": 8.5, "depth": 40,
+                                            "cb_diameter": 14, "cb_depth": 10},
+                                 "parent": "quader",
+                                 "position": _pos("oben", edge_distances={"right": 20, "front": 15}),
+                                 "operation": "subtract", "notes": ""},
+            "tasche_rechts": {"type": "pocket_rect",
+                              "params": {"width": 40, "length": 20, "depth": 10},
+                              "parent": "quader", "position": _pos("rechts"),
+                              "operation": "subtract", "notes": ""},
+            "nut_vorne": {"type": "slot", "params": {"width": 5, "depth": 4, "length": None},
+                          "parent": "quader",
+                          "position": _pos("vorne", edge_distances={"top": 20},
+                                          notes="durchgehend entlang X"),
+                          "operation": "subtract", "notes": ""},
+            "fillet_vertikal": {"type": "fillet",
+                                "params": {"radius": 3, "edge_selector": "|Z"},
+                                "parent": "quader",
+                                "position": _pos("oben", notes="alle vertikalen Kanten"),
+                                "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_bbox": [100, 80, 40],
+                   "expected_feature_count": {"box": 1, "hole_counterbore": 2,
+                                              "pocket_rect": 1, "slot": 1, "fillet": 1}},
+})
+
+# ── Tier 3: Multi-Part (PositionExtractor + PositionNormalizer) ──
+
+# T40 — 2 Teile, P3 oben (platte auf wuerfel oben), zentriert, knapp-technisch
+TRACES.append({
+    "id": "t40_wuerfel_platte_oben_zentriert_kt",
+    "specification": "Wuerfel 60mm. Oben drauf eine Platte 80x80x10, zentriert.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_simple",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel+platte, POSITION=P3(oben centered)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+             "raw_params": {"x": 60, "y": 60, "z": 60}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 80x80x10",
+             "raw_params": {"x": 80, "y": 80, "z": 10}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "wuerfel",
+             "beschreibung": "oben drauf, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte", "input_sentence": "oben drauf, zentriert",
+         "output": _norm(parent="wuerfel", seite="oben", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="80x10")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 80, "y": 80, "z": 10},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "60mm Wuerfel, oben zentrierte Platte 80x80x10 (uebersteht je 10mm)",
+        "build_order": ["wuerfel", "platte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 80, "y": 80, "z": 10},
+                       "orientation": "standard", "parent": "wuerfel",
+                       "position": _pos("oben", alignment="centered"),
+                       "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T41 — 2 Teile, P3 vorne (platte steht vorne am wuerfel), zentriert, umgangssprachlich
+TRACES.append({
+    "id": "t41_wuerfel_platte_vorne_umg",
+    "specification": "60mm Wuerfel. Vorne dran 'ne Platte 60x60x15, mittig.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_simple",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel+platte, POSITION=P3(vorne centered)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+             "raw_params": {"x": 60, "y": 60, "z": 60}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 60x60x15",
+             "raw_params": {"x": 60, "y": 60, "z": 15}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "wuerfel",
+             "beschreibung": "vorne, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte", "input_sentence": "vorne, zentriert",
+         "output": _norm(parent="wuerfel", seite="vorne", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="60x15")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 60, "y": 60, "z": 15},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "60mm Wuerfel, vorne zentrierte Platte 60x60x15",
+        "build_order": ["wuerfel", "platte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 60, "y": 60, "z": 15},
+                       "orientation": "standard", "parent": "wuerfel",
+                       "position": _pos("vorne", alignment="centered"),
+                       "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T42 — 2 Teile mit Features auf beiden, P3 rechts, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t42_quader_platte_rechts_mit_features_ta",
+    "specification": (
+        "Quader 100x80x40mm. Oben zentrale Bohrung Ø12 durchgehend. "
+        "Rechts daneben eine Platte 40x40x20, zentriert. "
+        "Auf der Platte oben eine Bohrung Ø8, 10mm von der vorderen Kante, zentral in X."
+    ),
+    "metadata": {"difficulty": "P3", "category": "multi_part_with_features",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader+platte, POSITION=P3(rechts), beide Teile mit Features"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+             "raw_params": {"x": 100, "y": 80, "z": 40}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 40x40x20",
+             "raw_params": {"x": 40, "y": 40, "z": 20}},
+        ],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Bohrung Ø12 zentral durchgehend"},
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Bohrung Ø8, 10mm von der vorderen Kante, zentral in X"},
+        ],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "quader",
+             "beschreibung": "rechts daneben, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte", "input_sentence": "rechts daneben, zentriert",
+         "output": _norm(parent="quader", seite="rechts", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="40x20")},
+    ],
+    "teil_definitionen": [
+        {"id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+         "orientation": "standard",
+         "features": [
+             {"id": "bohrung_quader_zentral", "type": "hole_single",
+              "params": {"diameter": 12, "depth": 40},
+              "position": _pos("oben"), "operation": "subtract"},
+         ]},
+        {"id": "platte", "type": "box", "params": {"x": 40, "y": 40, "z": 20},
+         "orientation": "standard",
+         "features": [
+             {"id": "bohrung_platte_oben", "type": "hole_single",
+              "params": {"diameter": 8, "depth": 20},
+              "position": _pos("oben", edge_distances={"front": 10}),
+              "operation": "subtract"},
+         ]},
+    ],
+    "blueprint": {
+        "description": "Quader 100x80x40 + Platte 40x40x20 rechts; Bohrung im Quader oben, Bohrung auf Platte",
+        "build_order": ["quader", "bohrung_quader_zentral", "platte", "bohrung_platte_oben"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_quader_zentral": {"type": "hole_single",
+                                       "params": {"diameter": 12, "depth": 40},
+                                       "parent": "quader", "position": _pos("oben"),
+                                       "operation": "subtract", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 40, "y": 40, "z": 20},
+                       "orientation": "standard", "parent": "quader",
+                       "position": _pos("rechts", alignment="centered"),
+                       "operation": "add", "notes": ""},
+            "bohrung_platte_oben": {"type": "hole_single",
+                                    "params": {"diameter": 8, "depth": 20},
+                                    "parent": "platte",
+                                    "position": _pos("oben", edge_distances={"front": 10}),
+                                    "operation": "subtract", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2, "hole_single": 2}},
+})
+
+# T43 — 2 Teile, P4 bündig (platte steht 20mm über, bündig links), knapp-technisch
+TRACES.append({
+    "id": "t43_quader_platte_links_buendig_kt",
+    "specification": "Quader 100x80x40. Links eine Platte 40x80x20, bündig mit der linken Kante, bündig unten.",
+    "metadata": {"difficulty": "P4", "category": "multi_part_flush",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader+platte, POSITION=P4(links, flush_left, flush_bottom)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+             "raw_params": {"x": 100, "y": 80, "z": 40}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 40x80x20",
+             "raw_params": {"x": 40, "y": 80, "z": 20}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "quader",
+             "beschreibung": "links daneben, bündig mit linker Kante, bündig unten"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte", "input_sentence": "links daneben, bündig mit linker Kante, bündig unten",
+         "output": _norm(parent="quader", seite="links", ausrichtung="flush_bottom",
+                         orientierung="standard", anliegende_flaeche="40x80",
+                         notes="bündig unten, bündig vorne-hinten durch gleiche Y-Tiefe")},
+    ],
+    "teil_definitionen": [
+        {"id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 40, "y": 80, "z": 20},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Quader 100x80x40, links anliegende Platte 40x80x20 bündig unten",
+        "build_order": ["quader", "platte"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 40, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": "quader",
+                       "position": _pos("links", alignment="flush_bottom"),
+                       "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T44 — 2 Teile, P4 Ueberstand (platte steht rechts 15mm über), technisch-ausfuehrlich
+TRACES.append({
+    "id": "t44_platte_wuerfel_ueberstand_ta",
+    "specification": (
+        "Platte 100x80x15mm. Oben ein Wuerfel 50mm, zentriert, "
+        "steht 15mm rechts ueber die Platte hinaus."
+    ),
+    "metadata": {"difficulty": "P4", "category": "multi_part_overhang",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte+wuerfel, POSITION=P4(oben, 15mm Ueberstand rechts)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 100x80x15",
+             "raw_params": {"x": 100, "y": 80, "z": 15}},
+            {"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+             "raw_params": {"x": 50, "y": 50, "z": 50}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "wuerfel", "parent_hint": "platte",
+             "beschreibung": "oben, zentriert in Y, steht 15mm rechts über"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "wuerfel", "input_sentence": "oben, zentriert in Y, steht 15mm rechts über",
+         "output": _norm(parent="platte", seite="oben", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="50x50",
+                         abstand={"right_overhang": 15},
+                         notes="in Y zentriert, in X 15mm Ueberstand nach rechts")},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 15},
+         "orientation": "standard", "features": []},
+        {"id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Platte 100x80x15, oben Wuerfel 50mm mit 15mm Ueberstand rechts",
+        "build_order": ["platte", "wuerfel"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": "platte",
+                        "position": _pos("oben", alignment="centered",
+                                         notes="15mm Ueberstand rechts"),
+                        "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T45 — 3 Teile Kette: A → B rechts an A → C oben auf B, umgangssprachlich
+TRACES.append({
+    "id": "t45_3teile_kette_umg",
+    "specification": (
+        "Platte 80x60x10. Rechts dran ein Wuerfel 40mm. Oben auf dem Wuerfel "
+        "nochmal 'ne kleine Platte 40x40x5, mittig."
+    ),
+    "metadata": {"difficulty": "P3", "category": "multi_part_chain_3",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "3-Teil-Kette: platte → wuerfel(rechts) → platte_klein(oben)"},
+    "inventar": {
+        "teil_count": 3,
+        "teile": [
+            {"id": "platte_basis", "type": "box", "beschreibung": "Platte 80x60x10",
+             "raw_params": {"x": 80, "y": 60, "z": 10}},
+            {"id": "wuerfel", "type": "box", "beschreibung": "40mm Wuerfel",
+             "raw_params": {"x": 40, "y": 40, "z": 40}},
+            {"id": "platte_klein", "type": "box", "beschreibung": "Platte 40x40x5",
+             "raw_params": {"x": 40, "y": 40, "z": 5}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "wuerfel", "parent_hint": "platte_basis",
+             "beschreibung": "rechts an der Platte, zentriert"},
+            {"teil_id": "platte_klein", "parent_hint": "wuerfel",
+             "beschreibung": "oben auf dem Wuerfel, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "wuerfel", "input_sentence": "rechts an der Platte, zentriert",
+         "output": _norm(parent="platte_basis", seite="rechts", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="40x10")},
+        {"teil_id": "platte_klein", "input_sentence": "oben auf dem Wuerfel, zentriert",
+         "output": _norm(parent="wuerfel", seite="oben", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="40x40")},
+    ],
+    "teil_definitionen": [
+        {"id": "platte_basis", "type": "box", "params": {"x": 80, "y": 60, "z": 10},
+         "orientation": "standard", "features": []},
+        {"id": "wuerfel", "type": "box", "params": {"x": 40, "y": 40, "z": 40},
+         "orientation": "standard", "features": []},
+        {"id": "platte_klein", "type": "box", "params": {"x": 40, "y": 40, "z": 5},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "3-Teil-Kette: Platte 80x60x10 → Wuerfel 40mm rechts → Platte 40x40x5 oben",
+        "build_order": ["platte_basis", "wuerfel", "platte_klein"],
+        "features": {
+            "platte_basis": {"type": "box", "params": {"x": 80, "y": 60, "z": 10},
+                             "orientation": "standard", "parent": None,
+                             "operation": "add", "notes": ""},
+            "wuerfel": {"type": "box", "params": {"x": 40, "y": 40, "z": 40},
+                        "orientation": "standard", "parent": "platte_basis",
+                        "position": _pos("rechts", alignment="centered"),
+                        "operation": "add", "notes": ""},
+            "platte_klein": {"type": "box", "params": {"x": 40, "y": 40, "z": 5},
+                             "orientation": "standard", "parent": "wuerfel",
+                             "position": _pos("oben", alignment="centered"),
+                             "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 3}},
+})
+
+# T46 — 2 Teile hochkant, P3 links, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t46_wuerfel_platte_hochkant_links_ta",
+    "specification": (
+        "Wuerfel 60mm. Links eine Platte 60x80x15 hochkant gestellt, zentriert."
+    ),
+    "metadata": {"difficulty": "P3", "category": "multi_part_orientation",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=wuerfel+platte_hochkant, POSITION=P3(links centered)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+             "raw_params": {"x": 60, "y": 60, "z": 60}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 60x80x15 hochkant",
+             "raw_params": {"x": 60, "y": 80, "z": 15}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "wuerfel",
+             "beschreibung": "links, hochkant gestellt, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte", "input_sentence": "links, hochkant gestellt, zentriert",
+         "output": _norm(parent="wuerfel", seite="links", ausrichtung="centered",
+                         orientierung="hochkant", anliegende_flaeche="60x15")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 60, "y": 80, "z": 15},
+         "orientation": "hochkant", "features": []},
+    ],
+    "blueprint": {
+        "description": "60mm Wuerfel, links hochkante Platte 60x80x15 zentriert",
+        "build_order": ["wuerfel", "platte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 60, "y": 80, "z": 15},
+                       "orientation": "hochkant", "parent": "wuerfel",
+                       "position": _pos("links", alignment="centered"),
+                       "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T47 — 2 Teile P2 (Abstand von Kante), knapp-technisch
+TRACES.append({
+    "id": "t47_platte_wuerfel_oben_versetzt_kt",
+    "specification": "Platte 120x90x15. Oben ein Wuerfel 40mm, 20mm von der linken Kante, 15mm von der vorderen Kante.",
+    "metadata": {"difficulty": "P2", "category": "multi_part_offset",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte+wuerfel, POSITION=P2(oben, links 20, vorne 15)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+             "raw_params": {"x": 120, "y": 90, "z": 15}},
+            {"id": "wuerfel", "type": "box", "beschreibung": "40mm Wuerfel",
+             "raw_params": {"x": 40, "y": 40, "z": 40}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "wuerfel", "parent_hint": "platte",
+             "beschreibung": "oben auf der Platte, 20mm von links, 15mm von vorne"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "wuerfel", "input_sentence": "oben auf der Platte, 20mm von links, 15mm von vorne",
+         "output": _norm(parent="platte", seite="oben", ausrichtung="edge_offset",
+                         orientierung="standard", anliegende_flaeche="40x40",
+                         abstand={"left": 20, "front": 15})},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 120, "y": 90, "z": 15},
+         "orientation": "standard", "features": []},
+        {"id": "wuerfel", "type": "box", "params": {"x": 40, "y": 40, "z": 40},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Platte 120x90x15, oben Wuerfel 40mm versetzt: 20mm v. links, 15mm v. vorne",
+        "build_order": ["platte", "wuerfel"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "wuerfel": {"type": "box", "params": {"x": 40, "y": 40, "z": 40},
+                        "orientation": "standard", "parent": "platte",
+                        "position": _pos("oben", edge_distances={"left": 20, "front": 15}),
+                        "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T48 — 2 Teile, Zylinder auf Platte oben zentriert, umgangssprachlich
+TRACES.append({
+    "id": "t48_platte_zylinder_oben_umg",
+    "specification": "Platte 100x100x15. Oben drauf zentriert ein Zylinder Ø40, 60mm hoch.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_simple",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte+zylinder, POSITION=P3(oben centered)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 100x100x15",
+             "raw_params": {"x": 100, "y": 100, "z": 15}},
+            {"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø40 H60",
+             "raw_params": {"radius": 20, "height": 60}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "zylinder", "parent_hint": "platte",
+             "beschreibung": "oben auf der Platte, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "zylinder", "input_sentence": "oben auf der Platte, zentriert",
+         "output": _norm(parent="platte", seite="oben", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="Ø40")},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 100, "y": 100, "z": 15},
+         "orientation": "standard", "features": []},
+        {"id": "zylinder", "type": "cylinder", "params": {"radius": 20, "height": 60},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Platte 100x100x15, oben zentrierter Zylinder Ø40 H60",
+        "build_order": ["platte", "zylinder"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 100, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "zylinder": {"type": "cylinder", "params": {"radius": 20, "height": 60},
+                         "orientation": "standard", "parent": "platte",
+                         "position": _pos("oben", alignment="centered"),
+                         "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "cylinder": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# BATCH 3 — Tier 1 Fortsetzung + P4/P5 + Tier 2/4
+# ════════════════════════════════════════════════════════════
+
+# T49 — Quader links, P0, Tasche, knapp-technisch
+TRACES.append({
+    "id": "t49_quader_links_p0_tasche_knapp",
+    "specification": "Quader 100x80x40, links mittig Tasche 20x20x8 tief",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, FACE=links, POSITION=P0, F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "links",
+                      "beschreibung": "Tasche 20x20x8 tief, mittig"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "tasche_links", "type": "pocket_rect",
+                      "params": {"width": 20, "height": 20, "depth": 8},
+                      "position": _pos("links", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40 mit Tasche auf linker Seite, mittig",
+        "build_order": ["quader", "tasche_links"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_links": {"type": "pocket_rect", "params": {"width": 20, "height": 20, "depth": 8},
+                             "parent": "quader", "operation": "subtract",
+                             "position": _pos("links", "centered"), "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# T50 — Platte unten, P2, Bohrung Sackloch, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t50_platte_unten_p2_sackloch_tech",
+    "specification": "Platte 120x90x15. Auf der Unterseite eine Bohrung Ø10, 25mm von rechts und 20mm von vorne entfernt, 10mm tief.",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, FACE=unten, POSITION=P2(rechts 25, vorne 20), F-TYP=sackloch"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "unten",
+                      "beschreibung": "Bohrung Ø10, 25mm von rechts und 20mm von vorne, 10mm tief"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_unten", "type": "hole_single",
+                      "params": {"diameter": 10, "depth": 10},
+                      "position": _pos("unten", "custom",
+                                       edge_distances={"right": 25, "front": 20}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15, unten Sackloch Ø10 bei 25mm rechts/20mm vorne",
+        "build_order": ["platte", "bohrung_unten"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_unten": {"type": "hole_single", "params": {"diameter": 10, "depth": 10},
+                              "parent": "platte", "operation": "subtract",
+                              "position": _pos("unten", "custom",
+                                              edge_distances={"right": 25, "front": 20}),
+                              "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T51 — Wuerfel vorne, P2, Tasche, umgangssprachlich
+TRACES.append({
+    "id": "t51_wuerfel_vorne_p2_tasche_umg",
+    "specification": "50er Wuerfel, vorne 'ne Tasche 15x10x5 rein, 12mm von rechts und 8mm von oben",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=vorne, POSITION=P2(rechts 12, oben 8), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "vorne",
+                      "beschreibung": "Tasche 15x10x5 tief, 12mm von rechts und 8mm von oben"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [{"id": "tasche_vorne", "type": "pocket_rect",
+                      "params": {"width": 15, "height": 10, "depth": 5},
+                      "position": _pos("vorne", "custom",
+                                       edge_distances={"right": 12, "top": 8}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 50mm mit Tasche 15x10x5 vorne, 12mm rechts / 8mm oben",
+        "build_order": ["wuerfel", "tasche_vorne"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_vorne": {"type": "pocket_rect", "params": {"width": 15, "height": 10, "depth": 5},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("vorne", "custom",
+                                             edge_distances={"right": 12, "top": 8}),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# T52 — Zylinder oben, P0, Lochkreis (hole_pattern_circular), knapp-technisch
+TRACES.append({
+    "id": "t52_zylinder_oben_p0_lochkreis_knapp",
+    "specification": "Zylinder Ø50 H80, oben 4er Lochkreis Ø8 auf R18, zentral",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=zylinder, FACE=oben, POSITION=P0, F-TYP=hole_pattern_circular"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø50 H80",
+                   "raw_params": {"diameter": 50, "height": 80}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "oben",
+                      "beschreibung": "4 Bohrungen Ø8 auf Lochkreis R18, gleichmaessig verteilt, zentral"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder", "params": {"diameter": 50, "height": 80},
+        "orientation": "standard",
+        "features": [{"id": "lochkreis_oben", "type": "hole_pattern_circular",
+                      "params": {"hole_diameter": 8, "bolt_circle_radius": 18, "count": 4, "depth": 80},
+                      "position": _pos("oben", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø50 H80, oben 4er Lochkreis Ø8 R18 zentral, durchgehend",
+        "build_order": ["zylinder", "lochkreis_oben"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 50, "height": 80},
+                         "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 8, "bolt_circle_radius": 18, "count": 4, "depth": 80},
+                               "parent": "zylinder", "operation": "subtract",
+                               "position": _pos("oben", "centered"),
+                               "orientation": "standard", "notes": "4 Bohrungen gleichmaessig verteilt"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "hole_pattern_circular": 1}},
+})
+
+# T53 — Zylinder unten, P1, Bohrung Sackloch, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t53_zylinder_unten_p1_sackloch_tech",
+    "specification": "Zylinder Ø60 Hoehe 50. Auf der Unterseite eine Bohrung Ø12, 15mm von der Mitte nach links versetzt, 20mm tief.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=zylinder, FACE=unten, POSITION=P1(links 15 von Mitte), F-TYP=sackloch"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø60 H50",
+                   "raw_params": {"diameter": 60, "height": 50}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "unten",
+                      "beschreibung": "Bohrung Ø12, 15mm von der Mitte nach links, 20mm tief"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder", "params": {"diameter": 60, "height": 50},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_unten", "type": "hole_single",
+                      "params": {"diameter": 12, "depth": 20},
+                      "position": _pos("unten", "custom",
+                                       edge_distances={"left": 15},
+                                       notes="15mm von Mitte nach links"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø60 H50, unten Sackloch Ø12, 15mm links von Mitte, 20mm tief",
+        "build_order": ["zylinder", "bohrung_unten"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 60, "height": 50},
+                         "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_unten": {"type": "hole_single", "params": {"diameter": 12, "depth": 20},
+                              "parent": "zylinder", "operation": "subtract",
+                              "position": _pos("unten", "custom",
+                                              edge_distances={"left": 15},
+                                              notes="15mm links von Mittelpunkt"),
+                              "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "hole_single": 1}},
+})
+
+# T54 — Quader vorne, P1, Nut (slot) durchgehend, umgangssprachlich
+TRACES.append({
+    "id": "t54_quader_vorne_p1_nut_umg",
+    "specification": "Quader 100x80x40, vorne eine Nut 8x8 durchgehend, 20mm von oben",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, FACE=vorne, POSITION=P1(oben 20), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "vorne",
+                      "beschreibung": "Nut 8x8 durchgehend in X-Richtung, 20mm von der oberen Kante"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "nut_vorne", "type": "slot",
+                      "params": {"width": 8, "depth": 8, "length": 100},
+                      "position": _pos("vorne", "custom", edge_distances={"top": 20}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40, vorne Nut 8x8 durchgehend, 20mm von oben",
+        "build_order": ["quader", "nut_vorne"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "nut_vorne": {"type": "slot", "params": {"width": 8, "depth": 8, "length": 100},
+                          "parent": "quader", "operation": "subtract",
+                          "position": _pos("vorne", "custom", edge_distances={"top": 20}),
+                          "orientation": "standard", "notes": "durchgehend in X-Richtung"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "slot": 1}},
+})
+
+# T55 — Platte Schmalseite links, P0, Bohrung, knapp-technisch
+TRACES.append({
+    "id": "t55_platte_links_p0_bohrung_knapp",
+    "specification": "Platte 120x90x15, links mittig Bohrung Ø10 durchgehend",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, FACE=links, POSITION=P0, F-TYP=bohrung"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "links",
+                      "beschreibung": "Bohrung Ø10 mittig durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_links", "type": "hole_single",
+                      "params": {"diameter": 10, "depth": 15},
+                      "position": _pos("links", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15, Schmalseite links: Bohrung Ø10 zentral durchgehend",
+        "build_order": ["platte", "bohrung_links"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_links": {"type": "hole_single", "params": {"diameter": 10, "depth": 15},
+                              "parent": "platte", "operation": "subtract",
+                              "position": _pos("links", "centered"),
+                              "orientation": "standard", "notes": "durch 15mm Dicke"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T56 — Wuerfel rechts, P2, Tasche, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t56_wuerfel_rechts_p2_tasche_tech",
+    "specification": "50mm Wuerfel. Auf der rechten Seite eine Tasche 18x12x6 tief, 10mm von der oberen Kante und 8mm von der vorderen Kante entfernt.",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=rechts, POSITION=P2(oben 10, vorne 8), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "rechts",
+                      "beschreibung": "Tasche 18x12x6 tief, 10mm von oben und 8mm von vorne"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [{"id": "tasche_rechts", "type": "pocket_rect",
+                      "params": {"width": 18, "height": 12, "depth": 6},
+                      "position": _pos("rechts", "custom",
+                                       edge_distances={"top": 10, "front": 8}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 50mm, Tasche 18x12x6 rechts, 10mm v. oben / 8mm v. vorne",
+        "build_order": ["wuerfel", "tasche_rechts"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_rechts": {"type": "pocket_rect", "params": {"width": 18, "height": 12, "depth": 6},
+                              "parent": "wuerfel", "operation": "subtract",
+                              "position": _pos("rechts", "custom",
+                                              edge_distances={"top": 10, "front": 8}),
+                              "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# T57 — Quader oben, P4 (Nut bündig rechte Kante), umgangssprachlich
+# P4: Feature flush mit Kante — Nut durchgehend, bündig mit rechter Kante
+TRACES.append({
+    "id": "t57_quader_oben_p4_nut_bündig_rechts_umg",
+    "specification": "Quader 100x80x40, oben eine Nut 10x8 durchgehend, bündig mit der rechten Kante",
+    "metadata": {"difficulty": "P4", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, FACE=oben, POSITION=P4(flush_right), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "oben",
+                      "beschreibung": "Nut 10x8 durchgehend, bündig mit rechter Kante"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "nut_oben_rechts", "type": "slot",
+                      "params": {"width": 10, "depth": 8, "length": 100},
+                      "position": _pos("oben", "flush_right"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40, oben Nut 10x8 durchgehend, bündig rechts",
+        "build_order": ["quader", "nut_oben_rechts"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "nut_oben_rechts": {"type": "slot", "params": {"width": 10, "depth": 8, "length": 100},
+                                "parent": "quader", "operation": "subtract",
+                                "position": _pos("oben", "flush_right"),
+                                "orientation": "standard",
+                                "notes": "bündig mit rechter Kante, durchgehend in X"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "slot": 1}},
+})
+
+# T58 — Platte oben, P4 (Tasche bündig linke Kante), knapp-technisch
+TRACES.append({
+    "id": "t58_platte_oben_p4_tasche_bündig_links_knapp",
+    "specification": "Platte 120x90x15, oben Tasche 30x20x8 tief, bündig links",
+    "metadata": {"difficulty": "P4", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P4(flush_left), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Tasche 30x20x8 tief, bündig mit linker Kante, mittig in Y"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "tasche_oben_links", "type": "pocket_rect",
+                      "params": {"width": 30, "height": 20, "depth": 8},
+                      "position": _pos("oben", "flush_left"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15, oben Tasche 30x20x8 bündig links",
+        "build_order": ["platte", "tasche_oben_links"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_oben_links": {"type": "pocket_rect", "params": {"width": 30, "height": 20, "depth": 8},
+                                  "parent": "platte", "operation": "subtract",
+                                  "position": _pos("oben", "flush_left"),
+                                  "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# P5 — ANKER-TRACES (Ecke/Kante-auf-Kante Platzierung)
+# Anker-Format in position_normalizer: dict mit kind_punkt, eltern_punkt,
+# eltern_abstand (wie Normalizer-Agent dem LLM-Output entnimmt).
+# "linke Kante, 10mm von oben" = eltern_punkt="oben_links", eltern_abstand={"unten": 10}
+# ════════════════════════════════════════════════════════════
+
+# T59 — P5 Anker: obere linke Ecke auf linker Kante des Parent, 10mm von oben
+# Basiert auf Beispiel F aus example_matrix.md
+TRACES.append({
+    "id": "t59_wuerfel_platte_p5_anchor_oben_links_umg",
+    "specification": "60mm Wuerfel. Rechts 'ne Platte 40x80x15, obere linke Ecke der Platte liegt auf der linken Kante der rechten Wuerfel-Fläche, 10mm von oben.",
+    "metadata": {"difficulty": "P5", "category": "multi_part_simple",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel+platte, POSITION=P5(kind.oben_links → parent.linke_kante oben 10)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+             "raw_params": {"x": 60, "y": 60, "z": 60}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 40x80x15",
+             "raw_params": {"x": 40, "y": 80, "z": 15}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "wuerfel",
+             "beschreibung": "rechts am Wuerfel, obere linke Ecke der Platte auf linker Kante, 10mm von oben"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "rechts am Wuerfel, obere linke Ecke der Platte auf linker Kante, 10mm von oben",
+         "output": _norm(parent="wuerfel", seite="rechts", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="80x15",
+                         anker={"kind_punkt": "oben_links",
+                                "eltern_punkt": "oben_links",
+                                "eltern_abstand": {"unten": 10}})},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 40, "y": 80, "z": 15},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "60mm Wuerfel, rechts Platte 40x80x15: obere linke Ecke auf linker Kante, 10mm von oben",
+        "build_order": ["wuerfel", "platte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 40, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                       "position": _pos("rechts", "anker",
+                                       notes="obere linke Ecke auf linker Kante, 10mm von oben")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T60 — P5 Anker: obere rechte Ecke auf oberer rechter Ecke, 20mm nach links
+TRACES.append({
+    "id": "t60_quader_platte_p5_oben_rechts_knapp",
+    "specification": "Quader 100x60x40. Oben Platte 50x30x10, obere rechte Ecke der Platte auf oberer rechter Ecke des Quaders, 20mm nach links versetzt.",
+    "metadata": {"difficulty": "P5", "category": "multi_part_simple",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader+platte, POSITION=P5(kind.oben_rechts → parent.oben_rechts, links 20)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "quader", "type": "box", "beschreibung": "Quader 100x60x40",
+             "raw_params": {"x": 100, "y": 60, "z": 40}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 50x30x10",
+             "raw_params": {"x": 50, "y": 30, "z": 10}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "quader",
+             "beschreibung": "oben auf Quader, obere rechte Ecke der Platte auf oberer rechter Ecke des Quaders, 20mm nach links"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "oben auf Quader, obere rechte Ecke der Platte auf oberer rechter Ecke des Quaders, 20mm nach links",
+         "output": _norm(parent="quader", seite="oben", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="50x30",
+                         anker={"kind_punkt": "oben_rechts",
+                                "eltern_punkt": "oben_rechts",
+                                "eltern_abstand": {"links": 20}})},
+    ],
+    "teil_definitionen": [
+        {"id": "quader", "type": "box", "params": {"x": 100, "y": 60, "z": 40},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 50, "y": 30, "z": 10},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Quader 100x60x40, oben Platte 50x30x10: obere rechte Ecke auf Quader oberer rechter Ecke, 20mm links",
+        "build_order": ["quader", "platte"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 60, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 50, "y": 30, "z": 10},
+                       "orientation": "standard", "parent": "quader", "operation": "add",
+                       "position": _pos("oben", "anker",
+                                       notes="obere rechte Ecke auf Quader oben-rechts, 20mm nach links")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T61 — P5 Anker: untere linke Ecke auf rechter Kante, 15mm von unten
+TRACES.append({
+    "id": "t61_platte_quader_p5_unten_links_tech",
+    "specification": "Platte 100x80x20. Rechts daneben ein Quader 30x30x50, untere linke Ecke des Quaders liegt auf der linken Kante der rechten Plattenflaeche, 15mm von unten.",
+    "metadata": {"difficulty": "P5", "category": "multi_part_simple",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte+quader, POSITION=P5(kind.unten_links → parent.linke_kante unten 15)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 100x80x20",
+             "raw_params": {"x": 100, "y": 80, "z": 20}},
+            {"id": "quader", "type": "box", "beschreibung": "Quader 30x30x50",
+             "raw_params": {"x": 30, "y": 30, "z": 50}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "quader", "parent_hint": "platte",
+             "beschreibung": "rechts an der Platte, untere linke Ecke des Quaders auf linker Kante, 15mm von unten"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "quader",
+         "input_sentence": "rechts an der Platte, untere linke Ecke des Quaders auf linker Kante, 15mm von unten",
+         "output": _norm(parent="platte", seite="rechts", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="30x50",
+                         anker={"kind_punkt": "unten_links",
+                                "eltern_punkt": "unten_links",
+                                "eltern_abstand": {"oben": 15}})},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+         "orientation": "standard", "features": []},
+        {"id": "quader", "type": "box", "params": {"x": 30, "y": 30, "z": 50},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Platte 100x80x20, rechts Quader 30x30x50: unten-links Ecke auf linker Kante, 15mm von unten",
+        "build_order": ["platte", "quader"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "quader": {"type": "box", "params": {"x": 30, "y": 30, "z": 50},
+                       "orientation": "standard", "parent": "platte", "operation": "add",
+                       "position": _pos("rechts", "anker",
+                                       notes="unten-links Ecke auf linker Kante, 15mm von unten")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T62 — P5 + Winkel: obere linke Ecke auf linker Kante, 10mm von oben, 45° CCW
+TRACES.append({
+    "id": "t62_wuerfel_platte_p5_winkel_45ccw_knapp",
+    "specification": "Wuerfel 50mm. Rechts Platte 40x40x15, obere linke Ecke auf linker Kante, 10mm von oben, 45 Grad CCW gedreht.",
+    "metadata": {"difficulty": "P5", "category": "multi_part_simple",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel+platte, POSITION=P5+Winkel(kind.oben_links→parent.oben_links unten 10, 45° CCW)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+             "raw_params": {"x": 50, "y": 50, "z": 50}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 40x40x15",
+             "raw_params": {"x": 40, "y": 40, "z": 15}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "wuerfel",
+             "beschreibung": "rechts am Wuerfel, obere linke Ecke der Platte auf linker Kante, 10mm von oben, 45 Grad CCW"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "rechts am Wuerfel, obere linke Ecke der Platte auf linker Kante, 10mm von oben, 45 Grad CCW",
+         "output": _norm(parent="wuerfel", seite="rechts", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="40x15",
+                         winkel=-45,
+                         anker={"kind_punkt": "oben_links",
+                                "eltern_punkt": "oben_links",
+                                "eltern_abstand": {"unten": 10}},
+                         notes="45 Grad CCW = winkel -45")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 40, "y": 40, "z": 15},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Wuerfel 50mm, rechts Platte 40x40x15: obere linke Ecke auf linker Kante 10mm von oben, 45° CCW",
+        "build_order": ["wuerfel", "platte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 40, "y": 40, "z": 15},
+                       "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                       "position": _pos("rechts", "anker", angle_deg=-45,
+                                       notes="obere linke Ecke auf linker Kante 10mm von oben, 45° CCW")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T63 — P5 + Winkel: Mitte des Kindes auf unterer rechter Ecke, 30° CW
+TRACES.append({
+    "id": "t63_quader_kleiner_wuerfel_p5_mitte_ecke_30cw_umg",
+    "specification": "Quader 80x60x30. Oben drauf 'n kleiner 20mm Wuerfel, sein Mittelpunkt genau auf der unteren rechten Ecke des Quaders oben, 30 Grad gedreht.",
+    "metadata": {"difficulty": "P5", "category": "multi_part_simple",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader+wuerfel, POSITION=P5+Winkel(kind.center→parent.unten_rechts, 30° CW)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "quader", "type": "box", "beschreibung": "Quader 80x60x30",
+             "raw_params": {"x": 80, "y": 60, "z": 30}},
+            {"id": "wuerfel_klein", "type": "box", "beschreibung": "Wuerfel 20mm",
+             "raw_params": {"x": 20, "y": 20, "z": 20}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "wuerfel_klein", "parent_hint": "quader",
+             "beschreibung": "oben auf Quader, Mittelpunkt auf unterer rechter Ecke, 30 Grad CW gedreht"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "wuerfel_klein",
+         "input_sentence": "oben auf Quader, Mittelpunkt auf unterer rechter Ecke, 30 Grad CW gedreht",
+         "output": _norm(parent="quader", seite="oben", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="20x20",
+                         winkel=30,
+                         anker={"kind_punkt": "center",
+                                "eltern_punkt": "unten_rechts",
+                                "eltern_abstand": {}},
+                         notes="Mittelpunkt Kind auf untere rechte Ecke, 30 Grad CW")},
+    ],
+    "teil_definitionen": [
+        {"id": "quader", "type": "box", "params": {"x": 80, "y": 60, "z": 30},
+         "orientation": "standard", "features": []},
+        {"id": "wuerfel_klein", "type": "box", "params": {"x": 20, "y": 20, "z": 20},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Quader 80x60x30, oben kleiner Wuerfel 20mm: Mitte auf unterer rechter Ecke, 30° CW",
+        "build_order": ["quader", "wuerfel_klein"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 30},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "wuerfel_klein": {"type": "box", "params": {"x": 20, "y": 20, "z": 20},
+                              "orientation": "standard", "parent": "quader", "operation": "add",
+                              "position": _pos("oben", "anker", angle_deg=30,
+                                              notes="Mitte auf unterer rechter Ecke, 30° CW")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T64 — 3-Teil Kette: A (root), B an A (P3 rechts), C an B (P5 Anker), technisch-ausfuehrlich
+TRACES.append({
+    "id": "t64_3teil_kette_p3_p5_tech",
+    "specification": "Basisplatte 100x80x20. Rechts daneben Quader 40x40x40, zentriert. An der Oberseite des Quaders eine weitere Platte 60x60x10, obere rechte Ecke der Platte auf oberer rechter Ecke des Quaders, 5mm nach links versetzt.",
+    "metadata": {"difficulty": "P5", "category": "multi_part_chain_3",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte+quader+platte2, POSITION=P3(rechts centered)+P5(oben_rechts auf oben_rechts links 5)"},
+    "inventar": {
+        "teil_count": 3,
+        "teile": [
+            {"id": "basisplatte", "type": "box", "beschreibung": "Basisplatte 100x80x20",
+             "raw_params": {"x": 100, "y": 80, "z": 20}},
+            {"id": "quader", "type": "box", "beschreibung": "Quader 40x40x40",
+             "raw_params": {"x": 40, "y": 40, "z": 40}},
+            {"id": "deckplatte", "type": "box", "beschreibung": "Platte 60x60x10",
+             "raw_params": {"x": 60, "y": 60, "z": 10}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "quader", "parent_hint": "basisplatte",
+             "beschreibung": "rechts an der Basisplatte, zentriert"},
+            {"teil_id": "deckplatte", "parent_hint": "quader",
+             "beschreibung": "oben auf dem Quader, obere rechte Ecke der Deckplatte auf oberer rechter Ecke des Quaders, 5mm nach links"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "quader",
+         "input_sentence": "rechts an der Basisplatte, zentriert",
+         "output": _norm(parent="basisplatte", seite="rechts", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="40x40")},
+        {"teil_id": "deckplatte",
+         "input_sentence": "oben auf dem Quader, obere rechte Ecke der Deckplatte auf oberer rechter Ecke des Quaders, 5mm nach links",
+         "output": _norm(parent="quader", seite="oben", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="60x60",
+                         anker={"kind_punkt": "oben_rechts",
+                                "eltern_punkt": "oben_rechts",
+                                "eltern_abstand": {"links": 5}})},
+    ],
+    "teil_definitionen": [
+        {"id": "basisplatte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+         "orientation": "standard", "features": []},
+        {"id": "quader", "type": "box", "params": {"x": 40, "y": 40, "z": 40},
+         "orientation": "standard", "features": []},
+        {"id": "deckplatte", "type": "box", "params": {"x": 60, "y": 60, "z": 10},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Basisplatte 100x80x20, rechts Quader 40x40x40 zentriert, oben Deckplatte 60x60x10 (oben-rechts auf oben-rechts, 5mm links)",
+        "build_order": ["basisplatte", "quader", "deckplatte"],
+        "features": {
+            "basisplatte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                            "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "quader": {"type": "box", "params": {"x": 40, "y": 40, "z": 40},
+                       "orientation": "standard", "parent": "basisplatte", "operation": "add",
+                       "position": _pos("rechts", "centered")},
+            "deckplatte": {"type": "box", "params": {"x": 60, "y": 60, "z": 10},
+                           "orientation": "standard", "parent": "quader", "operation": "add",
+                           "position": _pos("oben", "anker",
+                                           notes="oben-rechts Ecke auf oben-rechts, 5mm links")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 3}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 2 — Multi-Feature (Batch 3, Erweiterung)
+# ════════════════════════════════════════════════════════════
+
+# T65 — Platte 4 Features (Lochkreis + Nut + Tasche + Fase), technisch-ausfuehrlich
+TRACES.append({
+    "id": "t65_platte_4features_lochkreis_nut_tasche_fase_tech",
+    "specification": "Platte 150x100x20. Oben ein 4er-Lochkreis Ø8 auf R35, zentral. Rechts eine Nut 6x6 durchgehend von oben nach unten, mittig. Vorne eine Tasche 40x15x8 tief, mittig. An allen oberen Kanten eine 2mm Fase.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, 4 Features: hole_pattern_circular+slot+pocket_rect+chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 150x100x20",
+                   "raw_params": {"x": 150, "y": 100, "z": 20}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "4er-Lochkreis Ø8 auf R35, zentral"},
+            {"teil_id": "platte", "seite": "rechts",
+             "beschreibung": "Nut 6x6 durchgehend, mittig"},
+            {"teil_id": "platte", "seite": "vorne",
+             "beschreibung": "Tasche 40x15x8 tief, mittig"},
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "2mm Fase an allen oberen Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 150, "y": 100, "z": 20},
+        "orientation": "standard",
+        "features": [
+            {"id": "lochkreis_oben", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 8, "bolt_circle_radius": 35, "count": 4, "depth": 20},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 6, "depth": 6, "length": 20},
+             "position": _pos("rechts", "centered"), "operation": "subtract"},
+            {"id": "tasche_vorne", "type": "pocket_rect",
+             "params": {"width": 40, "height": 15, "depth": 8},
+             "position": _pos("vorne", "centered"), "operation": "subtract"},
+            {"id": "fase_oben", "type": "chamfer",
+             "params": {"distance": 2, "edge_selector": "obere_kanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 150x100x20: Lochkreis oben, Nut rechts, Tasche vorne, Fase oben",
+        "build_order": ["platte", "lochkreis_oben", "nut_rechts", "tasche_vorne", "fase_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 150, "y": 100, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 8, "bolt_circle_radius": 35, "count": 4, "depth": 20},
+                               "parent": "platte", "operation": "subtract",
+                               "position": _pos("oben", "centered"),
+                               "orientation": "standard", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 6, "depth": 6, "length": 20},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("rechts", "centered"),
+                           "orientation": "standard", "notes": "durchgehend in Z"},
+            "tasche_vorne": {"type": "pocket_rect", "params": {"width": 40, "height": 15, "depth": 8},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("vorne", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "fase_oben": {"type": "chamfer", "params": {"distance": 2, "edge_selector": "obere_kanten"},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("oben", "centered"),
+                          "orientation": "standard", "notes": "alle oberen Kanten"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_circular": 1,
+                                              "slot": 1, "pocket_rect": 1, "chamfer": 1}},
+})
+
+# T66 — Quader 3 Features: Lochraster + Nut vorne + hole_counterbore rechts, knapp-technisch
+TRACES.append({
+    "id": "t66_quader_3features_raster_nut_senkbohrung_knapp",
+    "specification": "Quader 100x80x40. Oben 2x3 Raster Bohrungen Ø6 Abstand 20x20, oben links 15x15. Vorne Nut 5x5 durchgehend, 25mm von oben. Rechts Senkbohrung M8 mittig.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, 3 Features: hole_pattern_grid+slot+hole_counterbore"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "2x3 Lochraster Ø6, Abstand 20x20, Startpunkt 15x15 von oben links"},
+            {"teil_id": "quader", "seite": "vorne",
+             "beschreibung": "Nut 5x5 durchgehend, 25mm von oberer Kante"},
+            {"teil_id": "quader", "seite": "rechts",
+             "beschreibung": "Senkbohrung M8 mittig"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "lochraster_oben", "type": "hole_pattern_grid",
+             "params": {"hole_diameter": 6, "rows": 2, "cols": 3,
+                        "row_spacing": 20, "col_spacing": 20, "depth": 40},
+             "position": _pos("oben", "custom", edge_distances={"left": 15, "top": 15}),
+             "operation": "subtract"},
+            {"id": "nut_vorne", "type": "slot",
+             "params": {"width": 5, "depth": 5, "length": 100},
+             "position": _pos("vorne", "custom", edge_distances={"top": 25}),
+             "operation": "subtract"},
+            {"id": "senkbohrung_rechts", "type": "hole_counterbore",
+             "params": {"diameter": 8, "depth": 40, "cbore_diameter": 14, "cbore_depth": 8},
+             "position": _pos("rechts", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40: Lochraster 2x3 oben, Nut vorne, Senkbohrung rechts",
+        "build_order": ["quader", "lochraster_oben", "nut_vorne", "senkbohrung_rechts"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochraster_oben": {"type": "hole_pattern_grid",
+                                "params": {"hole_diameter": 6, "rows": 2, "cols": 3,
+                                           "row_spacing": 20, "col_spacing": 20, "depth": 40},
+                                "parent": "quader", "operation": "subtract",
+                                "position": _pos("oben", "custom", edge_distances={"left": 15, "top": 15}),
+                                "orientation": "standard", "notes": "2x3 Raster, oben-links Anker"},
+            "nut_vorne": {"type": "slot", "params": {"width": 5, "depth": 5, "length": 100},
+                          "parent": "quader", "operation": "subtract",
+                          "position": _pos("vorne", "custom", edge_distances={"top": 25}),
+                          "orientation": "standard", "notes": "durchgehend X"},
+            "senkbohrung_rechts": {"type": "hole_counterbore",
+                                   "params": {"diameter": 8, "depth": 40, "cbore_diameter": 14, "cbore_depth": 8},
+                                   "parent": "quader", "operation": "subtract",
+                                   "position": _pos("rechts", "centered"),
+                                   "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_grid": 1,
+                                              "slot": 1, "hole_counterbore": 1}},
+})
+
+# T67 — Zylinder 3 Features auf beiden Stirnseiten + Lochkreis, umgangssprachlich
+TRACES.append({
+    "id": "t67_zylinder_3features_stirnseiten_umg",
+    "specification": "Zylinder Ø80 H60. Oben zentrale Bohrung Ø20 durchgehend. Oben noch 6er Lochkreis Ø8 auf R30. Unten Sackloch Ø15 zentral, 25mm tief.",
+    "metadata": {"difficulty": "P0", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=zylinder, 3 Features: hole_single(durch)+hole_pattern_circular+hole_single(sackloch)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø80 H60",
+                   "raw_params": {"diameter": 80, "height": 60}}],
+        "aktionen": [
+            {"teil_id": "zylinder", "seite": "oben",
+             "beschreibung": "Bohrung Ø20 zentral durchgehend"},
+            {"teil_id": "zylinder", "seite": "oben",
+             "beschreibung": "6er Lochkreis Ø8 auf R30, zentral"},
+            {"teil_id": "zylinder", "seite": "unten",
+             "beschreibung": "Sackloch Ø15 zentral, 25mm tief"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder", "params": {"diameter": 80, "height": 60},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 20, "depth": 60},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "lochkreis_oben", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 8, "bolt_circle_radius": 30, "count": 6, "depth": 60},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "sackloch_unten", "type": "hole_single",
+             "params": {"diameter": 15, "depth": 25},
+             "position": _pos("unten", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø80 H60: zentrale Bohrung Ø20 durch, 6er Lochkreis Ø8 R30, Sackloch Ø15 25mm unten",
+        "build_order": ["zylinder", "bohrung_zentral", "lochkreis_oben", "sackloch_unten"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 80, "height": 60},
+                         "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single", "params": {"diameter": 20, "depth": 60},
+                                "parent": "zylinder", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": "durchgehend"},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 8, "bolt_circle_radius": 30, "count": 6, "depth": 60},
+                               "parent": "zylinder", "operation": "subtract",
+                               "position": _pos("oben", "centered"),
+                               "orientation": "standard", "notes": "6 Bohrungen, gleichmaessig verteilt"},
+            "sackloch_unten": {"type": "hole_single", "params": {"diameter": 15, "depth": 25},
+                               "parent": "zylinder", "operation": "subtract",
+                               "position": _pos("unten", "centered"),
+                               "orientation": "standard", "notes": "Sackloch 25mm tief"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "hole_single": 2, "hole_pattern_circular": 1}},
+})
+
+# T68 — Wuerfel 5 Features: 4 Eckbohrungen + zentrale Bohrung, knapp-technisch
+TRACES.append({
+    "id": "t68_wuerfel_5features_eckbohrungen_zentral_knapp",
+    "specification": "Wuerfel 80mm. Oben 4 Bohrungen Ø6 je 12mm von den Kanten (Ecken). Oben zentrale Bohrung Ø15 durchgehend.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, 5 Features: 4xhole_single(Ecken P2)+hole_single(zentral P0)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "Wuerfel 80mm",
+                   "raw_params": {"x": 80, "y": 80, "z": 80}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben",
+             "beschreibung": "4 Bohrungen Ø6, jeweils 12mm von den Ecken, durchgehend"},
+            {"teil_id": "wuerfel", "seite": "oben",
+             "beschreibung": "Bohrung Ø15 zentral durchgehend"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 80, "y": 80, "z": 80},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben_vl", "type": "hole_single",
+             "params": {"diameter": 6, "depth": 80},
+             "position": _pos("oben", "custom", edge_distances={"left": 12, "top": 12}),
+             "operation": "subtract"},
+            {"id": "bohrung_oben_vr", "type": "hole_single",
+             "params": {"diameter": 6, "depth": 80},
+             "position": _pos("oben", "custom", edge_distances={"right": 12, "top": 12}),
+             "operation": "subtract"},
+            {"id": "bohrung_oben_hl", "type": "hole_single",
+             "params": {"diameter": 6, "depth": 80},
+             "position": _pos("oben", "custom", edge_distances={"left": 12, "bottom": 12}),
+             "operation": "subtract"},
+            {"id": "bohrung_oben_hr", "type": "hole_single",
+             "params": {"diameter": 6, "depth": 80},
+             "position": _pos("oben", "custom", edge_distances={"right": 12, "bottom": 12}),
+             "operation": "subtract"},
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 15, "depth": 80},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 80mm: 4 Eckbohrungen Ø6 (12mm von Ecken) + zentrale Bohrung Ø15, alle oben durch",
+        "build_order": ["wuerfel", "bohrung_oben_vl", "bohrung_oben_vr",
+                        "bohrung_oben_hl", "bohrung_oben_hr", "bohrung_zentral"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 80, "y": 80, "z": 80},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben_vl": {"type": "hole_single", "params": {"diameter": 6, "depth": 80},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("oben", "custom", edge_distances={"left": 12, "top": 12}),
+                                "orientation": "standard", "notes": "vorne links"},
+            "bohrung_oben_vr": {"type": "hole_single", "params": {"diameter": 6, "depth": 80},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("oben", "custom", edge_distances={"right": 12, "top": 12}),
+                                "orientation": "standard", "notes": "vorne rechts"},
+            "bohrung_oben_hl": {"type": "hole_single", "params": {"diameter": 6, "depth": 80},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("oben", "custom", edge_distances={"left": 12, "bottom": 12}),
+                                "orientation": "standard", "notes": "hinten links"},
+            "bohrung_oben_hr": {"type": "hole_single", "params": {"diameter": 6, "depth": 80},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("oben", "custom", edge_distances={"right": 12, "bottom": 12}),
+                                "orientation": "standard", "notes": "hinten rechts"},
+            "bohrung_zentral": {"type": "hole_single", "params": {"diameter": 15, "depth": 80},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 5}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 4 — Minimal-Paare und Negativ-Beispiele
+# ════════════════════════════════════════════════════════════
+
+# T69 — Minimal-Paar A: "bündig rechts" = flush_right alignment (P4)
+TRACES.append({
+    "id": "t69_minimal_bündig_rechts_gleichwert_knapp",
+    "specification": "Platte 100x80x15, oben Bohrung Ø10 bündig rechts, zentriert in Y-Richtung, durchgehend",
+    "metadata": {"difficulty": "P4", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P4(flush_right), F-TYP=bohrung"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x15",
+                   "raw_params": {"x": 100, "y": 80, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Bohrung Ø10, bündig rechts, mittig in Y, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_bündig_rechts", "type": "hole_single",
+                      "params": {"diameter": 10, "depth": 15},
+                      "position": _pos("oben", "flush_right"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x15: Bohrung Ø10 flush_right (bündig rechts), Y-zentriert, durch",
+        "build_order": ["platte", "bohrung_bündig_rechts"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_bündig_rechts": {"type": "hole_single", "params": {"diameter": 10, "depth": 15},
+                                      "parent": "platte", "operation": "subtract",
+                                      "position": _pos("oben", "flush_right"),
+                                      "orientation": "standard",
+                                      "notes": "bündig rechts = flush_right, kein Rand-Offset"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T70 — Minimal-Paar B: "diagonal" = 45 Grad CW Winkel
+TRACES.append({
+    "id": "t70_minimal_diagonal_gleich_45grad_umg",
+    "specification": "50mm Wuerfel, oben 'ne Tasche 20x10x5 rein, diagonal ausgerichtet, mittig",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=oben, POSITION=P0+WINKEL=diagonal(=45° CW), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "oben",
+                      "beschreibung": "Tasche 20x10x5 mittig, diagonal (45° CW) ausgerichtet"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [{"id": "tasche_diagonal", "type": "pocket_rect",
+                      "params": {"width": 20, "height": 10, "depth": 5},
+                      "position": _pos("oben", "centered", angle_deg=45,
+                                       notes="diagonal = 45 Grad CW"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 50mm, oben Tasche 20x10x5 mittig, 45° CW (diagonal)",
+        "build_order": ["wuerfel", "tasche_diagonal"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_diagonal": {"type": "pocket_rect", "params": {"width": 20, "height": 10, "depth": 5},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("oben", "centered", angle_deg=45,
+                                                notes="diagonal = 45 Grad CW"),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# T71 — Negativ-Beispiel: "Bohrung oben rechts" ohne Abstände → Default Eck-Position
+# Die Pipeline soll einen sinnvollen Default annehmen (Ecke, halbe Materialstaerke als Abstand)
+TRACES.append({
+    "id": "t71_negativ_bohrung_ohne_abstände_default_umg",
+    "specification": "Platte 100x80x20, oben rechts 'ne Bohrung Ø10 rein",
+    "metadata": {"difficulty": "P3", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "NEGATIV: FORM=platte, FACE=oben, POSITION=P3(oben_rechts, kein Abstand) → Default Eck-Abstand"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x20",
+                   "raw_params": {"x": 100, "y": 80, "z": 20}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Bohrung Ø10, rechts oben, kein Abstand angegeben → Default"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_oben_rechts", "type": "hole_single",
+                      "params": {"diameter": 10, "depth": 20},
+                      "position": _pos("oben", "top_right",
+                                       notes="kein Abstand → Default Eck-Abstand = halbe Materialstaerke (10mm)"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x20: Bohrung Ø10 oben-rechts, Default-Abstand (halbe Materialstaerke = 10mm)",
+        "build_order": ["platte", "bohrung_oben_rechts"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben_rechts": {"type": "hole_single", "params": {"diameter": 10, "depth": 20},
+                                    "parent": "platte", "operation": "subtract",
+                                    "position": _pos("oben", "top_right",
+                                                    notes="keine Abstände → P3 Ecke, Default"),
+                                    "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T72 — Minimal-Paar C: "um 45° CCW" = winkel=-45 (negativ), knapp-technisch
+TRACES.append({
+    "id": "t72_minimal_ccw_gleich_negativ_winkel_knapp",
+    "specification": "Quader 80x60x30, oben Tasche 25x15x6 tief, 15mm von links, 10mm von vorne, um 45° CCW gedreht",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, FACE=oben, POSITION=P2+WINKEL=-45(CCW), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x60x30",
+                   "raw_params": {"x": 80, "y": 60, "z": 30}}],
+        "aktionen": [{"teil_id": "quader", "seite": "oben",
+                      "beschreibung": "Tasche 25x15x6 tief, 15mm von links, 10mm von vorne, 45° CCW gedreht"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 80, "y": 60, "z": 30},
+        "orientation": "standard",
+        "features": [{"id": "tasche_ccw", "type": "pocket_rect",
+                      "params": {"width": 25, "height": 15, "depth": 6},
+                      "position": _pos("oben", "custom",
+                                       edge_distances={"left": 15, "front": 10},
+                                       angle_deg=-45,
+                                       notes="CCW = negatives angle_deg"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 80x60x30: Tasche 25x15x6 oben, 15mm links/10mm vorne, -45° (CCW)",
+        "build_order": ["quader", "tasche_ccw"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 30},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_ccw": {"type": "pocket_rect", "params": {"width": 25, "height": 15, "depth": 6},
+                           "parent": "quader", "operation": "subtract",
+                           "position": _pos("oben", "custom",
+                                           edge_distances={"left": 15, "front": 10},
+                                           angle_deg=-45,
+                                           notes="CCW = angle_deg negativ"),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# BATCH 4 — Tier 1 Lückenfüller + Tier 2 Erweiterung + Tier 3 Features
+# ════════════════════════════════════════════════════════════
+
+# T73 — Wuerfel hinten, P1, Nut durchgehend, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t73_wuerfel_hinten_p1_nut_tech",
+    "specification": "50mm Wuerfel. An der Rueckseite eine Nut 8x6 durchgehend, 18mm von der oberen Kante entfernt.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=hinten, POSITION=P1(oben 18), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "hinten",
+                      "beschreibung": "Nut 8x6 durchgehend, 18mm von oberer Kante"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [{"id": "nut_hinten", "type": "slot",
+                      "params": {"width": 8, "depth": 6, "length": 50},
+                      "position": _pos("hinten", "custom", edge_distances={"top": 18}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 50mm, hinten Nut 8x6 durchgehend, 18mm von oben",
+        "build_order": ["wuerfel", "nut_hinten"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "nut_hinten": {"type": "slot", "params": {"width": 8, "depth": 6, "length": 50},
+                           "parent": "wuerfel", "operation": "subtract",
+                           "position": _pos("hinten", "custom", edge_distances={"top": 18}),
+                           "orientation": "standard", "notes": "durchgehend in X"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "slot": 1}},
+})
+
+# T74 — Platte hinten, P1, Bohrung, umgangssprachlich
+TRACES.append({
+    "id": "t74_platte_hinten_p1_bohrung_umg",
+    "specification": "Platte 120x90x15, hinten 'ne Bohrung Ø8, 30mm von rechts, durchgehend",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, FACE=hinten, POSITION=P1(rechts 30), F-TYP=bohrung"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "hinten",
+                      "beschreibung": "Bohrung Ø8, 30mm von rechts, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_hinten", "type": "hole_single",
+                      "params": {"diameter": 8, "depth": 15},
+                      "position": _pos("hinten", "custom", edge_distances={"right": 30}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15, hinten Bohrung Ø8 durchgehend, 30mm von rechts",
+        "build_order": ["platte", "bohrung_hinten"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_hinten": {"type": "hole_single", "params": {"diameter": 8, "depth": 15},
+                               "parent": "platte", "operation": "subtract",
+                               "position": _pos("hinten", "custom", edge_distances={"right": 30}),
+                               "orientation": "standard", "notes": "durch 15mm Dicke"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T75 — Quader oben, P2, Senkkopfbohrung (hole_countersink), knapp-technisch
+TRACES.append({
+    "id": "t75_quader_oben_p2_senkkopf_knapp",
+    "specification": "Quader 100x80x40, oben Senkkopfbohrung M6, 20mm von links, 15mm von vorne",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, FACE=oben, POSITION=P2(links 20, vorne 15), F-TYP=hole_countersink"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "oben",
+                      "beschreibung": "Senkkopfbohrung M6 (Ø6 Kern, Ø12 Senkung 90°), 20mm von links, 15mm von vorne"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "senkkopf_oben", "type": "hole_countersink",
+                      "params": {"diameter": 6, "depth": 40, "csk_diameter": 12, "csk_angle": 90},
+                      "position": _pos("oben", "custom", edge_distances={"left": 20, "front": 15}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40: Senkkopfbohrung M6 oben, 20mm links / 15mm vorne",
+        "build_order": ["quader", "senkkopf_oben"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "senkkopf_oben": {"type": "hole_countersink",
+                              "params": {"diameter": 6, "depth": 40, "csk_diameter": 12, "csk_angle": 90},
+                              "parent": "quader", "operation": "subtract",
+                              "position": _pos("oben", "custom", edge_distances={"left": 20, "front": 15}),
+                              "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_countersink": 1}},
+})
+
+# T76 — Wuerfel oben, P2, Senkkopfbohrung, umgangssprachlich
+TRACES.append({
+    "id": "t76_wuerfel_oben_p2_senkkopf_umg",
+    "specification": "50er Wuerfel, oben 'ne Senkkopfbohrung M5, 15mm von rechts und 12mm von hinten",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=oben, POSITION=P2(rechts 15, hinten 12), F-TYP=hole_countersink"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "oben",
+                      "beschreibung": "Senkkopfbohrung M5, 15mm von rechts, 12mm von hinten"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [{"id": "senkkopf_oben", "type": "hole_countersink",
+                      "params": {"diameter": 5, "depth": 50, "csk_diameter": 10, "csk_angle": 90},
+                      "position": _pos("oben", "custom", edge_distances={"right": 15, "back": 12}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 50mm: Senkkopfbohrung M5 oben, 15mm rechts / 12mm hinten",
+        "build_order": ["wuerfel", "senkkopf_oben"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "senkkopf_oben": {"type": "hole_countersink",
+                              "params": {"diameter": 5, "depth": 50, "csk_diameter": 10, "csk_angle": 90},
+                              "parent": "wuerfel", "operation": "subtract",
+                              "position": _pos("oben", "custom", edge_distances={"right": 15, "back": 12}),
+                              "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_countersink": 1}},
+})
+
+# T77 — Zylinder oben, P1, Tasche (pocket_rect), technisch-ausfuehrlich
+TRACES.append({
+    "id": "t77_zylinder_oben_p1_tasche_tech",
+    "specification": "Zylinder Ø70 Hoehe 50. Auf der Oberseite eine rechteckige Tasche 30x20x8 tief, 15mm von der linken Kante der Stirnflaeche entfernt, vertikal zentriert.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=zylinder, FACE=oben, POSITION=P1(links 15), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø70 H50",
+                   "raw_params": {"diameter": 70, "height": 50}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "oben",
+                      "beschreibung": "Tasche 30x20x8 tief, 15mm von links, vertikal zentriert"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder", "params": {"diameter": 70, "height": 50},
+        "orientation": "standard",
+        "features": [{"id": "tasche_oben", "type": "pocket_rect",
+                      "params": {"width": 30, "height": 20, "depth": 8},
+                      "position": _pos("oben", "custom", edge_distances={"left": 15},
+                                       notes="links 15mm, Y zentriert"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø70 H50, oben Tasche 30x20x8, 15mm von links, Y-zentriert",
+        "build_order": ["zylinder", "tasche_oben"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 70, "height": 50},
+                         "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_oben": {"type": "pocket_rect", "params": {"width": 30, "height": 20, "depth": 8},
+                            "parent": "zylinder", "operation": "subtract",
+                            "position": _pos("oben", "custom", edge_distances={"left": 15},
+                                            notes="X: 15mm von links; Y: zentriert"),
+                            "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "pocket_rect": 1}},
+})
+
+# T78 — Platte oben, P1, Lochraster (hole_pattern_linear), knapp-technisch
+TRACES.append({
+    "id": "t78_platte_oben_p1_linear_bohrungen_knapp",
+    "specification": "Platte 150x80x20, oben 5 Bohrungen Ø8 im Abstand 25mm, 15mm von vorne, zentriert in X",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P1(vorne 15, X-zentriert), F-TYP=hole_pattern_linear"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 150x80x20",
+                   "raw_params": {"x": 150, "y": 80, "z": 20}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "5 Bohrungen Ø8 linear, Abstand 25mm, 15mm von vorne, X-zentriert, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 150, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [{"id": "linear_bohrungen", "type": "hole_pattern_linear",
+                      "params": {"hole_diameter": 8, "count": 5, "spacing": 25,
+                                 "direction": "x", "depth": 20},
+                      "position": _pos("oben", "custom", edge_distances={"front": 15},
+                                       notes="X-Reihe zentriert, 15mm von vorne"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 150x80x20: 5 Bohrungen Ø8 linear (Abstand 25mm) oben, 15mm vorne, X-zentriert",
+        "build_order": ["platte", "linear_bohrungen"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 150, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "linear_bohrungen": {"type": "hole_pattern_linear",
+                                 "params": {"hole_diameter": 8, "count": 5, "spacing": 25,
+                                            "direction": "x", "depth": 20},
+                                 "parent": "platte", "operation": "subtract",
+                                 "position": _pos("oben", "custom", edge_distances={"front": 15},
+                                                 notes="5 Bohrungen in X, gesamt 100mm, X-zentriert"),
+                                 "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_linear": 1}},
+})
+
+# T79 — Wuerfel hochkant, P0, Bohrung oben, knapp-technisch
+# Hochkant: Wuerfel ist Wuerfel, hochkant hat keinen Effekt. Zeigt trotzdem die Orientation-Annotation.
+# Nutze stattdessen Platte hochkant (interessanter Fall)
+TRACES.append({
+    "id": "t79_platte_hochkant_oben_p0_bohrung_knapp",
+    "specification": "Platte 100x60x20 hochkant, oben zentrale Bohrung Ø12 durchgehend",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte(hochkant), FACE=oben, POSITION=P0, F-TYP=bohrung"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x60x20 hochkant",
+                   "raw_params": {"x": 100, "y": 60, "z": 20}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Bohrung Ø12 zentral durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 60, "z": 20},
+        "orientation": "hochkant",
+        "features": [{"id": "bohrung_oben", "type": "hole_single",
+                      "params": {"diameter": 12, "depth": 100},
+                      "position": _pos("oben", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 100x60x20 hochkant (steht auf 60x20 Basis), oben zentrale Bohrung Ø12 durch",
+        "build_order": ["platte", "bohrung_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 60, "z": 20},
+                       "orientation": "hochkant", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 12, "depth": 100},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("oben", "centered"),
+                             "orientation": "standard",
+                             "notes": "Tiefe = 100 (hochkant: Z=100mm nach Swap)"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T80 — Quader hochkant, P1, Tasche vorne, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t80_quader_hochkant_vorne_p1_tasche_tech",
+    "specification": "Quader 80x40x30 hochkant gestellt. Vorne eine Tasche 20x15x8 tief, 10mm von der oberen Kante entfernt, horizontal zentriert.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader(hochkant), FACE=vorne, POSITION=P1(oben 10), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x40x30 hochkant",
+                   "raw_params": {"x": 80, "y": 40, "z": 30}}],
+        "aktionen": [{"teil_id": "quader", "seite": "vorne",
+                      "beschreibung": "Tasche 20x15x8 tief, 10mm von oben, horizontal zentriert"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 80, "y": 40, "z": 30},
+        "orientation": "hochkant",
+        "features": [{"id": "tasche_vorne", "type": "pocket_rect",
+                      "params": {"width": 20, "height": 15, "depth": 8},
+                      "position": _pos("vorne", "custom", edge_distances={"top": 10},
+                                       notes="horizontal zentriert, 10mm von oben"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 80x40x30 hochkant, vorne Tasche 20x15x8, 10mm von oben, X-zentriert",
+        "build_order": ["quader", "tasche_vorne"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 40, "z": 30},
+                       "orientation": "hochkant", "parent": None, "operation": "add", "notes": ""},
+            "tasche_vorne": {"type": "pocket_rect", "params": {"width": 20, "height": 15, "depth": 8},
+                             "parent": "quader", "operation": "subtract",
+                             "position": _pos("vorne", "custom", edge_distances={"top": 10}),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 2 Batch 4 — Mehr Multi-Feature, komplexere Kombinationen
+# ════════════════════════════════════════════════════════════
+
+# T81 — Wuerfel alle-Seiten: oben Bohrung + unten Bohrung + vorne Tasche + rechts Nut
+TRACES.append({
+    "id": "t81_wuerfel_4seiten_4features_umg",
+    "specification": "60mm Wuerfel. Oben Bohrung Ø12 zentral. Unten Bohrung Ø8, 15mm von links. Vorne Tasche 20x10x6 mittig. Rechts Nut 8x6 durchgehend, 20mm von oben.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, 4 Features verschiedene Seiten"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+                   "raw_params": {"x": 60, "y": 60, "z": 60}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "Bohrung Ø12 zentral"},
+            {"teil_id": "wuerfel", "seite": "unten", "beschreibung": "Bohrung Ø8, 15mm von links"},
+            {"teil_id": "wuerfel", "seite": "vorne", "beschreibung": "Tasche 20x10x6 tief mittig"},
+            {"teil_id": "wuerfel", "seite": "rechts", "beschreibung": "Nut 8x6 durchgehend, 20mm von oben"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 60},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "bohrung_unten", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 60},
+             "position": _pos("unten", "custom", edge_distances={"left": 15}),
+             "operation": "subtract"},
+            {"id": "tasche_vorne", "type": "pocket_rect",
+             "params": {"width": 20, "height": 10, "depth": 6},
+             "position": _pos("vorne", "centered"), "operation": "subtract"},
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 8, "depth": 6, "length": 60},
+             "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 60mm: Bohrung Ø12 oben, Bohrung Ø8 unten-links, Tasche vorne, Nut rechts",
+        "build_order": ["wuerfel", "bohrung_oben", "bohrung_unten", "tasche_vorne", "nut_rechts"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 12, "depth": 60},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("oben", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "bohrung_unten": {"type": "hole_single", "params": {"diameter": 8, "depth": 60},
+                              "parent": "wuerfel", "operation": "subtract",
+                              "position": _pos("unten", "custom", edge_distances={"left": 15}),
+                              "orientation": "standard", "notes": ""},
+            "tasche_vorne": {"type": "pocket_rect", "params": {"width": 20, "height": 10, "depth": 6},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("vorne", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 8, "depth": 6, "length": 60},
+                           "parent": "wuerfel", "operation": "subtract",
+                           "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+                           "orientation": "standard", "notes": "durchgehend"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 2, "pocket_rect": 1, "slot": 1}},
+})
+
+# T82 — Platte 5 Features: 4 Eckbohrungen (P2) + Fase + Verrundung + Nut, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t82_platte_5features_ecken_fase_radius_nut_tech",
+    "specification": "Platte 120x80x15. Oben 4 Bohrungen Ø8 jeweils 15mm von den Ecken. An allen oberen Kanten Fase 1.5mm. An den 4 langen Kanten unten Radius 3mm. Vorne Nut 6x6 durchgehend, 8mm von oberer Kante.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, 5 Features: 4xbohrung(Ecken)+chamfer+fillet+slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x80x15",
+                   "raw_params": {"x": 120, "y": 80, "z": 15}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "4 Eckbohrungen Ø8, je 15mm von Ecken"},
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "Fase 1.5mm an oberen Kanten"},
+            {"teil_id": "platte", "seite": "unten", "beschreibung": "Radius R3 an langen Kanten unten"},
+            {"teil_id": "platte", "seite": "vorne", "beschreibung": "Nut 6x6 durchgehend, 8mm von oben"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 120, "y": 80, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_vl", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("oben", "custom", edge_distances={"left": 15, "top": 15}),
+             "operation": "subtract"},
+            {"id": "bohrung_vr", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("oben", "custom", edge_distances={"right": 15, "top": 15}),
+             "operation": "subtract"},
+            {"id": "bohrung_hl", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("oben", "custom", edge_distances={"left": 15, "bottom": 15}),
+             "operation": "subtract"},
+            {"id": "bohrung_hr", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("oben", "custom", edge_distances={"right": 15, "bottom": 15}),
+             "operation": "subtract"},
+            {"id": "fase_oben_kanten", "type": "chamfer",
+             "params": {"distance": 1.5, "edge_selector": "obere_kanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "radius_unten_lang", "type": "fillet",
+             "params": {"radius": 3, "edge_selector": "untere_laengskanten"},
+             "position": _pos("unten", "centered"), "operation": "subtract"},
+            {"id": "nut_vorne", "type": "slot",
+             "params": {"width": 6, "depth": 6, "length": 120},
+             "position": _pos("vorne", "custom", edge_distances={"top": 8}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x80x15: 4 Eckbohrungen Ø8, Fase oben, Radius unten, Nut vorne",
+        "build_order": ["platte", "bohrung_vl", "bohrung_vr", "bohrung_hl", "bohrung_hr",
+                        "fase_oben_kanten", "radius_unten_lang", "nut_vorne"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_vl": {"type": "hole_single", "params": {"diameter": 8, "depth": 15},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("oben", "custom", edge_distances={"left": 15, "top": 15}),
+                           "orientation": "standard", "notes": ""},
+            "bohrung_vr": {"type": "hole_single", "params": {"diameter": 8, "depth": 15},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("oben", "custom", edge_distances={"right": 15, "top": 15}),
+                           "orientation": "standard", "notes": ""},
+            "bohrung_hl": {"type": "hole_single", "params": {"diameter": 8, "depth": 15},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("oben", "custom", edge_distances={"left": 15, "bottom": 15}),
+                           "orientation": "standard", "notes": ""},
+            "bohrung_hr": {"type": "hole_single", "params": {"diameter": 8, "depth": 15},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("oben", "custom", edge_distances={"right": 15, "bottom": 15}),
+                           "orientation": "standard", "notes": ""},
+            "fase_oben_kanten": {"type": "chamfer", "params": {"distance": 1.5, "edge_selector": "obere_kanten"},
+                                 "parent": "platte", "operation": "subtract",
+                                 "position": _pos("oben", "centered"),
+                                 "orientation": "standard", "notes": ""},
+            "radius_unten_lang": {"type": "fillet", "params": {"radius": 3, "edge_selector": "untere_laengskanten"},
+                                  "parent": "platte", "operation": "subtract",
+                                  "position": _pos("unten", "centered"),
+                                  "orientation": "standard", "notes": ""},
+            "nut_vorne": {"type": "slot", "params": {"width": 6, "depth": 6, "length": 120},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("vorne", "custom", edge_distances={"top": 8}),
+                          "orientation": "standard", "notes": "durchgehend X"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 4,
+                                              "chamfer": 1, "fillet": 1, "slot": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 3 Batch 4 — Multi-Part mit Features
+# ════════════════════════════════════════════════════════════
+
+# T83 — 2 Teile P3, jedes mit Features, umgangssprachlich
+TRACES.append({
+    "id": "t83_2teile_p3_mit_features_umg",
+    "specification": "Wuerfel 60mm, oben 'ne Bohrung Ø12 zentral. Links daneben Platte 50x50x15, da vorne 'ne Nut 6x6 rein, mittig.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_with_features",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel+platte, POSITION=P3(links), Features auf beiden Teilen"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+             "raw_params": {"x": 60, "y": 60, "z": 60}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 50x50x15",
+             "raw_params": {"x": 50, "y": 50, "z": 15}},
+        ],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "Bohrung Ø12 zentral"},
+            {"teil_id": "platte", "seite": "vorne", "beschreibung": "Nut 6x6 durchgehend, mittig"},
+        ],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "wuerfel",
+             "beschreibung": "links am Wuerfel, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "links am Wuerfel, zentriert",
+         "output": _norm(parent="wuerfel", seite="links", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="50x15")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+         "orientation": "standard",
+         "features": [{"id": "bohrung_wuerfel", "type": "hole_single",
+                       "params": {"diameter": 12, "depth": 60},
+                       "position": _pos("oben", "centered"), "operation": "subtract"}]},
+        {"id": "platte", "type": "box", "params": {"x": 50, "y": 50, "z": 15},
+         "orientation": "standard",
+         "features": [{"id": "nut_platte", "type": "slot",
+                       "params": {"width": 6, "depth": 6, "length": 50},
+                       "position": _pos("vorne", "centered"), "operation": "subtract"}]},
+    ],
+    "blueprint": {
+        "description": "Wuerfel 60mm + Bohrung oben, links Platte 50x50x15 + Nut vorne",
+        "build_order": ["wuerfel", "bohrung_wuerfel", "platte", "nut_platte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_wuerfel": {"type": "hole_single", "params": {"diameter": 12, "depth": 60},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 50, "y": 50, "z": 15},
+                       "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                       "position": _pos("links", "centered")},
+            "nut_platte": {"type": "slot", "params": {"width": 6, "depth": 6, "length": 50},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("vorne", "centered"),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2, "hole_single": 1, "slot": 1}},
+})
+
+# T84 — 2 Teile P5 mit Features auf dem Kind-Teil, knapp-technisch
+TRACES.append({
+    "id": "t84_2teile_p5_mit_features_knapp",
+    "specification": "Quader 80x60x30. Oben Platte 50x40x10, obere linke Ecke auf oberer linker Ecke des Quaders, 5mm nach innen. Auf der Platte oben zentral Bohrung Ø8 durchgehend.",
+    "metadata": {"difficulty": "P5", "category": "multi_part_with_features",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader+platte, POSITION=P5(oben_links auf oben_links, +5mm), Platte mit Feature"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "quader", "type": "box", "beschreibung": "Quader 80x60x30",
+             "raw_params": {"x": 80, "y": 60, "z": 30}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 50x40x10",
+             "raw_params": {"x": 50, "y": 40, "z": 10}},
+        ],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "Bohrung Ø8 zentral durchgehend"},
+        ],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "quader",
+             "beschreibung": "oben auf Quader, obere linke Ecke auf oberer linker Ecke, 5mm nach innen (rechts+hinten)"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "oben auf Quader, obere linke Ecke auf oberer linker Ecke, 5mm nach innen",
+         "output": _norm(parent="quader", seite="oben", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="50x40",
+                         anker={"kind_punkt": "oben_links",
+                                "eltern_punkt": "oben_links",
+                                "eltern_abstand": {"rechts": 5, "unten": 5}})},
+    ],
+    "teil_definitionen": [
+        {"id": "quader", "type": "box", "params": {"x": 80, "y": 60, "z": 30},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 50, "y": 40, "z": 10},
+         "orientation": "standard",
+         "features": [{"id": "bohrung_platte", "type": "hole_single",
+                       "params": {"diameter": 8, "depth": 10},
+                       "position": _pos("oben", "centered"), "operation": "subtract"}]},
+    ],
+    "blueprint": {
+        "description": "Quader 80x60x30, oben Platte 50x40x10 (P5: oben-links+5mm), Platte mit Bohrung Ø8",
+        "build_order": ["quader", "platte", "bohrung_platte"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 30},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 50, "y": 40, "z": 10},
+                       "orientation": "standard", "parent": "quader", "operation": "add",
+                       "position": _pos("oben", "anker",
+                                       notes="oben-links Ecke auf oben-links, 5mm nach innen")},
+            "bohrung_platte": {"type": "hole_single", "params": {"diameter": 8, "depth": 10},
+                               "parent": "platte", "operation": "subtract",
+                               "position": _pos("oben", "centered"),
+                               "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2, "hole_single": 1}},
+})
+
+# T85 — 2 Teile P4 (bündig oben), mit Features auf root, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t85_2teile_p4_bündig_oben_features_tech",
+    "specification": "Platte 100x80x20. An der rechten Seite ein Quader 40x40x20, bündig mit der Oberkante der Platte. Auf der Platte oben 4 Bohrungen Ø6 je 15mm von den Ecken.",
+    "metadata": {"difficulty": "P4", "category": "multi_part_with_features",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte+quader, POSITION=P4(bündig_oben rechts), Platte mit 4 Eckbohrungen"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 100x80x20",
+             "raw_params": {"x": 100, "y": 80, "z": 20}},
+            {"id": "quader", "type": "box", "beschreibung": "Quader 40x40x20",
+             "raw_params": {"x": 40, "y": 40, "z": 20}},
+        ],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "4 Bohrungen Ø6, je 15mm von den Ecken, durchgehend"},
+        ],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "quader", "parent_hint": "platte",
+             "beschreibung": "rechts an der Platte, bündig mit Oberkante"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "quader",
+         "input_sentence": "rechts an der Platte, bündig mit Oberkante",
+         "output": _norm(parent="platte", seite="rechts", ausrichtung="flush_top",
+                         orientierung="standard", anliegende_flaeche="40x20")},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+         "orientation": "standard",
+         "features": [
+             {"id": "b_vl", "type": "hole_single", "params": {"diameter": 6, "depth": 20},
+              "position": _pos("oben", "custom", edge_distances={"left": 15, "top": 15}),
+              "operation": "subtract"},
+             {"id": "b_vr", "type": "hole_single", "params": {"diameter": 6, "depth": 20},
+              "position": _pos("oben", "custom", edge_distances={"right": 15, "top": 15}),
+              "operation": "subtract"},
+             {"id": "b_hl", "type": "hole_single", "params": {"diameter": 6, "depth": 20},
+              "position": _pos("oben", "custom", edge_distances={"left": 15, "bottom": 15}),
+              "operation": "subtract"},
+             {"id": "b_hr", "type": "hole_single", "params": {"diameter": 6, "depth": 20},
+              "position": _pos("oben", "custom", edge_distances={"right": 15, "bottom": 15}),
+              "operation": "subtract"},
+         ]},
+        {"id": "quader", "type": "box", "params": {"x": 40, "y": 40, "z": 20},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Platte 100x80x20 + 4 Eckbohrungen, rechts Quader 40x40x20 bündig oben",
+        "build_order": ["platte", "b_vl", "b_vr", "b_hl", "b_hr", "quader"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "b_vl": {"type": "hole_single", "params": {"diameter": 6, "depth": 20},
+                     "parent": "platte", "operation": "subtract",
+                     "position": _pos("oben", "custom", edge_distances={"left": 15, "top": 15}),
+                     "orientation": "standard", "notes": ""},
+            "b_vr": {"type": "hole_single", "params": {"diameter": 6, "depth": 20},
+                     "parent": "platte", "operation": "subtract",
+                     "position": _pos("oben", "custom", edge_distances={"right": 15, "top": 15}),
+                     "orientation": "standard", "notes": ""},
+            "b_hl": {"type": "hole_single", "params": {"diameter": 6, "depth": 20},
+                     "parent": "platte", "operation": "subtract",
+                     "position": _pos("oben", "custom", edge_distances={"left": 15, "bottom": 15}),
+                     "orientation": "standard", "notes": ""},
+            "b_hr": {"type": "hole_single", "params": {"diameter": 6, "depth": 20},
+                     "parent": "platte", "operation": "subtract",
+                     "position": _pos("oben", "custom", edge_distances={"right": 15, "bottom": 15}),
+                     "orientation": "standard", "notes": ""},
+            "quader": {"type": "box", "params": {"x": 40, "y": 40, "z": 20},
+                       "orientation": "standard", "parent": "platte", "operation": "add",
+                       "position": _pos("rechts", "flush_top")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2, "hole_single": 4}},
+})
+
+# ════════════════════════════════════════════════════════════
+# BATCH 5 — Tier 2 Schwerpunkt + Tier 1 Lückenfüller + Tier 3
+# ════════════════════════════════════════════════════════════
+
+# T86 — Quader 3 Features mit Winkeln: Tasche gedreht + Bohrung + Nut, knapp-technisch
+TRACES.append({
+    "id": "t86_quader_3features_winkel_knapp",
+    "specification": "Quader 100x80x40. Oben Tasche 30x20x8, zentral, 30° gedreht. Rechts Bohrung Ø10 mittig. Vorne Nut 5x5 durchgehend, 15mm von unten.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, 3 Features: tasche(30°)+bohrung+slot, mix P0/P0/P1"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Tasche 30x20x8 tief, zentral, 30° gedreht"},
+            {"teil_id": "quader", "seite": "rechts",
+             "beschreibung": "Bohrung Ø10 mittig"},
+            {"teil_id": "quader", "seite": "vorne",
+             "beschreibung": "Nut 5x5 durchgehend, 15mm von unterer Kante"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_gedreht", "type": "pocket_rect",
+             "params": {"width": 30, "height": 20, "depth": 8},
+             "position": _pos("oben", "centered", angle_deg=30), "operation": "subtract"},
+            {"id": "bohrung_rechts", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 40},
+             "position": _pos("rechts", "centered"), "operation": "subtract"},
+            {"id": "nut_vorne", "type": "slot",
+             "params": {"width": 5, "depth": 5, "length": 100},
+             "position": _pos("vorne", "custom", edge_distances={"bottom": 15}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40: Tasche 30x20x8 oben zentral 30°, Bohrung rechts, Nut vorne unten",
+        "build_order": ["quader", "tasche_gedreht", "bohrung_rechts", "nut_vorne"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_gedreht": {"type": "pocket_rect", "params": {"width": 30, "height": 20, "depth": 8},
+                               "parent": "quader", "operation": "subtract",
+                               "position": _pos("oben", "centered", angle_deg=30),
+                               "orientation": "standard", "notes": ""},
+            "bohrung_rechts": {"type": "hole_single", "params": {"diameter": 10, "depth": 40},
+                               "parent": "quader", "operation": "subtract",
+                               "position": _pos("rechts", "centered"),
+                               "orientation": "standard", "notes": ""},
+            "nut_vorne": {"type": "slot", "params": {"width": 5, "depth": 5, "length": 100},
+                          "parent": "quader", "operation": "subtract",
+                          "position": _pos("vorne", "custom", edge_distances={"bottom": 15}),
+                          "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1, "hole_single": 1, "slot": 1}},
+})
+
+# T87 — Wuerfel 3 Features: Senkbohrung + Verrundung + Fase, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t87_wuerfel_3features_senkbohrung_radius_fase_tech",
+    "specification": "50mm Wuerfel. Oben Senkbohrung M8 zentral, 10mm tief. An den 4 oberen Vertikalkanten Radius 2mm. An der unteren Kante (Umfang) Fase 1mm.",
+    "metadata": {"difficulty": "P0", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=wuerfel, 3 Features: hole_counterbore+fillet+chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben",
+             "beschreibung": "Senkbohrung M8 zentral, 10mm tief (Kern Ø8, Senk Ø14, Tiefe 10)"},
+            {"teil_id": "wuerfel", "seite": "oben",
+             "beschreibung": "Radius 2mm an 4 Vertikalkanten"},
+            {"teil_id": "wuerfel", "seite": "unten",
+             "beschreibung": "Fase 1mm an unterem Umfang"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "senkbohrung_oben", "type": "hole_counterbore",
+             "params": {"diameter": 8, "depth": 50, "cbore_diameter": 14, "cbore_depth": 10},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "radius_vertikalkanten", "type": "fillet",
+             "params": {"radius": 2, "edge_selector": "vertikalkanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "fase_unten", "type": "chamfer",
+             "params": {"distance": 1, "edge_selector": "untere_kante"},
+             "position": _pos("unten", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 50mm: Senkbohrung M8 oben, Radius an Vertikalkanten, Fase unten",
+        "build_order": ["wuerfel", "senkbohrung_oben", "radius_vertikalkanten", "fase_unten"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "senkbohrung_oben": {"type": "hole_counterbore",
+                                 "params": {"diameter": 8, "depth": 50, "cbore_diameter": 14, "cbore_depth": 10},
+                                 "parent": "wuerfel", "operation": "subtract",
+                                 "position": _pos("oben", "centered"),
+                                 "orientation": "standard", "notes": ""},
+            "radius_vertikalkanten": {"type": "fillet",
+                                      "params": {"radius": 2, "edge_selector": "vertikalkanten"},
+                                      "parent": "wuerfel", "operation": "subtract",
+                                      "position": _pos("oben", "centered"),
+                                      "orientation": "standard", "notes": "alle 4 Vertikalkanten"},
+            "fase_unten": {"type": "chamfer",
+                           "params": {"distance": 1, "edge_selector": "untere_kante"},
+                           "parent": "wuerfel", "operation": "subtract",
+                           "position": _pos("unten", "centered"),
+                           "orientation": "standard", "notes": "unterer Umfang"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_counterbore": 1, "fillet": 1, "chamfer": 1}},
+})
+
+# T88 — Platte 6 Features: Komplexes Profil, umgangssprachlich
+TRACES.append({
+    "id": "t88_platte_6features_komplex_umg",
+    "specification": "Platte 150x100x25. Oben zentral Bohrung Ø20. Oben 4er Lochkreis Ø8 auf R40. Links Tasche 20x30x10 mittig. Rechts Nut 8x8 durchgehend, mittig. Vorne Senkbohrung M6 mittig. Alle oberen Kanten Fase 2mm.",
+    "metadata": {"difficulty": "P1", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, 6 Features: bohrung+lochkreis+tasche+slot+senkbohrung+chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 150x100x25",
+                   "raw_params": {"x": 150, "y": 100, "z": 25}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "Bohrung Ø20 zentral"},
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "4er Lochkreis Ø8 auf R40, zentral"},
+            {"teil_id": "platte", "seite": "links", "beschreibung": "Tasche 20x30x10 mittig"},
+            {"teil_id": "platte", "seite": "rechts", "beschreibung": "Nut 8x8 durchgehend, mittig"},
+            {"teil_id": "platte", "seite": "vorne", "beschreibung": "Senkbohrung M6 mittig"},
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "Fase 2mm alle oberen Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 150, "y": 100, "z": 25},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 20, "depth": 25},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "lochkreis", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 8, "bolt_circle_radius": 40, "count": 4, "depth": 25},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "tasche_links", "type": "pocket_rect",
+             "params": {"width": 20, "height": 30, "depth": 10},
+             "position": _pos("links", "centered"), "operation": "subtract"},
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 8, "depth": 8, "length": 25},
+             "position": _pos("rechts", "centered"), "operation": "subtract"},
+            {"id": "senkbohrung_vorne", "type": "hole_counterbore",
+             "params": {"diameter": 6, "depth": 25, "cbore_diameter": 11, "cbore_depth": 8},
+             "position": _pos("vorne", "centered"), "operation": "subtract"},
+            {"id": "fase_kanten", "type": "chamfer",
+             "params": {"distance": 2, "edge_selector": "obere_kanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 150x100x25: 6 Features — Bohrung+Lochkreis oben, Tasche links, Nut rechts, Senkbohrung vorne, Fase",
+        "build_order": ["platte", "bohrung_zentral", "lochkreis", "tasche_links",
+                        "nut_rechts", "senkbohrung_vorne", "fase_kanten"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 150, "y": 100, "z": 25},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single", "params": {"diameter": 20, "depth": 25},
+                                "parent": "platte", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+            "lochkreis": {"type": "hole_pattern_circular",
+                          "params": {"hole_diameter": 8, "bolt_circle_radius": 40, "count": 4, "depth": 25},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("oben", "centered"),
+                          "orientation": "standard", "notes": ""},
+            "tasche_links": {"type": "pocket_rect", "params": {"width": 20, "height": 30, "depth": 10},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("links", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 8, "depth": 8, "length": 25},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("rechts", "centered"),
+                           "orientation": "standard", "notes": ""},
+            "senkbohrung_vorne": {"type": "hole_counterbore",
+                                  "params": {"diameter": 6, "depth": 25, "cbore_diameter": 11, "cbore_depth": 8},
+                                  "parent": "platte", "operation": "subtract",
+                                  "position": _pos("vorne", "centered"),
+                                  "orientation": "standard", "notes": ""},
+            "fase_kanten": {"type": "chamfer",
+                            "params": {"distance": 2, "edge_selector": "obere_kanten"},
+                            "parent": "platte", "operation": "subtract",
+                            "position": _pos("oben", "centered"),
+                            "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1, "hole_pattern_circular": 1,
+                                              "pocket_rect": 1, "slot": 1, "hole_counterbore": 1, "chamfer": 1}},
+})
+
+# T89 — Zylinder 4 Features: Zentral durch + Lochkreis + 2 Sacklöcher, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t89_zylinder_4features_tech",
+    "specification": "Flansch: Zylinder Ø100 Hoehe 30. Oben zentrale Bohrung Ø40 durchgehend. Oben 6er Lochkreis M8 auf R35 durchgehend. Oben 2 gegenüberliege Sacklöcher Ø10 auf R45, 15mm tief, bei 0° und 180°.",
+    "metadata": {"difficulty": "P1", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=zylinder(Flansch), 3 Feature-Gruppen: Zentr.+Lochkreis+2×Sackloch"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "flansch", "type": "cylinder", "beschreibung": "Flansch Zylinder Ø100 H30",
+                   "raw_params": {"diameter": 100, "height": 30}}],
+        "aktionen": [
+            {"teil_id": "flansch", "seite": "oben",
+             "beschreibung": "Zentrale Bohrung Ø40 durchgehend"},
+            {"teil_id": "flansch", "seite": "oben",
+             "beschreibung": "6er Lochkreis M8 auf R35 durchgehend"},
+            {"teil_id": "flansch", "seite": "oben",
+             "beschreibung": "2 gegenüberliegende Sacklöcher Ø10 auf R45, 15mm tief (0° und 180°)"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "flansch", "type": "cylinder", "params": {"diameter": 100, "height": 30},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 40, "depth": 30},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "lochkreis_m8", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 8, "bolt_circle_radius": 35, "count": 6, "depth": 30},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "sackloecher_r45", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 10, "bolt_circle_radius": 45, "count": 2, "depth": 15},
+             "position": _pos("oben", "centered", notes="0° und 180°"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Flansch Ø100 H30: Zentrale Ø40 durch, 6× M8 Lochkreis R35, 2× Sackloch Ø10 R45",
+        "build_order": ["flansch", "bohrung_zentral", "lochkreis_m8", "sackloecher_r45"],
+        "features": {
+            "flansch": {"type": "cylinder", "params": {"diameter": 100, "height": 30},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single", "params": {"diameter": 40, "depth": 30},
+                                "parent": "flansch", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+            "lochkreis_m8": {"type": "hole_pattern_circular",
+                             "params": {"hole_diameter": 8, "bolt_circle_radius": 35, "count": 6, "depth": 30},
+                             "parent": "flansch", "operation": "subtract",
+                             "position": _pos("oben", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "sackloecher_r45": {"type": "hole_pattern_circular",
+                                "params": {"hole_diameter": 10, "bolt_circle_radius": 45, "count": 2, "depth": 15},
+                                "parent": "flansch", "operation": "subtract",
+                                "position": _pos("oben", "centered", notes="0° und 180°"),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "hole_single": 1, "hole_pattern_circular": 2}},
+})
+
+# T90 — Quader 3 Features: Linear-Raster + 2 Senkkopfbohrungen + Radius, umgangssprachlich
+TRACES.append({
+    "id": "t90_quader_linear_senkbohrungen_radius_umg",
+    "specification": "Quader 120x80x30. Oben 4 Bohrungen Ø6 in Reihe, Abstand 25mm, 20mm von vorne, mittig in X. Vorne links und rechts je 'ne Senkkopfbohrung M6, je 15mm von den Ecken. An den 4 Vertikalkanten Radius 3mm.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, 3 Features: hole_pattern_linear+2xhole_countersink+fillet"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 120x80x30",
+                   "raw_params": {"x": 120, "y": 80, "z": 30}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "4 Bohrungen Ø6 linear, Abstand 25mm, 20mm von vorne, X-zentriert"},
+            {"teil_id": "quader", "seite": "vorne",
+             "beschreibung": "Senkkopfbohrung M6 links, 15mm von links, mittig in Z"},
+            {"teil_id": "quader", "seite": "vorne",
+             "beschreibung": "Senkkopfbohrung M6 rechts, 15mm von rechts, mittig in Z"},
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Radius 3mm an 4 Vertikalkanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 120, "y": 80, "z": 30},
+        "orientation": "standard",
+        "features": [
+            {"id": "linear_oben", "type": "hole_pattern_linear",
+             "params": {"hole_diameter": 6, "count": 4, "spacing": 25, "direction": "x", "depth": 30},
+             "position": _pos("oben", "custom", edge_distances={"front": 20},
+                              notes="X-zentriert, 4 Bohrungen"),
+             "operation": "subtract"},
+            {"id": "senkkopf_vl", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 80, "csk_diameter": 11, "csk_angle": 90},
+             "position": _pos("vorne", "custom", edge_distances={"left": 15}),
+             "operation": "subtract"},
+            {"id": "senkkopf_vr", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 80, "csk_diameter": 11, "csk_angle": 90},
+             "position": _pos("vorne", "custom", edge_distances={"right": 15}),
+             "operation": "subtract"},
+            {"id": "radius_vertikal", "type": "fillet",
+             "params": {"radius": 3, "edge_selector": "vertikalkanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 120x80x30: 4er Linearreihe oben, 2 Senkkopfbohrungen vorne, Radius Vertikalkanten",
+        "build_order": ["quader", "linear_oben", "senkkopf_vl", "senkkopf_vr", "radius_vertikal"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 120, "y": 80, "z": 30},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "linear_oben": {"type": "hole_pattern_linear",
+                            "params": {"hole_diameter": 6, "count": 4, "spacing": 25, "direction": "x", "depth": 30},
+                            "parent": "quader", "operation": "subtract",
+                            "position": _pos("oben", "custom", edge_distances={"front": 20}),
+                            "orientation": "standard", "notes": ""},
+            "senkkopf_vl": {"type": "hole_countersink",
+                            "params": {"diameter": 6, "depth": 80, "csk_diameter": 11, "csk_angle": 90},
+                            "parent": "quader", "operation": "subtract",
+                            "position": _pos("vorne", "custom", edge_distances={"left": 15}),
+                            "orientation": "standard", "notes": ""},
+            "senkkopf_vr": {"type": "hole_countersink",
+                            "params": {"diameter": 6, "depth": 80, "csk_diameter": 11, "csk_angle": 90},
+                            "parent": "quader", "operation": "subtract",
+                            "position": _pos("vorne", "custom", edge_distances={"right": 15}),
+                            "orientation": "standard", "notes": ""},
+            "radius_vertikal": {"type": "fillet", "params": {"radius": 3, "edge_selector": "vertikalkanten"},
+                                "parent": "quader", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_linear": 1,
+                                              "hole_countersink": 2, "fillet": 1}},
+})
+
+# T91 — Wuerfel 4 Features: 2 gegenüberliegende Bohrungen + Lochkreis oben + Fase, knapp-technisch
+TRACES.append({
+    "id": "t91_wuerfel_4features_gegenüber_knapp",
+    "specification": "Wuerfel 60mm. Links Bohrung Ø12 zentral durch. Rechts Bohrung Ø12 zentral durch. Oben 4er Lochkreis Ø6 auf R18. Alle Kanten Fase 1mm.",
+    "metadata": {"difficulty": "P0", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, 4 Features: 2×bohrung_gegenüber+lochkreis+chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "Wuerfel 60mm",
+                   "raw_params": {"x": 60, "y": 60, "z": 60}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "links", "beschreibung": "Bohrung Ø12 zentral durchgehend"},
+            {"teil_id": "wuerfel", "seite": "rechts", "beschreibung": "Bohrung Ø12 zentral durchgehend"},
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "4er Lochkreis Ø6 auf R18"},
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "Fase 1mm alle Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_links", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 60},
+             "position": _pos("links", "centered"), "operation": "subtract"},
+            {"id": "bohrung_rechts", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 60},
+             "position": _pos("rechts", "centered"), "operation": "subtract"},
+            {"id": "lochkreis_oben", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 6, "bolt_circle_radius": 18, "count": 4, "depth": 60},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "fase_alle", "type": "chamfer",
+             "params": {"distance": 1, "edge_selector": "alle_kanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 60mm: Bohrung Ø12 links+rechts, 4er Lochkreis oben, Fase 1mm alle Kanten",
+        "build_order": ["wuerfel", "bohrung_links", "bohrung_rechts", "lochkreis_oben", "fase_alle"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_links": {"type": "hole_single", "params": {"diameter": 12, "depth": 60},
+                              "parent": "wuerfel", "operation": "subtract",
+                              "position": _pos("links", "centered"),
+                              "orientation": "standard", "notes": ""},
+            "bohrung_rechts": {"type": "hole_single", "params": {"diameter": 12, "depth": 60},
+                               "parent": "wuerfel", "operation": "subtract",
+                               "position": _pos("rechts", "centered"),
+                               "orientation": "standard", "notes": ""},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 6, "bolt_circle_radius": 18, "count": 4, "depth": 60},
+                               "parent": "wuerfel", "operation": "subtract",
+                               "position": _pos("oben", "centered"),
+                               "orientation": "standard", "notes": ""},
+            "fase_alle": {"type": "chamfer",
+                          "params": {"distance": 1, "edge_selector": "alle_kanten"},
+                          "parent": "wuerfel", "operation": "subtract",
+                          "position": _pos("oben", "centered"),
+                          "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 2, "hole_pattern_circular": 1, "chamfer": 1}},
+})
+
+# T92 — Platte 3 Features mit P2-Positionen, verschiedene Seiten, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t92_platte_3features_p2_tech",
+    "specification": "Platte 100x80x15. Oben eine Senkbohrung M10, 25mm von links und 20mm von vorne. Vorne eine Tasche 30x8x5 tief, 15mm von rechts und mittig in Z. Rechts Bohrung Ø8, 10mm von oben, mittig in Y.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, 3 Features P2 je: senkkopf(oben)+tasche(vorne)+bohrung(rechts)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x15",
+                   "raw_params": {"x": 100, "y": 80, "z": 15}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Senkbohrung M10, 25mm von links, 20mm von vorne"},
+            {"teil_id": "platte", "seite": "vorne",
+             "beschreibung": "Tasche 30x8x5 tief, 15mm von rechts, mittig in Z"},
+            {"teil_id": "platte", "seite": "rechts",
+             "beschreibung": "Bohrung Ø8, 10mm von oben, mittig in Y"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "senkbohrung_oben", "type": "hole_countersink",
+             "params": {"diameter": 10, "depth": 15, "csk_diameter": 18, "csk_angle": 90},
+             "position": _pos("oben", "custom", edge_distances={"left": 25, "front": 20}),
+             "operation": "subtract"},
+            {"id": "tasche_vorne", "type": "pocket_rect",
+             "params": {"width": 30, "height": 8, "depth": 5},
+             "position": _pos("vorne", "custom", edge_distances={"right": 15}),
+             "operation": "subtract"},
+            {"id": "bohrung_rechts", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("rechts", "custom", edge_distances={"top": 10}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x15: Senkbohrung M10 oben (25l/20v), Tasche 30x8x5 vorne (15r), Bohrung rechts (10t)",
+        "build_order": ["platte", "senkbohrung_oben", "tasche_vorne", "bohrung_rechts"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "senkbohrung_oben": {"type": "hole_countersink",
+                                 "params": {"diameter": 10, "depth": 15, "csk_diameter": 18, "csk_angle": 90},
+                                 "parent": "platte", "operation": "subtract",
+                                 "position": _pos("oben", "custom", edge_distances={"left": 25, "front": 20}),
+                                 "orientation": "standard", "notes": ""},
+            "tasche_vorne": {"type": "pocket_rect", "params": {"width": 30, "height": 8, "depth": 5},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("vorne", "custom", edge_distances={"right": 15}),
+                             "orientation": "standard", "notes": ""},
+            "bohrung_rechts": {"type": "hole_single", "params": {"diameter": 8, "depth": 15},
+                               "parent": "platte", "operation": "subtract",
+                               "position": _pos("rechts", "custom", edge_distances={"top": 10}),
+                               "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_countersink": 1, "pocket_rect": 1, "hole_single": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 3 Batch 5 — Mehr Multi-Part Varianten
+# ════════════════════════════════════════════════════════════
+
+# T93 — 2 Teile P5, Überstand ragt über Parent, umgangssprachlich
+TRACES.append({
+    "id": "t93_2teile_p5_überstand_umg",
+    "specification": "Platte 80x60x15. Vorne dran 'n Quader 30x30x30, untere linke Ecke auf unterer linker Ecke der Vorderseite, ragt 10mm nach unten raus.",
+    "metadata": {"difficulty": "P5", "category": "multi_part_overhang",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte+quader, POSITION=P5(unten_links auf unten_links, unten 10 Überstand)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 80x60x15",
+             "raw_params": {"x": 80, "y": 60, "z": 15}},
+            {"id": "quader", "type": "box", "beschreibung": "Quader 30x30x30",
+             "raw_params": {"x": 30, "y": 30, "z": 30}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "quader", "parent_hint": "platte",
+             "beschreibung": "vorne an der Platte, untere linke Ecke des Quaders auf unterer linker Ecke der Vorderseite, 10mm nach unten überstand"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "quader",
+         "input_sentence": "vorne an der Platte, untere linke Ecke des Quaders auf unterer linker Ecke der Vorderseite, 10mm nach unten",
+         "output": _norm(parent="platte", seite="vorne", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="30x30",
+                         anker={"kind_punkt": "unten_links",
+                                "eltern_punkt": "unten_links",
+                                "eltern_abstand": {"unten": 10}},
+                         notes="ragt 10mm nach unten über Platte hinaus")},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 80, "y": 60, "z": 15},
+         "orientation": "standard", "features": []},
+        {"id": "quader", "type": "box", "params": {"x": 30, "y": 30, "z": 30},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Platte 80x60x15, vorne Quader 30x30x30: unten-links Ecke auf unten-links, 10mm Überstand nach unten",
+        "build_order": ["platte", "quader"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 80, "y": 60, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "quader": {"type": "box", "params": {"x": 30, "y": 30, "z": 30},
+                       "orientation": "standard", "parent": "platte", "operation": "add",
+                       "position": _pos("vorne", "anker",
+                                       notes="unten-links auf unten-links, 10mm Überstand")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T94 — 3-Teil Kette: A (Platte) → B (Wuerfel, P3 rechts) → C (Platte, P3 oben) mit Features
+TRACES.append({
+    "id": "t94_3teil_kette_p3_p3_mit_features_knapp",
+    "specification": "Platte 100x80x20. Rechts Wuerfel 50mm, zentriert. Oben auf dem Wuerfel Platte 60x60x10, zentriert. Wuerfel oben Bohrung Ø10 zentral.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_chain_3",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte+wuerfel+platte2, P3(rechts)+P3(oben), Wuerfel mit Feature"},
+    "inventar": {
+        "teil_count": 3,
+        "teile": [
+            {"id": "basisplatte", "type": "box", "beschreibung": "Platte 100x80x20",
+             "raw_params": {"x": 100, "y": 80, "z": 20}},
+            {"id": "wuerfel", "type": "box", "beschreibung": "Wuerfel 50mm",
+             "raw_params": {"x": 50, "y": 50, "z": 50}},
+            {"id": "deckplatte", "type": "box", "beschreibung": "Platte 60x60x10",
+             "raw_params": {"x": 60, "y": 60, "z": 10}},
+        ],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "Bohrung Ø10 zentral durchgehend"},
+        ],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "wuerfel", "parent_hint": "basisplatte",
+             "beschreibung": "rechts an der Basisplatte, zentriert"},
+            {"teil_id": "deckplatte", "parent_hint": "wuerfel",
+             "beschreibung": "oben auf dem Wuerfel, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "wuerfel",
+         "input_sentence": "rechts an der Basisplatte, zentriert",
+         "output": _norm(parent="basisplatte", seite="rechts", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="50x50")},
+        {"teil_id": "deckplatte",
+         "input_sentence": "oben auf dem Wuerfel, zentriert",
+         "output": _norm(parent="wuerfel", seite="oben", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="60x60")},
+    ],
+    "teil_definitionen": [
+        {"id": "basisplatte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+         "orientation": "standard", "features": []},
+        {"id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+         "orientation": "standard",
+         "features": [{"id": "bohrung_wuerfel", "type": "hole_single",
+                       "params": {"diameter": 10, "depth": 50},
+                       "position": _pos("oben", "centered"), "operation": "subtract"}]},
+        {"id": "deckplatte", "type": "box", "params": {"x": 60, "y": 60, "z": 10},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Basisplatte 100x80x20 → rechts Wuerfel 50mm (Bohrung) → oben Deckplatte 60x60x10",
+        "build_order": ["basisplatte", "wuerfel", "bohrung_wuerfel", "deckplatte"],
+        "features": {
+            "basisplatte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                            "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": "basisplatte", "operation": "add",
+                        "position": _pos("rechts", "centered")},
+            "bohrung_wuerfel": {"type": "hole_single", "params": {"diameter": 10, "depth": 50},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+            "deckplatte": {"type": "box", "params": {"x": 60, "y": 60, "z": 10},
+                           "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                           "position": _pos("oben", "centered")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 3, "hole_single": 1}},
+})
+
+# T95 — 2 Teile P3 (hinten), Platte hinter Wuerfel, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t95_2teile_p3_hinten_tech",
+    "specification": "Wuerfel 50mm. Hinter dem Wuerfel eine Platte 70x50x10, zentriert.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_simple",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=wuerfel+platte, POSITION=P3(hinten centered)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "Wuerfel 50mm",
+             "raw_params": {"x": 50, "y": 50, "z": 50}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 70x50x10",
+             "raw_params": {"x": 70, "y": 50, "z": 10}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "wuerfel",
+             "beschreibung": "hinter dem Wuerfel, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "hinter dem Wuerfel, zentriert",
+         "output": _norm(parent="wuerfel", seite="hinten", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="70x10")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 70, "y": 50, "z": 10},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Wuerfel 50mm, hinten Platte 70x50x10 zentriert",
+        "build_order": ["wuerfel", "platte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 70, "y": 50, "z": 10},
+                       "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                       "position": _pos("hinten", "centered")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# ════════════════════════════════════════════════════════════
+# BATCH 6 — Tier 1 Lückenfüller + Tier 2 Ausbau
+# ════════════════════════════════════════════════════════════
+
+# T96 — Quader rechts, P1, hole_countersink, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t96_quader_rechts_p1_senkkopf_tech",
+    "specification": "Quader 100x80x40. Auf der rechten Seite eine Senkkopfbohrung M8, 20mm von der oberen Kante, horizontal zentriert.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, FACE=rechts, POSITION=P1(oben 20), F-TYP=hole_countersink"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "rechts",
+                      "beschreibung": "Senkkopfbohrung M8, 20mm von oben, Y-zentriert"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "senkkopf_rechts", "type": "hole_countersink",
+                      "params": {"diameter": 8, "depth": 100, "csk_diameter": 15, "csk_angle": 90},
+                      "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40, rechts Senkkopfbohrung M8, 20mm von oben",
+        "build_order": ["quader", "senkkopf_rechts"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "senkkopf_rechts": {"type": "hole_countersink",
+                                "params": {"diameter": 8, "depth": 100, "csk_diameter": 15, "csk_angle": 90},
+                                "parent": "quader", "operation": "subtract",
+                                "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_countersink": 1}},
+})
+
+# T97 — Platte oben, P0, hole_pattern_grid (4x4 Raster), umgangssprachlich
+TRACES.append({
+    "id": "t97_platte_oben_p0_grid_4x4_umg",
+    "specification": "Platte 150x120x20, oben 4x4 Raster Bohrungen Ø5, Abstand 25mm, zentral",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P0, F-TYP=hole_pattern_grid(4x4)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 150x120x20",
+                   "raw_params": {"x": 150, "y": 120, "z": 20}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "4x4 Raster Ø5, 25mm Abstand, zentral, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 150, "y": 120, "z": 20},
+        "orientation": "standard",
+        "features": [{"id": "raster_4x4", "type": "hole_pattern_grid",
+                      "params": {"hole_diameter": 5, "rows": 4, "cols": 4,
+                                 "row_spacing": 25, "col_spacing": 25, "depth": 20},
+                      "position": _pos("oben", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 150x120x20: 4×4 Raster Ø5 (Abstand 25mm) zentral, durchgehend",
+        "build_order": ["platte", "raster_4x4"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 150, "y": 120, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "raster_4x4": {"type": "hole_pattern_grid",
+                           "params": {"hole_diameter": 5, "rows": 4, "cols": 4,
+                                      "row_spacing": 25, "col_spacing": 25, "depth": 20},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("oben", "centered"),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_grid": 1}},
+})
+
+# T98 — Wuerfel unten, P2, Tasche, knapp-technisch
+TRACES.append({
+    "id": "t98_wuerfel_unten_p2_tasche_knapp",
+    "specification": "Wuerfel 60mm, unten Tasche 15x15x5, 10mm von links und 8mm von vorne",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, FACE=unten, POSITION=P2(links 10, vorne 8), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+                   "raw_params": {"x": 60, "y": 60, "z": 60}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "unten",
+                      "beschreibung": "Tasche 15x15x5 tief, 10mm von links, 8mm von vorne"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+        "orientation": "standard",
+        "features": [{"id": "tasche_unten", "type": "pocket_rect",
+                      "params": {"width": 15, "height": 15, "depth": 5},
+                      "position": _pos("unten", "custom", edge_distances={"left": 10, "front": 8}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 60mm, unten Tasche 15x15x5, 10mm links / 8mm vorne",
+        "build_order": ["wuerfel", "tasche_unten"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_unten": {"type": "pocket_rect", "params": {"width": 15, "height": 15, "depth": 5},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("unten", "custom", edge_distances={"left": 10, "front": 8}),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# T99 — Quader hinten, P2, Lochraster, umgangssprachlich
+TRACES.append({
+    "id": "t99_quader_hinten_p2_lochraster_umg",
+    "specification": "Quader 100x80x40, hinten 2x2 Raster Ø6, 15mm Abstand, 20mm von oben und 25mm von rechts",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, FACE=hinten, POSITION=P2(oben 20, rechts 25), F-TYP=hole_pattern_grid(2x2)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "hinten",
+                      "beschreibung": "2x2 Lochraster Ø6, 15mm Abstand, 20mm von oben, 25mm von rechts"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "raster_hinten", "type": "hole_pattern_grid",
+                      "params": {"hole_diameter": 6, "rows": 2, "cols": 2,
+                                 "row_spacing": 15, "col_spacing": 15, "depth": 80},
+                      "position": _pos("hinten", "custom", edge_distances={"top": 20, "right": 25}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40, hinten 2×2 Lochraster Ø6 (15mm Abstand), 20mm oben / 25mm rechts",
+        "build_order": ["quader", "raster_hinten"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "raster_hinten": {"type": "hole_pattern_grid",
+                              "params": {"hole_diameter": 6, "rows": 2, "cols": 2,
+                                         "row_spacing": 15, "col_spacing": 15, "depth": 80},
+                              "parent": "quader", "operation": "subtract",
+                              "position": _pos("hinten", "custom", edge_distances={"top": 20, "right": 25}),
+                              "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_grid": 1}},
+})
+
+# T100 — Wuerfel links, P0, hole_pattern_circular, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t100_wuerfel_links_p0_lochkreis_tech",
+    "specification": "Wuerfel 80mm. Auf der linken Seite drei Bohrungen Ø8 auf einem Lochkreis mit Radius 25mm, gleichmaessig verteilt, zentriert.",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=links, POSITION=P0, F-TYP=hole_pattern_circular"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "80mm Wuerfel",
+                   "raw_params": {"x": 80, "y": 80, "z": 80}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "links",
+                      "beschreibung": "3er Lochkreis Ø8 auf R25, gleichmaessig verteilt, zentral"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 80, "y": 80, "z": 80},
+        "orientation": "standard",
+        "features": [{"id": "lochkreis_links", "type": "hole_pattern_circular",
+                      "params": {"hole_diameter": 8, "bolt_circle_radius": 25, "count": 3, "depth": 80},
+                      "position": _pos("links", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 80mm, links 3er Lochkreis Ø8 R25 zentral",
+        "build_order": ["wuerfel", "lochkreis_links"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 80, "y": 80, "z": 80},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_links": {"type": "hole_pattern_circular",
+                                "params": {"hole_diameter": 8, "bolt_circle_radius": 25, "count": 3, "depth": 80},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("links", "centered"),
+                                "orientation": "standard", "notes": "3 Bohrungen gleicher Abstand"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_circular": 1}},
+})
+
+# T101 — Platte vorne, P1, hole_counterbore, knapp-technisch
+TRACES.append({
+    "id": "t101_platte_vorne_p1_senkbohrung_knapp",
+    "specification": "Platte 120x90x15, vorne Senkbohrung M10, 30mm von rechts, durchgehend",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, FACE=vorne, POSITION=P1(rechts 30), F-TYP=hole_counterbore"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "vorne",
+                      "beschreibung": "Senkbohrung M10 (Ø10 Kern, Ø18 Senk, 10mm Tiefe), 30mm von rechts, Z-mittig"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "senkbohrung_vorne", "type": "hole_counterbore",
+                      "params": {"diameter": 10, "depth": 90, "cbore_diameter": 18, "cbore_depth": 10},
+                      "position": _pos("vorne", "custom", edge_distances={"right": 30}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15, vorne Senkbohrung M10, 30mm von rechts",
+        "build_order": ["platte", "senkbohrung_vorne"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "senkbohrung_vorne": {"type": "hole_counterbore",
+                                  "params": {"diameter": 10, "depth": 90, "cbore_diameter": 18, "cbore_depth": 10},
+                                  "parent": "platte", "operation": "subtract",
+                                  "position": _pos("vorne", "custom", edge_distances={"right": 30}),
+                                  "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_counterbore": 1}},
+})
+
+# T102 — Quader unten, P1, Nut, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t102_quader_unten_p1_nut_tech",
+    "specification": "Quader 100x80x40. An der Unterseite eine Nut 12x10 durchgehend, 30mm von der vorderen Kante entfernt.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, FACE=unten, POSITION=P1(vorne 30), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "unten",
+                      "beschreibung": "Nut 12x10 durchgehend in X-Richtung, 30mm von vorderer Kante"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "nut_unten", "type": "slot",
+                      "params": {"width": 12, "depth": 10, "length": 100},
+                      "position": _pos("unten", "custom", edge_distances={"front": 30}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40, unten Nut 12x10 durchgehend, 30mm von vorne",
+        "build_order": ["quader", "nut_unten"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "nut_unten": {"type": "slot", "params": {"width": 12, "depth": 10, "length": 100},
+                          "parent": "quader", "operation": "subtract",
+                          "position": _pos("unten", "custom", edge_distances={"front": 30}),
+                          "orientation": "standard", "notes": "durchgehend in X"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "slot": 1}},
+})
+
+# T103 — Platte oben, P0, Fase (alle Kanten), umgangssprachlich
+TRACES.append({
+    "id": "t103_platte_oben_p0_fase_alle_umg",
+    "specification": "Platte 100x80x15, alle Kanten oben 1.5mm angefast",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P0, F-TYP=chamfer(alle Kanten)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x15",
+                   "raw_params": {"x": 100, "y": 80, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Fase 1.5mm an allen oberen Kanten"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "fase_oben", "type": "chamfer",
+                      "params": {"distance": 1.5, "edge_selector": "obere_kanten"},
+                      "position": _pos("oben", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x15: Fase 1.5mm alle oberen Kanten",
+        "build_order": ["platte", "fase_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "fase_oben": {"type": "chamfer",
+                          "params": {"distance": 1.5, "edge_selector": "obere_kanten"},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("oben", "centered"),
+                          "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "chamfer": 1}},
+})
+
+# T104 — Zylinder unten, P0, hole_pattern_circular, knapp-technisch
+TRACES.append({
+    "id": "t104_zylinder_unten_p0_lochkreis_knapp",
+    "specification": "Zylinder Ø80 H40, unten 3er Lochkreis Ø8 auf R25, zentral, durchgehend",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=zylinder, FACE=unten, POSITION=P0, F-TYP=hole_pattern_circular"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø80 H40",
+                   "raw_params": {"diameter": 80, "height": 40}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "unten",
+                      "beschreibung": "3er Lochkreis Ø8 auf R25, zentral, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder", "params": {"diameter": 80, "height": 40},
+        "orientation": "standard",
+        "features": [{"id": "lochkreis_unten", "type": "hole_pattern_circular",
+                      "params": {"hole_diameter": 8, "bolt_circle_radius": 25, "count": 3, "depth": 40},
+                      "position": _pos("unten", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø80 H40, unten 3er Lochkreis Ø8 R25 zentral, durchgehend",
+        "build_order": ["zylinder", "lochkreis_unten"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 80, "height": 40},
+                         "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_unten": {"type": "hole_pattern_circular",
+                                "params": {"hole_diameter": 8, "bolt_circle_radius": 25, "count": 3, "depth": 40},
+                                "parent": "zylinder", "operation": "subtract",
+                                "position": _pos("unten", "centered"),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "hole_pattern_circular": 1}},
+})
+
+# T105 — Wuerfel oben, P1, hole_pattern_linear, umgangssprachlich
+TRACES.append({
+    "id": "t105_wuerfel_oben_p1_linear_umg",
+    "specification": "Wuerfel 70mm, oben 3 Bohrungen Ø8 in Reihe, 20mm Abstand, 15mm von vorne, von links beginnend 10mm Einzug",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=oben, POSITION=P1(vorne 15, links 10), F-TYP=hole_pattern_linear"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "70mm Wuerfel",
+                   "raw_params": {"x": 70, "y": 70, "z": 70}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "oben",
+                      "beschreibung": "3 Bohrungen Ø8 linear in X-Richtung, Abstand 20mm, 15mm von vorne, ab 10mm von links"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 70, "y": 70, "z": 70},
+        "orientation": "standard",
+        "features": [{"id": "linear_oben", "type": "hole_pattern_linear",
+                      "params": {"hole_diameter": 8, "count": 3, "spacing": 20,
+                                 "direction": "x", "depth": 70},
+                      "position": _pos("oben", "custom", edge_distances={"front": 15, "left": 10}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 70mm, oben 3×Ø8 linear (20mm Abstand), 15mm vorne / 10mm links",
+        "build_order": ["wuerfel", "linear_oben"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 70, "y": 70, "z": 70},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "linear_oben": {"type": "hole_pattern_linear",
+                            "params": {"hole_diameter": 8, "count": 3, "spacing": 20,
+                                       "direction": "x", "depth": 70},
+                            "parent": "wuerfel", "operation": "subtract",
+                            "position": _pos("oben", "custom", edge_distances={"front": 15, "left": 10}),
+                            "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_linear": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 2 Batch 6 — Weitere Multi-Feature Traces
+# ════════════════════════════════════════════════════════════
+
+# T106 — Quader 5 Features: Alle Typen gemischt, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t106_quader_5features_mix_tech",
+    "specification": "Quader 120x80x50. Oben Lochraster 3x2 Ø6, Abstand 20mm, zentriert. Oben Fase 2mm. Vorne Tasche 40x15x8 mittig. Links Bohrung Ø12 zentral. Rechts Nut 10x8 durchgehend, 15mm von oben.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, 5 Features: raster+chamfer+tasche+bohrung+slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 120x80x50",
+                   "raw_params": {"x": 120, "y": 80, "z": 50}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Lochraster 3×2 Ø6, 20mm Abstand, zentral"},
+            {"teil_id": "quader", "seite": "oben", "beschreibung": "Fase 2mm"},
+            {"teil_id": "quader", "seite": "vorne", "beschreibung": "Tasche 40x15x8 mittig"},
+            {"teil_id": "quader", "seite": "links", "beschreibung": "Bohrung Ø12 zentral"},
+            {"teil_id": "quader", "seite": "rechts", "beschreibung": "Nut 10x8 durchgehend, 15mm von oben"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 120, "y": 80, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "raster_oben", "type": "hole_pattern_grid",
+             "params": {"hole_diameter": 6, "rows": 3, "cols": 2,
+                        "row_spacing": 20, "col_spacing": 20, "depth": 50},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "fase_oben", "type": "chamfer",
+             "params": {"distance": 2, "edge_selector": "obere_kanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "tasche_vorne", "type": "pocket_rect",
+             "params": {"width": 40, "height": 15, "depth": 8},
+             "position": _pos("vorne", "centered"), "operation": "subtract"},
+            {"id": "bohrung_links", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 120},
+             "position": _pos("links", "centered"), "operation": "subtract"},
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 10, "depth": 8, "length": 50},
+             "position": _pos("rechts", "custom", edge_distances={"top": 15}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 120x80x50: 5 Features — Raster+Fase oben, Tasche vorne, Bohrung links, Nut rechts",
+        "build_order": ["quader", "raster_oben", "fase_oben", "tasche_vorne", "bohrung_links", "nut_rechts"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 120, "y": 80, "z": 50},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "raster_oben": {"type": "hole_pattern_grid",
+                            "params": {"hole_diameter": 6, "rows": 3, "cols": 2,
+                                       "row_spacing": 20, "col_spacing": 20, "depth": 50},
+                            "parent": "quader", "operation": "subtract",
+                            "position": _pos("oben", "centered"),
+                            "orientation": "standard", "notes": ""},
+            "fase_oben": {"type": "chamfer", "params": {"distance": 2, "edge_selector": "obere_kanten"},
+                          "parent": "quader", "operation": "subtract",
+                          "position": _pos("oben", "centered"),
+                          "orientation": "standard", "notes": ""},
+            "tasche_vorne": {"type": "pocket_rect", "params": {"width": 40, "height": 15, "depth": 8},
+                             "parent": "quader", "operation": "subtract",
+                             "position": _pos("vorne", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "bohrung_links": {"type": "hole_single", "params": {"diameter": 12, "depth": 120},
+                              "parent": "quader", "operation": "subtract",
+                              "position": _pos("links", "centered"),
+                              "orientation": "standard", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 10, "depth": 8, "length": 50},
+                           "parent": "quader", "operation": "subtract",
+                           "position": _pos("rechts", "custom", edge_distances={"top": 15}),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_grid": 1, "chamfer": 1,
+                                              "pocket_rect": 1, "hole_single": 1, "slot": 1}},
+})
+
+# T107 — Platte hochkant, 4 Features, umgangssprachlich
+TRACES.append({
+    "id": "t107_platte_hochkant_4features_umg",
+    "specification": "Platte 100x60x15 hochkant gestellt. Oben Bohrung Ø10 zentral. Vorne Tasche 20x15x6 mittig. Links Nut 6x6 durchgehend, 10mm von oben. Alle Kanten Fase 1mm.",
+    "metadata": {"difficulty": "P1", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte(hochkant), 4 Features: bohrung+tasche+slot+chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x60x15 hochkant",
+                   "raw_params": {"x": 100, "y": 60, "z": 15}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "Bohrung Ø10 zentral"},
+            {"teil_id": "platte", "seite": "vorne", "beschreibung": "Tasche 20x15x6 tief mittig"},
+            {"teil_id": "platte", "seite": "links", "beschreibung": "Nut 6x6 durchgehend, 10mm von oben"},
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "Fase 1mm alle Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 60, "z": 15},
+        "orientation": "hochkant",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 100},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "tasche_vorne", "type": "pocket_rect",
+             "params": {"width": 20, "height": 15, "depth": 6},
+             "position": _pos("vorne", "centered"), "operation": "subtract"},
+            {"id": "nut_links", "type": "slot",
+             "params": {"width": 6, "depth": 6, "length": 60},
+             "position": _pos("links", "custom", edge_distances={"top": 10}),
+             "operation": "subtract"},
+            {"id": "fase_alle", "type": "chamfer",
+             "params": {"distance": 1, "edge_selector": "alle_kanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 100x60x15 hochkant: Bohrung oben, Tasche vorne, Nut links, Fase",
+        "build_order": ["platte", "bohrung_oben", "tasche_vorne", "nut_links", "fase_alle"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 60, "z": 15},
+                       "orientation": "hochkant", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 10, "depth": 100},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("oben", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "tasche_vorne": {"type": "pocket_rect", "params": {"width": 20, "height": 15, "depth": 6},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("vorne", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "nut_links": {"type": "slot", "params": {"width": 6, "depth": 6, "length": 60},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("links", "custom", edge_distances={"top": 10}),
+                          "orientation": "standard", "notes": ""},
+            "fase_alle": {"type": "chamfer", "params": {"distance": 1, "edge_selector": "alle_kanten"},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("oben", "centered"),
+                          "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1, "pocket_rect": 1,
+                                              "slot": 1, "chamfer": 1}},
+})
+
+# T108 — Wuerfel 4 Features: Winkeltaschen, knapp-technisch
+TRACES.append({
+    "id": "t108_wuerfel_4features_winkeltaschen_knapp",
+    "specification": "Wuerfel 80mm. Oben Tasche 30x20x8 zentral, 45° gedreht. Oben Tasche 20x30x6, 20mm von links/10mm von vorne, -30° CCW. Rechts Bohrung Ø10 mittig. Unten Fase 2mm alle Kanten.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, 4 Features: tasche(45°)+tasche(-30°)+bohrung+chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "Wuerfel 80mm",
+                   "raw_params": {"x": 80, "y": 80, "z": 80}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "Tasche 30x20x8 zentral, 45° CW"},
+            {"teil_id": "wuerfel", "seite": "oben",
+             "beschreibung": "Tasche 20x30x6, 20mm von links, 10mm von vorne, -30° (CCW)"},
+            {"teil_id": "wuerfel", "seite": "rechts", "beschreibung": "Bohrung Ø10 mittig"},
+            {"teil_id": "wuerfel", "seite": "unten", "beschreibung": "Fase 2mm alle Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 80, "y": 80, "z": 80},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_45", "type": "pocket_rect",
+             "params": {"width": 30, "height": 20, "depth": 8},
+             "position": _pos("oben", "centered", angle_deg=45), "operation": "subtract"},
+            {"id": "tasche_30ccw", "type": "pocket_rect",
+             "params": {"width": 20, "height": 30, "depth": 6},
+             "position": _pos("oben", "custom",
+                              edge_distances={"left": 20, "top": 10},
+                              angle_deg=-30), "operation": "subtract"},
+            {"id": "bohrung_rechts", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 80},
+             "position": _pos("rechts", "centered"), "operation": "subtract"},
+            {"id": "fase_unten", "type": "chamfer",
+             "params": {"distance": 2, "edge_selector": "alle_kanten"},
+             "position": _pos("unten", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 80mm: Tasche 30x20 (45°) + Tasche 20x30 (-30°) oben, Bohrung rechts, Fase unten",
+        "build_order": ["wuerfel", "tasche_45", "tasche_30ccw", "bohrung_rechts", "fase_unten"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 80, "y": 80, "z": 80},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_45": {"type": "pocket_rect", "params": {"width": 30, "height": 20, "depth": 8},
+                          "parent": "wuerfel", "operation": "subtract",
+                          "position": _pos("oben", "centered", angle_deg=45),
+                          "orientation": "standard", "notes": ""},
+            "tasche_30ccw": {"type": "pocket_rect", "params": {"width": 20, "height": 30, "depth": 6},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("oben", "custom",
+                                             edge_distances={"left": 20, "top": 10},
+                                             angle_deg=-30),
+                             "orientation": "standard", "notes": ""},
+            "bohrung_rechts": {"type": "hole_single", "params": {"diameter": 10, "depth": 80},
+                               "parent": "wuerfel", "operation": "subtract",
+                               "position": _pos("rechts", "centered"),
+                               "orientation": "standard", "notes": ""},
+            "fase_unten": {"type": "chamfer", "params": {"distance": 2, "edge_selector": "alle_kanten"},
+                           "parent": "wuerfel", "operation": "subtract",
+                           "position": _pos("unten", "centered"),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 2, "hole_single": 1, "chamfer": 1}},
+})
+
+# T109 — Zylinder 3 Features (beidseitig + Fase), technisch-ausfuehrlich
+TRACES.append({
+    "id": "t109_zylinder_3features_beidseitig_fase_tech",
+    "specification": "Zylinder Ø60 Hoehe 80. Oben zentrale Bohrung Ø20 durchgehend. Oben 4er Lochkreis Ø8 auf R22, 40mm tief. An der oberen Kante (Uebergang Stirn/Mantel) Fase 2mm.",
+    "metadata": {"difficulty": "P0", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=zylinder, 3 Features: bohrung_durch+lochkreis_sackloch+fase"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø60 H80",
+                   "raw_params": {"diameter": 60, "height": 80}}],
+        "aktionen": [
+            {"teil_id": "zylinder", "seite": "oben", "beschreibung": "Bohrung Ø20 zentral durchgehend"},
+            {"teil_id": "zylinder", "seite": "oben",
+             "beschreibung": "4er Lochkreis Ø8 auf R22, 40mm tief"},
+            {"teil_id": "zylinder", "seite": "oben",
+             "beschreibung": "Fase 2mm an oberer Kante"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder", "params": {"diameter": 60, "height": 80},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 20, "depth": 80},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "lochkreis_oben", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 8, "bolt_circle_radius": 22, "count": 4, "depth": 40},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "fase_oben", "type": "chamfer",
+             "params": {"distance": 2, "edge_selector": "obere_kante"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø60 H80: Bohrung Ø20 durch, Lochkreis 4×Ø8 R22 40mm tief, Fase oben",
+        "build_order": ["zylinder", "bohrung_zentral", "lochkreis_oben", "fase_oben"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 60, "height": 80},
+                         "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single", "params": {"diameter": 20, "depth": 80},
+                                "parent": "zylinder", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 8, "bolt_circle_radius": 22, "count": 4, "depth": 40},
+                               "parent": "zylinder", "operation": "subtract",
+                               "position": _pos("oben", "centered"),
+                               "orientation": "standard", "notes": "Sacklöcher 40mm"},
+            "fase_oben": {"type": "chamfer",
+                          "params": {"distance": 2, "edge_selector": "obere_kante"},
+                          "parent": "zylinder", "operation": "subtract",
+                          "position": _pos("oben", "centered"),
+                          "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "hole_single": 1,
+                                              "hole_pattern_circular": 1, "chamfer": 1}},
+})
+
+# T110 — Platte hochkant 3 Features, knapp-technisch
+TRACES.append({
+    "id": "t110_quader_hochkant_3features_knapp",
+    "specification": "Quader 60x40x20 hochkant. Oben Lochkreis 3×Ø6 auf R15, zentral. Vorne Bohrung Ø10, 10mm von oben, 12mm von links. Rechts Nut 5x5 durchgehend, 15mm von oben.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader(hochkant), 3 Features: lochkreis+bohrung(P2)+slot(P1)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 60x40x20 hochkant",
+                   "raw_params": {"x": 60, "y": 40, "z": 20}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben", "beschreibung": "3er Lochkreis Ø6 R15 zentral"},
+            {"teil_id": "quader", "seite": "vorne",
+             "beschreibung": "Bohrung Ø10, 10mm von oben, 12mm von links"},
+            {"teil_id": "quader", "seite": "rechts",
+             "beschreibung": "Nut 5x5 durchgehend, 15mm von oben"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 60, "y": 40, "z": 20},
+        "orientation": "hochkant",
+        "features": [
+            {"id": "lochkreis_oben", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 6, "bolt_circle_radius": 15, "count": 3, "depth": 60},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "bohrung_vorne", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 20},
+             "position": _pos("vorne", "custom", edge_distances={"top": 10, "left": 12}),
+             "operation": "subtract"},
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 5, "depth": 5, "length": 40},
+             "position": _pos("rechts", "custom", edge_distances={"top": 15}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 60x40x20 hochkant: Lochkreis oben, Bohrung vorne P2, Nut rechts P1",
+        "build_order": ["quader", "lochkreis_oben", "bohrung_vorne", "nut_rechts"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 60, "y": 40, "z": 20},
+                       "orientation": "hochkant", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 6, "bolt_circle_radius": 15, "count": 3, "depth": 60},
+                               "parent": "quader", "operation": "subtract",
+                               "position": _pos("oben", "centered"),
+                               "orientation": "standard", "notes": ""},
+            "bohrung_vorne": {"type": "hole_single", "params": {"diameter": 10, "depth": 20},
+                              "parent": "quader", "operation": "subtract",
+                              "position": _pos("vorne", "custom", edge_distances={"top": 10, "left": 12}),
+                              "orientation": "standard", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 5, "depth": 5, "length": 40},
+                           "parent": "quader", "operation": "subtract",
+                           "position": _pos("rechts", "custom", edge_distances={"top": 15}),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_circular": 1,
+                                              "hole_single": 1, "slot": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# BATCH 7 — Tier 1 Abschluss + Tier 2/3 Finale
+# ════════════════════════════════════════════════════════════
+
+# T111 — Wuerfel links, P2, hole_pattern_linear, umgangssprachlich
+TRACES.append({
+    "id": "t111_wuerfel_links_p2_linear_umg",
+    "specification": "Wuerfel 80mm, links 4 Bohrungen Ø6 senkrecht in Reihe, 15mm Abstand, 15mm von oben und 20mm von vorne",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, FACE=links, POSITION=P2(oben 15, vorne 20), F-TYP=hole_pattern_linear"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "80mm Wuerfel",
+                   "raw_params": {"x": 80, "y": 80, "z": 80}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "links",
+                      "beschreibung": "4 Bohrungen Ø6 linear in Z-Richtung, 15mm Abstand, 15mm von oben, 20mm von vorne"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 80, "y": 80, "z": 80},
+        "orientation": "standard",
+        "features": [{"id": "linear_links", "type": "hole_pattern_linear",
+                      "params": {"hole_diameter": 6, "count": 4, "spacing": 15,
+                                 "direction": "z", "depth": 80},
+                      "position": _pos("links", "custom", edge_distances={"top": 15, "front": 20}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 80mm, links 4×Ø6 linear (Z-dir, 15mm Abstand), 15mm oben / 20mm vorne",
+        "build_order": ["wuerfel", "linear_links"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 80, "y": 80, "z": 80},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "linear_links": {"type": "hole_pattern_linear",
+                             "params": {"hole_diameter": 6, "count": 4, "spacing": 15,
+                                        "direction": "z", "depth": 80},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("links", "custom", edge_distances={"top": 15, "front": 20}),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_linear": 1}},
+})
+
+# T112 — Platte rechts (Schmalseite), P1, hole_pattern_circular, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t112_platte_rechts_p1_lochkreis_tech",
+    "specification": "Platte 120x90x15. An der rechten Schmalseite drei Bohrungen Ø6 auf einem Lochkreis mit Radius 5mm, zentral, 25mm von der oberen Kante.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, FACE=rechts, POSITION=P1(oben 25), F-TYP=hole_pattern_circular"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x90x15",
+                   "raw_params": {"x": 120, "y": 90, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "rechts",
+                      "beschreibung": "3er Lochkreis Ø6 auf R5, 25mm von oben, Y-zentriert"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 120, "y": 90, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "lochkreis_rechts", "type": "hole_pattern_circular",
+                      "params": {"hole_diameter": 6, "bolt_circle_radius": 5, "count": 3, "depth": 15},
+                      "position": _pos("rechts", "custom", edge_distances={"top": 25}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 120x90x15, rechts (15mm Seite) 3er Lochkreis Ø6 R5, 25mm von oben",
+        "build_order": ["platte", "lochkreis_rechts"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 90, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_rechts": {"type": "hole_pattern_circular",
+                                 "params": {"hole_diameter": 6, "bolt_circle_radius": 5, "count": 3, "depth": 15},
+                                 "parent": "platte", "operation": "subtract",
+                                 "position": _pos("rechts", "custom", edge_distances={"top": 25}),
+                                 "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_circular": 1}},
+})
+
+# T113 — Quader links, P0, Fillet (Verrundung an Kanten), knapp-technisch
+TRACES.append({
+    "id": "t113_quader_links_p0_fillet_knapp",
+    "specification": "Quader 100x80x40, links alle Kanten Radius 4mm",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, FACE=links, POSITION=P0, F-TYP=fillet"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "links",
+                      "beschreibung": "Radius 4mm an linken Kanten"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "fillet_links", "type": "fillet",
+                      "params": {"radius": 4, "edge_selector": "linke_kanten"},
+                      "position": _pos("links", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40: Radius 4mm an linken Kanten",
+        "build_order": ["quader", "fillet_links"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "fillet_links": {"type": "fillet", "params": {"radius": 4, "edge_selector": "linke_kanten"},
+                             "parent": "quader", "operation": "subtract",
+                             "position": _pos("links", "centered"),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "fillet": 1}},
+})
+
+# T114 — Zylinder oben, P2, hole_single (dezentral 2 Achsen), umgangssprachlich
+TRACES.append({
+    "id": "t114_zylinder_oben_p2_bohrung_dezentral_umg",
+    "specification": "Zylinder Ø60 H50, oben 'ne Bohrung Ø10, 12mm von links und 8mm von vorne",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=zylinder, FACE=oben, POSITION=P2(links 12, vorne 8), F-TYP=bohrung"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø60 H50",
+                   "raw_params": {"diameter": 60, "height": 50}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "oben",
+                      "beschreibung": "Bohrung Ø10, 12mm von links und 8mm von vorne, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder", "params": {"diameter": 60, "height": 50},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_oben", "type": "hole_single",
+                      "params": {"diameter": 10, "depth": 50},
+                      "position": _pos("oben", "custom", edge_distances={"left": 12, "front": 8}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø60 H50, oben Bohrung Ø10 dezentral (12mm links / 8mm vorne)",
+        "build_order": ["zylinder", "bohrung_oben"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 60, "height": 50},
+                         "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 10, "depth": 50},
+                             "parent": "zylinder", "operation": "subtract",
+                             "position": _pos("oben", "custom", edge_distances={"left": 12, "front": 8}),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "hole_single": 1}},
+})
+
+# T115 — Wuerfel hinten, P2, Tasche, knapp-technisch
+TRACES.append({
+    "id": "t115_wuerfel_hinten_p2_tasche_knapp",
+    "specification": "Wuerfel 60mm, hinten Tasche 20x12x6, 10mm von rechts, 8mm von oben",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, FACE=hinten, POSITION=P2(rechts 10, oben 8), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+                   "raw_params": {"x": 60, "y": 60, "z": 60}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "hinten",
+                      "beschreibung": "Tasche 20x12x6 tief, 10mm von rechts, 8mm von oben"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+        "orientation": "standard",
+        "features": [{"id": "tasche_hinten", "type": "pocket_rect",
+                      "params": {"width": 20, "height": 12, "depth": 6},
+                      "position": _pos("hinten", "custom", edge_distances={"right": 10, "top": 8}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 60mm, hinten Tasche 20x12x6, 10mm rechts / 8mm oben",
+        "build_order": ["wuerfel", "tasche_hinten"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_hinten": {"type": "pocket_rect", "params": {"width": 20, "height": 12, "depth": 6},
+                              "parent": "wuerfel", "operation": "subtract",
+                              "position": _pos("hinten", "custom", edge_distances={"right": 10, "top": 8}),
+                              "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# T116 — Platte oben, P1 (eine Achse von hinten), hole_counterbore, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t116_platte_oben_p1_senkbohrung_hinten_tech",
+    "specification": "Platte 100x80x20. Oben eine Senkbohrung M12, 20mm von der hinteren Kante, horizontal zentriert.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P1(hinten 20), F-TYP=hole_counterbore"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x20",
+                   "raw_params": {"x": 100, "y": 80, "z": 20}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Senkbohrung M12, 20mm von hinten, X-zentriert"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [{"id": "senkbohrung_oben", "type": "hole_counterbore",
+                      "params": {"diameter": 12, "depth": 20, "cbore_diameter": 20, "cbore_depth": 12},
+                      "position": _pos("oben", "custom", edge_distances={"back": 20}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x20, oben Senkbohrung M12 20mm von hinten, X-zentriert",
+        "build_order": ["platte", "senkbohrung_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "senkbohrung_oben": {"type": "hole_counterbore",
+                                 "params": {"diameter": 12, "depth": 20, "cbore_diameter": 20, "cbore_depth": 12},
+                                 "parent": "platte", "operation": "subtract",
+                                 "position": _pos("oben", "custom", edge_distances={"back": 20}),
+                                 "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_counterbore": 1}},
+})
+
+# T117 — Quader rechts, P2, hole_pattern_circular, umgangssprachlich
+TRACES.append({
+    "id": "t117_quader_rechts_p2_lochkreis_umg",
+    "specification": "Quader 80x60x50, rechts 4er Lochkreis Ø8 auf R18, 20mm von oben und 15mm von vorne",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, FACE=rechts, POSITION=P2(oben 20, vorne 15), F-TYP=hole_pattern_circular"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x60x50",
+                   "raw_params": {"x": 80, "y": 60, "z": 50}}],
+        "aktionen": [{"teil_id": "quader", "seite": "rechts",
+                      "beschreibung": "4er Lochkreis Ø8 auf R18, 20mm von oben, 15mm von vorne, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 80, "y": 60, "z": 50},
+        "orientation": "standard",
+        "features": [{"id": "lochkreis_rechts", "type": "hole_pattern_circular",
+                      "params": {"hole_diameter": 8, "bolt_circle_radius": 18, "count": 4, "depth": 80},
+                      "position": _pos("rechts", "custom", edge_distances={"top": 20, "front": 15}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 80x60x50, rechts 4er Lochkreis Ø8 R18, 20mm oben / 15mm vorne",
+        "build_order": ["quader", "lochkreis_rechts"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 50},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_rechts": {"type": "hole_pattern_circular",
+                                 "params": {"hole_diameter": 8, "bolt_circle_radius": 18, "count": 4, "depth": 80},
+                                 "parent": "quader", "operation": "subtract",
+                                 "position": _pos("rechts", "custom", edge_distances={"top": 20, "front": 15}),
+                                 "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_circular": 1}},
+})
+
+# T118 — Wuerfel vorne, P1, Nut (von oben nach unten), knapp-technisch
+TRACES.append({
+    "id": "t118_wuerfel_vorne_p1_nut_vertikal_knapp",
+    "specification": "Wuerfel 60mm, vorne vertikale Nut 8x6 durchgehend, 20mm von links",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, FACE=vorne, POSITION=P1(links 20), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+                   "raw_params": {"x": 60, "y": 60, "z": 60}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "vorne",
+                      "beschreibung": "Nut 8x6 durchgehend in Z-Richtung, 20mm von links"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+        "orientation": "standard",
+        "features": [{"id": "nut_vorne_v", "type": "slot",
+                      "params": {"width": 8, "depth": 6, "length": 60},
+                      "position": _pos("vorne", "custom", edge_distances={"left": 20}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 60mm, vorne vertikale Nut 8x6 durchgehend, 20mm von links",
+        "build_order": ["wuerfel", "nut_vorne_v"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "nut_vorne_v": {"type": "slot", "params": {"width": 8, "depth": 6, "length": 60},
+                            "parent": "wuerfel", "operation": "subtract",
+                            "position": _pos("vorne", "custom", edge_distances={"left": 20}),
+                            "orientation": "standard", "notes": "vertikal in Z"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "slot": 1}},
+})
+
+# T119 — Platte unten, P1, hole_countersink, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t119_platte_unten_p1_senkkopf_tech",
+    "specification": "Platte 100x80x15. Auf der Unterseite eine Senkkopfbohrung M8, 30mm von der rechten Kante, horizontal zentriert.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, FACE=unten, POSITION=P1(rechts 30), F-TYP=hole_countersink"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x15",
+                   "raw_params": {"x": 100, "y": 80, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "unten",
+                      "beschreibung": "Senkkopfbohrung M8, 30mm von rechts, Y-zentriert"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "senkkopf_unten", "type": "hole_countersink",
+                      "params": {"diameter": 8, "depth": 15, "csk_diameter": 15, "csk_angle": 90},
+                      "position": _pos("unten", "custom", edge_distances={"right": 30}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x15, unten Senkkopfbohrung M8, 30mm von rechts",
+        "build_order": ["platte", "senkkopf_unten"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "senkkopf_unten": {"type": "hole_countersink",
+                               "params": {"diameter": 8, "depth": 15, "csk_diameter": 15, "csk_angle": 90},
+                               "parent": "platte", "operation": "subtract",
+                               "position": _pos("unten", "custom", edge_distances={"right": 30}),
+                               "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_countersink": 1}},
+})
+
+# T120 — Quader vorne, P0, hole_pattern_circular, umgangssprachlich
+TRACES.append({
+    "id": "t120_quader_vorne_p0_lochkreis_umg",
+    "specification": "Quader 80x60x40, vorne 4er Lochkreis Ø8 auf R20, zentral",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, FACE=vorne, POSITION=P0, F-TYP=hole_pattern_circular"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x60x40",
+                   "raw_params": {"x": 80, "y": 60, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "vorne",
+                      "beschreibung": "4er Lochkreis Ø8 auf R20, zentral, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 80, "y": 60, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "lochkreis_vorne", "type": "hole_pattern_circular",
+                      "params": {"hole_diameter": 8, "bolt_circle_radius": 20, "count": 4, "depth": 60},
+                      "position": _pos("vorne", "centered"), "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 80x60x40, vorne 4er Lochkreis Ø8 R20 zentral",
+        "build_order": ["quader", "lochkreis_vorne"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_vorne": {"type": "hole_pattern_circular",
+                                "params": {"hole_diameter": 8, "bolt_circle_radius": 20, "count": 4, "depth": 60},
+                                "parent": "quader", "operation": "subtract",
+                                "position": _pos("vorne", "centered"),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_circular": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 2 Batch 7
+# ════════════════════════════════════════════════════════════
+
+# T121 — Quader 4 Features P2/P1 gemischt, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t121_quader_4features_p2p1_tech",
+    "specification": "Quader 100x80x50. Oben Bohrung Ø12, 25mm von links und 20mm von vorne. Oben Bohrung Ø8, 30mm von rechts, zentriert in Y. Rechts Tasche 30x20x8, 15mm von oben, mittig. Vorne Fase 1.5mm.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, 4 Features: bohrung(P2)+bohrung(P1)+tasche(P2)+chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x50",
+                   "raw_params": {"x": 100, "y": 80, "z": 50}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Bohrung Ø12, 25mm von links, 20mm von vorne"},
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Bohrung Ø8, 30mm von rechts, Y-zentriert"},
+            {"teil_id": "quader", "seite": "rechts",
+             "beschreibung": "Tasche 30x20x8 tief, 15mm von oben, mittig"},
+            {"teil_id": "quader", "seite": "vorne",
+             "beschreibung": "Fase 1.5mm an vorderer Oberkante"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben_1", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 50},
+             "position": _pos("oben", "custom", edge_distances={"left": 25, "front": 20}),
+             "operation": "subtract"},
+            {"id": "bohrung_oben_2", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 50},
+             "position": _pos("oben", "custom", edge_distances={"right": 30}),
+             "operation": "subtract"},
+            {"id": "tasche_rechts", "type": "pocket_rect",
+             "params": {"width": 30, "height": 20, "depth": 8},
+             "position": _pos("rechts", "custom", edge_distances={"top": 15}),
+             "operation": "subtract"},
+            {"id": "fase_vorne", "type": "chamfer",
+             "params": {"distance": 1.5, "edge_selector": "vordere_oberkante"},
+             "position": _pos("vorne", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x50: 2 Bohrungen oben, Tasche rechts, Fase vorne",
+        "build_order": ["quader", "bohrung_oben_1", "bohrung_oben_2", "tasche_rechts", "fase_vorne"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 50},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben_1": {"type": "hole_single", "params": {"diameter": 12, "depth": 50},
+                               "parent": "quader", "operation": "subtract",
+                               "position": _pos("oben", "custom", edge_distances={"left": 25, "front": 20}),
+                               "orientation": "standard", "notes": ""},
+            "bohrung_oben_2": {"type": "hole_single", "params": {"diameter": 8, "depth": 50},
+                               "parent": "quader", "operation": "subtract",
+                               "position": _pos("oben", "custom", edge_distances={"right": 30}),
+                               "orientation": "standard", "notes": ""},
+            "tasche_rechts": {"type": "pocket_rect", "params": {"width": 30, "height": 20, "depth": 8},
+                              "parent": "quader", "operation": "subtract",
+                              "position": _pos("rechts", "custom", edge_distances={"top": 15}),
+                              "orientation": "standard", "notes": ""},
+            "fase_vorne": {"type": "chamfer", "params": {"distance": 1.5, "edge_selector": "vordere_oberkante"},
+                           "parent": "quader", "operation": "subtract",
+                           "position": _pos("vorne", "centered"),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 2, "pocket_rect": 1, "chamfer": 1}},
+})
+
+# T122 — Wuerfel 5 Features alle Seiten, umgangssprachlich
+TRACES.append({
+    "id": "t122_wuerfel_5features_alle_seiten_umg",
+    "specification": "Wuerfel 70mm. Oben Bohrung Ø12 zentral. Unten Tasche 20x20x6 mittig. Vorne Senkbohrung M8 zentral. Hinten Nut 8x8 durchgehend mittig. Links Radius 3mm an allen Kanten.",
+    "metadata": {"difficulty": "P0", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, 5 Features alle Seiten P0"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "70mm Wuerfel",
+                   "raw_params": {"x": 70, "y": 70, "z": 70}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "Bohrung Ø12 zentral"},
+            {"teil_id": "wuerfel", "seite": "unten", "beschreibung": "Tasche 20x20x6 mittig"},
+            {"teil_id": "wuerfel", "seite": "vorne", "beschreibung": "Senkbohrung M8 zentral"},
+            {"teil_id": "wuerfel", "seite": "hinten", "beschreibung": "Nut 8x8 durchgehend mittig"},
+            {"teil_id": "wuerfel", "seite": "links", "beschreibung": "Radius 3mm alle Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 70, "y": 70, "z": 70},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 70},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "tasche_unten", "type": "pocket_rect",
+             "params": {"width": 20, "height": 20, "depth": 6},
+             "position": _pos("unten", "centered"), "operation": "subtract"},
+            {"id": "senkbohrung_vorne", "type": "hole_counterbore",
+             "params": {"diameter": 8, "depth": 70, "cbore_diameter": 14, "cbore_depth": 10},
+             "position": _pos("vorne", "centered"), "operation": "subtract"},
+            {"id": "nut_hinten", "type": "slot",
+             "params": {"width": 8, "depth": 8, "length": 70},
+             "position": _pos("hinten", "centered"), "operation": "subtract"},
+            {"id": "radius_links", "type": "fillet",
+             "params": {"radius": 3, "edge_selector": "linke_kanten"},
+             "position": _pos("links", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 70mm: Bohrung oben, Tasche unten, Senkbohrung vorne, Nut hinten, Radius links",
+        "build_order": ["wuerfel", "bohrung_oben", "tasche_unten",
+                        "senkbohrung_vorne", "nut_hinten", "radius_links"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 70, "y": 70, "z": 70},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 12, "depth": 70},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("oben", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "tasche_unten": {"type": "pocket_rect", "params": {"width": 20, "height": 20, "depth": 6},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("unten", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "senkbohrung_vorne": {"type": "hole_counterbore",
+                                  "params": {"diameter": 8, "depth": 70, "cbore_diameter": 14, "cbore_depth": 10},
+                                  "parent": "wuerfel", "operation": "subtract",
+                                  "position": _pos("vorne", "centered"),
+                                  "orientation": "standard", "notes": ""},
+            "nut_hinten": {"type": "slot", "params": {"width": 8, "depth": 8, "length": 70},
+                           "parent": "wuerfel", "operation": "subtract",
+                           "position": _pos("hinten", "centered"),
+                           "orientation": "standard", "notes": ""},
+            "radius_links": {"type": "fillet", "params": {"radius": 3, "edge_selector": "linke_kanten"},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("links", "centered"),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1, "pocket_rect": 1,
+                                              "hole_counterbore": 1, "slot": 1, "fillet": 1}},
+})
+
+# T123 — Platte 3 Features mit Winkeln, knapp-technisch
+TRACES.append({
+    "id": "t123_platte_3features_winkel_knapp",
+    "specification": "Platte 100x80x20. Oben Tasche 30x15x6, zentral, 30° gedreht. Vorne Bohrung Ø10, 25mm von links, 8mm von oben. Rechts Nut 6x6, 20mm von oben, zentriert in Z.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, 3 Features: tasche(30°)+bohrung(P2)+slot(P1)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x20",
+                   "raw_params": {"x": 100, "y": 80, "z": 20}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Tasche 30x15x6, zentral, 30° CW gedreht"},
+            {"teil_id": "platte", "seite": "vorne",
+             "beschreibung": "Bohrung Ø10, 25mm von links, 8mm von oben"},
+            {"teil_id": "platte", "seite": "rechts",
+             "beschreibung": "Nut 6x6, 20mm von oben, Z-zentriert"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_30", "type": "pocket_rect",
+             "params": {"width": 30, "height": 15, "depth": 6},
+             "position": _pos("oben", "centered", angle_deg=30), "operation": "subtract"},
+            {"id": "bohrung_vorne", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 80},
+             "position": _pos("vorne", "custom", edge_distances={"left": 25, "top": 8}),
+             "operation": "subtract"},
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 6, "depth": 6, "length": 20},
+             "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x20: Tasche 30x15 oben 30°, Bohrung vorne P2, Nut rechts P1",
+        "build_order": ["platte", "tasche_30", "bohrung_vorne", "nut_rechts"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_30": {"type": "pocket_rect", "params": {"width": 30, "height": 15, "depth": 6},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("oben", "centered", angle_deg=30),
+                          "orientation": "standard", "notes": ""},
+            "bohrung_vorne": {"type": "hole_single", "params": {"diameter": 10, "depth": 80},
+                              "parent": "platte", "operation": "subtract",
+                              "position": _pos("vorne", "custom", edge_distances={"left": 25, "top": 8}),
+                              "orientation": "standard", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 6, "depth": 6, "length": 20},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1, "hole_single": 1, "slot": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 3 Batch 7 — Weitere Multi-Part
+# ════════════════════════════════════════════════════════════
+
+# T124 — 2 Teile P3 unten (Platte unter Wuerfel), technisch-ausfuehrlich
+TRACES.append({
+    "id": "t124_wuerfel_platte_p3_unten_tech",
+    "specification": "Wuerfel 50mm. Darunter eine Platte 80x80x10, zentriert.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_simple",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=wuerfel+platte, POSITION=P3(unten centered)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+             "raw_params": {"x": 50, "y": 50, "z": 50}},
+            {"id": "sockelplatte", "type": "box", "beschreibung": "Platte 80x80x10",
+             "raw_params": {"x": 80, "y": 80, "z": 10}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "sockelplatte", "parent_hint": "wuerfel",
+             "beschreibung": "unterhalb des Wuerfels, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "sockelplatte",
+         "input_sentence": "unterhalb des Wuerfels, zentriert",
+         "output": _norm(parent="wuerfel", seite="unten", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="80x80")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+         "orientation": "standard", "features": []},
+        {"id": "sockelplatte", "type": "box", "params": {"x": 80, "y": 80, "z": 10},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Wuerfel 50mm, darunter zentriert Sockelplatte 80x80x10",
+        "build_order": ["wuerfel", "sockelplatte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "sockelplatte": {"type": "box", "params": {"x": 80, "y": 80, "z": 10},
+                             "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                             "position": _pos("unten", "centered")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T125 — 3-Teil Kette P3: Wuerfel + Zylinder oben + Platte vorne an Zylinder, knapp-technisch
+TRACES.append({
+    "id": "t125_3teil_wuerfel_zylinder_platte_knapp",
+    "specification": "Wuerfel 60mm. Oben drauf Zylinder Ø40 H50, zentriert. Vorne am Zylinder (an der Stirnflaeche unten, projiziert): kleine Platte 30x20x5, zentriert.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_chain_3",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel+zylinder+platte, P3(oben)+P3(vorne am Zylinder-Sockel)"},
+    "inventar": {
+        "teil_count": 3,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "Wuerfel 60mm",
+             "raw_params": {"x": 60, "y": 60, "z": 60}},
+            {"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø40 H50",
+             "raw_params": {"diameter": 40, "height": 50}},
+            {"id": "anschlagplatte", "type": "box", "beschreibung": "Platte 30x20x5",
+             "raw_params": {"x": 30, "y": 20, "z": 5}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "zylinder", "parent_hint": "wuerfel",
+             "beschreibung": "oben auf dem Wuerfel, zentriert"},
+            {"teil_id": "anschlagplatte", "parent_hint": "wuerfel",
+             "beschreibung": "vorne am Wuerfel, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "zylinder",
+         "input_sentence": "oben auf dem Wuerfel, zentriert",
+         "output": _norm(parent="wuerfel", seite="oben", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="40x40")},
+        {"teil_id": "anschlagplatte",
+         "input_sentence": "vorne am Wuerfel, zentriert",
+         "output": _norm(parent="wuerfel", seite="vorne", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="30x5")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 60, "y": 60, "z": 60},
+         "orientation": "standard", "features": []},
+        {"id": "zylinder", "type": "cylinder", "params": {"diameter": 40, "height": 50},
+         "orientation": "standard", "features": []},
+        {"id": "anschlagplatte", "type": "box", "params": {"x": 30, "y": 20, "z": 5},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Wuerfel 60mm, oben Zylinder Ø40 H50, vorne Anschlagplatte 30x20x5",
+        "build_order": ["wuerfel", "zylinder", "anschlagplatte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "zylinder": {"type": "cylinder", "params": {"diameter": 40, "height": 50},
+                         "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                         "position": _pos("oben", "centered")},
+            "anschlagplatte": {"type": "box", "params": {"x": 30, "y": 20, "z": 5},
+                               "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                               "position": _pos("vorne", "centered")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2, "cylinder": 1}},
+})
+
+# T126 — 2 Teile P4 (bündig unten + Feature auf Kind), umgangssprachlich
+TRACES.append({
+    "id": "t126_2teile_p4_bündig_unten_feature_umg",
+    "specification": "Platte 100x80x15. Links daneben Quader 40x40x15, bündig unten. Auf dem Quader oben 'ne Bohrung Ø8 zentral.",
+    "metadata": {"difficulty": "P4", "category": "multi_part_with_features",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte+quader, POSITION=P4(flush_bottom links), Quader mit Bohrung"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 100x80x15",
+             "raw_params": {"x": 100, "y": 80, "z": 15}},
+            {"id": "quader", "type": "box", "beschreibung": "Quader 40x40x15",
+             "raw_params": {"x": 40, "y": 40, "z": 15}},
+        ],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben", "beschreibung": "Bohrung Ø8 zentral durchgehend"},
+        ],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "quader", "parent_hint": "platte",
+             "beschreibung": "links an der Platte, bündig mit Unterkante"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "quader",
+         "input_sentence": "links an der Platte, bündig mit Unterkante",
+         "output": _norm(parent="platte", seite="links", ausrichtung="flush_bottom",
+                         orientierung="standard", anliegende_flaeche="40x15")},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 15},
+         "orientation": "standard", "features": []},
+        {"id": "quader", "type": "box", "params": {"x": 40, "y": 40, "z": 15},
+         "orientation": "standard",
+         "features": [{"id": "bohrung_quader", "type": "hole_single",
+                       "params": {"diameter": 8, "depth": 15},
+                       "position": _pos("oben", "centered"), "operation": "subtract"}]},
+    ],
+    "blueprint": {
+        "description": "Platte 100x80x15, links Quader 40x40x15 bündig unten, Quader mit Bohrung Ø8",
+        "build_order": ["platte", "quader", "bohrung_quader"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "quader": {"type": "box", "params": {"x": 40, "y": 40, "z": 15},
+                       "orientation": "standard", "parent": "platte", "operation": "add",
+                       "position": _pos("links", "flush_bottom")},
+            "bohrung_quader": {"type": "hole_single", "params": {"diameter": 8, "depth": 15},
+                               "parent": "quader", "operation": "subtract",
+                               "position": _pos("oben", "centered"),
+                               "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2, "hole_single": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# BATCH 8 — Finale: T1 Abschluss + T2 Ausbau + T4 Negatives
+# ════════════════════════════════════════════════════════════
+
+# T127 — Wuerfel oben, P2, hole_pattern_circular, knapp-technisch
+TRACES.append({
+    "id": "t127_wuerfel_oben_p2_lochkreis_knapp",
+    "specification": "Wuerfel 80mm, oben 3er Lochkreis Ø8 auf R20, 20mm von links und 15mm von vorne",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, FACE=oben, POSITION=P2(links 20, vorne 15), F-TYP=hole_pattern_circular"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "80mm Wuerfel",
+                   "raw_params": {"x": 80, "y": 80, "z": 80}}],
+        "aktionen": [{"teil_id": "wuerfel", "seite": "oben",
+                      "beschreibung": "3er Lochkreis Ø8 auf R20, 20mm von links, 15mm von vorne, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 80, "y": 80, "z": 80},
+        "orientation": "standard",
+        "features": [{"id": "lochkreis_oben", "type": "hole_pattern_circular",
+                      "params": {"hole_diameter": 8, "bolt_circle_radius": 20, "count": 3, "depth": 80},
+                      "position": _pos("oben", "custom", edge_distances={"left": 20, "front": 15}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 80mm, oben 3er Lochkreis Ø8 R20, 20mm links / 15mm vorne",
+        "build_order": ["wuerfel", "lochkreis_oben"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 80, "y": 80, "z": 80},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 8, "bolt_circle_radius": 20, "count": 3, "depth": 80},
+                               "parent": "wuerfel", "operation": "subtract",
+                               "position": _pos("oben", "custom", edge_distances={"left": 20, "front": 15}),
+                               "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_circular": 1}},
+})
+
+# T128 — Platte oben, P1 (links), Nut, umgangssprachlich
+TRACES.append({
+    "id": "t128_platte_oben_p1_nut_links_umg",
+    "specification": "Platte 120x80x15, oben Nut 10x8 durchgehend, 20mm von links",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, FACE=oben, POSITION=P1(links 20), F-TYP=slot"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x80x15",
+                   "raw_params": {"x": 120, "y": 80, "z": 15}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Nut 10x8 durchgehend in Y-Richtung, 20mm von links"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 120, "y": 80, "z": 15},
+        "orientation": "standard",
+        "features": [{"id": "nut_oben", "type": "slot",
+                      "params": {"width": 10, "depth": 8, "length": 80},
+                      "position": _pos("oben", "custom", edge_distances={"left": 20}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 120x80x15, oben Nut 10x8 in Y-Richtung, 20mm von links",
+        "build_order": ["platte", "nut_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "nut_oben": {"type": "slot", "params": {"width": 10, "depth": 8, "length": 80},
+                         "parent": "platte", "operation": "subtract",
+                         "position": _pos("oben", "custom", edge_distances={"left": 20}),
+                         "orientation": "standard", "notes": "durchgehend in Y"},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "slot": 1}},
+})
+
+# T129 — Quader oben, P2, fillet an einer spezifischen Kante, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t129_quader_oben_p2_fillet_kante_tech",
+    "specification": "Quader 100x80x40. An der vorderen linken Vertikalkante ein Radius von 5mm.",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, FACE=oben, POSITION=P2-analog(vl Kante), F-TYP=fillet"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x80x40",
+                   "raw_params": {"x": 100, "y": 80, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "oben",
+                      "beschreibung": "Radius 5mm an vorderer linker Vertikalkante"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "fillet_vl_kante", "type": "fillet",
+                      "params": {"radius": 5, "edge_selector": "vordere_linke_vertikalkante"},
+                      "position": _pos("oben", "custom",
+                                       notes="vordere linke Vertikalkante"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x80x40: Radius 5mm an vorderer linker Vertikalkante",
+        "build_order": ["quader", "fillet_vl_kante"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "fillet_vl_kante": {"type": "fillet",
+                                "params": {"radius": 5, "edge_selector": "vordere_linke_vertikalkante"},
+                                "parent": "quader", "operation": "subtract",
+                                "position": _pos("oben", "custom", notes="vordere linke Vertikalkante"),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "fillet": 1}},
+})
+
+# T130 — Zylinder unten, P2, hole_pattern_grid, umgangssprachlich
+TRACES.append({
+    "id": "t130_zylinder_unten_p2_raster_umg",
+    "specification": "Zylinder Ø80 H50, unten 2x2 Raster Ø6, 10mm Abstand, 15mm von links und 10mm von vorne",
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=zylinder, FACE=unten, POSITION=P2(links 15, vorne 10), F-TYP=hole_pattern_grid(2x2)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø80 H50",
+                   "raw_params": {"diameter": 80, "height": 50}}],
+        "aktionen": [{"teil_id": "zylinder", "seite": "unten",
+                      "beschreibung": "2x2 Raster Ø6, 10mm Abstand, 15mm von links, 10mm von vorne, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder", "params": {"diameter": 80, "height": 50},
+        "orientation": "standard",
+        "features": [{"id": "raster_unten", "type": "hole_pattern_grid",
+                      "params": {"hole_diameter": 6, "rows": 2, "cols": 2,
+                                 "row_spacing": 10, "col_spacing": 10, "depth": 50},
+                      "position": _pos("unten", "custom", edge_distances={"left": 15, "front": 10}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø80 H50, unten 2×2 Raster Ø6 (10mm Abstand), 15mm links / 10mm vorne",
+        "build_order": ["zylinder", "raster_unten"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 80, "height": 50},
+                         "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "raster_unten": {"type": "hole_pattern_grid",
+                             "params": {"hole_diameter": 6, "rows": 2, "cols": 2,
+                                        "row_spacing": 10, "col_spacing": 10, "depth": 50},
+                             "parent": "zylinder", "operation": "subtract",
+                             "position": _pos("unten", "custom", edge_distances={"left": 15, "front": 10}),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "hole_pattern_grid": 1}},
+})
+
+# T131 — Platte links, P1, Tasche, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t131_platte_links_p1_tasche_tech",
+    "specification": "Platte 150x100x20. Auf der linken Schmalseite eine Tasche 12x10x8 tief, 30mm von der oberen Kante entfernt, horizontal zentriert.",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, FACE=links, POSITION=P1(oben 30), F-TYP=tasche"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 150x100x20",
+                   "raw_params": {"x": 150, "y": 100, "z": 20}}],
+        "aktionen": [{"teil_id": "platte", "seite": "links",
+                      "beschreibung": "Tasche 12x10x8 tief, 30mm von oben, Y-zentriert"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 150, "y": 100, "z": 20},
+        "orientation": "standard",
+        "features": [{"id": "tasche_links", "type": "pocket_rect",
+                      "params": {"width": 12, "height": 10, "depth": 8},
+                      "position": _pos("links", "custom", edge_distances={"top": 30}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 150x100x20, links Tasche 12x10x8, 30mm von oben, Y-zentriert",
+        "build_order": ["platte", "tasche_links"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 150, "y": 100, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "tasche_links": {"type": "pocket_rect", "params": {"width": 12, "height": 10, "depth": 8},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("links", "custom", edge_distances={"top": 30}),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket_rect": 1}},
+})
+
+# T132 — Quader hinten, P1, hole_single, knapp-technisch
+TRACES.append({
+    "id": "t132_quader_hinten_p1_bohrung_knapp",
+    "specification": "Quader 100x60x40, hinten Bohrung Ø12, 25mm von links, durchgehend",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader, FACE=hinten, POSITION=P1(links 25), F-TYP=bohrung"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 100x60x40",
+                   "raw_params": {"x": 100, "y": 60, "z": 40}}],
+        "aktionen": [{"teil_id": "quader", "seite": "hinten",
+                      "beschreibung": "Bohrung Ø12, 25mm von links, mittig in Z, durchgehend"}],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 100, "y": 60, "z": 40},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_hinten", "type": "hole_single",
+                      "params": {"diameter": 12, "depth": 60},
+                      "position": _pos("hinten", "custom", edge_distances={"left": 25}),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Quader 100x60x40, hinten Bohrung Ø12 durchgehend, 25mm von links",
+        "build_order": ["quader", "bohrung_hinten"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 60, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_hinten": {"type": "hole_single", "params": {"diameter": 12, "depth": 60},
+                               "parent": "quader", "operation": "subtract",
+                               "position": _pos("hinten", "custom", edge_distances={"left": 25}),
+                               "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 2 Batch 8 — Abschluss Multi-Feature
+# ════════════════════════════════════════════════════════════
+
+# T133 — Platte 3 Features: 4x4 Raster + Nut + Bohrung, umgangssprachlich
+TRACES.append({
+    "id": "t133_platte_3features_raster_nut_bohrung_umg",
+    "specification": "Platte 140x100x20. Oben 3x3 Raster Ø6, 20mm Abstand, zentral. Vorne Bohrung Ø10, 30mm von links, mittig. Hinten Nut 8x8, 25mm von rechts, mittig in Z.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=platte, 3 Features: raster(P0)+bohrung(P1)+slot(P1)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 140x100x20",
+                   "raw_params": {"x": 140, "y": 100, "z": 20}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "3x3 Raster Ø6, 20mm Abstand, zentral"},
+            {"teil_id": "platte", "seite": "vorne", "beschreibung": "Bohrung Ø10, 30mm von links, mittig"},
+            {"teil_id": "platte", "seite": "hinten", "beschreibung": "Nut 8x8, 25mm von rechts, Z-mittig"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 140, "y": 100, "z": 20},
+        "orientation": "standard",
+        "features": [
+            {"id": "raster_oben", "type": "hole_pattern_grid",
+             "params": {"hole_diameter": 6, "rows": 3, "cols": 3,
+                        "row_spacing": 20, "col_spacing": 20, "depth": 20},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "bohrung_vorne", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 100},
+             "position": _pos("vorne", "custom", edge_distances={"left": 30}),
+             "operation": "subtract"},
+            {"id": "nut_hinten", "type": "slot",
+             "params": {"width": 8, "depth": 8, "length": 20},
+             "position": _pos("hinten", "custom", edge_distances={"right": 25}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 140x100x20: 3×3 Raster oben, Bohrung vorne links, Nut hinten rechts",
+        "build_order": ["platte", "raster_oben", "bohrung_vorne", "nut_hinten"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 140, "y": 100, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "raster_oben": {"type": "hole_pattern_grid",
+                            "params": {"hole_diameter": 6, "rows": 3, "cols": 3,
+                                       "row_spacing": 20, "col_spacing": 20, "depth": 20},
+                            "parent": "platte", "operation": "subtract",
+                            "position": _pos("oben", "centered"),
+                            "orientation": "standard", "notes": ""},
+            "bohrung_vorne": {"type": "hole_single", "params": {"diameter": 10, "depth": 100},
+                              "parent": "platte", "operation": "subtract",
+                              "position": _pos("vorne", "custom", edge_distances={"left": 30}),
+                              "orientation": "standard", "notes": ""},
+            "nut_hinten": {"type": "slot", "params": {"width": 8, "depth": 8, "length": 20},
+                           "parent": "platte", "operation": "subtract",
+                           "position": _pos("hinten", "custom", edge_distances={"right": 25}),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_grid": 1, "hole_single": 1, "slot": 1}},
+})
+
+# T134 — Zylinder 4 Features komplex, knapp-technisch
+TRACES.append({
+    "id": "t134_zylinder_4features_komplex_knapp",
+    "specification": "Zylinder Ø90 H60. Oben Bohrung Ø30 durchgehend. Oben 6er Lochkreis Ø10 auf R35 durch. Unten 3er Lochkreis Ø8 auf R20, 15mm tief. An oberer Kante Fase 3mm.",
+    "metadata": {"difficulty": "P0", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=zylinder, 4 Features: bohrung+lochkreis_durch+lochkreis_sackloch+chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø90 H60",
+                   "raw_params": {"diameter": 90, "height": 60}}],
+        "aktionen": [
+            {"teil_id": "zylinder", "seite": "oben", "beschreibung": "Bohrung Ø30 zentral durchgehend"},
+            {"teil_id": "zylinder", "seite": "oben", "beschreibung": "6er Lochkreis Ø10 auf R35 durchgehend"},
+            {"teil_id": "zylinder", "seite": "unten", "beschreibung": "3er Lochkreis Ø8 auf R20, 15mm tief"},
+            {"teil_id": "zylinder", "seite": "oben", "beschreibung": "Fase 3mm an oberer Kante"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder", "params": {"diameter": 90, "height": 60},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 30, "depth": 60},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "lochkreis_oben_6", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 10, "bolt_circle_radius": 35, "count": 6, "depth": 60},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "lochkreis_unten_3", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 8, "bolt_circle_radius": 20, "count": 3, "depth": 15},
+             "position": _pos("unten", "centered"), "operation": "subtract"},
+            {"id": "fase_oben", "type": "chamfer",
+             "params": {"distance": 3, "edge_selector": "obere_kante"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø90 H60: Bohrung Ø30, 6er Lochkreis Ø10 R35 (oben durch), 3er Lochkreis Ø8 R20 15mm (unten), Fase oben",
+        "build_order": ["zylinder", "bohrung_zentral", "lochkreis_oben_6", "lochkreis_unten_3", "fase_oben"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 90, "height": 60},
+                         "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single", "params": {"diameter": 30, "depth": 60},
+                                "parent": "zylinder", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+            "lochkreis_oben_6": {"type": "hole_pattern_circular",
+                                 "params": {"hole_diameter": 10, "bolt_circle_radius": 35, "count": 6, "depth": 60},
+                                 "parent": "zylinder", "operation": "subtract",
+                                 "position": _pos("oben", "centered"),
+                                 "orientation": "standard", "notes": ""},
+            "lochkreis_unten_3": {"type": "hole_pattern_circular",
+                                  "params": {"hole_diameter": 8, "bolt_circle_radius": 20, "count": 3, "depth": 15},
+                                  "parent": "zylinder", "operation": "subtract",
+                                  "position": _pos("unten", "centered"),
+                                  "orientation": "standard", "notes": ""},
+            "fase_oben": {"type": "chamfer", "params": {"distance": 3, "edge_selector": "obere_kante"},
+                          "parent": "zylinder", "operation": "subtract",
+                          "position": _pos("oben", "centered"),
+                          "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"cylinder": 1, "hole_single": 1,
+                                              "hole_pattern_circular": 2, "chamfer": 1}},
+})
+
+# T135 — Quader 4 Features: 4 Eckbohrungen + Senkbohrung zentral + Fase, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t135_quader_4features_ecken_zentral_fase_tech",
+    "specification": "Quader 80x60x30. Oben 4 Senkbohrungen M6 je 12mm von den Ecken. Oben Bohrung Ø20 zentral, 25mm tief. Alle oberen Kanten Fase 1mm.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader, 4 Features: 4×senkkopf(Ecken)+bohrung_zentral+chamfer"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x60x30",
+                   "raw_params": {"x": 80, "y": 60, "z": 30}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "4 Senkbohrungen M6, je 12mm von den Ecken"},
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Bohrung Ø20 zentral, 25mm tief"},
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Fase 1mm alle oberen Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 80, "y": 60, "z": 30},
+        "orientation": "standard",
+        "features": [
+            {"id": "sk_vl", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 30, "csk_diameter": 12, "csk_angle": 90},
+             "position": _pos("oben", "custom", edge_distances={"left": 12, "top": 12}),
+             "operation": "subtract"},
+            {"id": "sk_vr", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 30, "csk_diameter": 12, "csk_angle": 90},
+             "position": _pos("oben", "custom", edge_distances={"right": 12, "top": 12}),
+             "operation": "subtract"},
+            {"id": "sk_hl", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 30, "csk_diameter": 12, "csk_angle": 90},
+             "position": _pos("oben", "custom", edge_distances={"left": 12, "bottom": 12}),
+             "operation": "subtract"},
+            {"id": "sk_hr", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 30, "csk_diameter": 12, "csk_angle": 90},
+             "position": _pos("oben", "custom", edge_distances={"right": 12, "bottom": 12}),
+             "operation": "subtract"},
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 20, "depth": 25},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "fase_oben", "type": "chamfer",
+             "params": {"distance": 1, "edge_selector": "obere_kanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 80x60x30: 4 Senkbohrungen M6 (Ecken), Bohrung Ø20 zentral 25mm, Fase oben",
+        "build_order": ["quader", "sk_vl", "sk_vr", "sk_hl", "sk_hr", "bohrung_zentral", "fase_oben"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 30},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "sk_vl": {"type": "hole_countersink",
+                      "params": {"diameter": 6, "depth": 30, "csk_diameter": 12, "csk_angle": 90},
+                      "parent": "quader", "operation": "subtract",
+                      "position": _pos("oben", "custom", edge_distances={"left": 12, "top": 12}),
+                      "orientation": "standard", "notes": ""},
+            "sk_vr": {"type": "hole_countersink",
+                      "params": {"diameter": 6, "depth": 30, "csk_diameter": 12, "csk_angle": 90},
+                      "parent": "quader", "operation": "subtract",
+                      "position": _pos("oben", "custom", edge_distances={"right": 12, "top": 12}),
+                      "orientation": "standard", "notes": ""},
+            "sk_hl": {"type": "hole_countersink",
+                      "params": {"diameter": 6, "depth": 30, "csk_diameter": 12, "csk_angle": 90},
+                      "parent": "quader", "operation": "subtract",
+                      "position": _pos("oben", "custom", edge_distances={"left": 12, "bottom": 12}),
+                      "orientation": "standard", "notes": ""},
+            "sk_hr": {"type": "hole_countersink",
+                      "params": {"diameter": 6, "depth": 30, "csk_diameter": 12, "csk_angle": 90},
+                      "parent": "quader", "operation": "subtract",
+                      "position": _pos("oben", "custom", edge_distances={"right": 12, "bottom": 12}),
+                      "orientation": "standard", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single", "params": {"diameter": 20, "depth": 25},
+                                "parent": "quader", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+            "fase_oben": {"type": "chamfer", "params": {"distance": 1, "edge_selector": "obere_kanten"},
+                          "parent": "quader", "operation": "subtract",
+                          "position": _pos("oben", "centered"),
+                          "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_countersink": 4, "hole_single": 1, "chamfer": 1}},
+})
+
+# T136 — Wuerfel 4 Features: Senkkopfbohrungen + Radius + Tasche, umgangssprachlich
+TRACES.append({
+    "id": "t136_wuerfel_4features_senkkopf_radius_tasche_umg",
+    "specification": "Wuerfel 70mm. Oben 4 Senkbohrungen M6 jeweils 15mm von den Ecken. Rechts Tasche 20x15x6 mittig. Alle Vertikalkanten Radius 5mm.",
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=wuerfel, 4 Features: 4×senkkopf(Ecken)+tasche+fillet"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "70mm Wuerfel",
+                   "raw_params": {"x": 70, "y": 70, "z": 70}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben",
+             "beschreibung": "4 Senkbohrungen M6 je 15mm von den Ecken"},
+            {"teil_id": "wuerfel", "seite": "rechts",
+             "beschreibung": "Tasche 20x15x6 tief mittig"},
+            {"teil_id": "wuerfel", "seite": "oben",
+             "beschreibung": "Radius 5mm alle Vertikalkanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box", "params": {"x": 70, "y": 70, "z": 70},
+        "orientation": "standard",
+        "features": [
+            {"id": "sk_vl", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 70, "csk_diameter": 12, "csk_angle": 90},
+             "position": _pos("oben", "custom", edge_distances={"left": 15, "top": 15}),
+             "operation": "subtract"},
+            {"id": "sk_vr", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 70, "csk_diameter": 12, "csk_angle": 90},
+             "position": _pos("oben", "custom", edge_distances={"right": 15, "top": 15}),
+             "operation": "subtract"},
+            {"id": "sk_hl", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 70, "csk_diameter": 12, "csk_angle": 90},
+             "position": _pos("oben", "custom", edge_distances={"left": 15, "bottom": 15}),
+             "operation": "subtract"},
+            {"id": "sk_hr", "type": "hole_countersink",
+             "params": {"diameter": 6, "depth": 70, "csk_diameter": 12, "csk_angle": 90},
+             "position": _pos("oben", "custom", edge_distances={"right": 15, "bottom": 15}),
+             "operation": "subtract"},
+            {"id": "tasche_rechts", "type": "pocket_rect",
+             "params": {"width": 20, "height": 15, "depth": 6},
+             "position": _pos("rechts", "centered"), "operation": "subtract"},
+            {"id": "fillet_vertikal", "type": "fillet",
+             "params": {"radius": 5, "edge_selector": "vertikalkanten"},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 70mm: 4 Senkbohrungen M6 (Ecken), Tasche rechts, Radius Vertikalkanten",
+        "build_order": ["wuerfel", "sk_vl", "sk_vr", "sk_hl", "sk_hr", "tasche_rechts", "fillet_vertikal"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 70, "y": 70, "z": 70},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "sk_vl": {"type": "hole_countersink",
+                      "params": {"diameter": 6, "depth": 70, "csk_diameter": 12, "csk_angle": 90},
+                      "parent": "wuerfel", "operation": "subtract",
+                      "position": _pos("oben", "custom", edge_distances={"left": 15, "top": 15}),
+                      "orientation": "standard", "notes": ""},
+            "sk_vr": {"type": "hole_countersink",
+                      "params": {"diameter": 6, "depth": 70, "csk_diameter": 12, "csk_angle": 90},
+                      "parent": "wuerfel", "operation": "subtract",
+                      "position": _pos("oben", "custom", edge_distances={"right": 15, "top": 15}),
+                      "orientation": "standard", "notes": ""},
+            "sk_hl": {"type": "hole_countersink",
+                      "params": {"diameter": 6, "depth": 70, "csk_diameter": 12, "csk_angle": 90},
+                      "parent": "wuerfel", "operation": "subtract",
+                      "position": _pos("oben", "custom", edge_distances={"left": 15, "bottom": 15}),
+                      "orientation": "standard", "notes": ""},
+            "sk_hr": {"type": "hole_countersink",
+                      "params": {"diameter": 6, "depth": 70, "csk_diameter": 12, "csk_angle": 90},
+                      "parent": "wuerfel", "operation": "subtract",
+                      "position": _pos("oben", "custom", edge_distances={"right": 15, "bottom": 15}),
+                      "orientation": "standard", "notes": ""},
+            "tasche_rechts": {"type": "pocket_rect", "params": {"width": 20, "height": 15, "depth": 6},
+                              "parent": "wuerfel", "operation": "subtract",
+                              "position": _pos("rechts", "centered"),
+                              "orientation": "standard", "notes": ""},
+            "fillet_vertikal": {"type": "fillet", "params": {"radius": 5, "edge_selector": "vertikalkanten"},
+                                "parent": "wuerfel", "operation": "subtract",
+                                "position": _pos("oben", "centered"),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_countersink": 4, "pocket_rect": 1, "fillet": 1}},
+})
+
+# T137 — Platte 4 Features mit gemischten Seiten, knapp-technisch
+TRACES.append({
+    "id": "t137_platte_4features_gemischt_knapp",
+    "specification": "Platte 120x80x20. Oben Lochkreis 4×Ø8 R30 zentral. Links Nut 6x6 durch, 10mm von oben. Rechts Tasche 15x12x8, 20mm von oben, mittig. Hinten Senkkopfbohrung M8 mittig.",
+    "metadata": {"difficulty": "P1", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte, 4 Features: lochkreis+slot+tasche+senkbohrung"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x80x20",
+                   "raw_params": {"x": 120, "y": 80, "z": 20}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "4er Lochkreis Ø8 auf R30 zentral"},
+            {"teil_id": "platte", "seite": "links", "beschreibung": "Nut 6x6 durchgehend, 10mm von oben"},
+            {"teil_id": "platte", "seite": "rechts", "beschreibung": "Tasche 15x12x8, 20mm von oben, mittig"},
+            {"teil_id": "platte", "seite": "hinten", "beschreibung": "Senkbohrung M8 mittig"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 120, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [
+            {"id": "lochkreis_oben", "type": "hole_pattern_circular",
+             "params": {"hole_diameter": 8, "bolt_circle_radius": 30, "count": 4, "depth": 20},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "nut_links", "type": "slot",
+             "params": {"width": 6, "depth": 6, "length": 80},
+             "position": _pos("links", "custom", edge_distances={"top": 10}),
+             "operation": "subtract"},
+            {"id": "tasche_rechts", "type": "pocket_rect",
+             "params": {"width": 15, "height": 12, "depth": 8},
+             "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+             "operation": "subtract"},
+            {"id": "senkbohrung_hinten", "type": "hole_counterbore",
+             "params": {"diameter": 8, "depth": 80, "cbore_diameter": 15, "cbore_depth": 10},
+             "position": _pos("hinten", "centered"), "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x80x20: Lochkreis oben, Nut links, Tasche rechts, Senkbohrung hinten",
+        "build_order": ["platte", "lochkreis_oben", "nut_links", "tasche_rechts", "senkbohrung_hinten"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "lochkreis_oben": {"type": "hole_pattern_circular",
+                               "params": {"hole_diameter": 8, "bolt_circle_radius": 30, "count": 4, "depth": 20},
+                               "parent": "platte", "operation": "subtract",
+                               "position": _pos("oben", "centered"),
+                               "orientation": "standard", "notes": ""},
+            "nut_links": {"type": "slot", "params": {"width": 6, "depth": 6, "length": 80},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("links", "custom", edge_distances={"top": 10}),
+                          "orientation": "standard", "notes": ""},
+            "tasche_rechts": {"type": "pocket_rect", "params": {"width": 15, "height": 12, "depth": 8},
+                              "parent": "platte", "operation": "subtract",
+                              "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+                              "orientation": "standard", "notes": ""},
+            "senkbohrung_hinten": {"type": "hole_counterbore",
+                                   "params": {"diameter": 8, "depth": 80, "cbore_diameter": 15, "cbore_depth": 10},
+                                   "parent": "platte", "operation": "subtract",
+                                   "position": _pos("hinten", "centered"),
+                                   "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_pattern_circular": 1,
+                                              "slot": 1, "pocket_rect": 1, "hole_counterbore": 1}},
+})
+
+# T138 — Quader hochkant 3 Features + Nut, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t138_quader_hochkant_3features_tech",
+    "specification": "Quader 80x50x25 hochkant gestellt. Oben Bohrung Ø15 zentral, 60mm tief. Vorne Tasche 25x12x8, 15mm von oben, zentriert in X. Rechts Nut 6x6, 20mm von oben, Z-mittig.",
+    "metadata": {"difficulty": "P1", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader(hochkant), 3 Features: bohrung+tasche(P1)+slot(P1)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x50x25 hochkant",
+                   "raw_params": {"x": 80, "y": 50, "z": 25}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben", "beschreibung": "Bohrung Ø15 zentral, 60mm tief"},
+            {"teil_id": "quader", "seite": "vorne",
+             "beschreibung": "Tasche 25x12x8 tief, 15mm von oben, X-zentriert"},
+            {"teil_id": "quader", "seite": "rechts",
+             "beschreibung": "Nut 6x6 durchgehend, 20mm von oben, Z-zentriert"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box", "params": {"x": 80, "y": 50, "z": 25},
+        "orientation": "hochkant",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 15, "depth": 60},
+             "position": _pos("oben", "centered"), "operation": "subtract"},
+            {"id": "tasche_vorne", "type": "pocket_rect",
+             "params": {"width": 25, "height": 12, "depth": 8},
+             "position": _pos("vorne", "custom", edge_distances={"top": 15}),
+             "operation": "subtract"},
+            {"id": "nut_rechts", "type": "slot",
+             "params": {"width": 6, "depth": 6, "length": 50},
+             "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 80x50x25 hochkant: Bohrung Ø15 oben, Tasche vorne 15mm oben, Nut rechts 20mm oben",
+        "build_order": ["quader", "bohrung_oben", "tasche_vorne", "nut_rechts"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 50, "z": 25},
+                       "orientation": "hochkant", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 15, "depth": 60},
+                             "parent": "quader", "operation": "subtract",
+                             "position": _pos("oben", "centered"),
+                             "orientation": "standard", "notes": ""},
+            "tasche_vorne": {"type": "pocket_rect", "params": {"width": 25, "height": 12, "depth": 8},
+                             "parent": "quader", "operation": "subtract",
+                             "position": _pos("vorne", "custom", edge_distances={"top": 15}),
+                             "orientation": "standard", "notes": ""},
+            "nut_rechts": {"type": "slot", "params": {"width": 6, "depth": 6, "length": 50},
+                           "parent": "quader", "operation": "subtract",
+                           "position": _pos("rechts", "custom", edge_distances={"top": 20}),
+                           "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1, "pocket_rect": 1, "slot": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 4 Batch 8 — Weitere Minimal-Paare und Negativ-Beispiele
+# ════════════════════════════════════════════════════════════
+
+# T139 — Minimal-Paar: "10mm von oben" (innerhalb Face) vs Kontext
+# "10mm von oben" = Abstand von oberer Kante, Bohrung noch innerhalb der Face
+TRACES.append({
+    "id": "t139_minimal_10mm_von_oben_innen_knapp",
+    "specification": "Platte 100x80x20, oben Bohrung Ø10, 10mm von der oberen Kante, X-zentriert, durchgehend",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "MINIMAL: FORM=platte, FACE=oben, POSITION=P1(oben 10), INTERPRETATION: innerhalb Face"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x20",
+                   "raw_params": {"x": 100, "y": 80, "z": 20}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Bohrung Ø10, 10mm von oberer Kante, X-zentriert"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_oben", "type": "hole_single",
+                      "params": {"diameter": 10, "depth": 20},
+                      "position": _pos("oben", "custom",
+                                       edge_distances={"top": 10},
+                                       notes="10mm von oberer Kante = innerhalb Face, kein Überstand"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x20: Bohrung Ø10 oben, 10mm von oberer Kante, X-zentriert",
+        "build_order": ["platte", "bohrung_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single", "params": {"diameter": 10, "depth": 20},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("oben", "custom",
+                                             edge_distances={"top": 10},
+                                             notes="Abstand von Kante = innerhalb Face"),
+                             "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T140 — Minimal-Paar: "obere Ecke auf Kante" vs "obere Kante auf Ecke" (unterschiedliche Anker)
+TRACES.append({
+    "id": "t140_minimal_ecke_auf_kante_p5_knapp",
+    "specification": "Wuerfel 50mm. Rechts Platte 40x40x15, obere rechte Ecke der Platte liegt auf der oberen Kante der rechten Wuerfelflaeche.",
+    "metadata": {"difficulty": "P5", "category": "multi_part_simple",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "MINIMAL: P5 Ecke-auf-Kante (oben_rechts auf obere_kante)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+             "raw_params": {"x": 50, "y": 50, "z": 50}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 40x40x15",
+             "raw_params": {"x": 40, "y": 40, "z": 15}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "wuerfel",
+             "beschreibung": "rechts am Wuerfel, obere rechte Ecke der Platte auf der oberen Kante"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "rechts am Wuerfel, obere rechte Ecke auf oberer Kante (Mitte)",
+         "output": _norm(parent="wuerfel", seite="rechts", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="40x15",
+                         anker={"kind_punkt": "oben_rechts",
+                                "eltern_punkt": "obere_kante",
+                                "eltern_abstand": {}},
+                         notes="Ecke-auf-Kante: kind.oben_rechts auf parent.obere_kante Mitte")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 40, "y": 40, "z": 15},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Wuerfel 50mm, rechts Platte 40x40x15: oben-rechts Ecke auf oberer Kante-Mitte",
+        "build_order": ["wuerfel", "platte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 40, "y": 40, "z": 15},
+                       "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                       "position": _pos("rechts", "anker",
+                                       notes="oben-rechts Ecke auf obere Kante")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T141 — Minimal-Paar: "bündig oben" = flush_top, Bedeutungsgleich zu "oberkante ausgerichtet"
+TRACES.append({
+    "id": "t141_minimal_bündig_oben_bedeutungsgleich_umg",
+    "specification": "Platte 100x60x20. Links daneben Quader 30x30x20, oberkante ausgerichtet.",
+    "metadata": {"difficulty": "P4", "category": "multi_part_simple",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "MINIMAL: P4(flush_top) — 'oberkante ausgerichtet' = flush_top"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 100x60x20",
+             "raw_params": {"x": 100, "y": 60, "z": 20}},
+            {"id": "quader", "type": "box", "beschreibung": "Quader 30x30x20",
+             "raw_params": {"x": 30, "y": 30, "z": 20}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "quader", "parent_hint": "platte",
+             "beschreibung": "links an der Platte, oberkante ausgerichtet (flush_top)"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "quader",
+         "input_sentence": "links an der Platte, oberkante ausgerichtet",
+         "output": _norm(parent="platte", seite="links", ausrichtung="flush_top",
+                         orientierung="standard", anliegende_flaeche="30x20",
+                         notes="oberkante ausgerichtet = flush_top")},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 100, "y": 60, "z": 20},
+         "orientation": "standard", "features": []},
+        {"id": "quader", "type": "box", "params": {"x": 30, "y": 30, "z": 20},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Platte 100x60x20, links Quader 30x30x20 bündig oben (flush_top)",
+        "build_order": ["platte", "quader"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 60, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "quader": {"type": "box", "params": {"x": 30, "y": 30, "z": 20},
+                       "orientation": "standard", "parent": "platte", "operation": "add",
+                       "position": _pos("links", "flush_top",
+                                       notes="oberkante ausgerichtet = flush_top")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T142 — Negativ: "Bohrung durch alle Teile" bei Single-Part = Tiefe ist Materialdicke
+TRACES.append({
+    "id": "t142_negativ_durch_alle_teile_single_knapp",
+    "specification": "Platte 100x80x20, oben Bohrung Ø12 zentral durch alle Teile",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "NEGATIV: 'durch alle Teile' bei Single-Part → Tiefe = Materialdicke"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x20",
+                   "raw_params": {"x": 100, "y": 80, "z": 20}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Bohrung Ø12 zentral, 'durch alle Teile' = Tiefe 20mm (Materialdicke)"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_zentral", "type": "hole_single",
+                      "params": {"diameter": 12, "depth": 20},
+                      "position": _pos("oben", "centered",
+                                       notes="durch alle Teile = durchgehend = Tiefe ist Materialdicke (20mm)"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x20: Bohrung Ø12 zentral durch (20mm = Materialdicke)",
+        "build_order": ["platte", "bohrung_zentral"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single", "params": {"diameter": 12, "depth": 20},
+                                "parent": "platte", "operation": "subtract",
+                                "position": _pos("oben", "centered",
+                                                notes="'durch alle Teile' bei 1 Teil = durchgehend"),
+                                "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T143 — Minimal-Paar: "rechts anliegend" = "bündig rechts" = P4(flush_right, 0 Offset)
+TRACES.append({
+    "id": "t143_minimal_rechts_anliegend_gleich_bündig_tech",
+    "specification": "Wuerfel 50mm. Rechts anliegend eine Platte 40x40x15, vertikal zentriert.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_simple",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "MINIMAL: 'rechts anliegend' = P3(rechts centered) = normales Anlegen ohne Offset"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+             "raw_params": {"x": 50, "y": 50, "z": 50}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 40x40x15",
+             "raw_params": {"x": 40, "y": 40, "z": 15}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "wuerfel",
+             "beschreibung": "rechts anliegend, vertikal zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "rechts anliegend, vertikal zentriert",
+         "output": _norm(parent="wuerfel", seite="rechts", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="40x15",
+                         notes="rechts anliegend = P3 rechts zentriert (kein Offset)")},
+    ],
+    "teil_definitionen": [
+        {"id": "wuerfel", "type": "box", "params": {"x": 50, "y": 50, "z": 50},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 40, "y": 40, "z": 15},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Wuerfel 50mm, rechts Platte 40x40x15 zentriert (= rechts anliegend)",
+        "build_order": ["wuerfel", "platte"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 40, "y": 40, "z": 15},
+                       "orientation": "standard", "parent": "wuerfel", "operation": "add",
+                       "position": _pos("rechts", "centered",
+                                       notes="rechts anliegend = rechts zentriert")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T144 — Negativ: Widersprüchliche Position ("oben mittig rechts") — Pipeline wählt rechts-zentriert
+TRACES.append({
+    "id": "t144_negativ_widersprüchlich_oben_mittig_rechts_umg",
+    "specification": "Platte 100x80x20, oben 'ne Bohrung Ø10 oben mittig rechts",
+    "metadata": {"difficulty": "P3", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "NEGATIV: mehrdeutige Position 'oben mittig rechts' → P3(top_right) als Default"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x20",
+                   "raw_params": {"x": 100, "y": 80, "z": 20}}],
+        "aktionen": [{"teil_id": "platte", "seite": "oben",
+                      "beschreibung": "Bohrung Ø10, mehrdeutig 'oben mittig rechts' → P3 top_right als vernünftiger Default"}],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box", "params": {"x": 100, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [{"id": "bohrung_oben_rechts", "type": "hole_single",
+                      "params": {"diameter": 10, "depth": 20},
+                      "position": _pos("oben", "top_right",
+                                       notes="widersprüchlich 'oben mittig rechts' → top_right als Default"),
+                      "operation": "subtract"}],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x20: Bohrung Ø10 oben-rechts (Default bei widersprüchlicher Angabe)",
+        "build_order": ["platte", "bohrung_oben_rechts"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_oben_rechts": {"type": "hole_single", "params": {"diameter": 10, "depth": 20},
+                                    "parent": "platte", "operation": "subtract",
+                                    "position": _pos("oben", "top_right",
+                                                    notes="mehrdeutig → P3 Ecke als Default"),
+                                    "orientation": "standard", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T145 — Tier 3: 2 Teile P3 (oben links) + Feature auf Root, technisch-ausfuehrlich
+TRACES.append({
+    "id": "t145_2teile_p3_obenlinks_feature_root_tech",
+    "specification": "Quader 80x60x40. Oben links eine Platte 30x25x8, zentriert an der oberen linken Ecke. Auf dem Quader rechts eine Bohrung Ø10, 15mm von rechts, mittig.",
+    "metadata": {"difficulty": "P3", "category": "multi_part_with_features",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=quader+platte, POSITION=P3(oben_links), Quader mit Bohrung rechts"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "quader", "type": "box", "beschreibung": "Quader 80x60x40",
+             "raw_params": {"x": 80, "y": 60, "z": 40}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 30x25x8",
+             "raw_params": {"x": 30, "y": 25, "z": 8}},
+        ],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "rechts",
+             "beschreibung": "Bohrung Ø10, 15mm von rechts, mittig in Z"},
+        ],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "quader",
+             "beschreibung": "oben auf dem Quader, oben-links-Ecke"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "oben auf dem Quader, oben-links zentriert",
+         "output": _norm(parent="quader", seite="oben", ausrichtung="top_left",
+                         orientierung="standard", anliegende_flaeche="30x25")},
+    ],
+    "teil_definitionen": [
+        {"id": "quader", "type": "box", "params": {"x": 80, "y": 60, "z": 40},
+         "orientation": "standard",
+         "features": [{"id": "bohrung_rechts", "type": "hole_single",
+                       "params": {"diameter": 10, "depth": 80},
+                       "position": _pos("rechts", "custom", edge_distances={"right": 15}),
+                       "operation": "subtract"}]},
+        {"id": "platte", "type": "box", "params": {"x": 30, "y": 25, "z": 8},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Quader 80x60x40 + Bohrung rechts, oben Platte 30x25x8 an oben-links Ecke",
+        "build_order": ["quader", "bohrung_rechts", "platte"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 40},
+                       "orientation": "standard", "parent": None, "operation": "add", "notes": ""},
+            "bohrung_rechts": {"type": "hole_single", "params": {"diameter": 10, "depth": 80},
+                               "parent": "quader", "operation": "subtract",
+                               "position": _pos("rechts", "custom", edge_distances={"right": 15}),
+                               "orientation": "standard", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 30, "y": 25, "z": 8},
+                       "orientation": "standard", "parent": "quader", "operation": "add",
+                       "position": _pos("oben", "top_left")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2, "hole_single": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# GRUPPE P4-ERWEITERUNG — 2 Traces (→ P4 gesamt: 10)
+# ════════════════════════════════════════════════════════════
+
+# T146 — P4 Überstand vorne: Platte 100x20x10 übersteht Quader 100x80x50 um 8mm
+TRACES.append({
+    "id": "t146_2teile_p4_ueberstand_vorne_umg",
+    "specification": (
+        "Quader 100x80x50. Vorne dran 'ne flache Platte 100x20x10, "
+        "die ragt noch 8mm über die Vorderkante des Quaders raus."
+    ),
+    "metadata": {"difficulty": "P4", "category": "multi_part_overhang",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader+platte, POSITION=P4(vorne, 8mm Ueberstand vorne)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "quader", "type": "box", "beschreibung": "Quader 100x80x50",
+             "raw_params": {"x": 100, "y": 80, "z": 50}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 100x20x10",
+             "raw_params": {"x": 100, "y": 20, "z": 10}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "quader",
+             "beschreibung": "vorne am Quader, zentriert in X, ragt 8mm nach vorne über"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "vorne am Quader, zentriert in X, ragt 8mm nach vorne über",
+         "output": _norm(parent="quader", seite="vorne", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="100x10",
+                         abstand={"front_overhang": 8},
+                         notes="in X zentriert (gleiche Breite), 8mm Ueberstand nach vorne")},
+    ],
+    "teil_definitionen": [
+        {"id": "quader", "type": "box", "params": {"x": 100, "y": 80, "z": 50},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 100, "y": 20, "z": 10},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Quader 100x80x50, vorne Platte 100x20x10 mit 8mm Ueberstand",
+        "build_order": ["quader", "platte"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 80, "z": 50},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 100, "y": 20, "z": 10},
+                       "orientation": "standard", "parent": "quader",
+                       "position": _pos("vorne", "centered",
+                                        notes="8mm Ueberstand nach vorne"),
+                       "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T147 — P4 Flush-Top: Quader 40x60x30 rechts an Platte 80x60x20, oberkante bündig
+TRACES.append({
+    "id": "t147_2teile_p4_flush_top_rechts_ta",
+    "specification": (
+        "Platte 80x60x20mm. Rechts daneben ein Quader 40x60x30, "
+        "obere Kante bündig mit der Platte ausgerichtet."
+    ),
+    "metadata": {"difficulty": "P4", "category": "multi_part_simple",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte+quader, POSITION=P4(rechts, flush_top)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 80x60x20",
+             "raw_params": {"x": 80, "y": 60, "z": 20}},
+            {"id": "quader", "type": "box", "beschreibung": "Quader 40x60x30",
+             "raw_params": {"x": 40, "y": 60, "z": 30}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "quader", "parent_hint": "platte",
+             "beschreibung": "rechts an der Platte, oberkante bündig ausgerichtet"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "quader",
+         "input_sentence": "rechts an der Platte, oberkante bündig ausgerichtet",
+         "output": _norm(parent="platte", seite="rechts", ausrichtung="flush_top",
+                         orientierung="standard", anliegende_flaeche="40x60",
+                         notes="flush_top: obere Kanten beider Teile auf gleicher Hoehe")},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 80, "y": 60, "z": 20},
+         "orientation": "standard", "features": []},
+        {"id": "quader", "type": "box", "params": {"x": 40, "y": 60, "z": 30},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Platte 80x60x20, rechts Quader 40x60x30 mit flush_top",
+        "build_order": ["platte", "quader"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 80, "y": 60, "z": 20},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "quader": {"type": "box", "params": {"x": 40, "y": 60, "z": 30},
+                       "orientation": "standard", "parent": "platte",
+                       "position": _pos("rechts", "flush_top"),
+                       "operation": "add", "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# ════════════════════════════════════════════════════════════
+# P5-ERWEITERUNG — 1 Trace (→ P5 gesamt: 10)
+# ════════════════════════════════════════════════════════════
+
+# T148 — P5 Anker: untere linke Ecke der Platte auf rechter Kante des Quaders
+TRACES.append({
+    "id": "t148_2teile_p5_anchor_unten_links_rechts_kante_knapp",
+    "specification": (
+        "Quader 100x60x50. Rechts dran Platte 60x40x12, "
+        "untere linke Ecke auf rechter Kante, 10mm von vorne."
+    ),
+    "metadata": {"difficulty": "P5", "category": "multi_part_simple",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=quader+platte, POSITION=P5(rechts, unten_links-Ecke auf rechte_kante)"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "quader", "type": "box", "beschreibung": "Quader 100x60x50",
+             "raw_params": {"x": 100, "y": 60, "z": 50}},
+            {"id": "platte", "type": "box", "beschreibung": "Platte 60x40x12",
+             "raw_params": {"x": 60, "y": 40, "z": 12}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "platte", "parent_hint": "quader",
+             "beschreibung": "rechts am Quader, untere linke Ecke der Platte auf rechter Kante des Quaders, 10mm von vorne"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "platte",
+         "input_sentence": "rechts am Quader, untere linke Ecke auf rechter Kante, 10mm von vorne",
+         "output": _norm(parent="quader", seite="rechts", ausrichtung="anker",
+                         orientierung="standard",
+                         anliegende_flaeche="60x12",
+                         anker={"kind_punkt": "unten_links",
+                                "eltern_punkt": "rechte_kante",
+                                "eltern_abstand": {"front": 10}},
+                         notes="Anker: kind.unten_links auf parent.rechte_kante, 10mm von vorne")},
+    ],
+    "teil_definitionen": [
+        {"id": "quader", "type": "box", "params": {"x": 100, "y": 60, "z": 50},
+         "orientation": "standard", "features": []},
+        {"id": "platte", "type": "box", "params": {"x": 60, "y": 40, "z": 12},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Quader 100x60x50, rechts Platte 60x40x12: unten-links auf rechter Kante 10mm v. vorne",
+        "build_order": ["quader", "platte"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 100, "y": 60, "z": 50},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "platte": {"type": "box", "params": {"x": 60, "y": 40, "z": 12},
+                       "orientation": "standard", "parent": "quader", "operation": "add",
+                       "position": _pos("rechts", "anker",
+                                        notes="unten-links Ecke auf rechter Kante, 10mm v. vorne")},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 2 ERWEITERUNG — 6 Multi-Feature Traces (→ T2 gesamt: 40)
+# ════════════════════════════════════════════════════════════
+
+# T149 — Platte 100x80x15, 4 Features: Bohrung P0, 4 Eckbohrungen P2, Tasche P1, Nut vorne
+TRACES.append({
+    "id": "t149_platte_4feat_zentral_ecken_tasche_nut_ta",
+    "specification": (
+        "Platte 100x80x15mm. Oben eine zentrale Bohrung Ø12, durchgehend. "
+        "Oben 4 Bohrungen Ø6, je 12mm von den Ecken, durchgehend. "
+        "Oben eine Tasche 40x30x8 tief, 20mm von links und 20mm von vorne. "
+        "Vorne eine Nut 5x5 durchgehend."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=platte, 4 Features: P0+P2+P1+Nut"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x15",
+                   "raw_params": {"x": 100, "y": 80, "z": 15}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "Bohrung Ø12 zentral, durchgehend"},
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "4 Bohrungen Ø6, je 12mm von den Ecken, durchgehend"},
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "Tasche 40x30x8, 20mm von links, 20mm von vorne"},
+            {"teil_id": "platte", "seite": "vorne", "beschreibung": "Nut 5x5 durchgehend"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 15},
+             "position": _pos("oben", "centered"),
+             "operation": "subtract"},
+            {"id": "eckbohrungen", "type": "hole_pattern",
+             "params": {"diameter": 6, "depth": 15, "pattern": "corner_4",
+                        "edge_distance": 12},
+             "position": _pos("oben", "corner_4", edge_distances={"all": 12}),
+             "operation": "subtract"},
+            {"id": "tasche_oben", "type": "pocket",
+             "params": {"width": 40, "depth": 30, "height": 8},
+             "position": _pos("oben", "custom",
+                              edge_distances={"left": 20, "front": 20}),
+             "operation": "subtract"},
+            {"id": "nut_vorne", "type": "slot",
+             "params": {"width": 5, "depth": 5},
+             "position": _pos("vorne", "centered"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x15: Bohrung P0, 4 Eckbohrungen, Tasche P1, Nut vorne",
+        "build_order": ["platte", "bohrung_zentral", "eckbohrungen", "tasche_oben", "nut_vorne"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single",
+                                "params": {"diameter": 12, "depth": 15},
+                                "parent": "platte", "operation": "subtract",
+                                "position": _pos("oben", "centered"), "notes": ""},
+            "eckbohrungen": {"type": "hole_pattern",
+                             "params": {"diameter": 6, "depth": 15, "pattern": "corner_4",
+                                        "edge_distance": 12},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("oben", "corner_4",
+                                              edge_distances={"all": 12}), "notes": ""},
+            "tasche_oben": {"type": "pocket",
+                            "params": {"width": 40, "depth": 30, "height": 8},
+                            "parent": "platte", "operation": "subtract",
+                            "position": _pos("oben", "custom",
+                                             edge_distances={"left": 20, "front": 20}), "notes": ""},
+            "nut_vorne": {"type": "slot",
+                          "params": {"width": 5, "depth": 5},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("vorne", "centered"), "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_feature_count": {"box": 1, "hole_single": 1, "hole_pattern": 1,
+                                   "pocket": 1, "slot": 1},
+    },
+})
+
+# T150 — Quader 80x60x40, 3 Features: Sackloch oben P1, Bohrung links P0, Fase Kante
+TRACES.append({
+    "id": "t150_quader_3feat_sackloch_bohrung_fase_umg",
+    "specification": (
+        "80x60x40 Quader. Oben 'n Sackloch Ø15, 20mm tief, 25mm vom rechten Rand rein. "
+        "Links zentral 'ne Bohrung Ø8 durch. "
+        "Oben rechte Vorderkante Fase 2mm."
+    ),
+    "metadata": {"difficulty": "P1", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, 3 Features: Sackloch P1, Bohrung P0, Fase"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x60x40",
+                   "raw_params": {"x": 80, "y": 60, "z": 40}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben", "beschreibung": "Sackloch Ø15, 20mm tief, 25mm von rechts"},
+            {"teil_id": "quader", "seite": "links", "beschreibung": "Bohrung Ø8 zentral, durchgehend"},
+            {"teil_id": "quader", "seite": "oben", "beschreibung": "Fase 2mm an rechter Vorderkante"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 80, "y": 60, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "sackloch_oben", "type": "hole_single",
+             "params": {"diameter": 15, "depth": 20},
+             "position": _pos("oben", "custom", edge_distances={"right": 25}),
+             "operation": "subtract"},
+            {"id": "bohrung_links", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 80},
+             "position": _pos("links", "centered"),
+             "operation": "subtract"},
+            {"id": "fase_kante", "type": "chamfer",
+             "params": {"size": 2},
+             "position": _pos("oben", "custom", notes="rechte Vorderkante"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 80x60x40: Sackloch P1, Bohrung links P0, Fase",
+        "build_order": ["quader", "sackloch_oben", "bohrung_links", "fase_kante"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "sackloch_oben": {"type": "hole_single",
+                              "params": {"diameter": 15, "depth": 20},
+                              "parent": "quader", "operation": "subtract",
+                              "position": _pos("oben", "custom",
+                                               edge_distances={"right": 25}), "notes": ""},
+            "bohrung_links": {"type": "hole_single",
+                              "params": {"diameter": 8, "depth": 80},
+                              "parent": "quader", "operation": "subtract",
+                              "position": _pos("links", "centered"), "notes": ""},
+            "fase_kante": {"type": "chamfer",
+                           "params": {"size": 2},
+                           "parent": "quader", "operation": "subtract",
+                           "position": _pos("oben", "custom",
+                                            notes="rechte Vorderkante"), "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_feature_count": {"box": 1, "hole_single": 2, "chamfer": 1},
+    },
+})
+
+# T151 — Wuerfel 60mm, 4 Features: Bohrung P2, Tasche vorne P0, Sackloch links P1, Verrundung
+TRACES.append({
+    "id": "t151_wuerfel_4feat_bohrung_tasche_sackloch_radius_knapp",
+    "specification": (
+        "60mm Wuerfel. Oben Bohrung Ø12, 15mm v. links, 15mm v. vorne, durch. "
+        "Vorne Tasche 25x20x8 zentral. Links Sackloch Ø8 15mm tief, 10mm v. oben. "
+        "Obere Vorderkante Radius R3."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=wuerfel, 4 Features: P2+P0+P1+Verrundung"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "60mm Wuerfel",
+                   "raw_params": {"x": 60, "y": 60, "z": 60}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "Bohrung Ø12, 15mm v. links, 15mm v. vorne, durchgehend"},
+            {"teil_id": "wuerfel", "seite": "vorne", "beschreibung": "Tasche 25x20x8 zentral"},
+            {"teil_id": "wuerfel", "seite": "links", "beschreibung": "Sackloch Ø8, 15mm tief, 10mm von oben"},
+            {"teil_id": "wuerfel", "seite": "oben", "beschreibung": "Verrundung R3 an vorderer Oberkante"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 60, "y": 60, "z": 60},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 60},
+             "position": _pos("oben", "custom",
+                              edge_distances={"left": 15, "front": 15}),
+             "operation": "subtract"},
+            {"id": "tasche_vorne", "type": "pocket",
+             "params": {"width": 25, "depth": 8, "height": 20},
+             "position": _pos("vorne", "centered"),
+             "operation": "subtract"},
+            {"id": "sackloch_links", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 15},
+             "position": _pos("links", "custom", edge_distances={"top": 10}),
+             "operation": "subtract"},
+            {"id": "radius_kante", "type": "fillet",
+             "params": {"radius": 3},
+             "position": _pos("oben", "custom", notes="vordere Oberkante"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 60mm: Bohrung P2 oben, Tasche vorne P0, Sackloch links P1, Fillet",
+        "build_order": ["wuerfel", "bohrung_oben", "tasche_vorne", "sackloch_links", "radius_kante"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 60, "y": 60, "z": 60},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single",
+                             "params": {"diameter": 12, "depth": 60},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("oben", "custom",
+                                              edge_distances={"left": 15, "front": 15}), "notes": ""},
+            "tasche_vorne": {"type": "pocket",
+                             "params": {"width": 25, "depth": 8, "height": 20},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("vorne", "centered"), "notes": ""},
+            "sackloch_links": {"type": "hole_single",
+                               "params": {"diameter": 8, "depth": 15},
+                               "parent": "wuerfel", "operation": "subtract",
+                               "position": _pos("links", "custom",
+                                                edge_distances={"top": 10}), "notes": ""},
+            "radius_kante": {"type": "fillet",
+                             "params": {"radius": 3},
+                             "parent": "wuerfel", "operation": "subtract",
+                             "position": _pos("oben", "custom",
+                                              notes="vordere Oberkante"), "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_feature_count": {"box": 1, "hole_single": 2, "pocket": 1, "fillet": 1},
+    },
+})
+
+# T152 — Zylinder Ø60 H80, 3 Features: Bohrung P0, Lochkreis, Tasche P1
+TRACES.append({
+    "id": "t152_zylinder_3feat_bohrung_lochkreis_tasche_ta",
+    "specification": (
+        "Zylinder Ø60mm, Hoehe 80mm. Auf der Oberseite eine zentrale Bohrung Ø20 durchgehend. "
+        "Ebenfalls oben ein Lochkreis mit 4 Bohrungen Ø8 auf einem Teilkreis Ø44. "
+        "Dazu oben eine Tasche 20x10x5 tief, 15mm von links."
+    ),
+    "metadata": {"difficulty": "P1", "category": "single_part_multi_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "FORM=zylinder, 3 Features: Bohrung P0, Lochkreis P0, Tasche P1"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "zylinder", "type": "cylinder", "beschreibung": "Zylinder Ø60 H80",
+                   "raw_params": {"diameter": 60, "height": 80}}],
+        "aktionen": [
+            {"teil_id": "zylinder", "seite": "oben", "beschreibung": "Bohrung Ø20 zentral, durchgehend"},
+            {"teil_id": "zylinder", "seite": "oben", "beschreibung": "Lochkreis 4x Ø8, Teilkreis Ø44"},
+            {"teil_id": "zylinder", "seite": "oben", "beschreibung": "Tasche 20x10x5, 15mm von links"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "zylinder", "type": "cylinder",
+        "params": {"diameter": 60, "height": 80},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 20, "depth": 80},
+             "position": _pos("oben", "centered"),
+             "operation": "subtract"},
+            {"id": "lochkreis_oben", "type": "hole_circle",
+             "params": {"diameter": 8, "count": 4, "bolt_circle_diameter": 44},
+             "position": _pos("oben", "centered"),
+             "operation": "subtract"},
+            {"id": "tasche_oben", "type": "pocket",
+             "params": {"width": 20, "depth": 10, "height": 5},
+             "position": _pos("oben", "custom", edge_distances={"left": 15}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Zylinder Ø60 H80: Bohrung P0, Lochkreis P0, Tasche P1",
+        "build_order": ["zylinder", "bohrung_zentral", "lochkreis_oben", "tasche_oben"],
+        "features": {
+            "zylinder": {"type": "cylinder", "params": {"diameter": 60, "height": 80},
+                         "orientation": "standard", "parent": None,
+                         "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single",
+                                "params": {"diameter": 20, "depth": 80},
+                                "parent": "zylinder", "operation": "subtract",
+                                "position": _pos("oben", "centered"), "notes": ""},
+            "lochkreis_oben": {"type": "hole_circle",
+                               "params": {"diameter": 8, "count": 4,
+                                          "bolt_circle_diameter": 44},
+                               "parent": "zylinder", "operation": "subtract",
+                               "position": _pos("oben", "centered"), "notes": ""},
+            "tasche_oben": {"type": "pocket",
+                            "params": {"width": 20, "depth": 10, "height": 5},
+                            "parent": "zylinder", "operation": "subtract",
+                            "position": _pos("oben", "custom",
+                                             edge_distances={"left": 15}), "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_feature_count": {"cylinder": 1, "hole_single": 1,
+                                   "hole_circle": 1, "pocket": 1},
+    },
+})
+
+# T153 — Quader 120x80x50, 5 Features: Bohrung P0, 4 Eckbohrungen, Nut vorne, Tasche rechts, Fase
+TRACES.append({
+    "id": "t153_quader_5feat_mix_p0p2p1_umg",
+    "specification": (
+        "Quader 120x80x50. Oben zentral Bohrung Ø10 durch. "
+        "Oben noch 4 Bohrungen Ø6 je 15mm von den Ecken, durch. "
+        "Vorne 'ne Nut 8x8 durchgehend. "
+        "Rechts 'ne Tasche 30x20x8, 10mm von oben. "
+        "Alle oberen Kanten Fase 3mm."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "FORM=quader, 5 Features: P0+P2+Nut+Tasche P1+Fase"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 120x80x50",
+                   "raw_params": {"x": 120, "y": 80, "z": 50}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben", "beschreibung": "Bohrung Ø10 zentral, durchgehend"},
+            {"teil_id": "quader", "seite": "oben", "beschreibung": "4 Bohrungen Ø6, je 15mm von Ecken, durchgehend"},
+            {"teil_id": "quader", "seite": "vorne", "beschreibung": "Nut 8x8 durchgehend"},
+            {"teil_id": "quader", "seite": "rechts", "beschreibung": "Tasche 30x20x8, 10mm von oben"},
+            {"teil_id": "quader", "seite": "oben", "beschreibung": "Fase 3mm an allen oberen Kanten"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 120, "y": 80, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 50},
+             "position": _pos("oben", "centered"),
+             "operation": "subtract"},
+            {"id": "eckbohrungen", "type": "hole_pattern",
+             "params": {"diameter": 6, "depth": 50, "pattern": "corner_4",
+                        "edge_distance": 15},
+             "position": _pos("oben", "corner_4", edge_distances={"all": 15}),
+             "operation": "subtract"},
+            {"id": "nut_vorne", "type": "slot",
+             "params": {"width": 8, "depth": 8},
+             "position": _pos("vorne", "centered"),
+             "operation": "subtract"},
+            {"id": "tasche_rechts", "type": "pocket",
+             "params": {"width": 30, "depth": 8, "height": 20},
+             "position": _pos("rechts", "custom", edge_distances={"top": 10}),
+             "operation": "subtract"},
+            {"id": "fase_oben", "type": "chamfer",
+             "params": {"size": 3},
+             "position": _pos("oben", "all_edges"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 120x80x50: 5 Features Mix",
+        "build_order": ["quader", "bohrung_zentral", "eckbohrungen",
+                        "nut_vorne", "tasche_rechts", "fase_oben"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 120, "y": 80, "z": 50},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single",
+                                "params": {"diameter": 10, "depth": 50},
+                                "parent": "quader", "operation": "subtract",
+                                "position": _pos("oben", "centered"), "notes": ""},
+            "eckbohrungen": {"type": "hole_pattern",
+                             "params": {"diameter": 6, "depth": 50, "pattern": "corner_4",
+                                        "edge_distance": 15},
+                             "parent": "quader", "operation": "subtract",
+                             "position": _pos("oben", "corner_4",
+                                              edge_distances={"all": 15}), "notes": ""},
+            "nut_vorne": {"type": "slot",
+                          "params": {"width": 8, "depth": 8},
+                          "parent": "quader", "operation": "subtract",
+                          "position": _pos("vorne", "centered"), "notes": ""},
+            "tasche_rechts": {"type": "pocket",
+                              "params": {"width": 30, "depth": 8, "height": 20},
+                              "parent": "quader", "operation": "subtract",
+                              "position": _pos("rechts", "custom",
+                                               edge_distances={"top": 10}), "notes": ""},
+            "fase_oben": {"type": "chamfer",
+                          "params": {"size": 3},
+                          "parent": "quader", "operation": "subtract",
+                          "position": _pos("oben", "all_edges"), "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_feature_count": {"box": 1, "hole_single": 1, "hole_pattern": 1,
+                                   "slot": 1, "pocket": 1, "chamfer": 1},
+    },
+})
+
+# T154 — Platte 90x70x20 hochkant, 3 Features: Sackloch oben P0, Bohrung vorne P2, Nut links
+TRACES.append({
+    "id": "t154_platte_hochkant_3feat_sackloch_bohrung_nut_knapp",
+    "specification": (
+        "Platte 90x70x20 hochkant. Oben (90x20-Flaeche) Sackloch Ø12, 15mm tief, zentral. "
+        "Vorne (90x70-Flaeche) Bohrung Ø8 durch, 20mm v. rechts, 25mm v. oben. "
+        "Links (20x70) Nut 4x4 durchgehend, zentral."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_multi_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "FORM=platte+hochkant, 3 Features: Sackloch P0, Bohrung P2, Nut"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box",
+                   "beschreibung": "Platte 90x70x20 hochkant",
+                   "raw_params": {"x": 90, "y": 70, "z": 20}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben", "beschreibung": "Sackloch Ø12, 15mm tief, zentral"},
+            {"teil_id": "platte", "seite": "vorne", "beschreibung": "Bohrung Ø8, 20mm v. rechts, 25mm v. oben, durchgehend"},
+            {"teil_id": "platte", "seite": "links", "beschreibung": "Nut 4x4 durchgehend zentral"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 90, "y": 70, "z": 20},
+        "orientation": "hochkant",
+        "features": [
+            {"id": "sackloch_oben", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 15},
+             "position": _pos("oben", "centered"),
+             "operation": "subtract"},
+            {"id": "bohrung_vorne", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 20},
+             "position": _pos("vorne", "custom",
+                              edge_distances={"right": 20, "top": 25}),
+             "operation": "subtract"},
+            {"id": "nut_links", "type": "slot",
+             "params": {"width": 4, "depth": 4},
+             "position": _pos("links", "centered"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 90x70x20 hochkant: Sackloch P0, Bohrung P2 vorne, Nut links",
+        "build_order": ["platte", "sackloch_oben", "bohrung_vorne", "nut_links"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 90, "y": 70, "z": 20},
+                       "orientation": "hochkant", "parent": None,
+                       "operation": "add", "notes": ""},
+            "sackloch_oben": {"type": "hole_single",
+                              "params": {"diameter": 12, "depth": 15},
+                              "parent": "platte", "operation": "subtract",
+                              "position": _pos("oben", "centered"), "notes": ""},
+            "bohrung_vorne": {"type": "hole_single",
+                              "params": {"diameter": 8, "depth": 20},
+                              "parent": "platte", "operation": "subtract",
+                              "position": _pos("vorne", "custom",
+                                               edge_distances={"right": 20, "top": 25}),
+                              "notes": ""},
+            "nut_links": {"type": "slot",
+                          "params": {"width": 4, "depth": 4},
+                          "parent": "platte", "operation": "subtract",
+                          "position": _pos("links", "centered"), "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [90, 20, 70],
+        "expected_feature_count": {"box": 1, "hole_single": 2, "slot": 1},
+    },
+})
+
+# ════════════════════════════════════════════════════════════
+# TIER 4 — Negativ + Minimal-Paare (10 Traces)
+# ════════════════════════════════════════════════════════════
+
+# T155 — Negativ: "Bohrung oben rechts" ohne Abstand → Default P0 (centered)
+TRACES.append({
+    "id": "t155_neg_bohrung_oben_rechts_ohne_abstand_p0_default_umg",
+    "specification": "Quader 80x60x30, oben 'ne Bohrung Ø10 rechts rein, durch",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "NEGATIV: rechts ohne Abstand → Default centered"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x60x30",
+                   "raw_params": {"x": 80, "y": 60, "z": 30}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Bohrung Ø10, durchgehend [Richtung 'rechts' ohne Abstand → centered default]"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 80, "y": 60, "z": 30},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 30},
+             "position": _pos("oben", "centered",
+                              notes="[Default P0: 'rechts' ohne Abstandsangabe → centered]"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 80x60x30: Bohrung oben, 'rechts' ohne Abstand → centered (Default)",
+        "build_order": ["quader", "bohrung_oben"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 30},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single",
+                             "params": {"diameter": 10, "depth": 30},
+                             "parent": "quader", "operation": "subtract",
+                             "position": _pos("oben", "centered",
+                                              notes="Default: 'rechts' ohne Abstand → centered"),
+                             "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T156 — Negativ: "oben mittig rechts" (widersprüchlich) → centered gewinnt
+TRACES.append({
+    "id": "t156_neg_widerspruch_mittig_rechts_centered_gewinnt_knapp",
+    "specification": "Platte 100x80x15, Bohrung Ø10 oben mittig rechts, durch",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "NEGATIV: widersprüchlich mittig+rechts → centered"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x15",
+                   "raw_params": {"x": 100, "y": 80, "z": 15}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Bohrung Ø10, durchgehend [mittig und rechts widersprüchlich → centered]"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_oben", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 15},
+             "position": _pos("oben", "centered",
+                              notes="[Konflikt: 'mittig' vs 'rechts' → 'mittig' gewinnt → centered]"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x15: Bohrung, Widerspruch mittig+rechts → centered",
+        "build_order": ["platte", "bohrung_oben"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_oben": {"type": "hole_single",
+                             "params": {"diameter": 10, "depth": 15},
+                             "parent": "platte", "operation": "subtract",
+                             "position": _pos("oben", "centered",
+                                              notes="Konflikt mittig+rechts → centered"),
+                             "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T157 — Negativ: "durch alle Teile" bei 1-Teil-Spec → Tiefe = z-Dimension
+TRACES.append({
+    "id": "t157_neg_durch_alle_teile_single_part_tiefe_z_ta",
+    "specification": (
+        "Platte 120x80x20mm. Auf der Oberseite eine zentrale Bohrung Ø12, "
+        "durch alle Teile."
+    ),
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "NEGATIV: durch alle Teile bei single-part → depth=z"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 120x80x20",
+                   "raw_params": {"x": 120, "y": 80, "z": 20}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Bohrung Ø12 zentral, 'durch alle Teile' → single-part: depth=20"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 120, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_zentral", "type": "hole_single",
+             "params": {"diameter": 12, "depth": 20},
+             "position": _pos("oben", "centered",
+                              notes="'durch alle Teile' bei 1 Teil = durchgehend = z=20"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 120x80x20: 'durch alle Teile' single-part → depth=20",
+        "build_order": ["platte", "bohrung_zentral"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 120, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_zentral": {"type": "hole_single",
+                                "params": {"diameter": 12, "depth": 20},
+                                "parent": "platte", "operation": "subtract",
+                                "position": _pos("oben", "centered",
+                                                 notes="durch alle = durchgehend = 20mm"),
+                                "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T158 — Minimal-Paar: "links anliegend" = "bündig links" → gleicher Ground-Truth P4
+TRACES.append({
+    "id": "t158_minimal_links_anliegend_gleich_bündig_links_umg",
+    "specification": "Platte 80x60x20. Links anliegend ein Wuerfel 40mm.",
+    "metadata": {"difficulty": "P4", "category": "multi_part_simple",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "MINIMAL: 'links anliegend' = flush_left (wie 'bündig links')"},
+    "inventar": {
+        "teil_count": 2,
+        "teile": [
+            {"id": "platte", "type": "box", "beschreibung": "Platte 80x60x20",
+             "raw_params": {"x": 80, "y": 60, "z": 20}},
+            {"id": "wuerfel", "type": "box", "beschreibung": "40mm Wuerfel",
+             "raw_params": {"x": 40, "y": 40, "z": 40}},
+        ],
+        "aktionen": [],
+    },
+    "position_extractor": {
+        "positionen": [
+            {"teil_id": "wuerfel", "parent_hint": "platte",
+             "beschreibung": "links an der Platte anliegend, zentriert"},
+        ],
+    },
+    "position_normalizer": [
+        {"teil_id": "wuerfel",
+         "input_sentence": "links an der Platte anliegend, zentriert",
+         "output": _norm(parent="platte", seite="links", ausrichtung="centered",
+                         orientierung="standard", anliegende_flaeche="40x40",
+                         notes="'links anliegend' = flush_left = centered semantisch gleich hier")},
+    ],
+    "teil_definitionen": [
+        {"id": "platte", "type": "box", "params": {"x": 80, "y": 60, "z": 20},
+         "orientation": "standard", "features": []},
+        {"id": "wuerfel", "type": "box", "params": {"x": 40, "y": 40, "z": 40},
+         "orientation": "standard", "features": []},
+    ],
+    "blueprint": {
+        "description": "Platte 80x60x20, links Wuerfel 40mm: 'anliegend' = flush/centered",
+        "build_order": ["platte", "wuerfel"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 80, "y": 60, "z": 20},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "wuerfel": {"type": "box", "params": {"x": 40, "y": 40, "z": 40},
+                        "orientation": "standard", "parent": "platte", "operation": "add",
+                        "position": _pos("links", "centered",
+                                         notes="links anliegend = centered (zentriert)"),
+                        "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 2}},
+})
+
+# T159 — Minimal-Paar: "diagonal" = "45° gedreht" → angle_deg: 45
+TRACES.append({
+    "id": "t159_minimal_diagonal_gleich_45grad_gedreht_knapp",
+    "specification": "Platte 100x80x15, oben diagonal Tasche 40x30x8 zentral",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "MINIMAL: 'diagonal' = angle_deg=45, centered"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x15",
+                   "raw_params": {"x": 100, "y": 80, "z": 15}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Tasche 40x30x8, diagonal = 45° gedreht, zentral"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 15},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_diagonal", "type": "pocket",
+             "params": {"width": 40, "depth": 30, "height": 8},
+             "position": _pos("oben", "centered", angle_deg=45,
+                              notes="'diagonal' = 45° CW (Konvention)"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x15: Tasche 40x30x8 zentral, 'diagonal' = 45°",
+        "build_order": ["platte", "tasche_diagonal"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 15},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "tasche_diagonal": {"type": "pocket",
+                                "params": {"width": 40, "depth": 30, "height": 8},
+                                "parent": "platte", "operation": "subtract",
+                                "position": _pos("oben", "centered", angle_deg=45,
+                                                 notes="diagonal = 45° CW"),
+                                "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket": 1}},
+})
+
+# T160 — Minimal-Paar: "45° CCW" = "−45°" → angle_deg: -45
+TRACES.append({
+    "id": "t160_minimal_45ccw_gleich_minus45_ta",
+    "specification": (
+        "Quader 80x60x40. Oben Tasche 30x20x8, 20mm von links, 15mm von vorne, "
+        "45° gegen den Uhrzeigersinn gedreht."
+    ),
+    "metadata": {"difficulty": "P2", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "MINIMAL: '45° CCW' = angle_deg=-45"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 80x60x40",
+                   "raw_params": {"x": 80, "y": 60, "z": 40}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "oben",
+             "beschreibung": "Tasche 30x20x8, 20mm von links, 15mm von vorne, 45° CCW"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 80, "y": 60, "z": 40},
+        "orientation": "standard",
+        "features": [
+            {"id": "tasche_ccw", "type": "pocket",
+             "params": {"width": 30, "depth": 20, "height": 8},
+             "position": _pos("oben", "custom",
+                              edge_distances={"left": 20, "front": 15},
+                              angle_deg=-45,
+                              notes="45° CCW = -45° (negative = CCW Konvention)"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 80x60x40: Tasche P2, 45° CCW = angle_deg=-45",
+        "build_order": ["quader", "tasche_ccw"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 80, "y": 60, "z": 40},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "tasche_ccw": {"type": "pocket",
+                           "params": {"width": 30, "depth": 20, "height": 8},
+                           "parent": "quader", "operation": "subtract",
+                           "position": _pos("oben", "custom",
+                                            edge_distances={"left": 20, "front": 15},
+                                            angle_deg=-45,
+                                            notes="CCW = negativ"),
+                           "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "pocket": 1}},
+})
+
+# T161 — Negativ/fehlerhaft: "Nut oben" ohne Maße → Default 5x5, Klärungshinweis
+TRACES.append({
+    "id": "t161_neg_nut_ohne_masse_default_5x5_umg",
+    "specification": "50mm Wuerfel, oben 'ne Nut",
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "NEGATIV: Nut ohne Maße → Default 5x5 + Klärungsbedarf"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "wuerfel", "type": "box", "beschreibung": "50mm Wuerfel",
+                   "raw_params": {"x": 50, "y": 50, "z": 50}}],
+        "aktionen": [
+            {"teil_id": "wuerfel", "seite": "oben",
+             "beschreibung": "Nut oben [Klärungsbedarf: Nut-Maße fehlen, Default 5x5 durchgehend]"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "wuerfel", "type": "box",
+        "params": {"x": 50, "y": 50, "z": 50},
+        "orientation": "standard",
+        "features": [
+            {"id": "nut_oben", "type": "slot",
+             "params": {"width": 5, "depth": 5},
+             "position": _pos("oben", "centered",
+                              notes="[Default: Nut-Maße fehlen → 5x5 durchgehend, Klärung empfohlen]"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Wuerfel 50mm: Nut oben, Maße fehlen → Default 5x5",
+        "build_order": ["wuerfel", "nut_oben"],
+        "features": {
+            "wuerfel": {"type": "box", "params": {"x": 50, "y": 50, "z": 50},
+                        "orientation": "standard", "parent": None,
+                        "operation": "add", "notes": ""},
+            "nut_oben": {"type": "slot",
+                         "params": {"width": 5, "depth": 5},
+                         "parent": "wuerfel", "operation": "subtract",
+                         "position": _pos("oben", "centered",
+                                          notes="Default 5x5, Klärungsbedarf"),
+                         "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "slot": 1}},
+})
+
+# T162 — Negativ: "auf der schmalen Seite" bei hochkant → seite="links"
+TRACES.append({
+    "id": "t162_neg_schmale_seite_hochkant_mapping_ta",
+    "specification": (
+        "Platte 100x80x20 hochkant gestellt. "
+        "Auf der schmalen (20mm breiten) Seite eine zentrale Bohrung Ø8, durchgehend."
+    ),
+    "metadata": {"difficulty": "P0", "category": "single_part_single_feature",
+                 "sprachstil": "technisch_ausfuehrlich",
+                 "matrix_cell": "NEGATIV: hochkant + 'schmale Seite' → seite='links' (20mm breit)"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box",
+                   "beschreibung": "Platte 100x80x20 hochkant",
+                   "raw_params": {"x": 100, "y": 80, "z": 20}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "links",
+             "beschreibung": "Bohrung Ø8 zentral durchgehend — 'schmale Seite' bei hochkant = links (20mm)"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 20},
+        "orientation": "hochkant",
+        "features": [
+            {"id": "bohrung_schmal", "type": "hole_single",
+             "params": {"diameter": 8, "depth": 80},
+             "position": _pos("links", "centered",
+                              notes="hochkant: 'schmale Seite' = links (ursprl. y=20mm)"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x20 hochkant: Bohrung auf schmaler Seite = links",
+        "build_order": ["platte", "bohrung_schmal"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "hochkant", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_schmal": {"type": "hole_single",
+                               "params": {"diameter": 8, "depth": 80},
+                               "parent": "platte", "operation": "subtract",
+                               "position": _pos("links", "centered",
+                                                notes="schmale Seite hochkant = links"),
+                               "notes": ""},
+        },
+    },
+    "assertions": {
+        "expected_bbox": [100, 20, 80],
+        "expected_feature_count": {"box": 1, "hole_single": 1},
+    },
+})
+
+# T163 — Negativ/Mehrdeutig: "rechts auf halber Höhe" → P1 edge_distance top = z/2
+TRACES.append({
+    "id": "t163_neg_mehrdeutig_rechts_halbe_hoehe_p1_umg",
+    "specification": "Quader 60x60x80, rechts 'ne Bohrung Ø10 durch, so mittig in der Höhe",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "umgangssprachlich",
+                 "matrix_cell": "NEGATIV: 'halbe Hoehe' → P1 edge_distance top=40"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "quader", "type": "box", "beschreibung": "Quader 60x60x80",
+                   "raw_params": {"x": 60, "y": 60, "z": 80}}],
+        "aktionen": [
+            {"teil_id": "quader", "seite": "rechts",
+             "beschreibung": "Bohrung Ø10 durchgehend, auf halber Höhe → 40mm von oben"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "quader", "type": "box",
+        "params": {"x": 60, "y": 60, "z": 80},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_rechts", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 60},
+             "position": _pos("rechts", "custom",
+                              edge_distances={"top": 40},
+                              notes="'mittig in der Höhe' → 40mm v. oben (z/2=40)"),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Quader 60x60x80: Bohrung rechts, 'halbe Höhe' → top=40mm",
+        "build_order": ["quader", "bohrung_rechts"],
+        "features": {
+            "quader": {"type": "box", "params": {"x": 60, "y": 60, "z": 80},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_rechts": {"type": "hole_single",
+                               "params": {"diameter": 10, "depth": 60},
+                               "parent": "quader", "operation": "subtract",
+                               "position": _pos("rechts", "custom",
+                                                edge_distances={"top": 40},
+                                                notes="halbe Höhe = 40mm von oben"),
+                               "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# T164 — Minimal-Paar: "10mm von der oberen Kante" = P1 edge_distance front:10
+TRACES.append({
+    "id": "t164_minimal_10mm_von_vorderkante_p1_knapp",
+    "specification": "Platte 100x80x20, oben Bohrung Ø10 durch, 10mm von der vorderen Kante, mittig in X",
+    "metadata": {"difficulty": "P1", "category": "single_part_single_feature",
+                 "sprachstil": "knapp_technisch",
+                 "matrix_cell": "MINIMAL: '10mm von Vorderkante' = P1 edge_distance front:10"},
+    "inventar": {
+        "teil_count": 1,
+        "teile": [{"id": "platte", "type": "box", "beschreibung": "Platte 100x80x20",
+                   "raw_params": {"x": 100, "y": 80, "z": 20}}],
+        "aktionen": [
+            {"teil_id": "platte", "seite": "oben",
+             "beschreibung": "Bohrung Ø10, 10mm von vorderer Kante, mittig in X, durchgehend"},
+        ],
+    },
+    "teil_definitionen": [{
+        "id": "platte", "type": "box",
+        "params": {"x": 100, "y": 80, "z": 20},
+        "orientation": "standard",
+        "features": [
+            {"id": "bohrung_vorderkante", "type": "hole_single",
+             "params": {"diameter": 10, "depth": 20},
+             "position": _pos("oben", "custom",
+                              edge_distances={"front": 10}),
+             "operation": "subtract"},
+        ],
+    }],
+    "blueprint": {
+        "description": "Platte 100x80x20: Bohrung Ø10, 10mm v. Vorderkante, X-mittig",
+        "build_order": ["platte", "bohrung_vorderkante"],
+        "features": {
+            "platte": {"type": "box", "params": {"x": 100, "y": 80, "z": 20},
+                       "orientation": "standard", "parent": None,
+                       "operation": "add", "notes": ""},
+            "bohrung_vorderkante": {"type": "hole_single",
+                                    "params": {"diameter": 10, "depth": 20},
+                                    "parent": "platte", "operation": "subtract",
+                                    "position": _pos("oben", "custom",
+                                                     edge_distances={"front": 10}),
+                                    "notes": ""},
+        },
+    },
+    "assertions": {"expected_feature_count": {"box": 1, "hole_single": 1}},
+})
+
+# ════════════════════════════════════════════════════════════
+# Validate + Export
+# ════════════════════════════════════════════════════════════
+
+if __name__ == "__main__":
+    errors = validate_all(TRACES)
+    if errors:
+        print("VALIDIERUNGS-FEHLER:")
+        for tid, errs in errors.items():
+            print(f"  [{tid}]")
+            for e in errs:
+                print(f"    - {e}")
+        raise SystemExit(1)
+
+    print(f"Batch 1: {len(TRACES)} Traces ok")
+
+    print("\nCoverage:")
+    rep = coverage_report(TRACES)
+    for k, v in rep.items():
+        print(f"  {k}: {v}")
+
+    print("\nTraining-Paare pro Agent:")
+    for agent in CONTRACTS:
+        pairs = project_traces(TRACES, agent)
+        print(f"  {agent:<25} {len(pairs)}")
+
+    out = Path(__file__).parent / "sonnet_traces_batch1.json"
+    out.write_text(json.dumps(TRACES, ensure_ascii=False, indent=2))
+    print(f"\nGeschrieben: {out}")

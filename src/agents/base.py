@@ -15,6 +15,7 @@ import urllib.request
 import urllib.error
 import structlog
 from pathlib import Path
+from typing import Optional
 from src.config.loader import get_config
 
 log = structlog.get_logger()
@@ -26,6 +27,9 @@ def _ollama_url() -> str:
 
 # Prompt files live here — one .md file per agent
 PROMPTS_DIR = Path("data/prompts/agents")
+
+# DSPy optimized demos directory
+DSPY_DIR = Path("data/dspy_optimized")
 
 
 class BaseAgent:
@@ -42,8 +46,60 @@ class BaseAgent:
     model: str = "qwen3:8b"   # default; subclasses override
     name: str = "base"
 
+    # Subclasses define how to format demos into (user_msg, assistant_msg) pairs.
+    # Keys: input_fields (list of demo keys for the user message),
+    #        output_field (demo key for the assistant response).
+    dspy_demo_fields: Optional[dict] = None
+
     def __init__(self):
         self.log = structlog.get_logger().bind(agent=self.name)
+        self._dspy_demos: list[tuple[str, str]] = []
+        if self.dspy_demo_fields:
+            self._dspy_demos = self._load_dspy_demos()
+
+    # ------------------------------------------------------------------
+    # DSPy few-shot demo loading
+    # ------------------------------------------------------------------
+
+    def _load_dspy_demos(self) -> list[tuple[str, str]]:
+        """Load DSPy-optimized few-shot demos as (user_msg, assistant_msg) pairs."""
+        path = DSPY_DIR / f"{self.name}_optimized.json"
+        if not path.exists():
+            self.log.info("dspy_demos_not_found", path=str(path))
+            return []
+
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            demos = data.get("predict", {}).get("demos", [])
+        except (json.JSONDecodeError, KeyError) as e:
+            self.log.warning("dspy_demos_load_error", error=str(e))
+            return []
+
+        if not demos:
+            return []
+
+        fields = self.dspy_demo_fields
+        input_fields = fields["input_fields"]
+        output_field = fields["output_field"]
+
+        pairs = []
+        for demo in demos:
+            # Build user message from input fields
+            parts = []
+            for key in input_fields:
+                val = demo.get(key, "")
+                if val:
+                    parts.append(f"{key}: {val}")
+            user_msg = "\n".join(parts)
+
+            # Assistant message is the output
+            assistant_msg = demo.get(output_field, "")
+
+            if user_msg and assistant_msg:
+                pairs.append((user_msg, assistant_msg))
+
+        self.log.info("dspy_demos_loaded", count=len(pairs))
+        return pairs
 
     # ------------------------------------------------------------------
     # Public interface
@@ -71,6 +127,10 @@ class BaseAgent:
         messages = []
         if system:
             messages.append({"role": "system", "content": system})
+        # Inject DSPy few-shot demos as user/assistant pairs
+        for user_msg, assistant_msg in self._dspy_demos:
+            messages.append({"role": "user", "content": user_msg})
+            messages.append({"role": "assistant", "content": assistant_msg})
         messages.append({"role": "user", "content": prompt})
 
         think, temperature, num_ctx = get_config().get_agent_options(self.name)

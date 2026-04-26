@@ -1,0 +1,43 @@
+{
+  "description": "Wuerfel 50mm, rechts Platte 40x40x15: obere linke Ecke auf linker Kante 10mm von oben, 45° CCW",
+  "build_order": [
+    "wuerfel",
+    "platte"
+  ],
+  "features": {
+    "wuerfel": {
+      "id": "wuerfel",
+      "type": "box",
+      "params": {
+        "x": 50,
+        "y": 50,
+        "z": 50
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "platte": {
+      "id": "platte",
+      "type": "box",
+      "params": {
+        "x": 40,
+        "y": 40,
+        "z": 15
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">X",
+        "alignment": "anker",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": -45.0,
+        "pre_rotation": null,
+        "notes": "obere linke Ecke auf linker Kante 10mm von oben, 45° CCW"
+      },
+      "operation": "add",
+      "notes": ""
+    }
+  }
+}

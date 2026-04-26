@@ -1,0 +1,416 @@
+[
+  {
+    "id": "ref_A_wuerfel_bohrung_zentral",
+    "specification": "50mm Wuerfel mit einer Bohrung Ø10 oben zentral, durchgehend",
+    "metadata": {
+      "difficulty": "P0",
+      "category": "single_part_single_feature",
+      "sprachstil": "knapp_technisch",
+      "matrix_cell": "FORM=wuerfel, FACE=oben, POSITION=P0"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "wuerfel",
+          "seite": "oben",
+          "beschreibung": "Bohrung Ø10 zentral, durchgehend"
+        }
+      ]
+    },
+    "teil_definitionen": [
+      {
+        "id": "wuerfel",
+        "type": "box",
+        "params": {
+          "x": 50,
+          "y": 50,
+          "z": 50
+        },
+        "orientation": "standard",
+        "features": [
+          {
+            "id": "bohrung_zentral",
+            "type": "hole_single",
+            "params": {
+              "diameter": 10,
+              "depth": 50
+            },
+            "position": {
+              "side": "oben",
+              "alignment": "centered",
+              "edge_distances": null,
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          }
+        ]
+      }
+    ],
+    "blueprint": {
+      "description": "50mm Wuerfel mit zentraler Bohrung Ø10 oben durchgehend",
+      "build_order": [
+        "wuerfel",
+        "bohrung_zentral"
+      ],
+      "features": {
+        "wuerfel": {
+          "type": "box",
+          "params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          },
+          "orientation": "standard",
+          "parent": null,
+          "operation": "add",
+          "notes": ""
+        },
+        "bohrung_zentral": {
+          "type": "hole_single",
+          "params": {
+            "diameter": 10,
+            "depth": 50
+          },
+          "parent": "wuerfel",
+          "position": {
+            "side": "oben",
+            "alignment": "centered",
+            "edge_distances": null,
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "operation": "subtract",
+          "notes": ""
+        }
+      }
+    },
+    "assertions": {
+      "expected_volume_approx": 121073.0125,
+      "expected_bbox": [
+        50,
+        50,
+        50
+      ],
+      "expected_feature_count": {
+        "box": 1,
+        "hole_single": 1
+      }
+    }
+  },
+  {
+    "id": "ref_B_platte_5_bohrungen",
+    "specification": "100x100x20 Platte. Oben eine zentrale Bohrung Ø20 durchgehend. Zusaetzlich 4 Bohrungen Ø8 durchgehend, je 15mm von den Eck-Kanten entfernt.",
+    "metadata": {
+      "difficulty": "P2",
+      "category": "single_part_multi_feature",
+      "sprachstil": "technisch_ausfuehrlich",
+      "matrix_cell": "FORM=platte, FACE=oben, POSITION=P0+P2, ANZAHL=1+4"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "100x100x20 Platte",
+          "raw_params": {
+            "x": 100,
+            "y": 100,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "platte",
+          "seite": "oben",
+          "beschreibung": "zentrale Bohrung Ø20 durchgehend"
+        },
+        {
+          "teil_id": "platte",
+          "seite": "oben",
+          "beschreibung": "4 Bohrungen Ø8 durchgehend, je 15mm von den Eck-Kanten"
+        }
+      ]
+    },
+    "teil_definitionen": [
+      {
+        "id": "platte",
+        "type": "box",
+        "params": {
+          "x": 100,
+          "y": 100,
+          "z": 20
+        },
+        "orientation": "standard",
+        "features": [
+          {
+            "id": "bohrung_zentral",
+            "type": "hole_single",
+            "params": {
+              "diameter": 20,
+              "depth": 20
+            },
+            "position": {
+              "side": "oben",
+              "alignment": "centered",
+              "edge_distances": null,
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          },
+          {
+            "id": "bohrungen_ecken",
+            "type": "hole_pattern",
+            "params": {
+              "diameter": 8,
+              "depth": 20,
+              "count_x": 2,
+              "count_y": 2,
+              "spacing_x": 70,
+              "spacing_y": 70
+            },
+            "position": {
+              "side": "oben",
+              "alignment": "centered",
+              "edge_distances": {
+                "left": 15,
+                "right": 15,
+                "front": 15,
+                "back": 15
+              },
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          }
+        ]
+      }
+    ],
+    "blueprint": {
+      "description": "100x100x20 Platte mit zentraler Bohrung + 4 Eck-Bohrungen oben",
+      "build_order": [
+        "platte",
+        "bohrung_zentral",
+        "bohrungen_ecken"
+      ],
+      "features": {
+        "platte": {
+          "type": "box",
+          "params": {
+            "x": 100,
+            "y": 100,
+            "z": 20
+          },
+          "orientation": "standard",
+          "parent": null,
+          "operation": "add",
+          "notes": ""
+        },
+        "bohrung_zentral": {
+          "type": "hole_single",
+          "params": {
+            "diameter": 20,
+            "depth": 20
+          },
+          "parent": "platte",
+          "position": {
+            "side": "oben",
+            "alignment": "centered",
+            "edge_distances": null,
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "operation": "subtract",
+          "notes": ""
+        },
+        "bohrungen_ecken": {
+          "type": "hole_pattern",
+          "params": {
+            "diameter": 8,
+            "depth": 20,
+            "count_x": 2,
+            "count_y": 2,
+            "spacing_x": 70,
+            "spacing_y": 70
+          },
+          "parent": "platte",
+          "position": {
+            "side": "oben",
+            "alignment": "centered",
+            "edge_distances": {
+              "left": 15,
+              "right": 15,
+              "front": 15,
+              "back": 15
+            },
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "operation": "subtract",
+          "notes": ""
+        }
+      }
+    },
+    "assertions": {
+      "expected_bbox": [
+        100,
+        100,
+        20
+      ],
+      "expected_feature_count": {
+        "box": 1,
+        "hole_single": 1,
+        "hole_pattern": 1
+      }
+    }
+  },
+  {
+    "id": "ref_C_wuerfel_platte_rechts",
+    "specification": "Wuerfel 50mm. Rechts daneben eine Platte 40x40x20 zentriert.",
+    "metadata": {
+      "difficulty": "P3",
+      "category": "multi_part_simple",
+      "sprachstil": "knapp_technisch",
+      "matrix_cell": "FORM=wuerfel+platte, POSITION=P3(rechts centered)"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "40x40x20 Platte",
+          "raw_params": {
+            "x": 40,
+            "y": 40,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "platte",
+          "parent_hint": "wuerfel",
+          "beschreibung": "rechts daneben, zentriert"
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "rechts daneben, zentriert",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "rechts",
+          "ausrichtung": "centered",
+          "orientierung": "standard",
+          "anliegende_flaeche": "40x20",
+          "abstand": null,
+          "winkel": 0,
+          "anker": null,
+          "pre_rotation": null,
+          "notes": ""
+        }
+      }
+    ],
+    "teil_definitionen": [
+      {
+        "id": "wuerfel",
+        "type": "box",
+        "params": {
+          "x": 50,
+          "y": 50,
+          "z": 50
+        },
+        "orientation": "standard",
+        "features": []
+      },
+      {
+        "id": "platte",
+        "type": "box",
+        "params": {
+          "x": 40,
+          "y": 40,
+          "z": 20
+        },
+        "orientation": "standard",
+        "features": []
+      }
+    ],
+    "blueprint": {
+      "description": "50mm Wuerfel, rechts zentrierte Platte 40x40x20",
+      "build_order": [
+        "wuerfel",
+        "platte"
+      ],
+      "features": {
+        "wuerfel": {
+          "type": "box",
+          "params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          },
+          "orientation": "standard",
+          "parent": null,
+          "operation": "add",
+          "notes": ""
+        },
+        "platte": {
+          "type": "box",
+          "params": {
+            "x": 40,
+            "y": 40,
+            "z": 20
+          },
+          "orientation": "standard",
+          "parent": "wuerfel",
+          "position": {
+            "side": "rechts",
+            "alignment": "centered",
+            "edge_distances": null,
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "operation": "add",
+          "notes": ""
+        }
+      }
+    },
+    "assertions": {
+      "expected_volume_approx": 157000,
+      "expected_feature_count": {
+        "box": 2
+      }
+    }
+  }
+]

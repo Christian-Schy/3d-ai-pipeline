@@ -7,6 +7,40 @@ keeps them testable without CadQuery installed.
 
 All offsets, face selectors, and dimensions are pre-computed by the
 BlueprintAssembler before templates are called.
+
+═══════════════════════════════════════════════════════════════════
+STRUKTUR (bei Aenderungen pflegen! Siehe CLAUDE.md)
+═══════════════════════════════════════════════════════════════════
+Root-Body-Templates (parent=None):
+  root_box, root_cylinder, root_sphere
+
+Add-Part-Templates (Sub-Assembly: Standalone-Build, spaeter translate+union):
+  add_box, add_cylinder
+
+Subtract-Feature-Templates (Loecher/Nuten/Taschen):
+  hole_single                     — einzelne Bohrung (.hole)
+  hole_counterbore                — Senkbohrung mit Einsenkung (.cboreHole)
+  hole_countersink                — Senkbohrung konisch (.cskHole)
+  hole_pattern_grid               — N x M Raster (.rarray)
+  hole_pattern_circular           — Lochkreis (.polarArray)
+  hole_pattern_linear             — Reihe mit Spacing, per-Loop
+  slot                            — rect() oder slot2D() je nach angle
+  pocket_rect                     — Rechtecktasche (.rect+.cutBlind)
+
+Modifier-Templates:
+  fillet                          — Kantenverrundung
+  chamfer                         — Kantenfase
+  shell                           — Wandstaerke/Aushoehlen
+
+Helper:
+  _face_selection(face, use_ntp, ntp_point)
+    — ">Z"/"<X" Selector ODER NearestToPointSelector (nach erster Union)
+  _hole_depth(d, depth)
+    — through-hole (None) oder blind (float)
+
+Registry (wird von assembler.py genutzt):
+  TEMPLATE_REGISTRY               — dict: feature-type → template-func
+═══════════════════════════════════════════════════════════════════
 """
 
 from __future__ import annotations
@@ -224,6 +258,75 @@ def hole_pattern_circular(
     )
 
 
+def hole_pattern_linear(
+    func_name: str,
+    hole_diameter: float,
+    depth: float | None,
+    count: int,
+    spacing: float,
+    start_offset: float,
+    direction: str,
+    face: str,
+    offset_x: float,
+    offset_y: float,
+    parent_x: float,
+    parent_y: float,
+    parent_z: float,
+    use_ntp: bool = False,
+    ntp_point: tuple[float, float, float] | None = None,
+) -> str:
+    """Linear pattern of holes (row with equal spacing).
+
+    Generates individual positioned holes using .center() offsets.
+    start_offset = distance of first hole from the face edge.
+    direction = "x" or "y" — which face axis the row runs along.
+    """
+    face_sel = _face_selection(face, use_ntp, ntp_point)
+    depth_call = _hole_depth(hole_diameter, depth)
+
+    # Compute face dimensions based on face selector
+    if face in (">Z", "<Z"):
+        face_w, face_h = parent_x, parent_y
+    elif face in (">X", "<X"):
+        face_w, face_h = parent_y, parent_z
+    else:  # >Y, <Y
+        face_w, face_h = parent_x, parent_z
+
+    # Compute hole positions along the direction axis
+    lines = [
+        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:",
+    ]
+
+    if direction.lower() == "x":
+        dim = face_w
+    else:
+        dim = face_h
+
+    # Calculate positions: center the row on the face.
+    # Total row span = (count - 1) * spacing
+    # Offset from center to first hole = -span / 2
+    total_span = (count - 1) * spacing
+    first_pos = -total_span / 2
+
+    lines.append(f"    positions = [{', '.join(str(round(first_pos + i * spacing, 2)) for i in range(count))}]")
+    lines.append(f"    for pos in positions:")
+    lines.append(f"        body = (")
+    lines.append(f"            body")
+    lines.append(f"            {face_sel}")
+
+    if direction.lower() == "x":
+        lines.append(f"            .center(pos + {-offset_x}, {offset_y})")
+    else:
+        lines.append(f"            .center({offset_x}, pos + {-offset_y})")
+
+    lines.append(f"            {depth_call}")
+    lines.append(f"        ).clean()")
+    lines.append(f"    return body")
+    lines.append("")
+
+    return "\n".join(lines) + "\n"
+
+
 def slot(
     func_name: str,
     length: float,
@@ -371,6 +474,7 @@ TEMPLATE_REGISTRY: dict[str, callable] = {
     "hole_countersink": hole_countersink,
     "hole_pattern_grid": hole_pattern_grid,
     "hole_pattern_circular": hole_pattern_circular,
+    "hole_pattern_linear": hole_pattern_linear,
     # Slots & pockets
     "slot": slot,
     "groove": slot,

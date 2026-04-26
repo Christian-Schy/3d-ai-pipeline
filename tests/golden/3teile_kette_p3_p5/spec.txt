@@ -1,0 +1,1 @@
+Basisplatte 100x80x20. Rechts daneben Quader 40x40x40, zentriert. An der Oberseite des Quaders eine weitere Platte 60x60x10, obere rechte Ecke der Platte auf oberer rechter Ecke des Quaders, 5mm nach links versetzt.

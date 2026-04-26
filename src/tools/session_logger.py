@@ -176,16 +176,18 @@ class SessionLogger:
         return run_id
 
     def update_feedback(self, run_id: str, feedback: str,
-                        error_agent: str = "", error_note: str = "") -> bool:
+                        error_agent: str = "", error_note: str = "",
+                        paired_run_id: str = "") -> bool:
         """Update the feedback field for an existing run.
 
         Args:
-            run_id:      The run to update.
-            feedback:    "good" or "bad".
-            error_agent: Name of the agent that caused the error (e.g. "planner").
-                         Only written when non-empty.
-            error_note:  Optional free-text note describing what went wrong.
-                         Only written when non-empty.
+            run_id:        The run to update.
+            feedback:      "good" or "bad".
+            error_agent:   Name of the agent that caused the error.
+                           Only written when non-empty.
+            error_note:    Optional free-text note. Only written when non-empty.
+            paired_run_id: Run-ID of the paired run (bad/good training pair).
+                           Only written when non-empty.
 
         Rewrites the line in-place (reads all, rewrites file).
         Returns True if run_id was found and updated.
@@ -205,6 +207,8 @@ class SessionLogger:
                         entry["error_agent"] = error_agent.strip()
                     if error_note:
                         entry["error_note"] = error_note.strip()
+                    if paired_run_id:
+                        entry["paired_run_id"] = paired_run_id.strip()
                     lines[i] = json.dumps(entry, ensure_ascii=False)
                     updated = True
                     break

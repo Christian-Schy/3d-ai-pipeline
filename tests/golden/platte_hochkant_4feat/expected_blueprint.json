@@ -1,0 +1,107 @@
+{
+  "description": "Platte 100x60x15 hochkant: Bohrung oben, Tasche vorne, Nut links, Fase",
+  "build_order": [
+    "platte",
+    "bohrung_oben",
+    "tasche_vorne",
+    "nut_links",
+    "fase_alle"
+  ],
+  "features": {
+    "platte": {
+      "id": "platte",
+      "type": "box",
+      "params": {
+        "x": 15.0,
+        "y": 60,
+        "z": 100.0
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "bohrung_oben": {
+      "id": "bohrung_oben",
+      "type": "hole_single",
+      "params": {
+        "diameter": 10,
+        "depth": 100
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "tasche_vorne": {
+      "id": "tasche_vorne",
+      "type": "pocket_rect",
+      "params": {
+        "width": 20,
+        "height": 15,
+        "depth": 6
+      },
+      "parent": "platte",
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "nut_links": {
+      "id": "nut_links",
+      "type": "slot",
+      "params": {
+        "width": 6,
+        "depth": 6,
+        "length": 60
+      },
+      "parent": "platte",
+      "placement": {
+        "face": "<Z",
+        "alignment": "custom",
+        "offset_x": 0.0,
+        "offset_y": 20.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "fase_alle": {
+      "id": "fase_alle",
+      "type": "chamfer",
+      "params": {
+        "distance": 1,
+        "edge_selector": "alle_kanten"
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    }
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "description": "Baugruppe aus 9 Teilen: wuerfel, platte_rechts, platte_oben_rechts, platte_oben_zusatz, platte_vorne, platte_links, platte_unten_vorne, platte_unten_rechts, platte_unten_hinten",
+  "build_order": [
+    "wuerfel",
+    "platte_rechts",
+    "platte_oben_rechts",
+    "platte_oben_zusatz",
+    "platte_vorne",
+    "platte_links",
+    "platte_unten_vorne",
+    "platte_unten_rechts",
+    "platte_unten_hinten"
+  ],
+  "features": {
+    "wuerfel": {
+      "id": "wuerfel",
+      "type": "box",
+      "params": {
+        "x": 100,
+        "y": 100,
+        "z": 100
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "platte_rechts": {
+      "id": "platte_rechts",
+      "type": "box",
+      "params": {
+        "x": 70.0,
+        "y": 50.0,
+        "z": 20.0
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">X",
+        "alignment": "flush_left_top",
+        "offset_x": -29.9279,
+        "offset_y": -22.0526,
+        "angle_deg": 20.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "platte_oben_rechts": {
+      "id": "platte_oben_rechts",
+      "type": "box",
+      "params": {
+        "x": 40.0,
+        "y": 20.0,
+        "z": 80.0
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "flush_right_top",
+        "offset_x": 30.0,
+        "offset_y": 40.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "platte_oben_zusatz": {
+      "id": "platte_oben_zusatz",
+      "type": "box",
+      "params": {
+        "x": 40.0,
+        "y": 40.0,
+        "z": 60.0
+      },
+      "parent": "platte_oben_rechts",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "platte_vorne": {
+      "id": "platte_vorne",
+      "type": "box",
+      "params": {
+        "x": 20.0,
+        "y": 40.0,
+        "z": 60.0
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Y",
+        "alignment": "flush_right",
+        "offset_x": 20.0,
+        "offset_y": -10.0,
+        "angle_deg": 20.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "platte_links": {
+      "id": "platte_links",
+      "type": "box",
+      "params": {
+        "x": 50.0,
+        "y": 50.0,
+        "z": 20.0
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<X",
+        "alignment": "flush_bottom",
+        "offset_x": 0.0,
+        "offset_y": -40.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "platte_unten_vorne": {
+      "id": "platte_unten_vorne",
+      "type": "box",
+      "params": {
+        "x": 10.0,
+        "y": 10.0,
+        "z": 20.0
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Z",
+        "alignment": "flush_left_bottom",
+        "offset_x": -45.0,
+        "offset_y": -45.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "platte_unten_rechts": {
+      "id": "platte_unten_rechts",
+      "type": "box",
+      "params": {
+        "x": 20.0,
+        "y": 20.0,
+        "z": 60.0
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Z",
+        "alignment": "flush_right_bottom",
+        "offset_x": 40.0,
+        "offset_y": -40.0,
+        "angle_deg": 45.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "platte_unten_hinten": {
+      "id": "platte_unten_hinten",
+      "type": "box",
+      "params": {
+        "x": 100.0,
+        "y": 20.0,
+        "z": 100.0
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Z",
+        "alignment": "flush_top",
+        "offset_x": 0.0,
+        "offset_y": 40.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    }
+  }
+}

@@ -27,24 +27,20 @@ log = structlog.get_logger()
 
 
 def route_after_entry_router(state: PipelineState) -> str:
-    """After entry_router: modification → feature_tagger, image → visioner, fresh → interpreter.
+    """After entry_router: image → visioner, everything else → interpreter (new 3-step chain).
 
-    Modifications go through feature_tagger for a focused Planner prompt.
-    If modification_interpreter classified as new request, skip interpreter and
-    go to feature_tagger for a fresh build (avoids questions about visible model).
+    Modifications go through the new chain just like fresh runs — the modification
+    digest (change_description + previous_blueprint) is passed as additional context
+    into Inventar / Teil-Definierer so they can extend the existing blueprint.
     """
-    change_desc = state.get("change_description", "")
     image_path = state.get("image_path", "")
-    if change_desc:
-        log.info("route_entry_router", decision="feature_tagger", mode="modification")
-        return "feature_tagger"
     if image_path:
         log.info("route_entry_router", decision="visioner", mode="image")
         return "visioner"
-    if state.get("modification", ""):
-        log.info("route_entry_router", decision="feature_tagger", mode="modify_as_fresh")
-        return "feature_tagger"
-    log.info("route_entry_router", decision="interpreter", mode="fresh")
+    mode = "modification" if state.get("change_description") else (
+        "modify_as_fresh" if state.get("modification", "") else "fresh"
+    )
+    log.info("route_entry_router", decision="interpreter", mode=mode)
     return "interpreter"
 
 # Hard limits — read from config, never hardcoded
@@ -83,9 +79,19 @@ _PLACEMENT_ERROR_KEYWORDS = (
     "schweben", "zu weit", "wrong offset", "wrong location",
 )
 
+# Dimension-level errors — wrong raw_params on a part. Can only be fixed by
+# re-running Inventar (feature_definierer doesn't regenerate raw_params).
+_DIMENSION_ERROR_KEYWORDS = (
+    "dimension", "x-dimension", "y-dimension", "z-dimension",
+    "dim x", "dim y", "dim z", "bbox", "bounding",
+    "breite falsch", "laenge falsch", "länge falsch", "hoehe falsch", "höhe falsch",
+    "statt 50mm", "statt 40mm", "statt 30mm", "statt 20mm", "statt 100mm",
+    "zu klein", "zu gross", "zu groß",
+)
+
 
 def route_after_validator(state: PipelineState) -> str:
-    """After Validator: ok → end, not ok → coder (placement/code error) or feature_assigner (blueprint error) or end."""
+    """After Validator: ok → end, placement error → coder, dimension error → inventar, other blueprint error → feature_definierer / blueprint_architect."""
     feedback = state.get("validator_feedback", "")
 
     if not feedback:
@@ -98,21 +104,33 @@ def route_after_validator(state: PipelineState) -> str:
                     reason="max_semantic_retries", attempts=semantic_attempts)
         return "end"
 
-    # Placement/position errors: the blueprint is likely correct but the coder
-    # generated wrong offset code. Route to coder.
     feedback_lower = feedback.lower()
+
+    # Placement/position errors: coder generated wrong offset. Route to coder.
     if any(kw in feedback_lower for kw in _PLACEMENT_ERROR_KEYWORDS):
         log.info("route_validator", decision="coder",
                  reason="placement_error", feedback=feedback[:80])
         return "coder"
 
-    # Blueprint-level errors: route back to feature_assigner to restart
-    # the specialist chain. The specialists will re-run with the
-    # validator_feedback in state for context.
-    log.info("route_validator", decision="feature_assigner",
+    # Dimension errors: Inventar produced wrong raw_params. Only Inventar can fix.
+    if state.get("inventar") and any(kw in feedback_lower for kw in _DIMENSION_ERROR_KEYWORDS):
+        log.info("route_validator", decision="inventar",
+                 reason="dimension_error", feedback=feedback[:80],
+                 semantic_attempts=semantic_attempts)
+        return "inventar"
+
+    # Blueprint-level errors: route back for correction.
+    # 3-Step Chain runs: retry at feature_definierer (redo features + placement).
+    # Blueprint Architect runs: route back to blueprint_architect.
+    if state.get("inventar"):
+        log.info("route_validator", decision="feature_definierer",
+                 semantic_attempts=semantic_attempts,
+                 feedback=feedback[:60], mode="3step_retry")
+        return "feature_definierer"
+    log.info("route_validator", decision="blueprint_architect",
              semantic_attempts=semantic_attempts,
              feedback=feedback[:60])
-    return "feature_assigner"
+    return "blueprint_architect"
 
 
 def route_after_error_router(state: PipelineState) -> str:

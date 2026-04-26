@@ -1,0 +1,43 @@
+{
+  "description": "Platte 100x80x15, oben Wuerfel 50mm mit 15mm Ueberstand rechts",
+  "build_order": [
+    "platte",
+    "wuerfel"
+  ],
+  "features": {
+    "platte": {
+      "id": "platte",
+      "type": "box",
+      "params": {
+        "x": 100,
+        "y": 80,
+        "z": 15
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "wuerfel": {
+      "id": "wuerfel",
+      "type": "box",
+      "params": {
+        "x": 50,
+        "y": 50,
+        "z": 50
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "flush_right",
+        "offset_x": 25.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "15mm Ueberstand rechts"
+      },
+      "operation": "add",
+      "notes": ""
+    }
+  }
+}

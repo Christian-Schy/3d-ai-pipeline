@@ -4,7 +4,7 @@ src/config/loader.py — Loads and validates config.yaml with Pydantic.
 Usage anywhere in the codebase:
     from src.config.loader import get_config
     cfg = get_config()
-    model = cfg.models.planner      # "qwen3:30b"
+    model = cfg.models.coder        # e.g. "nemotron-cascade-2:30b"
     timeout = cfg.sandbox.timeout_seconds
 
 The config is loaded once and cached — subsequent calls are free.
@@ -44,40 +44,45 @@ class AgentOptions(BaseModel):
 
 class ModelsConfig(BaseModel):
     model_config = {"extra": "ignore"}
+    # Entry / Modification
     interpreter: str = "qwen3.5:9b"
-    planner: str = "qwen3.5:27b"
-    planner_patch: str = "qwen3.5:9b"
-    planner_revise: str = "qwen3.5:9b"
+    modification_interpreter: str = "qwen3.5:9b"
+    visioner: str = "qwen3.5:27b"
+
+    # Blueprint Chain (3-Step + Multi-Part split)
+    inventar: str = "qwen3.5:9b"
+    position_extractor: str = "qwen3.5:9b"
+    text_splitter: str = "qwen3.5:9b"
+    normalizer: str = "qwen3.5:9b"
+    platzierer: str = "qwen3.5:9b"
+    assembly: str = "qwen3.5:9b"
+
+    # Validation + Codegen
+    plan_validator: str = "qwen3.5:9b"
     coder: str = "qwen3-coder:30b"
     validator: str = "qwen3.5:9b"
     code_fixer: str = "qwen3.5:9b"
-    visioner: str = "qwen3.5:27b"
-    modification_interpreter: str = "qwen3.5:9b"
-    plan_validator: str = "qwen3.5:9b"
-    # Phase 1 — Häppchen agents
-    feature_tagger: str = "qwen3.5:9b"
-    feature_assigner: str = "qwen3.5:9b"
-    position_assigner: str = "qwen3.5:9b"
+
+    # Legacy fallback path (Modification + Error-Loop)
+    blueprint_architect: str = "qwen3.5:35b"
 
 
 class RagKnowledgeConfig(BaseModel):
     model_config = {"extra": "ignore"}
     coder: str = "data/knowledge/rag"
-    planner: str = "data/knowledge/rag_agents/21_planner_geometry"
     validator: str = "data/knowledge/rag_agents/22_plan_validation"
     interpreter: str = "data/knowledge/rag/16_interpreter_knowledge"
     visioner: str = "data/knowledge/rag"
 
 
 class RagNResultsConfig(BaseModel):
-    """Per-agent chunk count. Planner needs fewer examples than Coder."""
+    """Per-agent chunk count. Lower for small focused knowledge bases."""
     model_config = {"extra": "ignore"}
+    blueprint_architect: int = 4
     coder: int = 4
-    planner: int = 3
     validator: int = 3
     interpreter: int = 2
     visioner: int = 2
-    feature_tagger: int = 1
     plan_validator: int = 2
     code_review: int = 2
 
@@ -104,17 +109,6 @@ class UIConfig(BaseModel):
     server_port: int = 7860
     share: bool = False
     log_lines_visible: int = 50
-
-
-class BambuConfig(BaseModel):
-    model_config = {"extra": "ignore"}
-    serial: str = ""
-    access_code: str = ""
-    region: str = "eu"
-    orca_path: str = "~/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.3.1.AppImage"
-    printer_profile: str = "Bambu Lab P1S 0.4 nozzle"
-    filament_profile: str = "Bambu PLA Basic @BBL P1S"
-    ams_slot: int = 1
 
 
 class PlanValidatorConfig(BaseModel):

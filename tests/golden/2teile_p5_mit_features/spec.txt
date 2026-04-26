@@ -1,0 +1,1 @@
+Quader 80x60x30. Oben Platte 50x40x10, obere linke Ecke auf oberer linker Ecke des Quaders, 5mm nach innen. Auf der Platte oben zentral Bohrung Ø8 durchgehend.

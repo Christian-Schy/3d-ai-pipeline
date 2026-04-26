@@ -1,0 +1,1 @@
+Quader 80x60x30. Oben drauf 'n kleiner 20mm Wuerfel, sein Mittelpunkt genau auf der unteren rechten Ecke des Quaders oben, 30 Grad gedreht.

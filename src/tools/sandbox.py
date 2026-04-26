@@ -117,10 +117,11 @@ class Sandbox:
                 was_auto_fixed=analysis.was_auto_fixed,
             )
         else:
-            log.error("sandbox_error", stderr=result.stderr[:200])
+            error_output = result.stderr or result.stdout or "Unknown error (no output captured)"
+            log.error("sandbox_error", stderr=result.stderr[:200], stdout=result.stdout[:100])
             return ExecutionResult(
                 success=False,
-                error=result.stderr,
+                error=error_output,
                 was_analyzed=True,
                 was_auto_fixed=analysis.was_auto_fixed,
             )

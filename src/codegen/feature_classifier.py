@@ -14,7 +14,7 @@ STANDARD_TYPES: set[str] = {
     "extrusion_rect", "extrusion_round", "step",
     # Holes
     "hole", "hole_single", "hole_counterbore", "hole_countersink",
-    "hole_pattern_grid", "hole_pattern_circular",
+    "hole_pattern_grid", "hole_pattern_circular", "hole_pattern_linear",
     # Slots & pockets
     "slot", "groove", "pocket_rect", "cutout",
     # Modifiers
@@ -22,6 +22,7 @@ STANDARD_TYPES: set[str] = {
 }
 
 COMPLEX_TYPES: set[str] = {
+    "angled_extrusion",
     "arc_cut", "triangle_cut",
     "custom_shape_cut", "custom_shape_add",
     "loft", "sweep", "spline", "revolution",

@@ -21,7 +21,19 @@ data/rag_db/
 
 # Temp STL files
 /tmp/*.stl
+/output.stl
 
 # IDE / OS
 .DS_Store
 .claude/
+
+# Local credentials (never commit)
+config/bambu.json
+.env
+.env.local
+
+# DSPy outputs (regenerable)
+data/dspy_optimized/
+
+# Internal cleanup planning files
+CLEANUP_PLAN.md

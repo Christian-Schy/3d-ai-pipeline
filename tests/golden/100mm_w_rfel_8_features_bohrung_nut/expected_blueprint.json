@@ -1,0 +1,214 @@
+{
+  "description": "box {'x': 100, 'y': 100, 'z': 100}",
+  "build_order": [
+    "wuerfel",
+    "bohrung_oben_0",
+    "nut_rechts_1",
+    "bohrung_rechts_2",
+    "nut_links_3",
+    "bohrung_vorne_4",
+    "bohrung_oben_5",
+    "bohrung_unten_6",
+    "nut_unten_7",
+    "nut_unten_8"
+  ],
+  "features": {
+    "wuerfel": {
+      "id": "wuerfel",
+      "type": "box",
+      "params": {
+        "x": 100,
+        "y": 100,
+        "z": 100
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "bohrung_oben_0": {
+      "id": "bohrung_oben_0",
+      "type": "hole_single",
+      "params": {
+        "diameter": 20,
+        "depth": 10
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 40.0,
+        "offset_y": 30.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "von_kanten"
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "nut_rechts_1": {
+      "id": "nut_rechts_1",
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "depth": 5,
+        "length": null
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "entlang Y"
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "bohrung_rechts_2": {
+      "id": "bohrung_rechts_2",
+      "type": "hole_single",
+      "params": {
+        "diameter": 10,
+        "depth": 20
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 10.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "von_mitte"
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "nut_links_3": {
+      "id": "nut_links_3",
+      "type": "slot",
+      "params": {
+        "width": 10,
+        "depth": 10,
+        "length": null
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "entlang Z"
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "bohrung_vorne_4": {
+      "id": "bohrung_vorne_4",
+      "type": "hole_single",
+      "params": {
+        "diameter": 20,
+        "depth": 20
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Y",
+        "alignment": "flush_top",
+        "offset_x": 40.0,
+        "offset_y": 40.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "oben-rechts"
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "bohrung_oben_5": {
+      "id": "bohrung_oben_5",
+      "type": "hole_single",
+      "params": {
+        "diameter": 20,
+        "depth": 20
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -40.0,
+        "offset_y": -30.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "von_kanten"
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "bohrung_unten_6": {
+      "id": "bohrung_unten_6",
+      "type": "hole_single",
+      "params": {
+        "diameter": 10,
+        "depth": 10
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 30.0,
+        "offset_y": -40.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "von_kanten"
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "nut_unten_7": {
+      "id": "nut_unten_7",
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "depth": 5,
+        "length": null
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "entlang Y, von_mitte"
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "nut_unten_8": {
+      "id": "nut_unten_8",
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "depth": 3,
+        "length": null
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "entlang X"
+      },
+      "operation": "subtract",
+      "notes": ""
+    }
+  }
+}

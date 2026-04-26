@@ -5,7 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "bambulabs-api>=2.6.6",
     "cadquery>=2.7.0",
     "chromadb>=1.5.2",
     "fastapi>=0.135.1",
@@ -13,7 +12,6 @@ dependencies = [
     "gradio>=6.9.0",
     "langchain-core>=1.2.17",
     "langgraph>=1.0.10",
-    "paho-mqtt>=2.1.0",
     "plotly>=6.6.0",
     "psutil>=7.2.2",
     "pytest>=9.0.2",

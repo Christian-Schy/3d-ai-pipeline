@@ -6,6 +6,46 @@ and generates a complete, executable Python file using templates.
 
 For standard features: deterministic template code.
 For complex features: function stubs with `pass` (LLM fills these).
+
+═══════════════════════════════════════════════════════════════════
+STRUKTUR (bei Aenderungen pflegen! Siehe CLAUDE.md)
+═══════════════════════════════════════════════════════════════════
+Public API:
+  generate_code(blueprint)        — Blueprint → fertige .py-Datei als str
+
+Code-Generierungs-Phasen (innerhalb generate_code):
+  Phase 1: _generate_constants    — Konstanten pro Feature (DIMS, OFFSETS)
+  Phase 2: _generate_root / _generate_add_part / _generate_subtract
+                                  — eine make_/cut_/apply_-Funktion pro Feature
+  Phase 3: _generate_sub_assembly_builds
+                                  — build_<part>() Funktionen: make + subtract-children
+                                    + nested add-children (translate+union)
+  Phase 4: _generate_assemble     — assemble(): root + sub-assemblies zusammenfuegen
+  Phase 5: main                   — exporters.export(result, OUTPUT_PATH)
+
+Helpers:
+  _make_func_name                 — fid → make_/drill_/cut_/apply_ Prefix
+  _safe_depth                     — None/'through' → None, sonst float
+  _find_parent                    — parent-id Lookup in features-dict
+  _emit_pre_rotation              — placement.pre_rotation → .rotate(...) Lines
+                                    (rotiert um Child-Centroid VOR translate;
+                                     Keys x/y/z in Grad)
+  _emit_face_rotation             — placement.angle_deg → .rotate(...) um
+                                    Flaechen-Normale durch Child-Centroid
+                                    (VOR translate; fuer Sub-Assembly-Adds)
+  _compute_translate              — face+parent/child dims → translate-Tuple
+                                    (Face-Semantik: >Z oben, <X links, etc.;
+                                     XY-Center, Z-Bottom; Offset-Mapping je Face)
+
+Feature-Type-Mapping (_generate_subtract):
+  hole/hole_single/cylinder       — Auto-Pattern-Detect via params
+  hole_counterbore/countersink    — Cbore/Csk mit Default-Verhaeltnissen
+  hole_pattern_grid/circular/linear — Muster; Pattern-Mathe im Template
+  slot/groove                     — Notes/length-Heuristik fuer Achse
+  pocket_rect/cutout/box(subtract) — rect().cutBlind
+  fillet/chamfer/shell            — edge/face-Selector
+  unbekannt                       — TODO-Stub fuer LLM
+═══════════════════════════════════════════════════════════════════
 """
 
 from __future__ import annotations
@@ -281,6 +321,50 @@ def _generate_subtract(
             func_name, hd, depth, count, bolt_d, face, ox, oy, use_ntp, ntp_point
         )
 
+    elif ftype == "hole_pattern_linear":
+        hd = float(params.get("hole_diameter") or params.get("diameter") or 10)
+        depth = _safe_depth(params.get("depth"))
+        count = int(params.get("count") or 4)
+        spacing = float(params.get("spacing") or 20)
+        start_offset = float(params.get("start_offset") or 20)
+
+        # Determine direction from notes first, then params, then default
+        notes = placement.get("notes", "")
+        notes_lower = notes.lower()
+        if "entlang x" in notes_lower or "along x" in notes_lower or "x-achse" in notes_lower:
+            direction = "x"
+        elif "entlang y" in notes_lower or "along y" in notes_lower or "y-achse" in notes_lower:
+            direction = "y"
+        elif "entlang z" in notes_lower or "along z" in notes_lower or "z-achse" in notes_lower:
+            direction = "z"
+        else:
+            direction = str(params.get("direction", "x")).lower()
+
+        # Map global axis to face-local direction (same logic as slots)
+        # On >Z/<Z: workplane-X=globalX, workplane-Y=globalY
+        # On >X/<X: workplane-X=globalY, workplane-Y=globalZ
+        # On >Y/<Y: workplane-X=globalX, workplane-Y=globalZ
+        _axis_to_dir = {
+            ">Z": {"x": "x", "y": "y", "z": "x"},
+            "<Z": {"x": "x", "y": "y", "z": "x"},
+            ">X": {"y": "x", "z": "y", "x": "x"},
+            "<X": {"y": "x", "z": "y", "x": "x"},
+            ">Y": {"x": "x", "z": "y", "y": "x"},
+            "<Y": {"x": "x", "z": "y", "y": "x"},
+        }
+        if face in _axis_to_dir:
+            direction = _axis_to_dir[face].get(direction, "x")
+
+        parent_id = _find_parent(fid, all_features)
+        pp = all_features.get(parent_id, {}).get("params", {}) if parent_id else {}
+        px = float(pp.get("x") or 100)
+        py = float(pp.get("y") or 100)
+        pz = float(pp.get("z") or 10)
+        return T.hole_pattern_linear(
+            func_name, hd, depth, count, spacing, start_offset, direction,
+            face, ox, oy, px, py, pz, use_ntp, ntp_point
+        )
+
     elif ftype in ("slot", "groove"):
         w = float(params.get("width") or 5)
         d = float(params.get("depth") or 5)
@@ -290,19 +374,49 @@ def _generate_subtract(
         # On front/back faces: workplane-X=globalX, workplane-Y=globalZ → angle=0=X, 90=Z
         notes = placement.get("notes", "")
         axis_hint = None
-        if "entlang Y" in notes or "along Y" in notes:
+        notes_lower = notes.lower()
+        if "entlang z" in notes_lower or "along z" in notes_lower or "z-achse" in notes_lower:
+            axis_hint = "Z"
+        elif "entlang y" in notes_lower or "along y" in notes_lower or "y-achse" in notes_lower:
             axis_hint = "Y"
-        elif "entlang X" in notes or "along X" in notes:
+        elif "entlang x" in notes_lower or "along x" in notes_lower or "x-achse" in notes_lower:
             axis_hint = "X"
 
-        if axis_hint == "Y":
-            # On >X/<X faces, workplane-X IS the Y-axis → angle=0
-            # On all other faces, Y-axis = workplane-Y → angle=90
-            angle = 0 if face in (">X", "<X") else 90
-        elif axis_hint == "X":
-            # X-axis = workplane-X on >Z/<Z and >Y/<Y faces → angle=0
-            # X is perpendicular to >X/<X faces → treat as angle=0 (natural horizontal)
-            angle = 0
+        # Deterministic fallback: if slot has explicit length matching a parent
+        # dimension, infer the axis from which dimension matches.
+        if axis_hint is None and params.get("length") is not None:
+            slot_len = float(params["length"])
+            parent_id = _find_parent(fid, all_features)
+            pp = all_features.get(parent_id, {}).get("params", {}) if parent_id else {}
+            px = float(pp.get("x") or 0)
+            py = float(pp.get("y") or 0)
+            if face in (">Z", "<Z"):
+                if slot_len == py and slot_len != px:
+                    axis_hint = "Y"
+                elif slot_len == px and slot_len != py:
+                    axis_hint = "X"
+
+        # Map global axis to workplane angle per face.
+        # Each face has two directions; the third axis is perpendicular (into the face).
+        #
+        # Face    | workplane-X (angle=0) | workplane-Y (angle=90) | perpendicular
+        # --------|----------------------|------------------------|-------------
+        # >Z, <Z  | global X             | global Y               | Z
+        # >X, <X  | global Y             | global Z               | X
+        # >Y, <Y  | global X             | global Z               | Y
+        #
+        # If the requested axis IS the perpendicular one, we fall back to angle=0
+        # (first workplane direction) since the axis doesn't exist on this face.
+        _axis_to_angle = {
+            ">Z": {"X": 0, "Y": 90, "Z": 0},    # Z is perp → fallback 0
+            "<Z": {"X": 0, "Y": 90, "Z": 0},
+            ">X": {"Y": 0, "Z": 90, "X": 0},    # X is perp → fallback 0
+            "<X": {"Y": 0, "Z": 90, "X": 0},
+            ">Y": {"X": 0, "Z": 90, "Y": 0},    # Y is perp → fallback 0
+            "<Y": {"X": 0, "Z": 90, "Y": 0},
+        }
+        if axis_hint and face in _axis_to_angle:
+            angle = _axis_to_angle[face].get(axis_hint, 0)
         else:
             angle = float(params.get("angle") or 0)
 
@@ -453,6 +567,11 @@ def _generate_sub_assembly_builds(
             )
 
             lines.append(f"    {clean_child} = {child_build}()")
+            pre_rot = child_placement.get("pre_rotation")
+            lines.extend(_emit_pre_rotation(clean_child, child_prefix, child_params, pre_rot))
+            child_angle = float(child_placement.get("angle_deg", 0) or 0)
+            if child_angle != 0.0:
+                lines.extend(_emit_face_rotation(clean_child, child_prefix, child_params, face, child_angle))
             lines.append(f"    {clean_child} = {clean_child}.translate({translate_code})")
             lines.append(f"    result = result.union({clean_child}).clean()")
 
@@ -521,8 +640,14 @@ def _generate_assemble(
         lines.append(f"    # --- Sub-assembly: {sa_fid} ---")
         lines.append(f"    {clean_fid} = {build_func}()")
 
+        pre_rot = placement.get("pre_rotation")
+        lines.extend(_emit_pre_rotation(clean_fid, sa_prefix, sa_params, pre_rot))
+
         # Translate based on face — use PARENT dimensions, not always root
         face = placement.get("face", ">Z")
+        sa_angle = float(placement.get("angle_deg", 0) or 0)
+        if sa_angle != 0.0:
+            lines.extend(_emit_face_rotation(clean_fid, sa_prefix, sa_params, face, sa_angle))
         translate_code = _compute_translate(
             face, root_prefix, root_params, sa_prefix, sa_params
         )
@@ -535,44 +660,146 @@ def _generate_assemble(
     return lines
 
 
+def _emit_pre_rotation(
+    var_name: str,
+    sa_prefix: str,
+    sa_params: dict,
+    pre_rotation: dict | None,
+) -> list[str]:
+    """Emit .rotate() lines for a pre_rotation dict.
+
+    Rotates around axes through the child centroid, BEFORE translate.
+    Bodies are centered=(True, True, False): XY at 0, Z from 0..height.
+    Centroid is therefore (0, 0, height/2).
+
+    Keys: x, y, z (degrees, positive = CCW looking along axis).
+    """
+    if not pre_rotation:
+        return []
+    sa_z = f"{sa_prefix}_Z" if "z" in sa_params else f"{sa_prefix}_HEIGHT"
+    lines: list[str] = []
+    for axis in ("x", "y", "z"):
+        angle = pre_rotation.get(axis)
+        if angle is None or float(angle) == 0.0:
+            continue
+        a = float(angle)
+        if axis == "z":
+            # Axis through (0,0,*) — XY center
+            lines.append(
+                f"    {var_name} = {var_name}.rotate((0, 0, 0), (0, 0, 1), {a})"
+            )
+        elif axis == "x":
+            lines.append(
+                f"    {var_name} = {var_name}.rotate((0, 0, {sa_z}/2), (1, 0, {sa_z}/2), {a})"
+            )
+        else:  # y
+            lines.append(
+                f"    {var_name} = {var_name}.rotate((0, 0, {sa_z}/2), (0, 1, {sa_z}/2), {a})"
+            )
+    return lines
+
+
+def _emit_face_rotation(
+    var_name: str,
+    sa_prefix: str,
+    sa_params: dict,
+    face: str,
+    angle_deg: float,
+) -> list[str]:
+    """Emit .rotate() for placement.angle_deg around face normal, pre-translate.
+
+    Rotates around the face-normal axis through the child centroid. Because
+    translation is applied AFTER this rotation, rotating around the centroid
+    is equivalent to rotating around the final placement point (for axes
+    parallel to the face normal).
+
+    Child body is centered=(True, True, False): centroid at (0, 0, z/2).
+    """
+    if float(angle_deg) == 0.0:
+        return []
+    sa_z = f"{sa_prefix}_Z" if "z" in sa_params else f"{sa_prefix}_HEIGHT"
+    a = float(angle_deg)
+    # Map face → axis through centroid. Z-axis rotations translation-invariant.
+    axis_map = {
+        ">Z": f"(0, 0, 0), (0, 0, 1)",
+        "<Z": f"(0, 0, 0), (0, 0, 1)",
+        ">X": f"(0, 0, {sa_z}/2), (1, 0, {sa_z}/2)",
+        "<X": f"(0, 0, {sa_z}/2), (1, 0, {sa_z}/2)",
+        ">Y": f"(0, 0, {sa_z}/2), (0, 1, {sa_z}/2)",
+        "<Y": f"(0, 0, {sa_z}/2), (0, 1, {sa_z}/2)",
+    }
+    axis = axis_map.get(face, axis_map[">Z"])
+    return [f"    {var_name} = {var_name}.rotate({axis}, {a})"]
+
+
 def _compute_translate(
     face: str,
-    root_prefix: str,
-    root_params: dict,
+    parent_prefix: str,
+    parent_params: dict,
     sa_prefix: str,
     sa_params: dict,
 ) -> str:
-    """Compute translate tuple string for sub-assembly placement."""
-    root_z = f"{root_prefix}_Z" if "z" in root_params else f"{root_prefix}_HEIGHT"
+    """Compute translate tuple string for sub-assembly placement.
+
+    Face semantics (where the child sits relative to the parent):
+      >Z = on top      → Z += parent height
+      <Z = on bottom   → Z -= child height
+      >X = to the right → X += parent_X/2 + child_X/2
+      <X = to the left  → X -= parent_X/2 + child_X/2
+      >Y = to the back  → Y += parent_Y/2 + child_Y/2
+      <Y = to the front → Y -= parent_Y/2 + child_Y/2
+
+    All bodies are centered=(True, True, False) so XY origin is at center,
+    Z origin is at bottom.
+
+    For side faces (X/Y), Z-centering is applied: child center aligns with
+    parent center vertically → Z = (parent_Z - child_Z) / 2.
+
+    Offset mapping per face (resolver offset_x = face-width, offset_y = face-height):
+      >Z/<Z: offset_x → global X, offset_y → global Y  (Z is perpendicular)
+      >X/<X: offset_x → global Y, offset_y → global Z  (X is perpendicular)
+      >Y/<Y: offset_x → global X, offset_y → global Z  (Y is perpendicular)
+    """
+    parent_z = f"{parent_prefix}_Z" if "z" in parent_params else f"{parent_prefix}_HEIGHT"
+    sa_z = f"{sa_prefix}_Z" if "z" in sa_params else f"{sa_prefix}_HEIGHT"
 
     if face == ">Z":
-        return f"({sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, {root_z})"
+        # On top: same XY, shift up by parent height
+        return f"({sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, {parent_z})"
     elif face == "<Z":
-        sa_z = f"{sa_prefix}_Z" if "z" in sa_params else f"{sa_prefix}_HEIGHT"
+        # On bottom: same XY, shift down by child height
         return f"({sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, -{sa_z})"
-    elif face == ">Y":
-        return (
-            f"({sa_prefix}_OFFSET_X, "
-            f"{root_prefix}_Y/2 - {sa_prefix}_Y/2, "
-            f"{root_z})"
-        )
-    elif face == "<Y":
-        return (
-            f"({sa_prefix}_OFFSET_X, "
-            f"-({root_prefix}_Y/2 - {sa_prefix}_Y/2), "
-            f"{root_z})"
-        )
     elif face == ">X":
+        # Right side: child center at parent_X/2 + child_X/2
+        # Face workplane: width=globalY, height=globalZ
+        # offset_x → globalY, offset_y → globalZ (added to Z-centering)
         return (
-            f"({root_prefix}_X/2 - {sa_prefix}_X/2, "
-            f"{sa_prefix}_OFFSET_Y, "
-            f"{root_z})"
+            f"({parent_prefix}_X/2 + {sa_prefix}_X/2, "
+            f"{sa_prefix}_OFFSET_X, "
+            f"({parent_z} - {sa_z}) / 2 + {sa_prefix}_OFFSET_Y)"
         )
     elif face == "<X":
+        # Left side: child center at -(parent_X/2 + child_X/2)
         return (
-            f"(-({root_prefix}_X/2 - {sa_prefix}_X/2), "
-            f"{sa_prefix}_OFFSET_Y, "
-            f"{root_z})"
+            f"(-({parent_prefix}_X/2 + {sa_prefix}_X/2), "
+            f"{sa_prefix}_OFFSET_X, "
+            f"({parent_z} - {sa_z}) / 2 + {sa_prefix}_OFFSET_Y)"
         )
-    # Fallback
-    return f"({sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, {root_z})"
+    elif face == ">Y":
+        # Back side: child center at parent_Y/2 + child_Y/2
+        # Face workplane: width=globalX, height=globalZ
+        # offset_x → globalX, offset_y → globalZ (added to Z-centering)
+        return (
+            f"({sa_prefix}_OFFSET_X, "
+            f"{parent_prefix}_Y/2 + {sa_prefix}_Y/2, "
+            f"({parent_z} - {sa_z}) / 2 + {sa_prefix}_OFFSET_Y)"
+        )
+    elif face == "<Y":
+        # Front side: child center at -(parent_Y/2 + child_Y/2)
+        return (
+            f"({sa_prefix}_OFFSET_X, "
+            f"-({parent_prefix}_Y/2 + {sa_prefix}_Y/2), "
+            f"({parent_z} - {sa_z}) / 2 + {sa_prefix}_OFFSET_Y)"
+        )
+    # Fallback: treat as >Z
+    return f"({sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, {parent_z})"

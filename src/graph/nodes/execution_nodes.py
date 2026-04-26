@@ -249,7 +249,7 @@ def executor_node(state: PipelineState) -> dict:
             except Exception as _pb_err:
                 log.warning("executor_progressive_build_failed", error=str(_pb_err))
 
-        final_error = progressive_info if progressive_info else error_msg
+        final_error = progressive_info if progressive_info else (error_msg or "Execution failed with no error output")
 
         _exec_trace = _make_trace(
             agent="executor", step=_step_exec,

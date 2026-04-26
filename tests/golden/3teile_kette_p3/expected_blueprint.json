@@ -1,0 +1,65 @@
+{
+  "description": "3-Teil-Kette: Platte 80x60x10 → Wuerfel 40mm rechts → Platte 40x40x5 oben",
+  "build_order": [
+    "platte_basis",
+    "wuerfel",
+    "platte_klein"
+  ],
+  "features": {
+    "platte_basis": {
+      "id": "platte_basis",
+      "type": "box",
+      "params": {
+        "x": 80,
+        "y": 60,
+        "z": 10
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "wuerfel": {
+      "id": "wuerfel",
+      "type": "box",
+      "params": {
+        "x": 40,
+        "y": 40,
+        "z": 40
+      },
+      "parent": "platte_basis",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "platte_klein": {
+      "id": "platte_klein",
+      "type": "box",
+      "params": {
+        "x": 40,
+        "y": 40,
+        "z": 5
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    }
+  }
+}

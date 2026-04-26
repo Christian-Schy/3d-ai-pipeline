@@ -8,22 +8,23 @@ ollama:
   base_url: "http://localhost:11434"
   timeout_seconds: 600
   # Global defaults for every agent call:
-  think: false        # qwen3/qwen3.5: false = skip chain-of-thought → viel schneller für JSON
+  think: true        # qwen3/qwen3.5: false = skip chain-of-thought → viel schneller für JSON
   temperature: 0.15   # 0.0–1.0 | niedrig = deterministischer JSON, hoch = kreativer
   num_ctx: 8192       # Kontextfenster in Tokens (Standard 2048 ist oft zu wenig)
 
 # Per-Agent Overrides — nur abweichende Werte eintragen, Rest kommt von ollama-Defaults
 # Verfügbare Felder: think (true/false), temperature (0.0–1.0), num_ctx (int)
 agent_options:
-  planner:
-    think: false      # 27b ohne Thinking ist schnell genug; Thinking → regelmäßige Timeouts
-    num_ctx: 12288    # Etwas mehr Kontext für komplexe Blueprints
+  blueprint_architect:
+    think: true       # Legacy / modification path; größeres Kontextfenster für Edge-Cases
+    temperature: 0.1
+    num_ctx: 12288
   coder:
     think: false      # qwen3-coder unterstützt 'think' nicht → weglassen
     temperature: 0.05 # Code soll sehr deterministisch sein
     num_ctx: 16384    # Coder braucht Blueprint + Code History im Kontext
   interpreter:
-    think: false      # 35b: Reasoning reicht ohne Thinking für diese Aufgabe
+    think: false
     temperature: 0.1  # Etwas Spielraum für natürliche Sprache, aber deterministisch
     num_ctx: 8192
   plan_validator:
@@ -35,39 +36,42 @@ agent_options:
 # Each agent uses the model best suited for its task.
 # Adjust these to match your 'ollama list' output.
 models:
+  # Entry / Modification
   interpreter:              "qwen3.5:9b"
-  planner:                  "qwen3.5:35b"
-  planner_patch:            "qwen3.5:9b"
-  planner_revise:           "qwen3.5:35b"
-  coder:                    "qwen3-coder-next:latest"
-  validator:                "qwen3.5:9b"
-  code_fixer:               "qwen3.5:9b"
-  visioner:                 "qwen3.5:35b"
   modification_interpreter: "qwen3.5:9b"
-  plan_validator:           "qwen3.5:9b"
-  # Phase 1 — Häppchen agents
-  feature_tagger:           "qwen3.5:9b"   # identification only, no geometry knowledge
-  feature_assigner:         "qwen3.5:9b"   # parent/operation/params assignment
-  position_assigner:        "qwen3.5:9b"   # face/alignment/hints assignment
+  visioner:                 "qwen3.5:35b"
+
+  # Blueprint Chain (3-Step + Multi-Part split)
+  inventar:                 "gemma4:26b"   # Stueckliste + Aktionen
+  position_extractor:       "gemma4:26b"   # Pre-digester pro Kind-Teil (Multi-Part)
+  text_splitter:            "gemma4:26b"   # Spec → Text pro Teil (Multi-Part)
+  normalizer:               "gemma4:26b"   # Feature-Normalisierung (in feature_definierer)
+  platzierer:               "gemma4:26b"   # Teil-Platzierung (Anker, Rotation)
+  assembly:                 "gemma4:26b"   # Vollständiges Blueprint zusammensetzen
+
+  # Validation + Codegen
+  plan_validator:           "gemma4:26b"
+  coder:                    "nemotron-cascade-2:30b"
+  validator:                "gemma4:26b"
+  code_fixer:               "qwen3.5:9b"
+
+  # Legacy fallback path (Modification + Error-Loop)
+  blueprint_architect:      "nemotron-cascade-2:30b"
 
 # --- RAG ---
 rag:
   embedding_model: "all-MiniLM-L6-v2"
   db_path: "data/rag_db"
   n_results:
-    coder:          4   # Coder benefits most from code examples
-    planner:        3   # Planner uses 21_planner_geometry — focused geometry docs
-    validator:      3
-    interpreter:    2   # 16_interpreter_knowledge is small
-    visioner:       2
-    feature_tagger:    1   # Catalog fits in system prompt — 1 edge-case example
-    feature_assigner:  3   # Per-part thinking + parent rules examples
-    position_assigner: 3   # Face calculation + placement + alignment examples
-    plan_validator:    2   # 22_plan_validation checklist docs
-    code_review:       2   # 23_code_review anti-pattern docs
+    blueprint_architect: 4
+    coder:               4
+    validator:           3
+    interpreter:         2
+    visioner:            2
+    plan_validator:      2
+    code_review:         2
   knowledge:
-    coder:       "data/knowledge/rag"                    # numbered collections 01-15
-    planner:     "data/knowledge/rag_agents/21_planner_geometry"
+    coder:       "data/knowledge/rag"
     validator:   "data/knowledge/rag_agents/22_plan_validation"
     interpreter: "data/knowledge/rag/16_interpreter_knowledge"
     visioner:    "data/knowledge/rag"
@@ -91,12 +95,3 @@ ui:
 
 plan_validator:
   max_retries: 2
-
-bambu:
-  serial: ""
-  access_code: ""
-  region: "eu"
-  orca_path: "~/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.3.1.AppImage"
-  printer_profile: "Bambu Lab P1S 0.4 nozzle"
-  filament_profile: "Bambu PLA Basic @BBL P1S"
-  ams_slot: 1

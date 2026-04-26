@@ -1,0 +1,64 @@
+{
+  "description": "Quader 80x60x30, oben Platte 50x40x10 (P5: oben-links+5mm), Platte mit Bohrung Ø8",
+  "build_order": [
+    "quader",
+    "platte",
+    "bohrung_platte"
+  ],
+  "features": {
+    "quader": {
+      "id": "quader",
+      "type": "box",
+      "params": {
+        "x": 80,
+        "y": 60,
+        "z": 30
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "platte": {
+      "id": "platte",
+      "type": "box",
+      "params": {
+        "x": 50,
+        "y": 40,
+        "z": 10
+      },
+      "parent": "quader",
+      "placement": {
+        "face": ">Z",
+        "alignment": "anker",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "oben-links Ecke auf oben-links, 5mm nach innen"
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "bohrung_platte": {
+      "id": "bohrung_platte",
+      "type": "hole_single",
+      "params": {
+        "diameter": 8,
+        "depth": 10
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "description": "60mm Wuerfel, rechts Platte 40x80x15: obere linke Ecke auf linker Kante, 10mm von oben",
+  "build_order": [
+    "wuerfel",
+    "platte"
+  ],
+  "features": {
+    "wuerfel": {
+      "id": "wuerfel",
+      "type": "box",
+      "params": {
+        "x": 60,
+        "y": 60,
+        "z": 60
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "platte": {
+      "id": "platte",
+      "type": "box",
+      "params": {
+        "x": 40,
+        "y": 80,
+        "z": 15
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">X",
+        "alignment": "anker",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "obere linke Ecke auf linker Kante, 10mm von oben"
+      },
+      "operation": "add",
+      "notes": ""
+    }
+  }
+}

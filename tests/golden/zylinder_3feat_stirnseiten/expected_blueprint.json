@@ -1,0 +1,85 @@
+{
+  "description": "Zylinder Ø80 H60: zentrale Bohrung Ø20 durch, 6er Lochkreis Ø8 R30, Sackloch Ø15 25mm unten",
+  "build_order": [
+    "zylinder",
+    "bohrung_zentral",
+    "lochkreis_oben",
+    "sackloch_unten"
+  ],
+  "features": {
+    "zylinder": {
+      "id": "zylinder",
+      "type": "cylinder",
+      "params": {
+        "diameter": 80,
+        "height": 60
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "bohrung_zentral": {
+      "id": "bohrung_zentral",
+      "type": "hole_single",
+      "params": {
+        "diameter": 20,
+        "depth": 60
+      },
+      "parent": "zylinder",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": "durchgehend"
+    },
+    "lochkreis_oben": {
+      "id": "lochkreis_oben",
+      "type": "hole_pattern_circular",
+      "params": {
+        "hole_diameter": 8,
+        "bolt_circle_radius": 30,
+        "count": 6,
+        "depth": 60
+      },
+      "parent": "zylinder",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": "6 Bohrungen, gleichmaessig verteilt"
+    },
+    "sackloch_unten": {
+      "id": "sackloch_unten",
+      "type": "hole_single",
+      "params": {
+        "diameter": 15,
+        "depth": 25
+      },
+      "parent": "zylinder",
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": "Sackloch 25mm tief"
+    }
+  }
+}

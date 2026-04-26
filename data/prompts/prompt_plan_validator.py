@@ -13,7 +13,7 @@ STRUKTUR:
 4. Ist build_order vollständig und korrekt sortiert?
 
 DIMENSIONEN:
-5. Sind alle Maße > 0?
+5. Sind alle Maße > 0? — AUSNAHME: Bei type="slot" oder type="groove" ist length=null erlaubt (bedeutet volle Facetten-Länge). NIEMALS als Fehler melden!
 6. ★ NUR FÜR operation="subtract": Ist das Feature kleiner als sein Parent? — Features mit operation="add" DÜRFEN größer als ihr Parent sein (Flansch, Stufe, Aufsatz)!
 7. ★ NUR für type="bolt_circle" oder type="hole_pattern": Passt der Lochkreis auf den Parent? — NIEMALS auf einzelne Löcher, Slots oder Nuten anwenden!
 8. Wandstärke-Check: Nur WARNING ausgeben, NIEMALS als Fehler behandeln. Niemals Maße aus der Spezifikation ändern!

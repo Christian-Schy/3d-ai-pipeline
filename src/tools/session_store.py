@@ -31,6 +31,7 @@ def save_history(history: list[dict]) -> None:
         # Only persist what's needed to restore the Result tab
         slim.append({
             "label": entry["label"],
+            "run_id": entry.get("run_id", ""),
             "state": {
                 "description":      state.get("description", ""),
                 "specification":    state.get("specification", ""),
@@ -39,6 +40,7 @@ def save_history(history: list[dict]) -> None:
                 "stl_path":         state.get("stl_path", ""),
                 "validator_stats":  state.get("validator_stats", {}),
                 "modification":     state.get("modification", ""),
+                "agent_traces":     state.get("agent_traces", []),
             }
         })
 

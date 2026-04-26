@@ -1,0 +1,65 @@
+{
+  "description": "Basisplatte 100x80x20, rechts Quader 40x40x40 zentriert, oben Deckplatte 60x60x10 (oben-rechts auf oben-rechts, 5mm links)",
+  "build_order": [
+    "basisplatte",
+    "quader",
+    "deckplatte"
+  ],
+  "features": {
+    "basisplatte": {
+      "id": "basisplatte",
+      "type": "box",
+      "params": {
+        "x": 100,
+        "y": 80,
+        "z": 20
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "quader": {
+      "id": "quader",
+      "type": "box",
+      "params": {
+        "x": 40,
+        "y": 40,
+        "z": 40
+      },
+      "parent": "basisplatte",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    },
+    "deckplatte": {
+      "id": "deckplatte",
+      "type": "box",
+      "params": {
+        "x": 60,
+        "y": 60,
+        "z": 10
+      },
+      "parent": "quader",
+      "placement": {
+        "face": ">Z",
+        "alignment": "anker",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": "oben-rechts Ecke auf oben-rechts, 5mm links"
+      },
+      "operation": "add",
+      "notes": ""
+    }
+  }
+}

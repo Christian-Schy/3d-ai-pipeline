@@ -68,7 +68,7 @@ structlog.configure(
 class SessionState:
     """Holds pipeline state for one user session."""
 
-    MAX_HISTORY = 5
+    MAX_HISTORY = 10
 
     def __init__(self):
         self.runner = PipelineRunner()
@@ -489,14 +489,21 @@ def _build_traces_html(traces: list[dict]) -> str:
 
     AGENT_ICONS = {
         "interpreter": "🧠", "modification_interpreter": "🧠",
-        "feature_tagger": "🏷️",
-        "feature_assigner": "🔗",
-        "feature_position_assigner": "📍", "part_position_assigner": "📌",
-        "position_assigner": "📍",
-        "agent_dispatcher": "🔀",
-        "blueprint_assembler": "🏗️",
-        "planner": "📐", "coordinate_validator": "📏",
-        "plan_validator": "📋", "function_decomposer": "🔩",
+        # Blueprint Chain (current)
+        "inventar": "📦",
+        "position_extractor": "🗺️",
+        "text_splitter": "✂️",
+        "feature_definierer": "🔧",
+        "normalizer": "📝",
+        "platzierer": "📍",
+        "assembly": "🏗️",
+        # Resolver + Validators
+        "blueprint_architect": "🏛️",  # legacy / modification path
+        "blueprint_resolver": "⚖️",
+        "coordinate_validator": "📏",
+        "plan_validator": "📋",
+        "function_decomposer": "🔩",
+        # Codegen + Execution
         "coder": "💻", "code_review": "🔎",
         "executor": "⚙️", "geometry_precheck": "📐",
         "validator": "🔍", "code_fixer": "🛠️",
@@ -513,10 +520,17 @@ def _build_traces_html(traces: list[dict]) -> str:
         duration_s = f"{duration / 1000:.1f}s" if duration else "—"
         model_str = f" ({model})" if model else ""
         revision_str = " ↻ Revision" if revision else ""
-        title = f"{icon} {agent.replace('_', ' ').title()}{revision_str}{model_str} — {duration_s}"
+
+        out = trace.get("output", {})
+        skip_str = ""
+        if isinstance(out, dict) and out.get("skipped"):
+            reason = out.get("reason", "")
+            skip_str = f" · ⏭ skipped ({reason})" if reason else " · ⏭ skipped"
+
+        title = (f"{icon} {agent.replace('_', ' ').title()}"
+                 f"{revision_str}{skip_str}{model_str} — {duration_s}")
 
         inp = trace.get("input", {})
-        out = trace.get("output", {})
         raw = trace.get("raw_response", "")
         inp_str = _html.escape(
             json.dumps(inp, ensure_ascii=False, indent=2)[:2000]
@@ -771,7 +785,6 @@ def stream_logs():
                     gr.update(interactive=True, value="↩ Answer"),
                     gr.update(visible=False),    # new_model_btn
                     _nc,                         # history_dropdown
-                    _nc,                         # print_btn
                     gr.update(placeholder=_PLACEHOLDER_ANSWER),
                     _nc,                         # image_input
                     _nc, _nc, _nc,               # image_group, preview_group, inline_viewer
@@ -799,18 +812,18 @@ def stream_logs():
         log_lines.append(line)
         yield (
             "\n".join(log_lines[-50:]),
-            gr.update(visible=False),
-            _nc,
+            gr.update(visible=False),       # question_row
+            _nc,                             # question_label
             gr.update(value=build_chat_html(_session.chat_messages)),  # chat
-            _nc, _nc, _nc, _nc,
-            gr.update(interactive=False),
-            gr.update(visible=False),
-            _nc,
-            _nc,
-            _nc, _nc,
-            _nc, _nc, _nc,
+            _nc, _nc, _nc, _nc,              # result_viewer, result_stats, blueprint, code
+            gr.update(interactive=False),    # submit_btn
+            gr.update(visible=False),        # new_model_btn
+            _nc,                             # history_dropdown
+            _nc,                             # description_input
+            _nc,                             # image_input
+            _nc, _nc, _nc,                   # image_group, preview_group, inline_viewer
             gr.update(value=build_progress_html(current_stage)),
-            _nc, _nc, _nc,  # agent_traces_accordion, agent_traces_display, error_feedback_row
+            _nc, _nc, _nc,                   # agent_traces_accordion, agent_traces_display, error_feedback_row
         )
 
     # Run finished
@@ -862,24 +875,23 @@ def stream_logs():
 
     yield (
         "\n".join(log_lines),
-        gr.update(visible=False),
-        _nc,
+        gr.update(visible=False),                      # question_row
+        _nc,                                           # question_label
         gr.update(value=build_chat_html(_session.chat_messages)),  # chat
-        gr.update(value=stl_to_iframe_html(stl)),
-        gr.update(value=stats_text),
-        gr.update(value=blueprint_text),
-        gr.update(value=code_text),
-        gr.update(interactive=True, value=submit_label),
-        gr.update(visible=success),
-        gr.update(choices=history_choices, value=history_value),
-        gr.update(interactive=success),
-        gr.update(value="", placeholder=input_placeholder),
-        gr.update(value=None),
-        gr.update(visible=not success),
-        gr.update(visible=success),
-        gr.update(value=stl_to_iframe_html(stl)),
+        gr.update(value=stl_to_iframe_html(stl)),      # result_viewer
+        gr.update(value=stats_text),                   # result_stats
+        gr.update(value=blueprint_text),               # blueprint_output
+        gr.update(value=code_text),                    # code_output
+        gr.update(interactive=True, value=submit_label),  # submit_btn
+        gr.update(visible=success),                    # new_model_btn
+        gr.update(choices=history_choices, value=history_value),  # history_dropdown
+        gr.update(value="", placeholder=input_placeholder),  # description_input
+        gr.update(value=None),                         # image_input
+        gr.update(visible=not success),                # image_group
+        gr.update(visible=success),                    # preview_group
+        gr.update(value=stl_to_iframe_html(stl)),      # inline_viewer
         gr.update(value=build_progress_html(6, error=not success)),
-        gr.update(visible=True),                         # agent_traces_accordion (always show)
+        gr.update(visible=True),                       # agent_traces_accordion (always show)
         gr.update(value=traces_html),                  # agent_traces_display
         gr.update(visible=True),                       # error_feedback_row (always show)
     )
@@ -891,18 +903,17 @@ def on_select_error_agent(agent_choice: str) -> tuple:
         return gr.update(visible=False), gr.update(value="")
 
     # Map radio label to agent name in traces
+    # Reflects the active pipeline (3-Step Blueprint Chain + Multi-Part split).
     agent_map = {
         "Interpreter": "interpreter",
-        "Feature-Tagger": "feature_tagger",
-        "Dispatcher": "agent_dispatcher",
-        "Feature-Assigner": "feature_assigner",
-        "Feature-Position-Assigner": "feature_position_assigner",
-        "Part-Position-Assigner": "part_position_assigner",
-        "Blueprint-Assembler": "blueprint_assembler",
-        "Planner": "planner",
-        "Plan-Validator": "plan_validator",
+        "Inventar": "inventar",
+        "Position-Extractor": "position_extractor",
+        "Text-Splitter": "text_splitter",
+        "Feature-Definierer": "feature_definierer",
+        "Platzierer": "platzierer",
+        "Assembly": "assembly",
         "Coder": "coder",
-        "Code-Review": "code_review",
+        "Plan-Validator": "plan_validator",
         "Validator": "validator",
     }
     agent_name = agent_map.get(agent_choice, "")
@@ -954,36 +965,26 @@ def on_restore_history(choice: str):
     )
 
 
-def on_print():
-    import glob, os, subprocess
-    if not (_session.last_result and _session.last_result.get("stl_path")):
-        return gr.update(value="Kein Modell vorhanden.", visible=True)
-
-    stl_path = os.path.abspath(_session.last_result["stl_path"])
-    appimages = glob.glob(os.path.expanduser("~/OrcaSlicer*.AppImage"))
-    orca = appimages[0] if appimages else None
-    if not orca:
-        return gr.update(
-            value="❌ OrcaSlicer AppImage nicht gefunden (~/OrcaSlicer*.AppImage).",
-            visible=True,
-        )
-
-    os.chmod(orca, os.stat(orca).st_mode | 0o111)
-    subprocess.Popen([orca, stl_path])
-    return gr.update(
-        value=(
-            "✅ OrcaSlicer geöffnet.\n"
-            "Erstes Mal: Drucker → Add → Bambu Lab P1S → Connect via IP\n"
-            f"  IP: 192.168.0.103   Access Code: 40385616"
-        ),
-        visible=True,
-    )
-
-
 def on_thumb_good():
     if _session.last_run_id:
         _session_logger.update_feedback(_session.last_run_id, "good")
     return gr.update(value="Feedback gespeichert: 👍", visible=True)
+
+
+def on_save_golden(slug: str) -> str:
+    """Save current run as a golden regression test case."""
+    if not _session.last_run_id:
+        return "Kein aktiver Run — erst einen Run starten."
+    slug = slug.strip().lower()
+    slug = __import__("re").sub(r"[^a-z0-9]+", "_", slug).strip("_")[:60]
+    if not slug:
+        return "Bitte einen Slug eingeben (z.B. 'wuerfel_6_features')."
+    from scripts.save_golden import save
+    try:
+        path = save(_session.last_run_id, slug, note="Gespeichert aus UI")
+        return f"Golden Case gespeichert: {path.name}"
+    except SystemExit as e:
+        return f"Fehler: {e}"
 
 
 def on_thumb_bad():
@@ -992,24 +993,31 @@ def on_thumb_bad():
     return gr.update(value="Feedback gespeichert: 👎", visible=True)
 
 
-def on_submit_error(note: str, error_agent: str):
-    """Save run as bad with error_agent + optional note."""
+def on_submit_error(error_agent: str, paired_run_id: str):
+    """Save run as bad with error_agent and optional paired run."""
     if not error_agent:
         return (
             gr.update(value="⚠️ Bitte Agent auswählen", visible=True),
             gr.update(),
             gr.update(),
         )
-    if _session.last_run_id:
-        _session_logger.update_feedback(
-            _session.last_run_id, "bad",
-            error_agent=error_agent.lower().replace("-", "_"),
-            error_note=note.strip(),
+    if not _session.last_run_id:
+        return (
+            gr.update(value="⚠️ Keine Run-ID — Fehler kann nicht gespeichert werden", visible=True),
+            gr.update(),
+            gr.update(),
         )
+    _session_logger.update_feedback(
+        _session.last_run_id, "bad",
+        error_agent=error_agent.lower().replace("-", "_"),
+        error_note="",
+        paired_run_id=(paired_run_id or "").strip(),
+    )
+    pair_info = f" (Paar: {paired_run_id.strip()[:8]})" if paired_run_id and paired_run_id.strip() else ""
     return (
-        gr.update(value="✅ Fehler gespeichert", visible=True),
-        gr.update(value=""),    # clear note input
+        gr.update(value=f"✅ Fehler gespeichert{pair_info}", visible=True),
         gr.update(value=None),  # clear radio
+        gr.update(value=""),    # clear paired input
     )
 
 
@@ -1173,19 +1181,12 @@ def build_ui() -> gr.Blocks:
                         # ── Error feedback — appears after successful run ──
                         with gr.Row(visible=False) as error_feedback_row:
                             with gr.Column():
-                                error_note_input = gr.Textbox(
-                                    label="Fehlerbeschreibung",
-                                    placeholder="z.B. Bohrung zu tief, falscher Durchmesser…",
-                                    lines=2,
-                                )
                                 error_agent_radio = gr.Radio(
-                                    choices=["Interpreter", "Feature-Tagger",
-                                             "Dispatcher", "Feature-Assigner",
-                                             "Feature-Position-Assigner",
-                                             "Part-Position-Assigner",
-                                             "Blueprint-Assembler", "Planner",
-                                             "Plan-Validator", "Coder", "Code-Review",
-                                             "Validator"],
+                                    choices=["Interpreter", "Inventar",
+                                             "Position-Extractor", "Text-Splitter",
+                                             "Feature-Definierer", "Platzierer",
+                                             "Assembly", "Coder",
+                                             "Plan-Validator", "Validator"],
                                     label="Fehler verursacht durch:",
                                     value=None,
                                 )
@@ -1193,6 +1194,11 @@ def build_ui() -> gr.Blocks:
                                 agent_output_preview = gr.HTML(
                                     value="", visible=False,
                                     label="Agent Output",
+                                )
+                                paired_run_input = gr.Textbox(
+                                    label="Paar-Run-ID (good run)",
+                                    placeholder="z.B. abc12345 — leer lassen wenn kein Paar",
+                                    max_lines=1,
                                 )
                                 with gr.Row():
                                     save_error_btn = gr.Button(
@@ -1225,14 +1231,21 @@ def build_ui() -> gr.Blocks:
             # ---- Tab 2: Result ----
             with gr.Tab("Result"):
                 result_viewer = gr.HTML(value="", label="3D Preview")
-                print_btn = gr.Button("🖨 In OrcaSlicer öffnen", variant="secondary", interactive=False)
-                print_status = gr.Textbox(label="Druckstatus", interactive=False, visible=False)
                 result_stats = gr.Textbox(label="Dimensions", interactive=False)
                 download_btn = gr.File(label="Download STL")
                 with gr.Row():
                     thumb_up   = gr.Button("👍", scale=1, variant="secondary")
                     thumb_down = gr.Button("👎", scale=1, variant="secondary")
                 feedback_label = gr.Markdown("", visible=False)
+                with gr.Row():
+                    golden_slug = gr.Textbox(
+                        placeholder="z.B. wuerfel_6_features",
+                        label="Als Golden Test speichern (Slug)",
+                        scale=4,
+                        interactive=True,
+                    )
+                    save_golden_btn = gr.Button("Speichern", scale=1, variant="secondary")
+                golden_status = gr.Markdown("", visible=False)
 
             # ---- Tab 3: Dev ----
             with gr.Tab("Dev"):
@@ -1255,7 +1268,7 @@ def build_ui() -> gr.Blocks:
             log_output, question_row, question_label,
             chat_display,
             result_viewer, result_stats, blueprint_output,
-            code_output, submit_btn, new_model_btn, history_dropdown, print_btn,
+            code_output, submit_btn, new_model_btn, history_dropdown,
             description_input, image_input,
             image_group, preview_group, inline_viewer,
             progress_bar,
@@ -1355,8 +1368,8 @@ def build_ui() -> gr.Blocks:
 
         save_error_btn.click(
             fn=on_submit_error,
-            inputs=[error_note_input, error_agent_radio],
-            outputs=[error_status, error_note_input, error_agent_radio],
+            inputs=[error_agent_radio, paired_run_input],
+            outputs=[error_status, error_agent_radio, paired_run_input],
         )
 
         # Show agent output when selecting an agent in error feedback
@@ -1366,7 +1379,11 @@ def build_ui() -> gr.Blocks:
             outputs=[agent_output_preview, agent_output_preview],
         )
 
-        print_btn.click(fn=on_print, outputs=[print_status])
+        save_golden_btn.click(
+            fn=on_save_golden,
+            inputs=[golden_slug],
+            outputs=[golden_status],
+        ).then(fn=lambda msg: gr.update(value=msg, visible=True), inputs=[golden_status], outputs=[golden_status])
 
         gauge_timer.tick(fn=build_gauges_html, outputs=[gauges])
 

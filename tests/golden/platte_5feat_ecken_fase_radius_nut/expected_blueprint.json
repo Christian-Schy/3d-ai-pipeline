@@ -1,0 +1,169 @@
+{
+  "description": "Platte 120x80x15: 4 Eckbohrungen Ø8, Fase oben, Radius unten, Nut vorne",
+  "build_order": [
+    "platte",
+    "bohrung_vl",
+    "bohrung_vr",
+    "bohrung_hl",
+    "bohrung_hr",
+    "fase_oben_kanten",
+    "radius_unten_lang",
+    "nut_vorne"
+  ],
+  "features": {
+    "platte": {
+      "id": "platte",
+      "type": "box",
+      "params": {
+        "x": 120,
+        "y": 80,
+        "z": 15
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "bohrung_vl": {
+      "id": "bohrung_vl",
+      "type": "hole_single",
+      "params": {
+        "diameter": 8,
+        "depth": 15
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": -45.0,
+        "offset_y": 25.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "bohrung_vr": {
+      "id": "bohrung_vr",
+      "type": "hole_single",
+      "params": {
+        "diameter": 8,
+        "depth": 15
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": 45.0,
+        "offset_y": 25.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "bohrung_hl": {
+      "id": "bohrung_hl",
+      "type": "hole_single",
+      "params": {
+        "diameter": 8,
+        "depth": 15
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": -45.0,
+        "offset_y": -25.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "bohrung_hr": {
+      "id": "bohrung_hr",
+      "type": "hole_single",
+      "params": {
+        "diameter": 8,
+        "depth": 15
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": 45.0,
+        "offset_y": -25.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "fase_oben_kanten": {
+      "id": "fase_oben_kanten",
+      "type": "chamfer",
+      "params": {
+        "distance": 1.5,
+        "edge_selector": "obere_kanten"
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "radius_unten_lang": {
+      "id": "radius_unten_lang",
+      "type": "fillet",
+      "params": {
+        "radius": 3,
+        "edge_selector": "untere_laengskanten"
+      },
+      "parent": "platte",
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "nut_vorne": {
+      "id": "nut_vorne",
+      "type": "slot",
+      "params": {
+        "width": 6,
+        "depth": 6,
+        "length": 120
+      },
+      "parent": "platte",
+      "placement": {
+        "face": "<Y",
+        "alignment": "custom",
+        "offset_x": 0.0,
+        "offset_y": -0.5,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": "durchgehend X"
+    }
+  }
+}

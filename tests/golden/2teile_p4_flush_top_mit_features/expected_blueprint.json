@@ -1,0 +1,127 @@
+{
+  "description": "Platte 100x80x20 + 4 Eckbohrungen, rechts Quader 40x40x20 bündig oben",
+  "build_order": [
+    "platte",
+    "b_vl",
+    "b_vr",
+    "b_hl",
+    "b_hr",
+    "quader"
+  ],
+  "features": {
+    "platte": {
+      "id": "platte",
+      "type": "box",
+      "params": {
+        "x": 100,
+        "y": 80,
+        "z": 20
+      },
+      "parent": null,
+      "placement": null,
+      "operation": "add",
+      "notes": ""
+    },
+    "b_vl": {
+      "id": "b_vl",
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 20
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": -35.0,
+        "offset_y": 25.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "b_vr": {
+      "id": "b_vr",
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 20
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": 35.0,
+        "offset_y": 25.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "b_hl": {
+      "id": "b_hl",
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 20
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": -35.0,
+        "offset_y": -25.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "b_hr": {
+      "id": "b_hr",
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 20
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "custom",
+        "offset_x": 35.0,
+        "offset_y": -25.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "subtract",
+      "notes": ""
+    },
+    "quader": {
+      "id": "quader",
+      "type": "box",
+      "params": {
+        "x": 40,
+        "y": 40,
+        "z": 20
+      },
+      "parent": "platte",
+      "placement": {
+        "face": ">X",
+        "alignment": "flush_top",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0,
+        "pre_rotation": null,
+        "notes": ""
+      },
+      "operation": "add",
+      "notes": ""
+    }
+  }
+}
