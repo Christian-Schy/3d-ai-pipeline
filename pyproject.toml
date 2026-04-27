@@ -1,8 +1,9 @@
 [project]
 name = "3d-ai-pipeline-v2"
 version = "0.1.0"
-description = "Add your description here"
+description = "Text-to-CAD pipeline with local LLMs and CadQuery — multi-agent architecture, deterministic geometry tools, semantic blueprint."
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.12"
 dependencies = [
     "cadquery>=2.7.0",
