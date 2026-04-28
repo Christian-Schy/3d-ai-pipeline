@@ -378,7 +378,17 @@ def _parse_json_safe(text) -> dict | list | None:
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        return None
+        pass
+    # Fallback: tolerate Python-repr-style output (single quotes, True/False/None).
+    # Local LLMs sometimes drift into Python style despite JSON instructions.
+    try:
+        import ast
+        parsed = ast.literal_eval(text)
+        if isinstance(parsed, (dict, list)):
+            return parsed
+    except (ValueError, SyntaxError):
+        pass
+    return None
 
 
 def inventar_metric(example, prediction, trace=None) -> float:
@@ -497,6 +507,13 @@ def position_extractor_metric(example, prediction, trace=None) -> float:
     try:
         expected = _parse_json_safe(getattr(example, "positionen", None))
         predicted = _parse_json_safe(getattr(prediction, "positionen", None))
+
+        # Tolerate models that return the bare list instead of {"positionen": [...]}
+        if isinstance(predicted, list):
+            predicted = {"positionen": predicted}
+        if isinstance(expected, list):
+            expected = {"positionen": expected}
+
         if not isinstance(predicted, dict) or not isinstance(expected, dict):
             return 0.0
         exp_pos = expected.get("positionen", [])
@@ -738,14 +755,22 @@ def train_agent(agent_name: str,
 
     # DSPy LM konfigurieren (Ollama)
     model = model_name or config["default_model"]
+    # extra_body.think=False disables reasoning_content for gemma/qwen/etc.,
+    # otherwise the model fills the reasoning channel and leaves the text channel
+    # empty under DSPy's default ChatAdapter. Mirrors the Pipeline's call_json()
+    # which sets think via agent_options.
     lm = dspy.LM(
         model=f"ollama_chat/{model}",
         api_base="http://localhost:11434",
         temperature=0.1,
-        max_tokens=8000,
+        max_tokens=3000,
+        extra_body={"think": False},
     )
-    dspy.configure(lm=lm)
-    print(f"  Modell: {model}")
+    # JSONAdapter forces structured JSON output instead of DSPy's free-form
+    # [[ ## field ## ]] markers — much more reliable for local models that
+    # otherwise drift into reasoning loops without producing parseable text.
+    dspy.configure(lm=lm, adapter=dspy.JSONAdapter())
+    print(f"  Modell: {model}  (think=False, JSONAdapter, max_tokens=3000)")
 
     # Modul und Optimierer
     module = config["module_cls"]()
