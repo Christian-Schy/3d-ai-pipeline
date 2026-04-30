@@ -2,7 +2,8 @@
 train_dspy.py — DSPy Prompt-Optimierung für die 3-Step Blueprint Chain + BA.
 
 Aktive Agents (via data/dspy_training/agent_contracts.py):
-    inventar, position_extractor, platzierer, feature_definierer, assembly
+    inventar, position_extractor, platzierer, normalizer
+    (assembly_node ist deterministisch — kein LLM-Training)
 Legacy (inaktiv, Training möglich):
     blueprint_architect
 
@@ -94,40 +95,20 @@ def load_runs() -> list[dict]:
 
 
 def manual_to_agent_pairs(examples: list[dict], agent_name: str) -> list[dict]:
-    """Konvertiere kuratierte Beispiele in Agent-Input/Output-Paare."""
+    """Konvertiere kuratierte Legacy-Beispiele (examples.json) in Agent-Pairs.
+
+    Das Legacy-Format hat keine pro-Aktion-Annotation, daher kann es nicht
+    sinnvoll auf den fein-granularen `normalizer` projiziert werden. Nur
+    inventar + blueprint_architect bekommen Pairs aus diesem Pfad.
+    """
     pairs = []
     for ex in examples:
         spec = ex["specification"]
         inv = ex["inventar"]
-        teil_defs = ex["teil_definitionen"]
         bp = ex["blueprint"]
 
         if agent_name == "inventar":
             pairs.append({"input": {"specification": spec}, "output": inv, "feedback": "good"})
-
-        elif agent_name == "feature_definierer":
-            aktionen = inv.get("aktionen", [])
-            aktionen_by_teil = {}
-            for a in aktionen:
-                aktionen_by_teil.setdefault(a.get("teil_id", ""), []).append(a)
-            for teil_def in teil_defs:
-                teil_id = teil_def["id"]
-                teil_inv = next((t for t in inv["teile"] if t["id"] == teil_id), {})
-                teil_akt = aktionen_by_teil.get(teil_id, [])
-                pairs.append({
-                    "input": {"teil": teil_inv, "aktionen": teil_akt, "specification": spec},
-                    "output": teil_def,
-                    "feedback": "good",
-                })
-
-        elif agent_name == "assembly":
-            # Only multi-part examples need assembly
-            if inv["teil_count"] > 1:
-                pairs.append({
-                    "input": {"inventar": inv, "teil_definitionen": teil_defs, "specification": spec},
-                    "output": bp,
-                    "feedback": "good",
-                })
 
         elif agent_name == "blueprint_architect":
             pairs.append({"input": {"specification": spec}, "output": bp, "feedback": "good"})
@@ -198,39 +179,37 @@ class InventarSignature(dspy.Signature):
     )
 
 
-class TeilDefiniererSignature(dspy.Signature):
-    """Definiere EIN CAD-Teil mit allen seinen Features (Bohrungen, Nuten, Fasen etc.)
-    als semantisches Blueprint. Berechne KEINE Offsets — beschreibe Positionen in Worten."""
+class NormalizerSignature(dspy.Signature):
+    """Normalisiere EINE einzelne Aktion auf einem Teil zu EINEM Feature-JSON.
 
-    teil: str = dspy.InputField(
-        desc="JSON-Objekt mit id, type, beschreibung, raw_params des Teils."
+    Kontext: Die Pipeline ruft den Normalizer pro Aktion auf (1 Aktion → 1 Feature).
+    Die deterministische Aggregation aller Features zu einer teil_definition
+    macht ein Code-Schritt (build_teil_definition), nicht das LLM.
+
+    Aufgabe: Aus einem Beschreibungstext + Seite + Teil-Kontext einen sauberen
+    Feature-Eintrag erzeugen mit type, params (Maße), position (semantisch:
+    side/alignment/edge_distances/angle_deg) und operation (add/subtract).
+    KEINE Offsets berechnen — Positionen in Worten beschreiben.
+    """
+
+    beschreibung: str = dspy.InputField(
+        desc="Aktions-Beschreibung in natuerlicher Sprache (z.B. 'Bohrung Ø10, 20mm von links, durchgehend')."
     )
-    aktionen: str = dspy.InputField(
-        desc="JSON-Liste der Aktionen auf diesem Teil, jeweils mit teil_id, seite, beschreibung."
+    seite: str = dspy.InputField(
+        desc="Seite des Teils ('oben', 'unten', 'rechts', 'links', 'vorne', 'hinten')."
+    )
+    teil_type: str = dspy.InputField(
+        desc="Form des Teils ('box', 'cylinder', ...)."
+    )
+    teil_params: str = dspy.InputField(
+        desc="JSON der Roh-Parameter des Teils (z.B. {x:100, y:80, z:20})."
     )
     specification: str = dspy.InputField(
-        desc="Die Original-Spezifikation als Kontext."
+        desc="Original-Spezifikation als Kontext."
     )
-    teil_definition: str = dspy.OutputField(
-        desc="JSON-Objekt mit id, type, params, orientation, features[{id, type, params, position, operation}]"
-    )
-
-
-class AssemblySignature(dspy.Signature):
-    """Füge einzelne Teil-Definitionen zu einem vollständigen semantischen Blueprint zusammen.
-    Bestimme Root, Parent-Beziehungen und Build-Order."""
-
-    inventar: str = dspy.InputField(
-        desc="JSON-Objekt mit teil_count, teile, aktionen."
-    )
-    teil_definitionen: str = dspy.InputField(
-        desc="JSON-Liste aller Teil-Definitionen mit ihren Features."
-    )
-    specification: str = dspy.InputField(
-        desc="Die Original-Spezifikation als Kontext."
-    )
-    blueprint: str = dspy.OutputField(
-        desc="JSON-Objekt mit description, build_order, features (vollständiges semantisches Blueprint)."
+    feature: str = dspy.OutputField(
+        desc="JSON-Objekt mit id, type (hole_single, pocket, slot, chamfer, ...), "
+             "params, position {side, alignment, edge_distances, angle_deg}, operation."
     )
 
 
@@ -295,23 +274,17 @@ class InventarModule(dspy.Module):
         return self.predict(specification=specification)
 
 
-class TeilDefiniererModule(dspy.Module):
+class NormalizerModule(dspy.Module):
     def __init__(self):
-        self.predict = dspy.Predict(TeilDefiniererSignature)
+        self.predict = dspy.Predict(NormalizerSignature)
 
-    def forward(self, teil: str, aktionen: str, specification: str) -> dspy.Prediction:
-        return self.predict(teil=teil, aktionen=aktionen, specification=specification)
-
-
-class AssemblyModule(dspy.Module):
-    def __init__(self):
-        self.predict = dspy.Predict(AssemblySignature)
-
-    def forward(self, inventar: str, teil_definitionen: str,
-                specification: str) -> dspy.Prediction:
+    def forward(self, beschreibung: str, seite: str, teil_type: str,
+                teil_params: str, specification: str) -> dspy.Prediction:
         return self.predict(
-            inventar=inventar,
-            teil_definitionen=teil_definitionen,
+            beschreibung=beschreibung,
+            seite=seite,
+            teil_type=teil_type,
+            teil_params=teil_params,
             specification=specification,
         )
 
@@ -424,72 +397,53 @@ def inventar_metric(example, prediction, trace=None) -> float:
         return 0.0
 
 
-def teil_definierer_metric(example, prediction, trace=None) -> float:
-    """Bewerte Teil-Definition: Features korrekt gezählt + Typen stimmen."""
+def normalizer_metric(example, prediction, trace=None) -> float:
+    """Bewerte Normalizer: 1 Aktion → 1 Feature.
+
+    Felder mit Gewichten:
+      type           0.30 — bohrung/pocket/slot/chamfer korrekt
+      operation      0.10 — add/subtract korrekt
+      position.side  0.20 — Seite stimmt
+      position.alignment 0.15 — centered/custom/corner_4/...
+      params keys    0.15 — wichtige Param-Keys vorhanden (diameter, depth, ...)
+      params values  0.10 — exakte Werte
+    """
     try:
-        expected = _parse_json_safe(getattr(example, "teil_definition", None))
-        predicted = _parse_json_safe(getattr(prediction, "teil_definition", None))
+        expected = _parse_json_safe(getattr(example, "feature", None))
+        predicted = _parse_json_safe(getattr(prediction, "feature", None))
         if not isinstance(predicted, dict) or not isinstance(expected, dict):
             return 0.0
 
         score = 0.0
-        exp_feats = expected.get("features", [])
-        pred_feats = predicted.get("features", [])
-        if not isinstance(exp_feats, list):
-            exp_feats = []
-        if not isinstance(pred_feats, list):
-            pred_feats = []
-        if len(exp_feats) == len(pred_feats):
-            score += 0.3
-        exp_types = sorted(f.get("type", "") for f in exp_feats if isinstance(f, dict))
-        pred_types = sorted(f.get("type", "") for f in pred_feats if isinstance(f, dict))
-        if exp_types == pred_types:
-            score += 0.3
-        if predicted.get("orientation") == expected.get("orientation"):
-            score += 0.2
-        if predicted.get("params") == expected.get("params"):
-            score += 0.2
-
-        return score
-    except Exception:
-        return 0.0
-
-
-def assembly_metric(example, prediction, trace=None) -> float:
-    """Bewerte Assembly: build_order korrekt + Parent-Beziehungen stimmen."""
-    try:
-        expected = _parse_json_safe(getattr(example, "blueprint", None))
-        predicted = _parse_json_safe(getattr(prediction, "blueprint", None))
-        if not isinstance(predicted, dict) or not isinstance(expected, dict):
-            return 0.0
-
-        score = 0.0
-        # Build-order Länge
-        exp_bo = expected.get("build_order", [])
-        pred_bo = predicted.get("build_order", [])
-        if isinstance(exp_bo, list) and isinstance(pred_bo, list) and len(exp_bo) == len(pred_bo):
-            score += 0.2
-        # Feature-Count
-        exp_feats = expected.get("features", {})
-        pred_feats = predicted.get("features", {})
-        if not isinstance(exp_feats, dict):
-            exp_feats = {}
-        if not isinstance(pred_feats, dict):
-            pred_feats = {}
-        if len(exp_feats) == len(pred_feats):
-            score += 0.3
-        # Parent-Beziehungen korrekt
-        parent_match = 0
-        for fid, feat in exp_feats.items():
-            if isinstance(feat, dict) and fid in pred_feats and isinstance(pred_feats[fid], dict):
-                if pred_feats[fid].get("parent") == feat.get("parent"):
-                    parent_match += 1
-        if exp_feats:
-            score += 0.3 * (parent_match / len(exp_feats))
-        # Root korrekt (erstes Element, parent=null)
-        if isinstance(pred_bo, list) and isinstance(exp_bo, list) and pred_bo and exp_bo:
-            if pred_bo[0] == exp_bo[0]:
-                score += 0.2
+        # type
+        if predicted.get("type") == expected.get("type"):
+            score += 0.30
+        # operation
+        if predicted.get("operation") == expected.get("operation"):
+            score += 0.10
+        # position fields
+        exp_pos = expected.get("position") or {}
+        pred_pos = predicted.get("position") or {}
+        if isinstance(exp_pos, dict) and isinstance(pred_pos, dict):
+            if pred_pos.get("side") == exp_pos.get("side"):
+                score += 0.20
+            if pred_pos.get("alignment") == exp_pos.get("alignment"):
+                score += 0.15
+        # params keys
+        exp_params = expected.get("params") or {}
+        pred_params = predicted.get("params") or {}
+        if isinstance(exp_params, dict) and isinstance(pred_params, dict):
+            exp_keys = set(exp_params.keys())
+            pred_keys = set(pred_params.keys())
+            if exp_keys and exp_keys == pred_keys:
+                score += 0.15
+            # exact value match (only for numeric params)
+            value_matches = sum(
+                1 for k in exp_keys
+                if k in pred_params and pred_params[k] == exp_params[k]
+            )
+            if exp_keys:
+                score += 0.10 * (value_matches / len(exp_keys))
 
         return score
     except Exception:
@@ -619,21 +573,16 @@ def to_dspy_examples(raw: list[dict], agent_name: str) -> list[dspy.Example]:
                 inventar=_j(out),
             ).with_inputs("specification")
 
-        elif agent_name == "feature_definierer":
+        elif agent_name == "normalizer":
             ex = dspy.Example(
-                teil=_j(inp.get("teil", {})),
-                aktionen=_j(inp.get("aktionen", [])),
+                beschreibung=inp.get("beschreibung", ""),
+                seite=inp.get("seite", "oben"),
+                teil_type=inp.get("teil_type", "box"),
+                teil_params=_j(inp.get("teil_params", {})),
                 specification=inp.get("specification", ""),
-                teil_definition=_j(out),
-            ).with_inputs("teil", "aktionen", "specification")
-
-        elif agent_name == "assembly":
-            ex = dspy.Example(
-                inventar=_j(inp.get("inventar", {})),
-                teil_definitionen=_j(inp.get("teil_definitionen", [])),
-                specification=inp.get("specification", ""),
-                blueprint=_j(out),
-            ).with_inputs("inventar", "teil_definitionen", "specification")
+                feature=_j(out),
+            ).with_inputs("beschreibung", "seite", "teil_type",
+                          "teil_params", "specification")
 
         elif agent_name == "blueprint_architect":
             ex = dspy.Example(
@@ -685,19 +634,17 @@ AGENT_CONFIG = {
         "metric": position_normalizer_metric,
         "default_model": "qwen3.5:9b",
     },
-    "feature_definierer": {
-        "module_cls": TeilDefiniererModule,
-        "metric": teil_definierer_metric,
+    "normalizer": {
+        "module_cls": NormalizerModule,
+        "metric": normalizer_metric,
         "default_model": "qwen3.5:9b",
     },
-    "assembly": {
-        "module_cls": AssemblyModule,
-        "metric": assembly_metric,
-        "default_model": "qwen3.5:9b",
-    },
+    # assembly: Pipeline-Schritt ist deterministisch (kein LLM-Call), kein Training-Target.
     "blueprint_architect": {
         "module_cls": BlueprintArchitectModule,
-        "metric": assembly_metric,  # same metric — evaluates blueprint quality
+        # Pragmatic: Blueprint Architect ist Legacy-Pfad, eigene Metric waere overengineering.
+        # Nutzen normalizer_metric als grobe feature-basierte Bewertung.
+        "metric": normalizer_metric,
         "default_model": "nemotron-cascade-2:30b",
     },
 }

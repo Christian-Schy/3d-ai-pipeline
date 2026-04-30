@@ -79,18 +79,18 @@ CONTRACTS: dict[str, AgentContract] = {
         output_fields=["normalized_position"],
         default_model="qwen3.5:9b",
     ),
-    "feature_definierer": AgentContract(
-        name="feature_definierer",
-        input_fields=["teil", "aktionen", "specification"],
-        output_fields=["teil_definition"],
+    "normalizer": AgentContract(
+        # 1 Aktion → 1 Feature. Pipeline ruft NormalizerAgent pro Aktion auf
+        # (siehe feature_definierer_node: for aktion in teil_aktionen: normalizer.normalize(...))
+        # Die deterministische Aggregation zu einer teil_definition macht build_teil_definition,
+        # nicht das LLM. Daher trainieren wir hier den fein-granularen Schritt.
+        name="normalizer",
+        input_fields=["beschreibung", "seite", "teil_type", "teil_params",
+                      "specification"],
+        output_fields=["feature"],
         default_model="qwen3.5:9b",
     ),
-    "assembly": AgentContract(
-        name="assembly",
-        input_fields=["inventar", "teil_definitionen", "specification"],
-        output_fields=["blueprint"],
-        default_model="qwen3.5:9b",
-    ),
+    # assembly_node ist deterministisch (kein LLM-Call). Kein Training-Target.
     # Legacy — nicht aktiv trainieren, Infrastruktur bleibt bestehen
     "blueprint_architect": AgentContract(
         name="blueprint_architect",
@@ -168,8 +168,17 @@ def _adapter_position_normalizer(trace: dict) -> list[dict]:
     return pairs
 
 
-def _adapter_teil_definierer(trace: dict) -> list[dict]:
-    """Eine Trainings-Probe pro Teil."""
+def _adapter_normalizer(trace: dict) -> list[dict]:
+    """Eine Trainings-Probe pro AKTION (1 Aktion → 1 Feature).
+
+    Pipeline-Realitaet (siehe planning_nodes.feature_definierer_node):
+        for aktion in teil_aktionen:
+            norm = normalizer.normalize(beschreibung, seite, feature_spec)
+        # danach: build_teil_definition(teil, normalized_actions)  ← deterministisch
+
+    Wir paaren Aktion[i] mit Feature[i] (Index-basiert, da die Trace-Annotation
+    die Reihenfolge der Aktionen 1:1 zur Feature-Liste haelt).
+    """
     teil_defs = trace.get("teil_definitionen") or []
     inv = trace.get("inventar")
     spec = trace.get("specification")
@@ -184,30 +193,22 @@ def _adapter_teil_definierer(trace: dict) -> list[dict]:
     pairs = []
     for td in teil_defs:
         tid = td["id"]
-        pairs.append({
-            "input": {
-                "teil": teile_by_id.get(tid, {}),
-                "aktionen": aktionen_by_teil.get(tid, []),
-                "specification": spec,
-            },
-            "output": td,
-        })
+        teil = teile_by_id.get(tid, {})
+        td_aktionen = aktionen_by_teil.get(tid, [])
+        td_features = td.get("features", [])
+        # Index-pair action with feature; skip if either side is empty
+        for aktion, feature in zip(td_aktionen, td_features):
+            pairs.append({
+                "input": {
+                    "beschreibung": aktion.get("beschreibung", ""),
+                    "seite": aktion.get("seite", "oben"),
+                    "teil_type": teil.get("type", "box"),
+                    "teil_params": teil.get("raw_params", {}),
+                    "specification": spec,
+                },
+                "output": feature,
+            })
     return pairs
-
-
-def _adapter_assembly(trace: dict) -> list[dict]:
-    bp = trace.get("blueprint")
-    inv = trace.get("inventar")
-    teil_defs = trace.get("teil_definitionen")
-    spec = trace.get("specification")
-    if not bp or not inv or not teil_defs or not spec:
-        return []
-    if inv.get("teil_count", 1) <= 1:
-        return []  # single-part: assembly trivial, ueberspringen
-    return [{
-        "input": {"inventar": inv, "teil_definitionen": teil_defs, "specification": spec},
-        "output": bp,
-    }]
 
 
 def _adapter_blueprint_architect(trace: dict) -> list[dict]:
@@ -223,8 +224,7 @@ ADAPTERS: dict[str, Callable[[dict], list[dict]]] = {
     "inventar": _adapter_inventar,
     "position_extractor": _adapter_position_extractor,
     "platzierer": _adapter_position_normalizer,
-    "feature_definierer": _adapter_teil_definierer,
-    "assembly": _adapter_assembly,
+    "normalizer": _adapter_normalizer,
     "blueprint_architect": _adapter_blueprint_architect,
 }
 
