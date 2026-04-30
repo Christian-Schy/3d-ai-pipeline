@@ -23,9 +23,18 @@ NORMALIZER_PROMPT_TEMPLATE = _prompt.NORMALIZER_PROMPT_TEMPLATE
 
 
 class NormalizerAgent(BaseAgent):
-    """Normalizes free-text action descriptions into fixed-vocabulary short-form."""
+    """Normalizes free-text action descriptions into fixed-vocabulary short-form.
+
+    Pipeline calls per single action -> 1 feature dict.
+    Training target: data/dspy_optimized/normalizer_optimized.json
+    """
 
     name = "normalizer"
+    dspy_demo_fields = {
+        "input_fields": ["beschreibung", "seite", "teil_type",
+                         "teil_params", "specification"],
+        "output_field": "feature",
+    }
 
     def __init__(self):
         cfg = get_config()

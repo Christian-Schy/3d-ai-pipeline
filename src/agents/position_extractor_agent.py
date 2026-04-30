@@ -29,6 +29,10 @@ class PositionExtractorAgent(BaseAgent):
     """Filters per-teil position sentences from the full specification."""
 
     name = "position_extractor"
+    dspy_demo_fields = {
+        "input_fields": ["specification", "teile"],
+        "output_field": "positionen",
+    }
 
     def __init__(self):
         cfg = get_config()

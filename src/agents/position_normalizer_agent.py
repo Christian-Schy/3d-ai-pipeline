@@ -46,14 +46,23 @@ class PositionNormalizerAgent(BaseAgent):
     Step 2 — Alignment : ausrichtung (wo auf der Fläche)
     Step 3 — Anchor    : kind_punkt, eltern_punkt, eltern_abstand (optional)
     Step 4 — Offset    : winkel, versatz, pre_rotation
+
+    Pipeline-Node-Name + Training-Target: 'platzierer'
+    (Class is named PositionNormalizerAgent for historical reasons.)
     """
 
-    name = "position_normalizer"
+    name = "platzierer"
+    dspy_demo_fields = {
+        "input_fields": ["teil_id", "teil_type", "teil_params",
+                         "alle_teile", "specification", "position_sentence"],
+        "output_field": "normalized_position",
+    }
 
     def __init__(self):
         cfg = get_config()
-        self.model = getattr(cfg.models, "position_normalizer",
-                             getattr(cfg.models, "normalizer", cfg.models.assembly))
+        self.model = getattr(cfg.models, "platzierer",
+                             getattr(cfg.models, "normalizer",
+                                     cfg.models.assembly))
         super().__init__()
 
     def normalize(self, teil_id: str, teil_type: str, teil_params: dict,
