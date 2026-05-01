@@ -22,7 +22,7 @@ import structlog
 from src.graph.state import PipelineState
 from src.graph.feature_tree import FeatureTree, FeatureEntry
 from src.codegen.assembler import generate_code as generate_template_code
-from src.codegen.feature_classifier import classify_blueprint
+from src.codegen.feature_classifier import classify_blueprint, get_complex_features
 
 log = structlog.get_logger()
 
@@ -961,12 +961,35 @@ class FunctionDecomposerAgent:
                           code_lines=len(code.splitlines()))
             return {"code": code, "code_skeleton": "", "generation_mode": "template"}
 
+        # Compute standard-vs-complex feature counts for the next two branches.
+        n_total = len(build_order)
+        n_complex = len(get_complex_features(blueprint))
+        n_standard = n_total - n_complex
+        standard_ratio = n_standard / max(n_total, 1)
+
         if mode == "mixed":
-            # Standard features get template code with `pass` stubs for complex ones.
-            # Coder only fills in the stubs.
+            # Heuristic: if >=80% of features are standard, prefer pure
+            # template-mode and just skip the few complex ones (rather than
+            # invoking the heavyweight Coder for a tiny minority). Coder
+            # crashes/timeouts (HTTP 500 on long prompts) cost more than a
+            # missing edge case. See runs.jsonl: short specs of 3-4 standard
+            # features were occasionally being mis-classified or causing
+            # Coder timeouts via mixed-mode.
+            if standard_ratio >= 0.8:
+                code = generate_template_code(blueprint)
+                self.log.info("function_decomposer_mixed_to_template",
+                              features=n_total,
+                              standard=n_standard,
+                              complex_skipped=n_complex,
+                              ratio=round(standard_ratio, 2))
+                return {"code": code, "code_skeleton": "",
+                        "generation_mode": "template"}
+
+            # Otherwise: pass templates as base, Coder fills complex stubs.
             code_with_stubs = generate_template_code(blueprint)
             self.log.info("function_decomposer_mixed",
-                          features=len(build_order),
+                          features=n_total, standard=n_standard,
+                          complex=n_complex,
                           skeleton_lines=len(code_with_stubs.splitlines()))
             return {"code_skeleton": code_with_stubs, "generation_mode": "mixed"}
 
@@ -976,6 +999,21 @@ class FunctionDecomposerAgent:
                           reason="single_feature",
                           features=len(build_order))
             return {"code_skeleton": "", "generation_mode": "llm"}
+
+        # Safety net: tiny specs (<=3 features) classified as "all-complex"
+        # are almost always a feature-type mis-classification (e.g. Inventar
+        # produced "bohrung_durch" instead of "hole_single"). Falling through
+        # to Coder for 3 features yields huge prompts and HTTP-500 timeouts.
+        # Better to emit empty template code and let executor fail loud than
+        # silently route to a Coder that will crash.
+        if len(build_order) <= 3:
+            code = generate_template_code(blueprint)
+            self.log.warning("function_decomposer_llm_to_template_fallback",
+                             reason="small_spec_treated_as_complex_likely_misclass",
+                             features=n_total, complex=n_complex,
+                             code_lines=len(code.splitlines()))
+            return {"code": code, "code_skeleton": "",
+                    "generation_mode": "template"}
 
         skeleton = generate_skeleton(blueprint)
 

@@ -24950,5 +24950,750 @@
         "hole_single": 1
       }
     }
+  },
+  {
+    "id": "t165_inv_links_oben_rechts_p2_umg",
+    "specification": "100mm Wuerfel auf der linken Seite soll oben rechts eine Bohrung Ø10 jeweils 10mm von den Kanten entfernt, durchgehend.",
+    "metadata": {
+      "difficulty": "P2",
+      "category": "single_part_single_feature",
+      "sprachstil": "umgangssprachlich",
+      "matrix_cell": "INV: 'auf der LINKEN Seite ... oben rechts' → seite=links"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "100mm Wuerfel",
+          "raw_params": {
+            "x": 100,
+            "y": 100,
+            "z": 100
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "wuerfel",
+          "seite": "links",
+          "beschreibung": "Bohrung Ø10, oben rechts, jeweils 10mm von den Kanten, durchgehend"
+        }
+      ]
+    },
+    "teil_definitionen": [
+      {
+        "id": "wuerfel",
+        "type": "box",
+        "params": {
+          "x": 100,
+          "y": 100,
+          "z": 100
+        },
+        "orientation": "standard",
+        "features": [
+          {
+            "id": "bohrung_links",
+            "type": "hole_single",
+            "params": {
+              "diameter": 10,
+              "depth": 100
+            },
+            "position": {
+              "side": "links",
+              "alignment": "custom",
+              "edge_distances": {
+                "top": 10,
+                "right": 10
+              },
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          }
+        ]
+      }
+    ],
+    "blueprint": {
+      "description": "100mm Wuerfel mit Bohrung links oben-rechts",
+      "build_order": [
+        "wuerfel",
+        "bohrung_links"
+      ],
+      "features": {
+        "wuerfel": {
+          "type": "box",
+          "params": {
+            "x": 100,
+            "y": 100,
+            "z": 100
+          },
+          "orientation": "standard",
+          "parent": null,
+          "operation": "add",
+          "notes": ""
+        },
+        "bohrung_links": {
+          "type": "hole_single",
+          "params": {
+            "diameter": 10,
+            "depth": 100
+          },
+          "parent": "wuerfel",
+          "operation": "subtract",
+          "position": {
+            "side": "links",
+            "alignment": "custom",
+            "edge_distances": {
+              "top": 10,
+              "right": 10
+            },
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "notes": ""
+        }
+      }
+    },
+    "assertions": {
+      "expected_feature_count": {
+        "box": 1,
+        "hole_single": 1
+      }
+    }
+  },
+  {
+    "id": "t166_inv_rechts_unten_links_p2_knapp",
+    "specification": "Quader 80x60x40, auf der rechten Seite unten links Bohrung Ø8, jeweils 5mm von den Kanten, 15mm tief.",
+    "metadata": {
+      "difficulty": "P2",
+      "category": "single_part_single_feature",
+      "sprachstil": "knapp_technisch",
+      "matrix_cell": "INV: 'auf der RECHTEN Seite ... unten links' → seite=rechts"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "quader",
+          "type": "box",
+          "beschreibung": "Quader 80x60x40",
+          "raw_params": {
+            "x": 80,
+            "y": 60,
+            "z": 40
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "quader",
+          "seite": "rechts",
+          "beschreibung": "Bohrung Ø8, unten links, jeweils 5mm von den Kanten, 15mm tief"
+        }
+      ]
+    },
+    "teil_definitionen": [
+      {
+        "id": "quader",
+        "type": "box",
+        "params": {
+          "x": 80,
+          "y": 60,
+          "z": 40
+        },
+        "orientation": "standard",
+        "features": [
+          {
+            "id": "bohrung_rechts",
+            "type": "hole_single",
+            "params": {
+              "diameter": 8,
+              "depth": 15
+            },
+            "position": {
+              "side": "rechts",
+              "alignment": "custom",
+              "edge_distances": {
+                "bottom": 5,
+                "left": 5
+              },
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          }
+        ]
+      }
+    ],
+    "blueprint": {
+      "description": "Quader 80x60x40: Bohrung rechts unten-links",
+      "build_order": [
+        "quader",
+        "bohrung_rechts"
+      ],
+      "features": {
+        "quader": {
+          "type": "box",
+          "params": {
+            "x": 80,
+            "y": 60,
+            "z": 40
+          },
+          "orientation": "standard",
+          "parent": null,
+          "operation": "add",
+          "notes": ""
+        },
+        "bohrung_rechts": {
+          "type": "hole_single",
+          "params": {
+            "diameter": 8,
+            "depth": 15
+          },
+          "parent": "quader",
+          "operation": "subtract",
+          "position": {
+            "side": "rechts",
+            "alignment": "custom",
+            "edge_distances": {
+              "bottom": 5,
+              "left": 5
+            },
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "notes": ""
+        }
+      }
+    },
+    "assertions": {
+      "expected_feature_count": {
+        "box": 1,
+        "hole_single": 1
+      }
+    }
+  },
+  {
+    "id": "t167_inv_multi_seite_aktion_umg",
+    "specification": "Wuerfel 50mm. Auf der linken Seite oben rechts Bohrung Ø6 je 8mm von Kanten durch. Auf der rechten Seite unten links Bohrung Ø6 je 8mm von Kanten durch. Auf der Vorderseite mittig eine Tasche 20x10x5.",
+    "metadata": {
+      "difficulty": "P2",
+      "category": "single_part_multi_feature",
+      "sprachstil": "umgangssprachlich",
+      "matrix_cell": "INV: Multi-'auf der X-Seite ... Position Y'"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "wuerfel",
+          "seite": "links",
+          "beschreibung": "Bohrung Ø6, oben rechts, je 8mm von Kanten, durchgehend"
+        },
+        {
+          "teil_id": "wuerfel",
+          "seite": "rechts",
+          "beschreibung": "Bohrung Ø6, unten links, je 8mm von Kanten, durchgehend"
+        },
+        {
+          "teil_id": "wuerfel",
+          "seite": "vorne",
+          "beschreibung": "Tasche 20x10x5 mittig"
+        }
+      ]
+    },
+    "teil_definitionen": [
+      {
+        "id": "wuerfel",
+        "type": "box",
+        "params": {
+          "x": 50,
+          "y": 50,
+          "z": 50
+        },
+        "orientation": "standard",
+        "features": [
+          {
+            "id": "bohrung_links",
+            "type": "hole_single",
+            "params": {
+              "diameter": 6,
+              "depth": 50
+            },
+            "position": {
+              "side": "links",
+              "alignment": "custom",
+              "edge_distances": {
+                "top": 8,
+                "right": 8
+              },
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          },
+          {
+            "id": "bohrung_rechts",
+            "type": "hole_single",
+            "params": {
+              "diameter": 6,
+              "depth": 50
+            },
+            "position": {
+              "side": "rechts",
+              "alignment": "custom",
+              "edge_distances": {
+                "bottom": 8,
+                "left": 8
+              },
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          },
+          {
+            "id": "tasche_vorne",
+            "type": "pocket",
+            "params": {
+              "width": 20,
+              "depth": 5,
+              "height": 10
+            },
+            "position": {
+              "side": "vorne",
+              "alignment": "centered",
+              "edge_distances": null,
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          }
+        ]
+      }
+    ],
+    "blueprint": {
+      "description": "Wuerfel 50mm: Bohrung links P2 + Bohrung rechts P2 + Tasche vorne P0",
+      "build_order": [
+        "wuerfel",
+        "bohrung_links",
+        "bohrung_rechts",
+        "tasche_vorne"
+      ],
+      "features": {
+        "wuerfel": {
+          "type": "box",
+          "params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          },
+          "orientation": "standard",
+          "parent": null,
+          "operation": "add",
+          "notes": ""
+        },
+        "bohrung_links": {
+          "type": "hole_single",
+          "params": {
+            "diameter": 6,
+            "depth": 50
+          },
+          "parent": "wuerfel",
+          "operation": "subtract",
+          "position": {
+            "side": "links",
+            "alignment": "custom",
+            "edge_distances": {
+              "top": 8,
+              "right": 8
+            },
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "notes": ""
+        },
+        "bohrung_rechts": {
+          "type": "hole_single",
+          "params": {
+            "diameter": 6,
+            "depth": 50
+          },
+          "parent": "wuerfel",
+          "operation": "subtract",
+          "position": {
+            "side": "rechts",
+            "alignment": "custom",
+            "edge_distances": {
+              "bottom": 8,
+              "left": 8
+            },
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "notes": ""
+        },
+        "tasche_vorne": {
+          "type": "pocket",
+          "params": {
+            "width": 20,
+            "depth": 5,
+            "height": 10
+          },
+          "parent": "wuerfel",
+          "operation": "subtract",
+          "position": {
+            "side": "vorne",
+            "alignment": "centered",
+            "edge_distances": null,
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "notes": ""
+        }
+      }
+    },
+    "assertions": {
+      "expected_feature_count": {
+        "box": 1,
+        "hole_single": 2,
+        "pocket": 1
+      }
+    }
+  },
+  {
+    "id": "t168_inv_vorne_oben_mittig_p1_ta",
+    "specification": "Platte 80x60x20mm, auf der Vorderseite oben mittig eine Bohrung Ø6, 10mm von der oberen Kante, durchgehend.",
+    "metadata": {
+      "difficulty": "P1",
+      "category": "single_part_single_feature",
+      "sprachstil": "technisch_ausfuehrlich",
+      "matrix_cell": "INV: 'auf der VORDERSEITE ... oben mittig' → seite=vorne"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "Platte 80x60x20",
+          "raw_params": {
+            "x": 80,
+            "y": 60,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "platte",
+          "seite": "vorne",
+          "beschreibung": "Bohrung Ø6, oben mittig, 10mm von oberer Kante, durchgehend"
+        }
+      ]
+    },
+    "teil_definitionen": [
+      {
+        "id": "platte",
+        "type": "box",
+        "params": {
+          "x": 80,
+          "y": 60,
+          "z": 20
+        },
+        "orientation": "standard",
+        "features": [
+          {
+            "id": "bohrung_vorne",
+            "type": "hole_single",
+            "params": {
+              "diameter": 6,
+              "depth": 60
+            },
+            "position": {
+              "side": "vorne",
+              "alignment": "custom",
+              "edge_distances": {
+                "top": 10
+              },
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          }
+        ]
+      }
+    ],
+    "blueprint": {
+      "description": "Platte 80x60x20: Bohrung vorne oben-mittig",
+      "build_order": [
+        "platte",
+        "bohrung_vorne"
+      ],
+      "features": {
+        "platte": {
+          "type": "box",
+          "params": {
+            "x": 80,
+            "y": 60,
+            "z": 20
+          },
+          "orientation": "standard",
+          "parent": null,
+          "operation": "add",
+          "notes": ""
+        },
+        "bohrung_vorne": {
+          "type": "hole_single",
+          "params": {
+            "diameter": 6,
+            "depth": 60
+          },
+          "parent": "platte",
+          "operation": "subtract",
+          "position": {
+            "side": "vorne",
+            "alignment": "custom",
+            "edge_distances": {
+              "top": 10
+            },
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "notes": ""
+        }
+      }
+    },
+    "assertions": {
+      "expected_feature_count": {
+        "box": 1,
+        "hole_single": 1
+      }
+    }
+  },
+  {
+    "id": "t169_inv_hinten_mittig_p0_knapp",
+    "specification": "Quader 60x80x40, auf der Hinterseite in der Mitte eine Bohrung Ø12 durchgehend.",
+    "metadata": {
+      "difficulty": "P0",
+      "category": "single_part_single_feature",
+      "sprachstil": "knapp_technisch",
+      "matrix_cell": "INV: 'auf der HINTERSEITE ... mittig' → seite=hinten"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "quader",
+          "type": "box",
+          "beschreibung": "Quader 60x80x40",
+          "raw_params": {
+            "x": 60,
+            "y": 80,
+            "z": 40
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "quader",
+          "seite": "hinten",
+          "beschreibung": "Bohrung Ø12 mittig, durchgehend"
+        }
+      ]
+    },
+    "teil_definitionen": [
+      {
+        "id": "quader",
+        "type": "box",
+        "params": {
+          "x": 60,
+          "y": 80,
+          "z": 40
+        },
+        "orientation": "standard",
+        "features": [
+          {
+            "id": "bohrung_hinten",
+            "type": "hole_single",
+            "params": {
+              "diameter": 12,
+              "depth": 80
+            },
+            "position": {
+              "side": "hinten",
+              "alignment": "centered",
+              "edge_distances": null,
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          }
+        ]
+      }
+    ],
+    "blueprint": {
+      "description": "Quader 60x80x40: Bohrung hinten mittig",
+      "build_order": [
+        "quader",
+        "bohrung_hinten"
+      ],
+      "features": {
+        "quader": {
+          "type": "box",
+          "params": {
+            "x": 60,
+            "y": 80,
+            "z": 40
+          },
+          "orientation": "standard",
+          "parent": null,
+          "operation": "add",
+          "notes": ""
+        },
+        "bohrung_hinten": {
+          "type": "hole_single",
+          "params": {
+            "diameter": 12,
+            "depth": 80
+          },
+          "parent": "quader",
+          "operation": "subtract",
+          "position": {
+            "side": "hinten",
+            "alignment": "centered",
+            "edge_distances": null,
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "notes": ""
+        }
+      }
+    },
+    "assertions": {
+      "expected_feature_count": {
+        "box": 1,
+        "hole_single": 1
+      }
+    }
+  },
+  {
+    "id": "t170_inv_invers_links_dann_teil_umg",
+    "specification": "Auf der linken Seite eines 70mm Wuerfels soll mittig eine Bohrung Ø10 durch.",
+    "metadata": {
+      "difficulty": "P0",
+      "category": "single_part_single_feature",
+      "sprachstil": "umgangssprachlich",
+      "matrix_cell": "INV: Spec-Inversion 'auf der X-Seite eines Y' → seite=links"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "70mm Wuerfel",
+          "raw_params": {
+            "x": 70,
+            "y": 70,
+            "z": 70
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "wuerfel",
+          "seite": "links",
+          "beschreibung": "Bohrung Ø10 mittig, durchgehend"
+        }
+      ]
+    },
+    "teil_definitionen": [
+      {
+        "id": "wuerfel",
+        "type": "box",
+        "params": {
+          "x": 70,
+          "y": 70,
+          "z": 70
+        },
+        "orientation": "standard",
+        "features": [
+          {
+            "id": "bohrung_links",
+            "type": "hole_single",
+            "params": {
+              "diameter": 10,
+              "depth": 70
+            },
+            "position": {
+              "side": "links",
+              "alignment": "centered",
+              "edge_distances": null,
+              "angle_deg": 0,
+              "notes": ""
+            },
+            "operation": "subtract"
+          }
+        ]
+      }
+    ],
+    "blueprint": {
+      "description": "Wuerfel 70mm: Bohrung links mittig",
+      "build_order": [
+        "wuerfel",
+        "bohrung_links"
+      ],
+      "features": {
+        "wuerfel": {
+          "type": "box",
+          "params": {
+            "x": 70,
+            "y": 70,
+            "z": 70
+          },
+          "orientation": "standard",
+          "parent": null,
+          "operation": "add",
+          "notes": ""
+        },
+        "bohrung_links": {
+          "type": "hole_single",
+          "params": {
+            "diameter": 10,
+            "depth": 70
+          },
+          "parent": "wuerfel",
+          "operation": "subtract",
+          "position": {
+            "side": "links",
+            "alignment": "centered",
+            "edge_distances": null,
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "notes": ""
+        }
+      }
+    },
+    "assertions": {
+      "expected_feature_count": {
+        "box": 1,
+        "hole_single": 1
+      }
+    }
   }
 ]
