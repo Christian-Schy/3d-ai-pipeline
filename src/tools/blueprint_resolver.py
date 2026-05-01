@@ -826,7 +826,8 @@ def _clean_zero(v: float) -> float:
 # Step 4: Alignment Upgrade from Notes
 # ═══════════════════════════════════════════════════════════════════
 
-def _upgrade_alignment_from_notes(alignment: str, notes: str) -> str:
+def _upgrade_alignment_from_notes(alignment: str, notes: str,
+                                  has_edge_distances: bool = False) -> str:
     """Upgrade alignment if notes contain flush/bündig hints.
 
     The Assembly agent sometimes puts alignment info in notes instead of
@@ -837,6 +838,14 @@ def _upgrade_alignment_from_notes(alignment: str, notes: str) -> str:
       "Oben bündig"         → flush_top
       "Rechts bündig"       → flush_right
       "Links bündig"        → flush_left
+
+    NOTE: Only triggers on explicit flush markers ("bündig", "flush",
+    "anliegend"). A bare directional word like "oben-links" is NOT enough
+    — that's just a positional hint, not a flush instruction.
+
+    NOTE: Skipped entirely if edge_distances is present, because the user
+    has already specified custom positioning. Flush + edge_distances would
+    double-position and yield wrong offsets (see runs.jsonl 66cf6877).
     """
     if not notes:
         return alignment
@@ -845,7 +854,16 @@ def _upgrade_alignment_from_notes(alignment: str, notes: str) -> str:
     if alignment.lower() not in ("centered", "zentriert"):
         return alignment
 
+    # If user already specified custom positioning via edge_distances,
+    # don't downgrade it to flush.
+    if has_edge_distances:
+        return alignment
+
     nl = notes.lower()
+    # Require an explicit flush keyword — not just a directional hint.
+    if not any(kw in nl for kw in ("bündig", "buendig", "flush", "anliegend")):
+        return alignment
+
     if "unten" in nl or "untere" in nl or "bottom" in nl:
         return "flush_bottom"
     if "oben" in nl or "obere" in nl or "top" in nl:
@@ -936,9 +954,11 @@ def _resolve_feature(fid: str, feat: dict, all_features: dict) -> dict:
     # Upgrade alignment from notes if the AI put flush hints in notes instead
     alignment = position.get("alignment", "centered")
     notes_text = position.get("notes", "") or feat.get("notes", "") or ""
-    alignment = _upgrade_alignment_from_notes(alignment, notes_text)
-
     edge_distances = position.get("edge_distances")
+    alignment = _upgrade_alignment_from_notes(
+        alignment, notes_text,
+        has_edge_distances=bool(edge_distances),
+    )
     # Grid patterns (rarray) are inherently centered — inset handles the
     # edge distance, so edge_distances would shift the whole grid off-center.
     # Explicit center_offset and anchor still work for deliberate shifting.
