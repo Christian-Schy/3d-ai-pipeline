@@ -536,11 +536,18 @@ def _generate_sub_assembly_builds(
         lines.append(f"def {build_name}() -> cq.Workplane:")
         lines.append(f"    result = {make_func}()")
 
+        # _ref: unmodified body snapshot — used by subtract-children for
+        # stable face-bounding-box centers (Cadquery's CenterOfBoundBox shifts
+        # after subtractions, which causes drift on later operations).
+        # See run 81505d2f for the bug pattern this prevents.
+        if subtract_children:
+            lines.append(f"    _ref = result")
+
         # 1) Apply subtract-children (holes, slots, modifiers)
         for child_fid in subtract_children:
             child_func = func_map.get(child_fid)
             if child_func:
-                lines.append(f"    result = {child_func}(result)")
+                lines.append(f"    result = {child_func}(result, _ref)")
 
         # 2) Nested add-children (sub-assemblies on this part)
         for child_fid in add_children:
@@ -600,14 +607,21 @@ def _generate_assemble(
 
     # Apply base subtracts (features directly on root, before any union)
     sa_fids = {sa["fid"] for sa in sub_assemblies}
+    base_subtract_fids = []
     for fid in build_order:
         if fid == root_id or fid in sa_fids:
             continue
         feat = features.get(fid, {})
         if feat.get("parent") == root_id and feat.get("operation", "add").lower() in ("subtract", "cut", "modify"):
-            func = func_map.get(fid)
-            if func:
-                lines.append(f"    result = {func}(result)")
+            base_subtract_fids.append(fid)
+
+    # _ref: unmodified body snapshot for stable face origins (see assembler.py:540 comment).
+    if base_subtract_fids:
+        lines.append(f"    _ref = result")
+    for fid in base_subtract_fids:
+        func = func_map.get(fid)
+        if func:
+            lines.append(f"    result = {func}(result, _ref)")
 
     # Sub-assemblies: build, translate, union
     # Process only root-level sub-assemblies here; nested ones are handled

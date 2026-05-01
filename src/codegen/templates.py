@@ -110,17 +110,28 @@ def hole_single(
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
 ) -> str:
-    """Single hole on a face."""
+    """Single hole on a face.
+
+    Stable-origin pattern (since cleanup-fix for run 81505d2f):
+    - face-selection on `_ref` (unmodified original body) → stable BoundingBox center
+    - cutter via circle+extrude (combine=False) so it's a standalone solid
+    - body.cut(cutter) does the actual subtraction on the working body
+    Prevents Centroid-Drift when prior subtractions modify the face.
+    """
     face_sel = _face_selection(face, use_ntp, ntp_point)
-    depth_call = _hole_depth(diameter, depth)
+    radius = diameter / 2.0
+    # Through-hole: extrude well past the part. Blind: extrude exact depth.
+    extrude_depth = -depth if depth else -10000.0
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
-        f"    return (\n"
-        f"        body\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
+        f"    cutter = (\n"
+        f"        _ref\n"
         f"        {face_sel}\n"
         f"        .center({offset_x}, {offset_y})\n"
-        f"        {depth_call}\n"
-        f"    ).clean()\n"
+        f"        .circle({radius})\n"
+        f"        .extrude({extrude_depth}, combine=False)\n"
+        f"    )\n"
+        f"    return body.cut(cutter).clean()\n"
     )
 
 
@@ -136,17 +147,28 @@ def hole_counterbore(
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
 ) -> str:
-    """Counterbore hole."""
+    """Counterbore hole — built as 2 cylindrical cutters (large + small)."""
     face_sel = _face_selection(face, use_ntp, ntp_point)
-    d_arg = f", {depth}" if depth else ""
+    inner_r = diameter / 2.0
+    cbore_r = cbore_diameter / 2.0
+    inner_depth = -depth if depth else -10000.0
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
-        f"    return (\n"
-        f"        body\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
+        f"    cbore = (\n"
+        f"        _ref\n"
         f"        {face_sel}\n"
         f"        .center({offset_x}, {offset_y})\n"
-        f"        .cboreHole({diameter}, {cbore_diameter}, {cbore_depth}{d_arg})\n"
-        f"    ).clean()\n"
+        f"        .circle({cbore_r})\n"
+        f"        .extrude(-{cbore_depth}, combine=False)\n"
+        f"    )\n"
+        f"    inner = (\n"
+        f"        _ref\n"
+        f"        {face_sel}\n"
+        f"        .center({offset_x}, {offset_y})\n"
+        f"        .circle({inner_r})\n"
+        f"        .extrude({inner_depth}, combine=False)\n"
+        f"    )\n"
+        f"    return body.cut(cbore).cut(inner).clean()\n"
     )
 
 
@@ -162,11 +184,18 @@ def hole_countersink(
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
 ) -> str:
-    """Countersink hole."""
+    """Countersink hole — keep cskHole() since it draws the cone correctly.
+
+    NOTE: cskHole() is applied directly to body (not via _ref+cutter pattern)
+    because building a cone cutter manually is non-trivial. As a result this
+    template does NOT have the stable-origin guarantee that hole_single has —
+    if a prior subtract on the same face caused drift, this hole will inherit
+    it. Will be fixed when we have a clean way to construct cone cutters.
+    """
     face_sel = _face_selection(face, use_ntp, ntp_point)
     d_arg = f", {depth}" if depth else ""
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
         f"    return (\n"
         f"        body\n"
         f"        {face_sel}\n"
@@ -217,8 +246,10 @@ def hole_pattern_grid(
     spacing_x = face_w - 2 * inset
     spacing_y = face_h - 2 * inset
 
+    # NOTE: rarray applied to body (not via _ref+cutter pattern).
+    # Stable-origin would require manually building N cylinders from _ref.
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
         f"    return (\n"
         f"        body\n"
         f"        {face_sel}\n"
@@ -246,8 +277,9 @@ def hole_pattern_circular(
     depth_call = _hole_depth(hole_diameter, depth)
     radius = bolt_circle_diameter / 2
 
+    # NOTE: polarArray applied to body (not via _ref+cutter pattern).
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
         f"    return (\n"
         f"        body\n"
         f"        {face_sel}\n"
@@ -294,7 +326,7 @@ def hole_pattern_linear(
 
     # Compute hole positions along the direction axis
     lines = [
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:",
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:",
     ]
 
     if direction.lower() == "x":
@@ -355,14 +387,15 @@ def slot(
     else:
         shape = f".slot2D({length}, {width}, {angle})"
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
-        f"    return (\n"
-        f"        body\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
+        f"    cutter = (\n"
+        f"        _ref\n"
         f"        {face_sel}\n"
         f"        .center({offset_x}, {offset_y})\n"
         f"        {shape}\n"
-        f"        .cutBlind(-{depth})\n"
-        f"    ).clean()\n"
+        f"        .extrude(-{depth}, combine=False)\n"
+        f"    )\n"
+        f"    return body.cut(cutter).clean()\n"
     )
 
 
@@ -380,14 +413,15 @@ def pocket_rect(
     """Rectangular pocket on a face."""
     face_sel = _face_selection(face, use_ntp, ntp_point)
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
-        f"    return (\n"
-        f"        body\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
+        f"    cutter = (\n"
+        f"        _ref\n"
         f"        {face_sel}\n"
         f"        .center({offset_x}, {offset_y})\n"
         f"        .rect({x}, {y})\n"
-        f"        .cutBlind(-{depth})\n"
-        f"    ).clean()\n"
+        f"        .extrude(-{depth}, combine=False)\n"
+        f"    )\n"
+        f"    return body.cut(cutter).clean()\n"
     )
 
 
