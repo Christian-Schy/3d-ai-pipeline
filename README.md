@@ -161,10 +161,7 @@ einfachen bis mittleren Specs ~70%, je nach Sprachstil.
 
 ## Zur Entstehung
 
-Das Projekt entstand als Architektur- und Konzeptarbeit eines Selbstlerners. Python-Grundlagen
-in 2 Monaten, dann das System schrittweise mit KI-Tooling als Code-Generator entworfen
-— mit Fokus auf Pipeline-Design, Schema-Stabilität und der Frage, wie man große Aufgaben
-in kleine deterministische Schritte zerlegt, die ein 9b-Modell zuverlässig lösen kann.
+Das Projekt ist aus zwei Gründen entstanden. Zum einen weil ich denke, dass sich mit LLMs sehr viel bauen und automatisieren lässt; besonders faszinierend finde ich, dass das mittlerweile auch komplett lokal funktioniert. Zum anderen nutze ich es als Übung: ich arbeite seit etwa zwei Monaten dran und versuche, alles so sauber und durchdacht wie möglich umzusetzen. Der Anspruch ist hoch, das fordert mich, und es macht mir Spaß.
 
 Pull Requests, Issues und Diskussionen sind willkommen.
 
