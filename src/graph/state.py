@@ -297,10 +297,14 @@ class PipelineState(TypedDict):
     Empty dict = splitter not yet run or single-part (no splitting needed)."""
 
     position_extrakt: dict
-    """Per-teil position descriptions from PositionExtractorAgent (Step 1b).
-    Contains: positionen[{teil_id, parent_hint, beschreibung}].
-    Empty dict = extractor not run (single-part or not yet executed).
-    Feeds PositionNormalizer with pre-digested text instead of full spec."""
+    """Per-teil labeled sentences from PositionExtractorAgent (Step 1b, labeler).
+    Contains: positionen[{teil_id, is_root, placement_sentences[], feature_sentences[]}].
+
+    Runs AFTER text_splitter — labels each per-teil chunk into:
+      - placement_sentences: where the teil sits (read by platzierer)
+      - feature_sentences:   what holes/pockets/slots it has (read by feature_definierer)
+
+    Empty dict = labeler not run (single-part or not yet executed)."""
 
     teil_definitionen: list
     """Per-part feature definitions from TeilDefiniererAgent (Step 2).

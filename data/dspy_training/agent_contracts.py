@@ -17,7 +17,16 @@ Trace-Struktur (alle Felder optional ausser `specification`):
 
     # Tier 1 — heutige Haupt-Kette
     "inventar": {teil_count, teile, aktionen},
-    "position_extractor": {positionen: [{teil_id, parent_hint, beschreibung}]},
+    # position_extractor (Labeler, ab 2026-05-04): pro Teil ein Eintrag mit
+    # zwei Satzlisten — placement (wo sitzt das Teil) vs feature (welche
+    # Bohrungen/Taschen). Wird per-Teil getrennt trainiert.
+    "position_extractor": {
+        "positionen": [
+            {"teil_id", "is_root", "placement_sentences", "feature_sentences"}
+        ]
+    },
+    # position_normalizer (platzierer): pro Kind-Teil ein Eintrag. input_sentence
+    # ist heute der zusammengejointe Klartext aus placement_sentences.
     "position_normalizer": [{teil_id, input_sentence, output}],
     "teil_definitionen": [{id, type, params, orientation, features}],
     "blueprint": {description, build_order, features},
@@ -57,6 +66,12 @@ class AgentContract:
 
 
 CONTRACTS: dict[str, AgentContract] = {
+    "punctuation": AgentContract(
+        name="punctuation",
+        input_fields=["specification"],
+        output_fields=["punctuated"],
+        default_model="qwen3.5:9b",
+    ),
     "inventar": AgentContract(
         name="inventar",
         input_fields=["specification"],
@@ -64,10 +79,15 @@ CONTRACTS: dict[str, AgentContract] = {
         default_model="qwen3.5:9b",
     ),
     "position_extractor": AgentContract(
+        # Per-Teil Labeler (ab 2026-05-04): bekommt EIN Teil-Text und labelt
+        # die Saetze in placement_sentences vs feature_sentences. Ein Trainings-
+        # Paar pro Teil pro Trace (also N_teile Paare pro Spec).
+        # Output-Feld heisst "sentences" (NICHT "labels") — DSPy Example.labels
+        # ist eine reservierte Methode und ueberschreibt das Feld.
         name="position_extractor",
-        input_fields=["specification", "teile"],
-        output_fields=["positionen"],
-        default_model="qwen3.5:9b",
+        input_fields=["teil_id", "teil_text"],
+        output_fields=["sentences"],
+        default_model="gemma4:26b",
     ),
     "platzierer": AgentContract(
         # intern 4 mini-calls (frame/alignment/anchor/offset); hier als EIN
@@ -118,6 +138,25 @@ def active_agents() -> list[str]:
 # Signatur: adapter(trace: dict) -> list[{"input": {...}, "output": {...}}]
 # Bei fehlenden Feldern im Trace gibt der Adapter [] zurueck (skip).
 
+def _adapter_punctuation(trace: dict) -> list[dict]:
+    """Trace-Adapter fuer Punctuation. Erwartet entweder:
+      trace["punctuation"] = {"raw": "...", "punctuated": "..."}
+    ODER (additiv): trace["raw_input"] + trace["specification"] werden als
+    Paar interpretiert, wenn raw_input vorhanden und unterschiedlich.
+
+    Standard-Trace-Annotation hat das Feld noch nicht — Adapter ist
+    forward-kompatibel und gibt fuer alte Traces einfach [] zurueck.
+    Hauptquelle bleibt runs.jsonl (live agent_traces).
+    """
+    p = trace.get("punctuation")
+    if isinstance(p, dict) and p.get("raw") and p.get("punctuated"):
+        return [{
+            "input": {"specification": p["raw"]},
+            "output": p["punctuated"],
+        }]
+    return []
+
+
 def _adapter_inventar(trace: dict) -> list[dict]:
     inv = trace.get("inventar")
     spec = trace.get("specification")
@@ -127,6 +166,13 @@ def _adapter_inventar(trace: dict) -> list[dict]:
 
 
 def _adapter_position_extractor(trace: dict) -> list[dict]:
+    """Per-Teil Adapter (ab 2026-05-04 Labeler-Reshape).
+
+    Trace muss `position_extractor.positionen[]` mit pro-Teil Listen liefern.
+    Jeder Eintrag wird zu einem Trainings-Paar:
+      input  = {teil_id, teil_text}   ← teil_text aus teil_texte oder spec
+      output = {labels: {placement_sentences, feature_sentences}}
+    """
     pe = trace.get("position_extractor")
     inv = trace.get("inventar")
     spec = trace.get("specification")
@@ -134,15 +180,38 @@ def _adapter_position_extractor(trace: dict) -> list[dict]:
         return []
     teile = inv.get("teile", [])
     if len(teile) < 2:
-        return []  # single-part: PositionExtractor laeuft nicht
-    return [{
-        "input": {"specification": spec, "teile": teile},
-        "output": pe,
-    }]
+        return []  # single-part: kein labeler-Run
+
+    teil_texte = trace.get("teil_texte", {}) or {}
+    pairs = []
+    for entry in pe.get("positionen", []):
+        tid = entry.get("teil_id")
+        if not tid:
+            continue
+        # Skip OLD-schema entries (parent_hint/beschreibung) — they cannot
+        # be projected to the new labeler signature without re-annotation.
+        if "placement_sentences" not in entry and "feature_sentences" not in entry:
+            continue
+        teil_text = teil_texte.get(tid, spec)
+        sentences = {
+            "placement_sentences": entry.get("placement_sentences", []),
+            "feature_sentences": entry.get("feature_sentences", []),
+        }
+        pairs.append({
+            "input": {"teil_id": tid, "teil_text": teil_text},
+            "output": {"sentences": sentences},
+        })
+    return pairs
 
 
 def _adapter_position_normalizer(trace: dict) -> list[dict]:
-    """Eine Trainings-Probe pro Kind-Teil."""
+    """Eine Trainings-Probe pro Kind-Teil.
+
+    `position_sentence` wird aus dem Trace gewonnen, in dieser Reihenfolge:
+      1. position_normalizer[i].input_sentence (manuell annotiert)
+      2. position_extractor.positionen[teil_id].placement_sentences (joined)
+         — automatisch konsistent mit der Live-Pipeline ab 2026-05-04
+    """
     pn_list = trace.get("position_normalizer")
     inv = trace.get("inventar")
     spec = trace.get("specification")
@@ -150,10 +219,23 @@ def _adapter_position_normalizer(trace: dict) -> list[dict]:
         return []
     alle_teile = inv.get("teile", [])
     teile_by_id = {t["id"]: t for t in alle_teile}
+
+    # Lookup placement_sentences from position_extractor (new schema)
+    pe = trace.get("position_extractor", {})
+    placement_by_teil = {
+        e.get("teil_id"): e.get("placement_sentences", [])
+        for e in pe.get("positionen", [])
+        if e.get("teil_id")
+    }
+
     pairs = []
     for entry in pn_list:
         tid = entry.get("teil_id")
         teil = teile_by_id.get(tid, {})
+        # Prefer explicit input_sentence; otherwise derive from labeled placement
+        sent = entry.get("input_sentence")
+        if not sent:
+            sent = " ".join(placement_by_teil.get(tid, []))
         pairs.append({
             "input": {
                 "teil_id": tid,
@@ -161,7 +243,7 @@ def _adapter_position_normalizer(trace: dict) -> list[dict]:
                 "teil_params": teil.get("raw_params", {}),
                 "alle_teile": alle_teile,
                 "specification": spec,
-                "position_sentence": entry.get("input_sentence", ""),
+                "position_sentence": sent,
             },
             "output": entry.get("output", {}),
         })
@@ -171,14 +253,36 @@ def _adapter_position_normalizer(trace: dict) -> list[dict]:
 def _adapter_normalizer(trace: dict) -> list[dict]:
     """Eine Trainings-Probe pro AKTION (1 Aktion → 1 Feature).
 
-    Pipeline-Realitaet (siehe planning_nodes.feature_definierer_node):
+    Quelle (in dieser Reihenfolge):
+      1. trace["normalizer_pairs"]: explizite Paare (handgepflegt) — werden
+         direkt durchgereicht, ueberschreiben die Index-Paarung.
+      2. teil_definitionen[].features  zip  inventar.aktionen[teil_id]
+         (klassische Annotation mit beidseitiger Liste).
+
+    Pipeline-Realitaet (planning_nodes.feature_definierer_node):
         for aktion in teil_aktionen:
             norm = normalizer.normalize(beschreibung, seite, feature_spec)
-        # danach: build_teil_definition(teil, normalized_actions)  ← deterministisch
-
-    Wir paaren Aktion[i] mit Feature[i] (Index-basiert, da die Trace-Annotation
-    die Reihenfolge der Aktionen 1:1 zur Feature-Liste haelt).
     """
+    # Variant 1: explicit hand-curated pairs
+    explicit = trace.get("normalizer_pairs")
+    if isinstance(explicit, list) and explicit:
+        out = []
+        for p in explicit:
+            inp = p.get("input") or {}
+            out.append({
+                "input": {
+                    "beschreibung": inp.get("beschreibung", ""),
+                    "seite": inp.get("seite", "oben"),
+                    "teil_type": inp.get("teil_type", "box"),
+                    "teil_params": inp.get("teil_params", {}),
+                    "specification": inp.get("specification",
+                                             trace.get("specification", "")),
+                },
+                "output": p.get("output", {}),
+            })
+        return out
+
+    # Variant 2: zip teil_definitionen[].features with inventar.aktionen
     teil_defs = trace.get("teil_definitionen") or []
     inv = trace.get("inventar")
     spec = trace.get("specification")
@@ -221,6 +325,7 @@ def _adapter_blueprint_architect(trace: dict) -> list[dict]:
 
 
 ADAPTERS: dict[str, Callable[[dict], list[dict]]] = {
+    "punctuation": _adapter_punctuation,
     "inventar": _adapter_inventar,
     "position_extractor": _adapter_position_extractor,
     "platzierer": _adapter_position_normalizer,

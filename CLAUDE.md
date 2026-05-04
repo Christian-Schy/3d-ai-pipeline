@@ -180,22 +180,40 @@ Phase 1 wird versiegelt wenn folgende Punkte stabil laufen:
    assembler._emit_pre_rotation + _emit_face_rotation. Tests in
    tests/tools/test_anchor_placement.py + test_position_builder_anchor.py
    + test_assembler_rotation.py (45 tests gruen).
-3. Feature-Positions-Vokabular erweitert: "in der Ecke", "entlang Kante",
-   "diagonal", "versatz innen/aussen", "parallel zu Achse", "symmetrisch"
-4. Phase B Geometry Assertions laufen als Ersatz fuer LLM-Validator
-5. DSPy-Training auf der stabilen Baseline (Prompts von Inventar,
+3. ✓ Feature-Positions-Vokabular erweitert: "in der Ecke", "entlang Kante",
+   "diagonal", "versatz innen/aussen", "parallel zu Achse", "symmetrisch".
+   Empirisch erreicht 2026-05-04 mit Run 3755d81b (3-Teile-Spec mit anchor +
+   edge-distance + nach-aussen, vorher Failcase 91e9771c). 21 Trainings-
+   Cases in data/dspy_training/labeler_platzierer_traces.py, position_extractor
+   reshaped als per-Teil Labeler, _parse_kv akkumuliert Multi-Line-Keys.
+   Siehe Memory project_session_2026_05_04_labeler.md.
+4. Nuten in jeder Variation platzierbar: ueber Flaeche, an Kante, parallel
+   zu Achse, mit Anker-Vokabular. Pockets + Bohrungen + Quader-Extrusionen
+   funktionieren bereits — Nuten nutzen dasselbe Vokabular und sollten
+   durch dieselbe Trainings-Strategie greifen. Vor 4 noch sichern: Punkt 3
+   stabil ueber mehrere reale Runs (auch Pocket-Cases P1-P4 die noch nie
+   real getestet wurden).
+5. Fasen + Rundungen sauber ausbauen: alle Kanten-Auswahl-Varianten (eine
+   Kante, alle horizontalen, alle vertikalen, eine Flaeche umlaufend),
+   sowohl als Fase als auch als Rundung mit Radius/Schraegenmass. Heute
+   teilweise im Coder-Pfad — soll auf Templates wie der Rest umziehen.
+6. Validator-Kette als Reverse-Engineering (Phase B Teil 2):
+   - Spiegelbild der Bau-Kette: viele kleine Experten + deterministische
+     Schritte, aber von HINTEN nach VORNE
+   - Anderes Modell als der Bau-Pfad fuer unabhaengige Sicht
+   - Jeder Validator-Agent bekommt User-Text + Spec + Bau-Output und
+     prueft EIN Aspekt (Position, Drehung, Flaeche, Anker, Feature-Count)
+   - Deterministisch wo moeglich (Geometry Assertions: Volumen, BBox,
+     Feature-Count), LLM nur fuer Textverstaendnis-Pruefung
+   - Kontrolle muss schneller als Erstellung gehen
+   - Modular, wartbar, sauber — gleiche Prinzipien wie der Bau-Pfad
+7. DSPy-Training auf der stabilen Baseline (Prompts von Inventar,
    Teil-Definierer, Assembly, PositionExtractor separat trainiert)
 
-★ NAECHSTER SCHRITT (vor Punkt 3): Die jetzt integrierten Punkte 1+2 muessen
-  in echten Runs verifiziert und nachgebessert werden, bevor neue Features
-  draufkommen. Konkrete Retest-Kandidaten:
-    - Run 823b07fe — "platte 100x100x20 oben zentral 50mm box um 45 grad
-      gedreht" (testet angle_deg-Fix bei Sub-Assembly-Adds)
-    - Run 4e2fd4ab — "Wuerfel 50mm rechts Platte 40x40x20 obere linke Ecke
-      auf linker Kante 10mm von oben CCW gedreht" (testet anchor + abstand
-      → offset Mapping + angle_deg-Fix kombiniert)
-  Erst wenn diese Klasse von Faellen reproduzierbar passt, weiter mit
-  Punkt 3 (erweitertes Feature-Position-Vokabular).
+★ NAECHSTER SCHRITT: Punkt 3 in mehr realen Runs verifizieren (Pocket-Cases
+  P1-P4 noch ungetestet). Danach Punkt 4 (Nuten) bauen, dann Punkt 5
+  (Fasen/Rundungen ausbauen), dann Punkt 6 (Validator-Reverse-Kette).
+  Erst nach Punkt 6 Punkt 7 (DSPy-Re-Train auf konsolidierter Baseline).
 
 Nach Phase 1: alle weiteren Phasen (B Teil 2, C, D, E, F) bauen additiv
 darauf auf. Schema bleibt eingefroren, neue Feature-Typen nur als Erweiterung.

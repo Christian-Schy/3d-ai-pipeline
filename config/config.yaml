@@ -31,6 +31,18 @@ agent_options:
     think: false
     temperature: 0.1
     num_ctx: 8192
+  punctuation:
+    think: false       # Triviale Aufgabe — kein Reasoning noetig
+    temperature: 0.0   # Strikt deterministisch, nur Kommas einfuegen
+    num_ctx: 4096
+  position_extractor:
+    think: false       # Labeler — reine Satz-Klassifikation, kein Reasoning noetig
+    temperature: 0.05  # Sehr deterministisch, Originalwortlaut beibehalten
+    num_ctx: 4096      # Per-Teil-Text + Demos passen locker rein
+  platzierer:
+    think: false       # Wenige Demos + klare Checkliste reichen, Think macht 26B sehr langsam
+    temperature: 0.1   # Etwas Spielraum fuer Anker/Versatz-Disambiguierung
+    num_ctx: 6144
 
 # --- Model routing ---
 # Each agent uses the model best suited for its task.
@@ -40,6 +52,7 @@ models:
   interpreter:              "qwen3.5:9b"
   modification_interpreter: "qwen3.5:9b"
   visioner:                 "qwen3.5:35b"
+  punctuation:              "gemma4:26b"   # Komma-Setzer (Voice-Eingabe)
 
   # Blueprint Chain (3-Step + Multi-Part split)
   inventar:                 "gemma4:26b"   # Stueckliste + Aktionen

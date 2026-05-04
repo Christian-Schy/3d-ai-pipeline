@@ -1,0 +1,1697 @@
+[
+  {
+    "id": "u1_anchor_corner_2dist_cw",
+    "specification": "wuerfel 50mm, oben drauf platte 100x100x20, 100x20 seite liegt auf, obere linke ecke von links 10mm und von oben 20mm entfernt, um 20 grad im uhrzeigersinn gedreht",
+    "metadata": {
+      "category": "anchor_corner",
+      "difficulty": "P5",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "100x100x20 Platte",
+          "raw_params": {
+            "x": 100,
+            "y": 100,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 100x100x20, 100x20 seite liegt auf, obere linke ecke von links 10mm und von oben 20mm entfernt, um 20 grad im uhrzeigersinn gedreht"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 100x100x20",
+            "100x20 seite liegt auf",
+            "obere linke ecke von links 10mm und von oben 20mm entfernt",
+            "um 20 grad im uhrzeigersinn gedreht"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 100x100x20 100x20 seite liegt auf obere linke ecke von links 10mm und von oben 20mm entfernt um 20 grad im uhrzeigersinn gedreht",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "zentriert",
+          "orientierung": "hochkant",
+          "anliegende_flaeche": "100x20",
+          "abstand": {
+            "versatz_rechts": 10,
+            "versatz_unten": 20
+          },
+          "winkel": -20.0,
+          "anker": "top_left_auf_top_left",
+          "pre_rotation": {},
+          "notes": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "u2_edge_midpoint_2dist",
+    "specification": "wuerfel 50mm, oben drauf platte 120x100x20, 20x100 seite liegt auf, die linke seite der platte von links 20mm und von oben 40mm entfernt",
+    "metadata": {
+      "category": "anchor_edge",
+      "difficulty": "P5",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "120x100x20 Platte",
+          "raw_params": {
+            "x": 120,
+            "y": 100,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 120x100x20, 20x100 seite liegt auf, die linke seite der platte von links 20mm und von oben 40mm entfernt"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 120x100x20",
+            "20x100 seite liegt auf",
+            "die linke seite der platte von links 20mm und von oben 40mm entfernt"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 120x100x20 20x100 seite liegt auf die linke seite der platte von links 20mm und von oben 40mm entfernt",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "zentriert",
+          "orientierung": "hochkant",
+          "anliegende_flaeche": "20x100",
+          "abstand": {
+            "versatz_rechts": 20,
+            "versatz_unten": 40
+          },
+          "winkel": 0,
+          "anker": "left_edge_auf_left_edge",
+          "pre_rotation": {},
+          "notes": "linke kante des kindes auf linker kante des parents, midpoint-bezogen"
+        }
+      }
+    ]
+  },
+  {
+    "id": "u3_edge_to_opposite_edges_ccw",
+    "specification": "wuerfel 50mm, oben drauf platte 40x80x20, 40x20 seite liegt auf, die obere seite der platte soll von unten 20mm entfernt sein, die rechte seite der platte soll von rechts 10mm entfernt sein, um 10 grad gegen uhrzeigersinn rotiert",
+    "metadata": {
+      "category": "edge_distance",
+      "difficulty": "P5",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "40x80x20 Platte",
+          "raw_params": {
+            "x": 40,
+            "y": 80,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 40x80x20, 40x20 seite liegt auf, die obere seite der platte soll von unten 20mm entfernt sein, die rechte seite der platte soll von rechts 10mm entfernt sein, um 10 grad gegen uhrzeigersinn rotiert"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 40x80x20",
+            "40x20 seite liegt auf",
+            "die obere seite der platte soll von unten 20mm entfernt sein",
+            "die rechte seite der platte soll von rechts 10mm entfernt sein",
+            "um 10 grad gegen uhrzeigersinn rotiert"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 40x80x20 40x20 seite liegt auf die obere seite der platte soll von unten 20mm entfernt sein die rechte seite der platte soll von rechts 10mm entfernt sein um 10 grad gegen uhrzeigersinn rotiert",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "von_kanten",
+          "orientierung": "hochkant",
+          "anliegende_flaeche": "40x20",
+          "abstand": {
+            "abstand_unten": 20,
+            "abstand_rechts": 10
+          },
+          "winkel": 10.0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": "obere seite des kindes mit abstand zur unteren kante des parents"
+        }
+      }
+    ]
+  },
+  {
+    "id": "u4_anchor_corner_same_side_cw",
+    "specification": "wuerfel 50mm, oben drauf platte 80x80x20, 80x20 seite liegt auf, obere rechte ecke der platte von der oberen rechten ecke jeweils 10mm entfernt, um 10 grad im uhrzeigersinn rotiert",
+    "metadata": {
+      "category": "anchor_corner",
+      "difficulty": "P5",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "80x80x20 Platte",
+          "raw_params": {
+            "x": 80,
+            "y": 80,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 80x80x20, 80x20 seite liegt auf, obere rechte ecke der platte von der oberen rechten ecke jeweils 10mm entfernt, um 10 grad im uhrzeigersinn rotiert"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 80x80x20",
+            "80x20 seite liegt auf",
+            "obere rechte ecke der platte von der oberen rechten ecke jeweils 10mm entfernt",
+            "um 10 grad im uhrzeigersinn rotiert"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 80x80x20 80x20 seite liegt auf obere rechte ecke der platte von der oberen rechten ecke jeweils 10mm entfernt um 10 grad im uhrzeigersinn rotiert",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "zentriert",
+          "orientierung": "hochkant",
+          "anliegende_flaeche": "80x20",
+          "abstand": {
+            "versatz_links": 10,
+            "versatz_unten": 10
+          },
+          "winkel": -10.0,
+          "anker": "top_right_auf_top_right",
+          "pre_rotation": {},
+          "notes": "diagonal-anker mit symmetrischem abstand"
+        }
+      }
+    ]
+  },
+  {
+    "id": "u5_versatz_center_ccw",
+    "specification": "wuerfel 50mm, oben drauf platte 60x80x20, um 20mm nach oben versetzt und um 10mm nach links versetzt, und um 15 grad gegen uhrzeigersinn rotiert",
+    "metadata": {
+      "category": "versatz_mitte",
+      "difficulty": "P3",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "60x80x20 Platte",
+          "raw_params": {
+            "x": 60,
+            "y": 80,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 60x80x20, um 20mm nach oben versetzt und um 10mm nach links versetzt, und um 15 grad gegen uhrzeigersinn rotiert"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 60x80x20",
+            "um 20mm nach oben versetzt und um 10mm nach links versetzt",
+            "und um 15 grad gegen uhrzeigersinn rotiert"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 60x80x20 um 20mm nach oben versetzt und um 10mm nach links versetzt und um 15 grad gegen uhrzeigersinn rotiert",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "von_mitte",
+          "orientierung": "standard",
+          "anliegende_flaeche": "keine",
+          "abstand": {
+            "versatz_oben": 20,
+            "versatz_links": 10
+          },
+          "winkel": 15.0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": "versatz von der mitte aus, kein anker"
+        }
+      }
+    ]
+  },
+  {
+    "id": "u6_no_anchor_edges_two_axes_rotation",
+    "specification": "wuerfel 100mm, oben drauf platte 100x100x20, 100x20 seite liegt auf, obere kante 10mm von oberer kante des wuerfels entfernt, rechte seite 10mm von rechter seite des wuerfels entfernt, um 10 grad gedreht",
+    "metadata": {
+      "category": "edge_distance_no_anchor",
+      "difficulty": "P4",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "100mm Wuerfel",
+          "raw_params": {
+            "x": 100,
+            "y": 100,
+            "z": 100
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "100x100x20 Platte",
+          "raw_params": {
+            "x": 100,
+            "y": 100,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "100mm wuerfel",
+      "platte": "oben drauf platte 100x100x20, 100x20 seite liegt auf, obere kante 10mm von oberer kante des wuerfels entfernt, rechte seite 10mm von rechter seite des wuerfels entfernt, um 10 grad gedreht"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 100x100x20",
+            "100x20 seite liegt auf",
+            "obere kante 10mm von oberer kante des wuerfels entfernt",
+            "rechte seite 10mm von rechter seite des wuerfels entfernt",
+            "um 10 grad gedreht"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 100x100x20 100x20 seite liegt auf obere kante 10mm von oberer kante des wuerfels entfernt rechte seite 10mm von rechter seite des wuerfels entfernt um 10 grad gedreht",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "von_kanten",
+          "orientierung": "hochkant",
+          "anliegende_flaeche": "100x20",
+          "abstand": {
+            "abstand_oben": 10,
+            "abstand_rechts": 10
+          },
+          "winkel": 10.0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": "kein anker — reine kanten-distanz"
+        }
+      }
+    ]
+  },
+  {
+    "id": "u7_anchor_corner_with_distances",
+    "specification": "wuerfel 100mm, rechts platte 100x100x20, 100x20 seite liegt auf, linke obere ecke der platte von der linken seite 10mm und von der oberen seite 20mm entfernt, um 20 grad gedreht",
+    "metadata": {
+      "category": "anchor_corner",
+      "difficulty": "P5",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "100mm Wuerfel",
+          "raw_params": {
+            "x": 100,
+            "y": 100,
+            "z": 100
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "100x100x20 Platte",
+          "raw_params": {
+            "x": 100,
+            "y": 100,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "100mm wuerfel",
+      "platte": "rechts platte 100x100x20, 100x20 seite liegt auf, linke obere ecke der platte von der linken seite 10mm und von der oberen seite 20mm entfernt, um 20 grad gedreht"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "rechts platte 100x100x20",
+            "100x20 seite liegt auf",
+            "linke obere ecke der platte von der linken seite 10mm und von der oberen seite 20mm entfernt",
+            "um 20 grad gedreht"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "rechts platte 100x100x20 100x20 seite liegt auf linke obere ecke der platte von der linken seite 10mm und von der oberen seite 20mm entfernt um 20 grad gedreht",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "rechts",
+          "ausrichtung": "zentriert",
+          "orientierung": "hochkant",
+          "anliegende_flaeche": "100x20",
+          "abstand": {
+            "versatz_rechts": 10,
+            "versatz_unten": 20
+          },
+          "winkel": 20.0,
+          "anker": "top_left_auf_top_left",
+          "pre_rotation": {},
+          "notes": "ecke explizit erwaehnt → anker, versatz von ankerpunkt"
+        }
+      }
+    ]
+  },
+  {
+    "id": "c1_centered_simple",
+    "specification": "wuerfel 60mm, oben drauf platte 60x60x10 zentriert",
+    "metadata": {
+      "category": "trivial",
+      "difficulty": "P1",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "60mm Wuerfel",
+          "raw_params": {
+            "x": 60,
+            "y": 60,
+            "z": 60
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "60x60x10 Platte",
+          "raw_params": {
+            "x": 60,
+            "y": 60,
+            "z": 10
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "60mm wuerfel",
+      "platte": "oben drauf platte 60x60x10 zentriert"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 60x60x10 zentriert"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 60x60x10 zentriert",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "zentriert",
+          "orientierung": "standard",
+          "anliegende_flaeche": "keine",
+          "abstand": {},
+          "winkel": 0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "c2_flush_corner_no_distance",
+    "specification": "wuerfel 50mm, oben rechts buendig in die ecke platte 50x50x10",
+    "metadata": {
+      "category": "flush",
+      "difficulty": "P2",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "50x50x10 Platte",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 10
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben rechts buendig in die ecke platte 50x50x10"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben rechts buendig in die ecke platte 50x50x10"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben rechts buendig in die ecke platte 50x50x10",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "buendig_oben_rechts",
+          "orientierung": "standard",
+          "anliegende_flaeche": "keine",
+          "abstand": {},
+          "winkel": 0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "c3_hochkant_flush_unten",
+    "specification": "wuerfel 50mm, rechts platte 100x100x20 hochkant, die 100x20 seite liegt an, untere kante buendig",
+    "metadata": {
+      "category": "hochkant_flush",
+      "difficulty": "P3",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "100x100x20 Platte",
+          "raw_params": {
+            "x": 100,
+            "y": 100,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "rechts platte 100x100x20 hochkant, die 100x20 seite liegt an, untere kante buendig"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "rechts platte 100x100x20 hochkant",
+            "die 100x20 seite liegt an",
+            "untere kante buendig"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "rechts platte 100x100x20 hochkant die 100x20 seite liegt an untere kante buendig",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "rechts",
+          "ausrichtung": "buendig_unten",
+          "orientierung": "hochkant",
+          "anliegende_flaeche": "100x20",
+          "abstand": {},
+          "winkel": 0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "c4_vorne_edge_distance",
+    "specification": "wuerfel 50mm, vorne platte 80x60x15, 30x80 seite liegt an, von oben 10mm versetzt",
+    "metadata": {
+      "category": "vorne_edge",
+      "difficulty": "P3",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "80x60x15 Platte",
+          "raw_params": {
+            "x": 80,
+            "y": 60,
+            "z": 15
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "vorne platte 80x60x15, 30x80 seite liegt an, von oben 10mm versetzt"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "vorne platte 80x60x15",
+            "30x80 seite liegt an",
+            "von oben 10mm versetzt"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "vorne platte 80x60x15 30x80 seite liegt an von oben 10mm versetzt",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "vorne",
+          "ausrichtung": "von_kanten",
+          "orientierung": "hochkant",
+          "anliegende_flaeche": "30x80",
+          "abstand": {
+            "abstand_oben": 10
+          },
+          "winkel": 0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "c5_placement_plus_feature_split",
+    "specification": "wuerfel 50mm, oben drauf platte 60x60x20 zentriert, in der platte mittig eine bohrung d10 durchgehend",
+    "metadata": {
+      "category": "mixed_split",
+      "difficulty": "P3",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "60x60x20 Platte",
+          "raw_params": {
+            "x": 60,
+            "y": 60,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "platte",
+          "seite": "oben",
+          "beschreibung": "in der platte mittig eine bohrung d10 durchgehend"
+        }
+      ]
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 60x60x20 zentriert, in der platte mittig eine bohrung d10 durchgehend"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 60x60x20 zentriert"
+          ],
+          "feature_sentences": [
+            "in der platte mittig eine bohrung d10 durchgehend"
+          ]
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 60x60x20 zentriert",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "zentriert",
+          "orientierung": "standard",
+          "anliegende_flaeche": "keine",
+          "abstand": {},
+          "winkel": 0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": ""
+        }
+      }
+    ],
+    "normalizer_pairs": [
+      {
+        "input": {
+          "beschreibung": "in der platte mittig eine bohrung d10 durchgehend",
+          "seite": "oben",
+          "teil_type": "box",
+          "teil_params": {
+            "x": 60,
+            "y": 60,
+            "z": 20
+          },
+          "specification": "in der platte mittig eine bohrung d10 durchgehend"
+        },
+        "output": {
+          "type": "hole",
+          "params": {
+            "d": 10,
+            "depth": "through"
+          },
+          "position": {
+            "side": "oben",
+            "alignment": "centered"
+          },
+          "operation": "subtract"
+        }
+      }
+    ]
+  },
+  {
+    "id": "c6_only_rotation_no_offsets",
+    "specification": "wuerfel 50mm, oben drauf platte 100x40x20, um 45 grad gedreht",
+    "metadata": {
+      "category": "rotation_only",
+      "difficulty": "P2",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "100x40x20 Platte",
+          "raw_params": {
+            "x": 100,
+            "y": 40,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 100x40x20, um 45 grad gedreht"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 100x40x20",
+            "um 45 grad gedreht"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 100x40x20 um 45 grad gedreht",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "zentriert",
+          "orientierung": "standard",
+          "anliegende_flaeche": "keine",
+          "abstand": {},
+          "winkel": 45.0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "c7_pre_rotation_3d",
+    "specification": "wuerfel 50mm, rechts platte 40x40x20, in x-achse um 90 grad gekippt, anschliessend zentriert anliegend",
+    "metadata": {
+      "category": "pre_rotation",
+      "difficulty": "P4",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "40x40x20 Platte",
+          "raw_params": {
+            "x": 40,
+            "y": 40,
+            "z": 20
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "rechts platte 40x40x20, in x-achse um 90 grad gekippt, anschliessend zentriert anliegend"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "rechts platte 40x40x20",
+            "in x-achse um 90 grad gekippt",
+            "anschliessend zentriert anliegend"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "rechts platte 40x40x20 in x-achse um 90 grad gekippt anschliessend zentriert anliegend",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "rechts",
+          "ausrichtung": "zentriert",
+          "orientierung": "standard",
+          "anliegende_flaeche": "keine",
+          "abstand": {},
+          "winkel": 0,
+          "anker": "",
+          "pre_rotation": {
+            "x": 90
+          },
+          "notes": "3d kippung vor anlage"
+        }
+      }
+    ]
+  },
+  {
+    "id": "n1_outward_edge_overhang",
+    "specification": "wuerfel 50mm, oben drauf platte 60x60x10, an der rechten kante 10mm nach aussen versetzt",
+    "metadata": {
+      "category": "outward_edge",
+      "difficulty": "P4",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "60x60x10 Platte",
+          "raw_params": {
+            "x": 60,
+            "y": 60,
+            "z": 10
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 60x60x10, an der rechten kante 10mm nach aussen versetzt"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 60x60x10",
+            "an der rechten kante 10mm nach aussen versetzt"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 60x60x10 an der rechten kante 10mm nach aussen versetzt",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "buendig_rechts",
+          "orientierung": "standard",
+          "anliegende_flaeche": "keine",
+          "abstand": {
+            "versatz_rechts": 10
+          },
+          "winkel": 0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": "ueberhang nach rechts ueber buendig hinaus"
+        }
+      }
+    ]
+  },
+  {
+    "id": "n2_outward_corner_diagonal",
+    "specification": "wuerfel 50mm, oben drauf platte 50x50x15, obere rechte ecke 5mm nach aussen versetzt",
+    "metadata": {
+      "category": "outward_corner",
+      "difficulty": "P4",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "50x50x15 Platte",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 15
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 50x50x15, obere rechte ecke 5mm nach aussen versetzt"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 50x50x15",
+            "obere rechte ecke 5mm nach aussen versetzt"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 50x50x15 obere rechte ecke 5mm nach aussen versetzt",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "buendig_oben_rechts",
+          "orientierung": "standard",
+          "anliegende_flaeche": "keine",
+          "abstand": {
+            "versatz_rechts": 5,
+            "versatz_oben": 5
+          },
+          "winkel": 0,
+          "anker": "top_right_auf_top_right",
+          "pre_rotation": {},
+          "notes": "diagonal-ueberhang in obere rechte ecke"
+        }
+      }
+    ]
+  },
+  {
+    "id": "n3_overhang_synonym",
+    "specification": "wuerfel 50mm, oben drauf platte 80x80x10, rechte kante mit 15mm ueberstand",
+    "metadata": {
+      "category": "outward_synonym",
+      "difficulty": "P3",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 2,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "50mm Wuerfel",
+          "raw_params": {
+            "x": 50,
+            "y": 50,
+            "z": 50
+          }
+        },
+        {
+          "id": "platte",
+          "type": "box",
+          "beschreibung": "80x80x10 Platte",
+          "raw_params": {
+            "x": 80,
+            "y": 80,
+            "z": 10
+          }
+        }
+      ],
+      "aktionen": []
+    },
+    "teil_texte": {
+      "wuerfel": "50mm wuerfel",
+      "platte": "oben drauf platte 80x80x10, rechte kante mit 15mm ueberstand"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": []
+        },
+        {
+          "teil_id": "platte",
+          "is_root": false,
+          "placement_sentences": [
+            "oben drauf platte 80x80x10",
+            "rechte kante mit 15mm ueberstand"
+          ],
+          "feature_sentences": []
+        }
+      ]
+    },
+    "position_normalizer": [
+      {
+        "teil_id": "platte",
+        "input_sentence": "oben drauf platte 80x80x10 rechte kante mit 15mm ueberstand",
+        "output": {
+          "parent": "wuerfel",
+          "seite": "oben",
+          "ausrichtung": "buendig_rechts",
+          "orientierung": "standard",
+          "anliegende_flaeche": "keine",
+          "abstand": {
+            "versatz_rechts": 15
+          },
+          "winkel": 0,
+          "anker": "",
+          "pre_rotation": {},
+          "notes": "synonym: ueberstand = nach aussen versetzt"
+        }
+      }
+    ]
+  },
+  {
+    "id": "p1_pocket_centered_trivial",
+    "specification": "wuerfel 80mm, oben mittig eine tasche 30x30x10",
+    "metadata": {
+      "category": "pocket_trivial",
+      "difficulty": "P2",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "80mm Wuerfel",
+          "raw_params": {
+            "x": 80,
+            "y": 80,
+            "z": 80
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "wuerfel",
+          "seite": "oben",
+          "beschreibung": "oben mittig eine tasche 30x30x10"
+        }
+      ]
+    },
+    "teil_texte": {
+      "wuerfel": "80mm wuerfel, oben mittig eine tasche 30x30x10"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": [
+            "oben mittig eine tasche 30x30x10"
+          ]
+        }
+      ]
+    },
+    "position_normalizer": [],
+    "normalizer_pairs": [
+      {
+        "input": {
+          "beschreibung": "oben mittig eine tasche 30x30x10",
+          "seite": "oben",
+          "teil_type": "box",
+          "teil_params": {
+            "x": 80,
+            "y": 80,
+            "z": 80
+          },
+          "specification": "oben mittig eine tasche 30x30x10"
+        },
+        "output": {
+          "type": "pocket_rect",
+          "params": {
+            "x": 30,
+            "y": 30,
+            "depth": 10
+          },
+          "position": {
+            "side": "oben",
+            "alignment": "centered",
+            "edge_distances": null,
+            "angle_deg": 0,
+            "notes": ""
+          },
+          "operation": "subtract"
+        }
+      }
+    ]
+  },
+  {
+    "id": "p2_pocket_anchor_corner",
+    "specification": "wuerfel 80mm, oben rechts eine tasche 20x20x8, obere rechte ecke der tasche von oberer rechter ecke jeweils 10mm entfernt",
+    "metadata": {
+      "category": "pocket_anchor_corner",
+      "difficulty": "P5",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "80mm Wuerfel",
+          "raw_params": {
+            "x": 80,
+            "y": 80,
+            "z": 80
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "wuerfel",
+          "seite": "oben",
+          "beschreibung": "oben rechts eine tasche 20x20x8, obere rechte ecke der tasche von oberer rechter ecke jeweils 10mm entfernt"
+        }
+      ]
+    },
+    "teil_texte": {
+      "wuerfel": "80mm wuerfel, oben rechts eine tasche 20x20x8, obere rechte ecke der tasche von oberer rechter ecke jeweils 10mm entfernt"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": [
+            "oben rechts eine tasche 20x20x8, obere rechte ecke der tasche von oberer rechter ecke jeweils 10mm entfernt"
+          ]
+        }
+      ]
+    },
+    "position_normalizer": [],
+    "normalizer_pairs": [
+      {
+        "input": {
+          "beschreibung": "oben rechts eine tasche 20x20x8, obere rechte ecke der tasche von oberer rechter ecke jeweils 10mm entfernt",
+          "seite": "oben",
+          "teil_type": "box",
+          "teil_params": {
+            "x": 80,
+            "y": 80,
+            "z": 80
+          },
+          "specification": "oben rechts eine tasche 20x20x8, obere rechte ecke der tasche von oberer rechter ecke jeweils 10mm entfernt"
+        },
+        "output": {
+          "type": "pocket_rect",
+          "params": {
+            "x": 20,
+            "y": 20,
+            "depth": 8
+          },
+          "position": {
+            "side": "oben",
+            "alignment": "centered",
+            "edge_distances": {
+              "right": 10,
+              "top": 10
+            },
+            "anchor": {
+              "child_point": "top_right",
+              "parent_point": "top_right"
+            },
+            "angle_deg": 0,
+            "notes": "anker corner-corner"
+          },
+          "operation": "subtract"
+        }
+      }
+    ]
+  },
+  {
+    "id": "p3_pocket_edge_midpoint",
+    "specification": "wuerfel 100mm, oben eine tasche 40x20x5, von links 15mm und von oben 25mm entfernt",
+    "metadata": {
+      "category": "pocket_edge_distance",
+      "difficulty": "P3",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "100mm Wuerfel",
+          "raw_params": {
+            "x": 100,
+            "y": 100,
+            "z": 100
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "wuerfel",
+          "seite": "oben",
+          "beschreibung": "oben eine tasche 40x20x5, von links 15mm und von oben 25mm entfernt"
+        }
+      ]
+    },
+    "teil_texte": {
+      "wuerfel": "100mm wuerfel, oben eine tasche 40x20x5, von links 15mm und von oben 25mm entfernt"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": [
+            "oben eine tasche 40x20x5, von links 15mm und von oben 25mm entfernt"
+          ]
+        }
+      ]
+    },
+    "position_normalizer": [],
+    "normalizer_pairs": [
+      {
+        "input": {
+          "beschreibung": "oben eine tasche 40x20x5, von links 15mm und von oben 25mm entfernt",
+          "seite": "oben",
+          "teil_type": "box",
+          "teil_params": {
+            "x": 100,
+            "y": 100,
+            "z": 100
+          },
+          "specification": "oben eine tasche 40x20x5, von links 15mm und von oben 25mm entfernt"
+        },
+        "output": {
+          "type": "pocket_rect",
+          "params": {
+            "x": 40,
+            "y": 20,
+            "depth": 5
+          },
+          "position": {
+            "side": "oben",
+            "alignment": "von_kanten",
+            "edge_distances": {
+              "left": 15,
+              "top": 25
+            },
+            "angle_deg": 0,
+            "notes": "center der tasche aus kanten gemessen"
+          },
+          "operation": "subtract"
+        }
+      }
+    ]
+  },
+  {
+    "id": "p4_pocket_rotated_centered",
+    "specification": "wuerfel 80mm, oben mittig eine tasche 25x25x10, um 30 grad gedreht",
+    "metadata": {
+      "category": "pocket_rotation",
+      "difficulty": "P3",
+      "sprachstil": "natuerlich"
+    },
+    "inventar": {
+      "teil_count": 1,
+      "teile": [
+        {
+          "id": "wuerfel",
+          "type": "box",
+          "beschreibung": "80mm Wuerfel",
+          "raw_params": {
+            "x": 80,
+            "y": 80,
+            "z": 80
+          }
+        }
+      ],
+      "aktionen": [
+        {
+          "teil_id": "wuerfel",
+          "seite": "oben",
+          "beschreibung": "oben mittig eine tasche 25x25x10, um 30 grad gedreht"
+        }
+      ]
+    },
+    "teil_texte": {
+      "wuerfel": "80mm wuerfel, oben mittig eine tasche 25x25x10, um 30 grad gedreht"
+    },
+    "position_extractor": {
+      "positionen": [
+        {
+          "teil_id": "wuerfel",
+          "is_root": true,
+          "placement_sentences": [],
+          "feature_sentences": [
+            "oben mittig eine tasche 25x25x10, um 30 grad gedreht"
+          ]
+        }
+      ]
+    },
+    "position_normalizer": [],
+    "normalizer_pairs": [
+      {
+        "input": {
+          "beschreibung": "oben mittig eine tasche 25x25x10, um 30 grad gedreht",
+          "seite": "oben",
+          "teil_type": "box",
+          "teil_params": {
+            "x": 80,
+            "y": 80,
+            "z": 80
+          },
+          "specification": "oben mittig eine tasche 25x25x10, um 30 grad gedreht"
+        },
+        "output": {
+          "type": "pocket_rect",
+          "params": {
+            "x": 25,
+            "y": 25,
+            "depth": 10
+          },
+          "position": {
+            "side": "oben",
+            "alignment": "centered",
+            "edge_distances": null,
+            "angle_deg": 30.0,
+            "notes": ""
+          },
+          "operation": "subtract"
+        }
+      }
+    ]
+  }
+]

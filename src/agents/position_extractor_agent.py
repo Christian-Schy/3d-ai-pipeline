@@ -1,15 +1,16 @@
 """
-src/agents/position_extractor_agent.py — Pre-digest step for position normalization.
+src/agents/position_extractor_agent.py — Per-Teil Labeler.
 
-Analogous to InventarAgent, but extracts per-part position descriptions
-instead of per-part actions. Runs between inventar and teil_definierer.
+Reads the per-teil text chunk produced by TextSplitterAgent and labels each
+sentence as either placement (where the teil sits) or feature (what holes /
+pockets / slots the teil has).
 
-The output feeds PositionNormalizerAgent: each child part gets a short,
-focused position sentence instead of the full spec with all noise.
+Input:  one teil's text (already split per part by TextSplitterAgent).
+Output: {placement_sentences: [...], feature_sentences: [...]} per teil.
 
-Rationale: Inventar works well because it pre-digests the spec. The same
-pattern applied to positioning makes the per-part PositionNormalizer's
-job simpler — text understanding focused on one teil at a time.
+Rationale: tiny input + tiny task = fast and reliable on small models.
+The previous version saw the full spec and tried to also do the per-teil split
+in one giant call (140-line prompt, 800s runtime, frequent timeouts).
 """
 
 import structlog
@@ -26,12 +27,14 @@ POSITION_EXTRACTOR_TEMPLATE = _prompt.POSITION_EXTRACTOR_TEMPLATE
 
 
 class PositionExtractorAgent(BaseAgent):
-    """Filters per-teil position sentences from the full specification."""
+    """Labels sentences in a per-teil text as placement or feature."""
 
     name = "position_extractor"
     dspy_demo_fields = {
-        "input_fields": ["specification", "teile"],
-        "output_field": "positionen",
+        "input_fields": ["teil_id", "teil_text"],
+        # Output-Feld heisst "sentences" (NICHT "labels") — DSPy Example.labels
+        # ist eine reservierte Methode und ueberschreibt das Feld bei Predict.
+        "output_field": "sentences",
     }
 
     def __init__(self):
@@ -41,66 +44,36 @@ class PositionExtractorAgent(BaseAgent):
                                      cfg.models.inventar))
         super().__init__()
 
-    def extract(self, specification: str, teile: list[dict]) -> dict:
-        """Extract per-teil position descriptions.
+    def label(self, teil_id: str, teil_text: str) -> dict:
+        """Label one teil's text into placement_sentences and feature_sentences.
 
         Args:
-            specification: Full user spec (output of interpreter).
-            teile: Inventar teile list.
+            teil_id: Identifier of the teil being labeled (for prompt context).
+            teil_text: Per-teil text chunk from TextSplitterAgent.
 
         Returns:
-            dict with "positionen": list of {teil_id, parent_hint, beschreibung}.
-            Child teile only — the first/root teil gets no entry.
+            {"placement_sentences": [...], "feature_sentences": [...]}
         """
-        if len(teile) < 2:
-            return {"positionen": []}
-
-        teile_lines = []
-        for t in teile:
-            params_str = ", ".join(f"{k}={v}" for k, v in t.get("raw_params", {}).items())
-            teile_lines.append(f"  {t['id']}: {t.get('type', 'box')} ({params_str})")
-
         prompt = POSITION_EXTRACTOR_TEMPLATE.format(
-            specification=specification,
-            teile_liste="\n".join(teile_lines),
+            teil_id=teil_id,
+            teil_text=teil_text.strip(),
         )
 
         result = self.call_json(prompt, system=SYSTEM_PROMPT)
-        return self._validate(result, teile)
+        return self._validate(result)
 
-    def _validate(self, data: dict, teile: list[dict]) -> dict:
-        """Ensure structure + reference integrity."""
+    def _validate(self, data: dict) -> dict:
+        """Ensure both lists exist and contain only non-empty strings."""
         if not isinstance(data, dict):
             raise ValueError("PositionExtractor: result is not a dict")
 
-        positionen = data.get("positionen", [])
-        if not isinstance(positionen, list):
-            positionen = []
+        def _clean(key: str) -> list[str]:
+            raw = data.get(key, [])
+            if not isinstance(raw, list):
+                return []
+            return [s.strip() for s in raw if isinstance(s, str) and s.strip()]
 
-        teil_ids = {t["id"] for t in teile}
-        root_id = teile[0]["id"] if teile else ""
-
-        cleaned = []
-        for p in positionen:
-            if not isinstance(p, dict):
-                continue
-            tid = p.get("teil_id", "")
-            if tid not in teil_ids:
-                self.log.warning("position_extractor_unknown_teil_id", teil_id=tid)
-                continue
-            if tid == root_id:
-                # Root has no position — ignore any hallucinated entry for it
-                continue
-            beschreibung = str(p.get("beschreibung", "")).strip()
-            if not beschreibung:
-                continue
-            parent_hint = p.get("parent_hint", "")
-            if parent_hint and parent_hint not in teil_ids:
-                parent_hint = ""
-            cleaned.append({
-                "teil_id": tid,
-                "parent_hint": parent_hint,
-                "beschreibung": beschreibung,
-            })
-
-        return {"positionen": cleaned}
+        return {
+            "placement_sentences": _clean("placement_sentences"),
+            "feature_sentences": _clean("feature_sentences"),
+        }

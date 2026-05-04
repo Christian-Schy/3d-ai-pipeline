@@ -57,7 +57,7 @@ def load_manual_examples() -> list[dict]:
 
 
 def load_traces() -> list[dict]:
-    """Alle Pipeline-Traces laden (reference + sonnet batches)."""
+    """Alle Pipeline-Traces laden (reference + sonnet batches + labeler/platzierer)."""
     traces: list[dict] = []
     # Primär: Python-Module importieren, damit _pos/_norm-Helfer materialisiert sind
     try:
@@ -70,6 +70,12 @@ def load_traces() -> list[dict]:
         traces.extend(SONNET_TRACES)
     except Exception as e:
         print(f"WARN: sonnet_traces nicht ladbar: {e}")
+    # Hand-curated traces fuer den Labeler-Reshape + Anker-Vokabular (2026-05-04)
+    try:
+        from labeler_platzierer_traces import ALL_TRACES as LABELER_TRACES
+        traces.extend(LABELER_TRACES)
+    except Exception as e:
+        print(f"WARN: labeler_platzierer_traces nicht ladbar: {e}")
     return traces
 
 
@@ -92,6 +98,29 @@ def load_runs() -> list[dict]:
         except json.JSONDecodeError:
             continue
     return runs
+
+
+def load_punctuation_seed() -> list[dict]:
+    """Seed-Beispiele aus data/prompts/prompt_punctuation.py.
+
+    Erste Trainingsrunde hat noch keine runs.jsonl Traces des Punctuation-Agents.
+    Die statischen FEW_SHOT_EXAMPLES dienen als Anfangs-Set, damit das erste
+    Training nicht leer laeuft.
+    """
+    try:
+        sys.path.insert(0, str(PROJECT_ROOT))
+        from src.utils.prompt_loader import load_prompt
+        mod = load_prompt("prompt_punctuation.py")
+        examples = getattr(mod, "FEW_SHOT_EXAMPLES", [])
+    except Exception as e:
+        print(f"WARN: punctuation seed nicht ladbar: {e}")
+        return []
+    return [
+        {"input": {"specification": ex["input"]},
+         "output": ex["output"],
+         "feedback": "good"}
+        for ex in examples
+    ]
 
 
 def manual_to_agent_pairs(examples: list[dict], agent_name: str) -> list[dict]:
@@ -151,19 +180,35 @@ def print_stats():
     print(f"  Feedback=good: {sum(1 for r in runs if r.get('feedback') == 'good')}")
 
     agents = list(AGENT_CONFIG.keys())
-    print(f"\n{'Agent':<22} {'Traces':>8} {'Legacy':>8} {'Runs':>6} {'Gesamt':>8}")
-    print("-" * 56)
+    print(f"\n{'Agent':<22} {'Traces':>8} {'Legacy':>8} {'Runs':>6} {'Seed':>6} {'Gesamt':>8}")
+    print("-" * 64)
     for agent in agents:
         t = traces_to_agent_pairs(traces, agent)
         m = manual_to_agent_pairs(manual, agent)
         r = [p for p in extract_run_examples(runs, agent, only_successful=True)
              if p.get("feedback") == "good"]
+        s = load_punctuation_seed() if agent == "punctuation" else []
         active = "" if CONTRACTS.get(agent) and CONTRACTS[agent].active else " (legacy)"
         print(f"{agent+active:<22} {len(t):>8} {len(m):>8} {len(r):>6} "
-              f"{len(t)+len(m)+len(r):>8}")
+              f"{len(s):>6} {len(t)+len(m)+len(r)+len(s):>8}")
 
 
 # ── DSPy Signatures ─────────────────────────────────────────────
+
+class PunctuationSignature(dspy.Signature):
+    """Setze Kommas in eine CAD-Spezifikation an natuerlichen Trennstellen.
+    KEIN Wort, KEINE Zahl, KEINE Einheit aendern — nur Kommas einfuegen.
+    Trenne Bauteil von erster Aktion und aufeinanderfolgende Aktionen mit
+    eigener Seitenangabe."""
+
+    specification: str = dspy.InputField(
+        desc="Roher Spezifikationstext (oft Voice-Input ohne Kommas)."
+    )
+    punctuated: str = dspy.OutputField(
+        desc="Selber Text, nur mit Kommas an natuerlichen Trennstellen. "
+             "Identische Wort-Sequenz wie der Input."
+    )
+
 
 class InventarSignature(dspy.Signature):
     """Extrahiere eine Stückliste (Inventar) aus einer CAD-Bauteilbeschreibung.
@@ -214,19 +259,22 @@ class NormalizerSignature(dspy.Signature):
 
 
 class PositionExtractorSignature(dspy.Signature):
-    """Extrahiere aus einer Multi-Part-Spezifikation die Platzierungs-Sätze pro Kind-Teil.
-    Root-Teil NIE eintragen. Pro Kind-Teil: teil_id, parent_hint (woran es sitzt),
-    beschreibung (pre-digester Satz: Seite + Kontaktflaeche + Versatz/Winkel, ohne Rauschen)."""
+    """Per-Teil Labeler (ab 2026-05-04 Reshape).
 
-    specification: str = dspy.InputField(
-        desc="Die vollständige Multi-Part-Spezifikation in natürlicher Sprache."
+    Eingabe: der Text EINES Teils (vom text_splitter vorgesplittet).
+    Aufgabe: Saetze in zwei Listen trennen — placement (wo sitzt das Teil) vs
+    feature (welche Bohrungen/Taschen). Originalwortlaut beibehalten."""
+
+    teil_id: str = dspy.InputField(
+        desc="ID des Teils das gelabelt wird (Kontext fuer das Modell)."
     )
-    teile: str = dspy.InputField(
-        desc="JSON-Liste aller Teile (aus Inventar) mit id, type, raw_params."
+    teil_text: str = dspy.InputField(
+        desc="Per-Teil Text-Chunk vom TextSplitter — nur Saetze die zu diesem Teil gehoeren."
     )
-    positionen: str = dspy.OutputField(
-        desc="JSON-Objekt {'positionen': [{teil_id, parent_hint, beschreibung}]} — "
-             "nur fuer Kind-Teile (erstes Teil = Root, wird uebersprungen)."
+    sentences: str = dspy.OutputField(
+        desc="JSON {'placement_sentences': [...], 'feature_sentences': [...]} — "
+             "Saetze des Teils getrennt nach Platzierung vs Feature. "
+             "Saetze die nichts mit beidem zu tun haben weglassen."
     )
 
 
@@ -266,6 +314,14 @@ class BlueprintArchitectSignature(dspy.Signature):
 
 # ── DSPy Module ──────────────────────────────────────────────────
 
+class PunctuationModule(dspy.Module):
+    def __init__(self):
+        self.predict = dspy.Predict(PunctuationSignature)
+
+    def forward(self, specification: str) -> dspy.Prediction:
+        return self.predict(specification=specification)
+
+
 class InventarModule(dspy.Module):
     def __init__(self):
         self.predict = dspy.Predict(InventarSignature)
@@ -301,8 +357,8 @@ class PositionExtractorModule(dspy.Module):
     def __init__(self):
         self.predict = dspy.Predict(PositionExtractorSignature)
 
-    def forward(self, specification: str, teile: str) -> dspy.Prediction:
-        return self.predict(specification=specification, teile=teile)
+    def forward(self, teil_id: str, teil_text: str) -> dspy.Prediction:
+        return self.predict(teil_id=teil_id, teil_text=teil_text)
 
 
 class PositionNormalizerModule(dspy.Module):
@@ -362,6 +418,64 @@ def _parse_json_safe(text) -> dict | list | None:
     except (ValueError, SyntaxError):
         pass
     return None
+
+
+import re as _re_punct
+
+def _word_tokens(text: str) -> list[str]:
+    """Lowercase word tokens (Umlaut-aware) — used by punctuation_metric."""
+    if not isinstance(text, str):
+        text = str(text or "")
+    return _re_punct.findall(r"\w+", text.lower(), flags=_re_punct.UNICODE)
+
+
+def punctuation_metric(example, prediction, trace=None) -> float:
+    """Bewerte Punctuation:
+      0.5 — Wort-Sequenz IDENTISCH zum Input (hard requirement, sonst 0.0)
+      0.4 — Komma-Set passt exakt zu Erwartung (Anzahl + Position via Token-Index)
+      0.1 — Mindestens 1 Komma gesetzt wenn Erwartung > 0
+    """
+    try:
+        in_text = getattr(example, "specification", "") or ""
+        expected = getattr(example, "punctuated", "") or ""
+        predicted = getattr(prediction, "punctuated", "") or ""
+
+        in_tokens = _word_tokens(in_text)
+        pred_tokens = _word_tokens(predicted)
+        if in_tokens != pred_tokens:
+            return 0.0  # hard fail: words must not change
+
+        score = 0.5
+
+        # Exact comma positions (relative to word index)
+        def comma_positions(text: str) -> list[int]:
+            positions: list[int] = []
+            word_idx = -1
+            in_word = False
+            for ch in text:
+                if ch.isalnum() or ch == "_":
+                    if not in_word:
+                        word_idx += 1
+                        in_word = True
+                else:
+                    in_word = False
+                    if ch == ",":
+                        positions.append(word_idx)
+            return positions
+
+        exp_pos = comma_positions(expected)
+        pred_pos = comma_positions(predicted)
+        if exp_pos == pred_pos:
+            score += 0.4
+        elif set(exp_pos) & set(pred_pos):
+            overlap = len(set(exp_pos) & set(pred_pos)) / max(len(exp_pos), 1)
+            score += 0.4 * overlap
+
+        if len(exp_pos) > 0 and len(pred_pos) > 0:
+            score += 0.1
+        return min(score, 1.0)
+    except Exception:
+        return 0.0
 
 
 def inventar_metric(example, prediction, trace=None) -> float:
@@ -451,55 +565,45 @@ def normalizer_metric(example, prediction, trace=None) -> float:
 
 
 def position_extractor_metric(example, prediction, trace=None) -> float:
-    """Bewerte PositionExtractor: korrekte kind-teil-Liste + parent_hint.
+    """Bewerte Labeler: Bag-of-Sentences-Match auf placement_sentences und feature_sentences.
 
-    0.4 — Anzahl Positionen stimmt
-    0.3 — teil_ids stimmen (Set-Gleichheit)
-    0.2 — parent_hints stimmen (pro Eintrag)
-    0.1 — beschreibung nicht leer
+    Beide Listen werden als Mengen verglichen (Reihenfolge egal). Score:
+      0.5 — placement_sentences-Set stimmt (Schnittmenge / max(|exp|,|pred|))
+      0.5 — feature_sentences-Set stimmt (gleiche Logik)
+
+    Toleranz: Whitespace/Case wird vor Vergleich normalisiert. Leere Listen
+    auf beiden Seiten geben 1.0 fuer diese Haelfte (nichts erwartet, nichts
+    geliefert = korrekt).
     """
+    def _norm_sentence(s) -> str:
+        return " ".join(str(s).strip().lower().split()) if isinstance(s, str) else ""
+
+    def _set_match(exp_list, pred_list) -> float:
+        exp = {_norm_sentence(s) for s in exp_list if _norm_sentence(s)}
+        pred = {_norm_sentence(s) for s in pred_list if _norm_sentence(s)}
+        if not exp and not pred:
+            return 1.0
+        if not exp or not pred:
+            return 0.0
+        intersect = len(exp & pred)
+        union_size = max(len(exp), len(pred))
+        return intersect / union_size if union_size else 0.0
+
     try:
-        expected = _parse_json_safe(getattr(example, "positionen", None))
-        predicted = _parse_json_safe(getattr(prediction, "positionen", None))
-
-        # Tolerate models that return the bare list instead of {"positionen": [...]}
-        if isinstance(predicted, list):
-            predicted = {"positionen": predicted}
-        if isinstance(expected, list):
-            expected = {"positionen": expected}
-
+        expected = _parse_json_safe(getattr(example, "sentences", None))
+        predicted = _parse_json_safe(getattr(prediction, "sentences", None))
         if not isinstance(predicted, dict) or not isinstance(expected, dict):
             return 0.0
-        exp_pos = expected.get("positionen", [])
-        pred_pos = predicted.get("positionen", [])
-        if not isinstance(exp_pos, list) or not isinstance(pred_pos, list):
-            return 0.0
 
-        score = 0.0
-        if len(exp_pos) == len(pred_pos):
-            score += 0.4
-
-        exp_ids = {p.get("teil_id") for p in exp_pos if isinstance(p, dict)}
-        pred_ids = {p.get("teil_id") for p in pred_pos if isinstance(p, dict)}
-        if exp_ids and exp_ids == pred_ids:
-            score += 0.3
-
-        # parent_hint pro Eintrag
-        exp_by_id = {p.get("teil_id"): p for p in exp_pos if isinstance(p, dict)}
-        hint_matches = 0
-        for p in pred_pos:
-            if not isinstance(p, dict):
-                continue
-            e = exp_by_id.get(p.get("teil_id"))
-            if e and p.get("parent_hint") == e.get("parent_hint"):
-                hint_matches += 1
-        if exp_pos:
-            score += 0.2 * (hint_matches / len(exp_pos))
-
-        if pred_pos and all(isinstance(p, dict) and p.get("beschreibung") for p in pred_pos):
-            score += 0.1
-
-        return score
+        place_score = _set_match(
+            expected.get("placement_sentences", []),
+            predicted.get("placement_sentences", []),
+        )
+        feat_score = _set_match(
+            expected.get("feature_sentences", []),
+            predicted.get("feature_sentences", []),
+        )
+        return 0.5 * place_score + 0.5 * feat_score
     except Exception:
         return 0.0
 
@@ -567,7 +671,15 @@ def to_dspy_examples(raw: list[dict], agent_name: str) -> list[dspy.Example]:
         def _j(obj):
             return json.dumps(obj, ensure_ascii=False) if not isinstance(obj, str) else obj
 
-        if agent_name == "inventar":
+        if agent_name == "punctuation":
+            # output is a plain string (the punctuated spec), not JSON
+            out_text = out if isinstance(out, str) else str(out)
+            ex = dspy.Example(
+                specification=inp.get("specification", ""),
+                punctuated=out_text,
+            ).with_inputs("specification")
+
+        elif agent_name == "inventar":
             ex = dspy.Example(
                 specification=inp.get("specification", ""),
                 inventar=_j(out),
@@ -591,11 +703,16 @@ def to_dspy_examples(raw: list[dict], agent_name: str) -> list[dspy.Example]:
             ).with_inputs("specification")
 
         elif agent_name == "position_extractor":
+            # New per-teil labeler: input = teil_id + teil_text, output = sentences
+            # (renamed from "labels" because DSPy Example.labels is a reserved method)
+            sent = out.get("sentences") if isinstance(out, dict) and "sentences" in out else \
+                   out.get("labels") if isinstance(out, dict) and "labels" in out else \
+                   out
             ex = dspy.Example(
-                specification=inp.get("specification", ""),
-                teile=_j(inp.get("teile", [])),
-                positionen=_j(out),
-            ).with_inputs("specification", "teile")
+                teil_id=inp.get("teil_id", ""),
+                teil_text=inp.get("teil_text", ""),
+                sentences=_j(sent if isinstance(sent, dict) else {}),
+            ).with_inputs("teil_id", "teil_text")
 
         elif agent_name == "platzierer":
             ex = dspy.Example(
@@ -619,6 +736,11 @@ def to_dspy_examples(raw: list[dict], agent_name: str) -> list[dspy.Example]:
 # ── Training ─────────────────────────────────────────────────────
 
 AGENT_CONFIG = {
+    "punctuation": {
+        "module_cls": PunctuationModule,
+        "metric": punctuation_metric,
+        "default_model": "qwen3.5:9b",
+    },
     "inventar": {
         "module_cls": InventarModule,
         "metric": inventar_metric,
@@ -627,17 +749,17 @@ AGENT_CONFIG = {
     "position_extractor": {
         "module_cls": PositionExtractorModule,
         "metric": position_extractor_metric,
-        "default_model": "qwen3.5:9b",
+        "default_model": "gemma4:26b",
     },
     "platzierer": {
         "module_cls": PositionNormalizerModule,
         "metric": position_normalizer_metric,
-        "default_model": "qwen3.5:9b",
+        "default_model": "gemma4:26b",
     },
     "normalizer": {
         "module_cls": NormalizerModule,
         "metric": normalizer_metric,
-        "default_model": "qwen3.5:9b",
+        "default_model": "gemma4:26b",
     },
     # assembly: Pipeline-Schritt ist deterministisch (kein LLM-Call), kein Training-Target.
     "blueprint_architect": {
@@ -679,12 +801,17 @@ def train_agent(agent_name: str,
     run_pairs = extract_run_examples(runs, agent_name, only_successful=True)
     run_pairs = [p for p in run_pairs if p.get("feedback") == "good"]
 
-    all_pairs = trace_pairs + manual_pairs + run_pairs
+    seed_pairs: list[dict] = []
+    if agent_name == "punctuation":
+        seed_pairs = load_punctuation_seed()
+
+    all_pairs = trace_pairs + manual_pairs + run_pairs + seed_pairs
 
     print(f"\n{'='*60}")
     print(f"Training: {agent_name}  (source={source})")
     print(f"  Traces: {len(trace_pairs)}, Legacy: {len(manual_pairs)}, "
-          f"Runs: {len(run_pairs)}, Gesamt: {len(all_pairs)}")
+          f"Runs: {len(run_pairs)}, Seed: {len(seed_pairs)}, "
+          f"Gesamt: {len(all_pairs)}")
     print(f"{'='*60}")
 
     if not all_pairs:

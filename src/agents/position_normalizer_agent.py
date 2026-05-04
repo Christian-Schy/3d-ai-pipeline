@@ -144,8 +144,15 @@ class PositionNormalizerAgent(BaseAgent):
     # ──────────────────────────────────────────────────────────────────
 
     def _parse_kv(self, raw: str) -> dict:
-        """Parse 'key: value' lines into a flat dict (lowercased keys)."""
-        result = {}
+        """Parse 'key: value' lines into a flat dict (lowercased keys).
+
+        Same key on multiple lines accumulates into a single comma-joined
+        string. This matters for `kantenabstand:` and `versatz:` where the
+        model may emit one line per axis (e.g.
+        `kantenabstand: oben=10` + `kantenabstand: rechts=10`); without
+        accumulation the second overwrites the first and one axis is lost.
+        """
+        result: dict[str, str] = {}
         for line in raw.strip().splitlines():
             line = line.strip()
             if not line or ":" not in line:
@@ -153,7 +160,11 @@ class PositionNormalizerAgent(BaseAgent):
             key, _, val = line.partition(":")
             key = key.strip().lower().replace(" ", "_")
             val = val.strip()
-            if val and val != "-":
+            if not val or val == "-":
+                continue
+            if key in result:
+                result[key] = f"{result[key]}, {val}"
+            else:
                 result[key] = val
         return result
 
