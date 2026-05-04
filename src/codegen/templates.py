@@ -407,18 +407,29 @@ def pocket_rect(
     face: str,
     offset_x: float,
     offset_y: float,
+    angle: float = 0.0,
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
 ) -> str:
-    """Rectangular pocket on a face."""
+    """Rectangular pocket on a face.
+
+    angle: rotation around the face normal in degrees. The cutter
+    workplane is rotated via .transformed(rotate=(0,0,angle)) before the
+    rect is drawn, so the rectangular footprint comes out tilted.
+    """
     face_sel = _face_selection(face, use_ntp, ntp_point)
+    rotate_clause = (
+        f".transformed(rotate=(0, 0, {angle}))\n        "
+        if angle and float(angle) != 0.0
+        else ""
+    )
     return (
         f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
         f"    cutter = (\n"
         f"        _ref\n"
         f"        {face_sel}\n"
         f"        .center({offset_x}, {offset_y})\n"
-        f"        .rect({x}, {y})\n"
+        f"        {rotate_clause}.rect({x}, {y})\n"
         f"        .extrude(-{depth}, combine=False)\n"
         f"    )\n"
         f"    return body.cut(cutter).clean()\n"

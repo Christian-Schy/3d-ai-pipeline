@@ -1,4 +1,4 @@
-"""Input nodes: entry_router_node and interpreter_node."""
+"""Input nodes: entry_router_node, interpreter_node, punctuation_node."""
 from __future__ import annotations
 import time
 import structlog
@@ -8,6 +8,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from src.graph.state import PipelineState
 from src.agents.interpreter import InterpreterAgent
 from src.agents.modification_interpreter import ModificationInterpreterAgent
+from src.agents.punctuation_agent import PunctuationAgent
 from ._registry import get_agent, get_raw_response
 from ._tracing import _make_trace
 
@@ -90,5 +91,48 @@ def interpreter_node(state: PipelineState) -> dict:
     return {
         "specification": description,
         "is_complete": True,
+        "agent_traces": [_trace],
+    }
+
+
+def punctuation_node(state: PipelineState) -> dict:
+    """Insert commas into the spec at natural pause points.
+
+    Voice input has no commas; without them downstream agents (Inventar,
+    PositionExtractor) misread "auf der linken seite soll ..." as part of
+    the body description and pick the wrong action side.
+
+    Token-safety: if the LLM altered any word, the original spec is kept.
+    """
+    spec = state.get("specification", "") or ""
+    if not spec.strip():
+        return {}
+
+    _t0 = time.time()
+    _step = len(state.get("agent_traces", [])) + 1
+
+    agent = get_agent(PunctuationAgent)
+    try:
+        punctuated = agent.punctuate(spec)
+    except Exception as e:
+        log.error("node_punctuation_failed", error=str(e)[:200])
+        return {}
+
+    from src.config.loader import get_config as _gc
+    _trace = _make_trace(
+        agent="punctuation", step=_step,
+        input_data={"specification": spec},
+        output_data={"specification": punctuated, "changed": punctuated != spec},
+        start_time=_t0,
+        model=getattr(_gc().models, "punctuation", _gc().models.inventar),
+        raw_response=getattr(agent, "_last_raw_response", None),
+    )
+
+    if punctuated == spec:
+        return {"agent_traces": [_trace]}
+
+    return {
+        "specification": punctuated,
+        "description": punctuated,
         "agent_traces": [_trace],
     }

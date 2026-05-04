@@ -12,6 +12,7 @@ from src.agents.text_splitter_agent import TextSplitterAgent
 from src.agents.normalizer_agent import NormalizerAgent
 from src.agents.position_normalizer_agent import PositionNormalizerAgent
 from src.agents.assembly_agent import AssemblyAgent
+from src.agents.pocket_child_placer import PocketChildPlacer
 from src.agents.function_decomposer import FunctionDecomposerAgent
 from src.agents.plan_validator import PlanValidatorAgent
 from src.tools.feature_builder import build_teil_definition
@@ -91,17 +92,22 @@ def inventar_node(state: PipelineState) -> dict:
 
 
 def position_extractor_node(state: PipelineState) -> dict:
-    """Step 1b: Pre-digest per-teil position sentences from the full spec.
+    """Step 1b: Per-teil Labeler — split each teil's text into placement vs.
+    feature sentences.
 
-    Runs after inventar_node, before feature_definierer_node.
-    Analog to how inventar_node pre-digests actions per teil,
-    this node pre-digests WHERE each child teil is placed.
+    Runs AFTER text_splitter_node (which produces teil_texte = {teil_id: text}).
+    For each teil, calls PositionExtractorAgent on that teil's chunk and gets
+    back two lists:
+      - placement_sentences: where the teil sits / how it is oriented
+      - feature_sentences:   what holes / pockets / slots the teil has
 
-    The output feeds PositionNormalizerAgent with a short, focused
-    position sentence instead of the noisy full spec.
-    Skipped for single-part models (no position to extract).
+    Downstream feature_definierer reads feature_sentences[teil_id] only,
+    platzierer reads placement_sentences[teil_id] only — no cross-teil noise.
+
+    Skipped for single-part models (no placement, only features).
     """
     inventar = state.get("inventar", {})
+    teil_texte: dict[str, str] = state.get("teil_texte", {}) or {}
     spec = state.get("specification", state.get("description", ""))
     _t0 = time.time()
     _step = len(state.get("agent_traces", [])) + 1
@@ -118,26 +124,58 @@ def position_extractor_node(state: PipelineState) -> dict:
             )],
         }
 
+    from src.config.loader import get_config as _gc
     agent = get_agent(PositionExtractorAgent)
-    try:
-        result = agent.extract(spec, teile)
-    except Exception as e:
-        log.error("node_position_extractor_failed", error=str(e)[:200])
-        result = {"positionen": []}
+    root_id = teile[0]["id"]
+    positionen: list[dict] = []
+    raw_responses: list[str] = []
 
-    positionen = result.get("positionen", [])
+    for teil in teile:
+        teil_id = teil["id"]
+        # Root teil: no placement, but features still possible (e.g. holes
+        # in the base cube). Label its text too so feature_definierer can use
+        # feature_sentences. Mark placement_sentences as empty for root.
+        teil_text = teil_texte.get(teil_id, spec)
+        try:
+            labels = agent.label(teil_id, teil_text)
+        except Exception as e:
+            log.error("position_extractor_failed",
+                      teil=teil_id, error=str(e)[:200])
+            labels = {"placement_sentences": [], "feature_sentences": []}
+
+        raw_responses.append(getattr(agent, "_last_raw_response", "") or "")
+
+        # Root has no parent — strip placement sentences if any leaked through
+        placement = labels["placement_sentences"] if teil_id != root_id else []
+
+        positionen.append({
+            "teil_id": teil_id,
+            "is_root": teil_id == root_id,
+            "placement_sentences": placement,
+            "feature_sentences": labels["feature_sentences"],
+        })
+
+        log.info("position_extractor_teil_done",
+                 teil=teil_id,
+                 placement_count=len(placement),
+                 feature_count=len(labels["feature_sentences"]))
+
+    result = {"positionen": positionen}
+
     log.info("node_position_extractor_done",
              teil_count=len(teile),
-             position_count=len(positionen))
+             total_placement=sum(len(p["placement_sentences"]) for p in positionen),
+             total_feature=sum(len(p["feature_sentences"]) for p in positionen))
 
-    from src.config.loader import get_config as _gc
     _trace = _make_trace(
         agent="position_extractor", step=_step,
-        input_data={"specification": spec, "teile": [t["id"] for t in teile]},
+        input_data={"teile": [t["id"] for t in teile],
+                    "teil_texte_lengths": {tid: len(txt)
+                                            for tid, txt in teil_texte.items()}},
         output_data=result,
         start_time=_t0,
         model=_gc().models.position_extractor,
-        raw_response=getattr(agent, "_last_raw_response", None),
+        raw_response="\n---\n".join(raw_responses) if raw_responses else None,
     )
     return {
         "position_extrakt": result,
@@ -148,9 +186,10 @@ def position_extractor_node(state: PipelineState) -> dict:
 def text_splitter_node(state: PipelineState) -> dict:
     """Step 1a: Split spec into one focused text per part.
 
-    Runs after position_extractor_node, before feature_definierer_node.
-    Gives each downstream agent only the text that belongs to its part,
-    preventing confusion from other parts' descriptions.
+    Runs after inventar_node, before position_extractor_node.
+    Gives the labeler (and all downstream agents) only the text that belongs
+    to that specific part — no cross-teil noise. The labeler then splits
+    each per-teil chunk into placement vs. feature sentences.
     Skipped for single-part models.
     """
     inventar = state.get("inventar", {})
@@ -236,9 +275,10 @@ def feature_definierer_node(state: PipelineState) -> dict:
     traces = []
     aktionen_by_teil = {}
 
-    # Build lookup: teil_id → pre-digested placement sentence (from PositionExtractor)
-    # Used to STRIP placement text from the feature context so NormalizerAgent
-    # never sees placement language when deciding where features go.
+    # Build lookup: teil_id → labeled sentences from PositionExtractor.
+    # The labeler split each teil's text into feature_sentences (used here)
+    # and placement_sentences (used by platzierer). Each downstream agent
+    # gets only the sentences relevant to its concern.
     position_extrakt = state.get("position_extrakt", {})
     position_by_teil = {
         p["teil_id"]: p
@@ -267,16 +307,15 @@ def feature_definierer_node(state: PipelineState) -> dict:
         t_start = time.time()
         step_i = _step + len(traces)
 
-        # S1: Build feature-only context.
-        # Instead of fragile string-replace, prepend an explicit IGNORE label so the
-        # NormalizerAgent can never confuse placement language with feature language.
-        feature_spec = teil_texte.get(teil_id, spec_with_hint) or spec_with_hint
-        pos_beschreibung = position_by_teil.get(teil_id, {}).get("beschreibung", "")
-        if pos_beschreibung:
-            feature_spec = (
-                f"[PLATZIERUNG — IGNORIEREN: {pos_beschreibung.strip()}]\n\n"
-                + feature_spec
-            )
+        # Build feature context from labeled feature_sentences (cleanest path).
+        # Falls back to per-teil text from text_splitter, then to full spec.
+        feature_sentences = position_by_teil.get(teil_id, {}).get("feature_sentences", [])
+        if feature_sentences:
+            feature_spec = " ".join(feature_sentences)
+        else:
+            feature_spec = teil_texte.get(teil_id, spec_with_hint) or spec_with_hint
+        if validation_hint:
+            feature_spec = f"{feature_spec}\n\n★ KORREKTUR-HINWEIS:\n{validation_hint}"
 
         # Phase A: Normalize each action via KI (features only, no placement)
         normalized_actions = []
@@ -347,8 +386,8 @@ def platzierer_node(state: PipelineState) -> dict:
     Reads teil_definitionen (features-only from feature_definierer_node) and
     attaches parent + position + orientation via PositionNormalizerAgent.
 
-    Input for PositionNormalizerAgent: position_extrakt[teil_id].beschreibung
-    (placement-focused sentence extracted from spec), never the full spec.
+    Input for PositionNormalizerAgent: position_extrakt[teil_id].placement_sentences
+    (labeled placement-only sentences from per-teil chunk), never the full spec.
     """
     teil_defs = state.get("teil_definitionen", [])
     inventar = state.get("inventar", {})
@@ -412,12 +451,16 @@ def platzierer_node(state: PipelineState) -> dict:
             ))
             continue
 
-        # Priority: position_extrakt beschreibung (placement-only text) > teil_texte > full spec
+        # Priority: labeled placement_sentences > teil_texte chunk > full spec.
+        # placement_sentences contains only the sentences about WHERE this teil
+        # sits — no feature noise, no other-teil noise.
         pos_entry = position_by_teil.get(teil_id)
-        if pos_entry and pos_entry.get("beschreibung"):
-            pos_spec = pos_entry["beschreibung"]
-            log.info("platzierer_using_extracted_text",
-                     teil=teil_id, text=pos_spec[:80])
+        placement_sentences = pos_entry.get("placement_sentences", []) if pos_entry else []
+        if placement_sentences:
+            pos_spec = " ".join(placement_sentences)
+            log.info("platzierer_using_labeled_placement",
+                     teil=teil_id, sentence_count=len(placement_sentences),
+                     text=pos_spec[:80])
         elif teil_id in teil_texte:
             pos_spec = teil_texte[teil_id]
             log.info("platzierer_using_teil_text",
@@ -491,6 +534,106 @@ def platzierer_node(state: PipelineState) -> dict:
         "teil_definitionen": updated_defs,
         "agent_traces": traces,
     }
+
+
+def pocket_child_placer_node(state: PipelineState) -> dict:
+    """Step 3.5: Inject hole-in-pocket features after assembly.
+
+    Reads state.specification + state.blueprint, finds pockets that the
+    user wants to drill into, and adds new SemanticFeature entries with
+    parent set to the pocket ID. The resolver's
+    _resolve_feature_in_feature pathway handles the local-frame math.
+
+    No-op when:
+      - The spec does not mention "in der Tasche" (or synonyms)
+      - The blueprint has no pocket_rect / pocket_round / cutout features
+    Either skips the LLM call entirely (no token cost).
+    """
+    blueprint = state.get("blueprint") or {}
+    spec = state.get("specification") or state.get("description") or ""
+    _t0 = time.time()
+    _step = len(state.get("agent_traces", [])) + 1
+
+    if not blueprint or not spec:
+        return {"agent_traces": [_make_trace(
+            agent="pocket_child_placer", step=_step,
+            input_data={}, output_data={"skipped": True, "reason": "no_blueprint_or_spec"},
+            start_time=_t0,
+        )]}
+
+    agent = get_agent(PocketChildPlacer)
+    try:
+        result = agent.extract(spec, blueprint)
+    except Exception as e:
+        log.warning("node_pocket_child_failed", error=str(e)[:200])
+        return {"agent_traces": [_make_trace(
+            agent="pocket_child_placer", step=_step,
+            input_data={"spec_len": len(spec)},
+            output_data={"error": str(e)[:200]},
+            start_time=_t0,
+        )]}
+
+    features_to_add = result.get("features_to_add") or {}
+    feature_ids_to_remove = result.get("feature_ids_to_remove") or []
+    if not features_to_add:
+        return {"agent_traces": [_make_trace(
+            agent="pocket_child_placer", step=_step,
+            input_data={"spec_len": len(spec), "pockets": _count_pockets(blueprint)},
+            output_data={"added": 0},
+            start_time=_t0,
+        )]}
+
+    # Merge into blueprint: append new features, drop upstream duplicates,
+    # rebuild build_order minus removed IDs (resolver re-topo-sorts anyway).
+    new_features = dict(blueprint.get("features") or {})
+    for rid in feature_ids_to_remove:
+        new_features.pop(rid, None)
+    for fid, feat in features_to_add.items():
+        new_features[fid] = feat
+
+    new_build_order = [
+        fid for fid in (blueprint.get("build_order") or [])
+        if fid not in feature_ids_to_remove
+    ]
+    for fid in features_to_add:
+        if fid not in new_build_order:
+            new_build_order.append(fid)
+
+    new_blueprint = dict(blueprint)
+    new_blueprint["features"] = new_features
+    new_blueprint["build_order"] = new_build_order
+
+    log.info("node_pocket_child_added",
+             count=len(features_to_add),
+             ids=list(features_to_add.keys()),
+             removed=feature_ids_to_remove)
+
+    return {
+        "blueprint": new_blueprint,
+        "agent_traces": [_make_trace(
+            agent="pocket_child_placer", step=_step,
+            input_data={"spec_len": len(spec), "pockets": _count_pockets(blueprint)},
+            output_data={"added": len(features_to_add),
+                         "ids": list(features_to_add.keys()),
+                         "removed": feature_ids_to_remove},
+            start_time=_t0,
+        )],
+    }
+
+
+def _count_pockets(blueprint: dict) -> int:
+    """Count pocket-typed subtractive features in the blueprint."""
+    features = blueprint.get("features") or {}
+    if not isinstance(features, dict):
+        return 0
+    count = 0
+    for feat in features.values():
+        if not isinstance(feat, dict):
+            continue
+        if (feat.get("type") or "").lower() in ("pocket_rect", "pocket_round", "cutout"):
+            if (feat.get("operation") or "add").lower() == "subtract":
+                count += 1
+    return count
 
 
 def assembly_node(state: PipelineState) -> dict:

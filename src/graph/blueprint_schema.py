@@ -27,10 +27,13 @@ Semantic Layer (AI schreibt, Mensch liest):
   SemanticAnchor       — Ecke/Kante/Flaeche-Anker: child_point/parent_point/
                          offset/pre_rotation (Default: center-auf-center)
   SemanticPosition     — WO? side/alignment/edge_distances/center_offset/
-                         angle_deg/anchor/notes
+                         angle_deg/anchor/depth_reference/notes
                          Prioritaet: anchor > edge_distances > center_offset >
                          alignment+side
+                         depth_reference: auto/pocket_floor/part_top — fuer
+                         Feature-in-Feature (Bohrung in Tasche)
   SemanticFeature      — EIN Feature: id/type/params/orientation/parent/position/operation
+                         parent darf Part-ID ODER Feature-ID sein
   SemanticBlueprint    — Gesamtplan: description/build_order/features
     .inject_feature_ids — Pydantic pre-validator (fuellt id aus dict-key)
     .is_semantic        — statisch: erkennt ob dict im semantic-Format ist
@@ -193,6 +196,22 @@ class SemanticPosition(BaseModel):
             "Takes precedence over the other position fields when set."
         )
     )
+    depth_reference: str = Field(
+        default="auto",
+        description=(
+            "Z-reference for depth-bearing features (holes, pockets) when the "
+            "feature has a feature-parent (e.g. hole inside a pocket). "
+            "Values: "
+            "'auto' = pocket_floor if parent is a subtractive volume feature, "
+            "         else part_top (default, used by AI). "
+            "'pocket_floor' = depth measured from the bottom of the parent "
+            "                 pocket; the resolver adds parent.depth to the "
+            "                 child's depth so the cut starts at part_top and "
+            "                 reaches pocket_floor + child.depth. "
+            "'part_top' = standard behavior, depth measured from the placement "
+            "             face."
+        )
+    )
     notes: str = Field(
         default="",
         description="Extra context for the resolver, e.g. 'mittig auf der langen Seite'"
@@ -245,7 +264,14 @@ class SemanticFeature(BaseModel):
     )
     parent: Optional[str] = Field(
         default=None,
-        description="ID of parent feature. null = root feature."
+        description=(
+            "ID of parent. May reference either a part (root box/cylinder) or "
+            "another feature (e.g. a pocket — see hole-in-pocket pattern). "
+            "Position fields are interpreted in the parent's local frame: "
+            "for a part-parent, the placement face of the part; for a "
+            "feature-parent, the feature's footprint on its own placement face. "
+            "null = root feature."
+        )
     )
     position: SemanticPosition = Field(
         default_factory=SemanticPosition,

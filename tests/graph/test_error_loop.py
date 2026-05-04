@@ -42,6 +42,23 @@ class TestRouteAfterExecutor:
         state = {"execution_error": "error", "validation_error": "", "stl_path": "", "attempts": MAX_ATTEMPTS - 1}
         assert route_after_executor(state) == "error_router"
 
+    def test_template_mode_execution_error_ends_without_coder(self):
+        # Template-mode failures must not trigger the Coder repair loop.
+        state = {"execution_error": "NameError", "validation_error": "",
+                 "stl_path": "", "attempts": 0, "generation_mode": "template"}
+        assert route_after_executor(state) == "end"
+
+    def test_template_mode_geometry_error_ends_without_coder(self):
+        state = {"execution_error": "", "validation_error": "STL geometry invalid: not watertight",
+                 "stl_path": "", "attempts": 0, "generation_mode": "template"}
+        assert route_after_executor(state) == "end"
+
+    def test_llm_mode_still_routes_to_error_router(self):
+        # Non-template runs keep the existing repair loop.
+        state = {"execution_error": "NameError", "validation_error": "",
+                 "stl_path": "", "attempts": 0, "generation_mode": "llm"}
+        assert route_after_executor(state) == "error_router"
+
 
 class TestRouteAfterValidator:
     def test_ok_routes_to_end(self):

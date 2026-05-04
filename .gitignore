@@ -37,3 +37,6 @@ data/dspy_optimized/
 
 # Internal cleanup planning files
 CLEANUP_PLAN.md
+
+# Local archives
+_archive/

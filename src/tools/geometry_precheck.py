@@ -332,7 +332,16 @@ def check_depth_consistency(specification: str, blueprint: dict) -> list[dict]:
             feat_flat = feat.get("params", feat)
             if feat.get("type") in ("hole", "slot", "cbore_hole", "csk_hole",
                                     "hole_blind", "pocket_rect"):
-                bp_depth = feat_flat.get("depth") if isinstance(feat_flat, dict) else feat.get("depth")
+                # Feature-in-feature: the resolver may have summed parent.depth
+                # into params.depth (so the cut spans pocket+hole). The user-
+                # facing depth lives in depth_local in that case — match against
+                # it so the spec depth comparison stays meaningful.
+                if isinstance(feat_flat, dict):
+                    bp_depth = feat_flat.get("depth_local")
+                    if bp_depth is None:
+                        bp_depth = feat_flat.get("depth")
+                else:
+                    bp_depth = feat.get("depth")
                 if bp_depth is None and specified_depths:
                     issues.append({
                         "type": "depth_mismatch",

@@ -163,11 +163,26 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict:
     else:
         operation = "subtract"
 
+    # Pull rotation around the placement-face normal from the normalized
+    # action params. Normalizer stores it under 'drehung' (German), so the
+    # user saying "Tasche um 20 Grad gedreht" propagates here without an
+    # extra prompt round-trip.
+    angle_deg = 0.0
+    for key in ("drehung", "winkel", "angle", "rotation"):
+        val = params.get(key)
+        if val is not None:
+            try:
+                angle_deg = float(val)
+            except (TypeError, ValueError):
+                pass
+            if angle_deg:
+                break
+
     position_dict = {
         "side": seite,
         "alignment": alignment,
         "edge_distances": edge_distances,
-        "angle_deg": 0,
+        "angle_deg": angle_deg,
         "notes": position_notes,
     }
     if center_offset:

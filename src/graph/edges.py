@@ -56,12 +56,27 @@ MAX_SEMANTIC_RETRIES = 2
 
 
 def route_after_executor(state: PipelineState) -> str:
-    """After Executor: success → validator, failure → error_router."""
+    """After Executor: success → validator, failure → error_router.
+
+    Template-mode runs bypass the Coder/code_fixer error loop entirely:
+    if every feature is template-generated, the failure is a deterministic
+    bug (codegen, geometry, blueprint) — the Coder cannot diagnose it and
+    historically rewrites correct template code into broken code (e.g.
+    losing the assemble() wrapper, see run f3251fa6). Fail-fast surfaces
+    the real error instead of burying it under LLM repair attempts.
+    """
     has_error = bool(state.get("execution_error") or state.get("validation_error"))
 
     if not has_error:
         log.info("route_executor", decision="validator")
         return "validator"
+
+    if state.get("generation_mode") == "template":
+        log.warning("route_executor", decision="end",
+                    reason="template_mode_no_coder_repair",
+                    error=(state.get("execution_error")
+                           or state.get("validation_error", ""))[:120])
+        return "end"
 
     if state.get("attempts", 0) >= _max_attempts():
         log.warning("route_executor", decision="end", reason="max_attempts")

@@ -30,6 +30,45 @@ TEILE_LISTE_TEMPLATE = _prompt.TEILE_LISTE_TEMPLATE
 AKTIONEN_SYSTEM = _prompt.AKTIONEN_SYSTEM
 AKTIONEN_TEMPLATE = _prompt.AKTIONEN_TEMPLATE
 
+# Alternative keys the LLM occasionally emits instead of "beschreibung"
+# (it tends to name the key after the action's content: "bohrung": "...").
+# Normalized to "beschreibung" before the description-gate, otherwise the
+# whole action gets silently dropped in _extract_sequential.
+_DESCRIPTION_ALIAS_KEYS = (
+    "bohrung", "nut", "tasche", "fase", "rundung",
+    "aktion", "feature", "description", "desc", "text",
+    "breite",
+)
+
+# Keys that are NOT a beschreibung (used by the smart fallback below).
+_NON_DESCRIPTION_KEYS = frozenset({"seite", "teil_id", "beschreibung"})
+
+
+def _normalize_aktion_description(a: dict) -> None:
+    """In-place: ensure 'beschreibung' is set, recovering from common LLM key
+    mis-namings.
+
+    1. Known alias keys (bohrung, breite, ...) win first.
+    2. Smart fallback: if no alias matched and exactly one other string field
+       exists, treat it as the beschreibung. Catches future typos (e.g.
+       'durchmesser', 'tiefe', 'achse') without an exhaustive alias list.
+    """
+    if not isinstance(a, dict) or a.get("beschreibung"):
+        return
+    for alt in _DESCRIPTION_ALIAS_KEYS:
+        val = a.get(alt)
+        if isinstance(val, str) and val.strip():
+            a["beschreibung"] = val
+            return
+    candidates = [
+        v for k, v in a.items()
+        if k not in _NON_DESCRIPTION_KEYS
+        and isinstance(v, str) and v.strip()
+    ]
+    if len(candidates) == 1:
+        a["beschreibung"] = candidates[0]
+
+
 # Keywords that hint at multi-part input (placement of Teil B on Teil A)
 _MULTI_PART_HINTS = re.compile(
     r"(rechts\s+(eine?|soll)|links\s+(eine?|soll)|"
@@ -198,11 +237,17 @@ class InventarAgent(BaseAgent):
                     teil_aktionen = []
 
                 for a in teil_aktionen:
-                    if isinstance(a, dict) and a.get("beschreibung"):
-                        a["teil_id"] = teil_id
-                        if not a.get("seite"):
-                            a["seite"] = "oben"
-                        aktionen.append(a)
+                    if not isinstance(a, dict):
+                        continue
+                    _normalize_aktion_description(a)
+                    if not a.get("beschreibung"):
+                        log.warning("inventar_aktion_dropped_no_description",
+                                    teil=teil_id, aktion=a)
+                        continue
+                    a["teil_id"] = teil_id
+                    if not a.get("seite"):
+                        a["seite"] = "oben"
+                    aktionen.append(a)
 
                 log.info("inventar_sequential_step_b_done",
                          teil=teil_id, aktionen=len(teil_aktionen))
@@ -241,6 +286,7 @@ class InventarAgent(BaseAgent):
         default_teil = data["teile"][0]["id"] if data["teile"] else ""
 
         for aktion in data.get("aktionen", []):
+            _normalize_aktion_description(aktion)
             # Fix missing or hallucinated teil_id key (e.g. "teil_rag" instead of "teil_id")
             if not aktion.get("teil_id"):
                 # Check for common hallucinated key variants

@@ -277,6 +277,27 @@ def _generate_subtract(
                                       params, placement, all_features)
         d = float(params.get("diameter") or params.get("hole_diameter") or (params.get("radius", 5) * 2))
         depth = _safe_depth(params.get("depth") or params.get("height"))
+        # Anti-tangent expansion: if the hole's edge sits mathematically on a
+        # parent edge (e.g. user spec "10mm vom Rand" with 20mm Bohrung), grow
+        # the diameter by 0.02mm so it cleanly cuts through instead of touching.
+        # Tangent edges produce non-manifold tessellation in OCCT (see run
+        # 0ef217ab). 0.01mm tolerance covers FP rounding from the resolver.
+        parent_id = _find_parent(fid, all_features)
+        pp = all_features.get(parent_id, {}).get("params", {}) if parent_id else {}
+        if pp:
+            if face in (">Z", "<Z"):
+                face_w, face_h = float(pp.get("x") or 0), float(pp.get("y") or 0)
+            elif face in (">X", "<X"):
+                face_w, face_h = float(pp.get("y") or 0), float(pp.get("z") or 0)
+            elif face in (">Y", "<Y"):
+                face_w, face_h = float(pp.get("x") or 0), float(pp.get("z") or 0)
+            else:
+                face_w = face_h = 0.0
+            r = d / 2.0
+            tangent_x = face_w > 0 and abs(abs(ox) + r - face_w / 2.0) < 0.01
+            tangent_y = face_h > 0 and abs(abs(oy) + r - face_h / 2.0) < 0.01
+            if tangent_x or tangent_y:
+                d += 0.02
         return T.hole_single(func_name, d, depth, face, ox, oy, use_ntp, ntp_point)
 
     elif ftype == "hole_counterbore":
@@ -419,6 +440,12 @@ def _generate_subtract(
             angle = _axis_to_angle[face].get(axis_hint, 0)
         else:
             angle = float(params.get("angle") or 0)
+        # placement.angle_deg from resolver wins when set explicitly (non-zero).
+        # Lets the user say "Nut um 30 Grad gedreht" and have the resolver
+        # propagate that through the standard placement channel.
+        placement_angle = float(placement.get("angle_deg") or 0)
+        if placement_angle != 0.0:
+            angle = placement_angle
 
         length = params.get("length")
         if length is None:
@@ -438,6 +465,13 @@ def _generate_subtract(
                 length = pz if angle == 90 else px
             else:
                 length = py if angle == 90 else px
+            # Anti-tangent overshoot: a slot whose ends sit exactly on the parent
+            # edges produces non-manifold tessellation in OCCT (see run 0ef217ab).
+            # Extend by 0.02mm so each end pokes 0.01mm past the parent edge.
+            # This matches user intent for "Nut entlang der Achse" (a through
+            # channel that opens at both ends), and the cut is geometrically
+            # clean (open cut, not tangent).
+            length += 0.02
         else:
             length = float(length)
         return T.slot(func_name, length, w, d, angle, face, ox, oy, use_ntp, ntp_point)
@@ -447,7 +481,11 @@ def _generate_subtract(
         x = float(params.get("x") or 30)
         y = float(params.get("y") or 30)
         d = float(params.get("depth") or params.get("z") or 5)
-        return T.pocket_rect(func_name, x, y, d, face, ox, oy, use_ntp, ntp_point)
+        # placement.angle_deg rotates the rectangular cutter around the face normal.
+        angle_deg = float(placement.get("angle_deg") or 0)
+        return T.pocket_rect(
+            func_name, x, y, d, face, ox, oy, angle_deg, use_ntp, ntp_point
+        )
 
     elif ftype == "fillet":
         r = float(params.get("radius") or 2)
@@ -487,9 +525,39 @@ def _safe_depth(value) -> float | None:
 
 
 def _find_parent(fid: str, features: dict) -> str | None:
-    """Find the parent feature ID for a given feature."""
+    """Find the immediate parent feature ID for a given feature."""
     feat = features.get(fid, {})
     return feat.get("parent")
+
+
+def _resolve_part_root(fid: str, features: dict) -> str | None:
+    """Walk the parent chain upward until we hit a feature that owns a body.
+
+    A "body owner" is either:
+      - a root feature (parent is None)
+      - an add/union feature (sub-assembly with its own build_ function)
+
+    Subtractive feature parents (e.g. a pocket between a hole and its
+    part) are skipped — their cuts are applied to the same body the
+    feature-in-feature ultimately attaches to. Returns None if the chain
+    is broken (e.g. dangling parent reference).
+    """
+    visited: set[str] = set()
+    current = features.get(fid, {}).get("parent") if isinstance(features.get(fid), dict) else None
+    while current is not None:
+        if current in visited:
+            return None  # cycle — defensive guard
+        visited.add(current)
+        parent_feat = features.get(current)
+        if not isinstance(parent_feat, dict):
+            return None
+        op = parent_feat.get("operation", "add").lower()
+        # Body owners: root (no parent) or any add/union feature
+        if parent_feat.get("parent") is None or op in ("add", "union"):
+            return current
+        # Subtractive ancestor — keep walking up
+        current = parent_feat.get("parent")
+    return None
 
 
 def _generate_sub_assembly_builds(
@@ -519,13 +587,20 @@ def _generate_sub_assembly_builds(
             if fid == sa_fid:
                 continue
             feat = features.get(fid, {})
-            if feat.get("parent") != sa_fid:
-                continue
             op = feat.get("operation", "add").lower()
+            # Direct add-children (nested sub-assemblies)
+            if op in ("add", "union"):
+                if feat.get("parent") == sa_fid:
+                    add_children.append(fid)
+                continue
+            # Subtract/modify: include direct children AND descendants
+            # whose effective body-owner walks back to this sub-assembly
+            # (e.g. hole-in-pocket where pocket.parent == sa_fid).
             if op in ("subtract", "cut", "modify"):
-                subtract_children.append(fid)
-            elif op in ("add", "union"):
-                add_children.append(fid)
+                if feat.get("parent") == sa_fid:
+                    subtract_children.append(fid)
+                elif _resolve_part_root(fid, features) == sa_fid:
+                    subtract_children.append(fid)
 
         if not subtract_children and not add_children:
             continue  # No build function needed — make_XYZ() suffices
@@ -612,7 +687,14 @@ def _generate_assemble(
         if fid == root_id or fid in sa_fids:
             continue
         feat = features.get(fid, {})
-        if feat.get("parent") == root_id and feat.get("operation", "add").lower() in ("subtract", "cut", "modify"):
+        op = feat.get("operation", "add").lower()
+        if op not in ("subtract", "cut", "modify"):
+            continue
+        # Direct child of root, OR feature-in-feature whose effective
+        # body-owner walks back to root (e.g. hole-in-pocket-on-root).
+        if feat.get("parent") == root_id:
+            base_subtract_fids.append(fid)
+        elif _resolve_part_root(fid, features) == root_id:
             base_subtract_fids.append(fid)
 
     # _ref: unmodified body snapshot for stable face origins (see assembler.py:540 comment).

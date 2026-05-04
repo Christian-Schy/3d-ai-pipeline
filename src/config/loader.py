@@ -48,6 +48,7 @@ class ModelsConfig(BaseModel):
     interpreter: str = "qwen3.5:9b"
     modification_interpreter: str = "qwen3.5:9b"
     visioner: str = "qwen3.5:27b"
+    punctuation: str = "qwen3.5:9b"
 
     # Blueprint Chain (3-Step + Multi-Part split)
     inventar: str = "qwen3.5:9b"

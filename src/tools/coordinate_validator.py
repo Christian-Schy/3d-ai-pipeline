@@ -120,6 +120,32 @@ def run_coordinate_check(blueprint: dict) -> list[CoordIssue]:
     return issues
 
 
+def _resolve_root_parent_id(fid: str, features: dict) -> str | None:
+    """Walk the parent chain upward, skipping subtractive ancestors.
+
+    Mirrors src.codegen.assembler._resolve_part_root. Returns the ID of
+    the body-owning ancestor (root part or add-feature) or None.
+    Used so feature-in-feature children (hole-in-pocket) are validated
+    against the actual containing part, not their pocket parent — depth
+    and offset bounds need the part dimensions to make sense.
+    """
+    visited: set[str] = set()
+    feat = features.get(fid)
+    current = feat.get("parent") if isinstance(feat, dict) else None
+    while current is not None:
+        if current in visited:
+            return None
+        visited.add(current)
+        parent_feat = features.get(current)
+        if not isinstance(parent_feat, dict):
+            return None
+        op = parent_feat.get("operation", "add").lower()
+        if parent_feat.get("parent") is None or op in ("add", "union"):
+            return current
+        current = parent_feat.get("parent")
+    return None
+
+
 def _check_feature(fid: str, features: dict, issues: list) -> None:
     """Run all per-feature checks. Called inside a try/except in run_coordinate_check."""
     feat = features.get(fid)
@@ -129,6 +155,15 @@ def _check_feature(fid: str, features: dict, issues: list) -> None:
     params = feat.get("params") or {}
     ftype = feat.get("type", "unknown")
     parent_id = feat.get("parent")
+    placement = feat.get("placement") or {}
+    # Feature-in-feature: when the resolver placed this feature inside
+    # another feature (e.g. hole-in-pocket), depth/offset checks need
+    # the root-owning part as reference, not the immediate pocket parent.
+    has_feature_parent = (
+        isinstance(placement, dict)
+        and placement.get("feature_parent") is not None
+    )
+    root_parent_id = _resolve_root_parent_id(fid, features) if has_feature_parent else None
 
     # Check 6: all dimensions > 0
     for key, val in params.items():
@@ -175,14 +210,24 @@ def _check_feature(fid: str, features: dict, issues: list) -> None:
     # Check 2: hole depth vs parent material
     if "hole" in ftype or ftype in ("pocket_rect", "pocket_round", "slot", "cutout"):
         depth = params.get("depth")
-        if depth is not None and parent_bbox:
-            pz = parent_bbox[2]
+        # For feature-in-feature children, the depth was already adjusted by
+        # the resolver to span pocket+hole; check against the root-owning
+        # part's height, not the pocket's own depth.
+        if has_feature_parent and root_parent_id:
+            depth_parent_feat = features.get(root_parent_id, {})
+            depth_parent_bbox = _get_bbox(depth_parent_feat)
+            depth_parent_label = root_parent_id
+        else:
+            depth_parent_bbox = parent_bbox
+            depth_parent_label = parent_id
+        if depth is not None and depth_parent_bbox:
+            pz = depth_parent_bbox[2]
             if float(depth) > pz:
                 issues.append(CoordIssue(
                     severity="ERROR", feature_id=fid,
                     check="depth_vs_material",
                     message=(
-                        f"Depth {depth}mm exceeds parent '{parent_id}' "
+                        f"Depth {depth}mm exceeds parent '{depth_parent_label}' "
                         f"height {pz}mm"
                     )
                 ))
@@ -222,8 +267,17 @@ def _check_feature(fid: str, features: dict, issues: list) -> None:
                     )
                 ))
 
-    # Check 8: offset bounds — feature center + half-size must be inside parent
-    _check_offset_bounds(fid, feat, parent_feat, parent_bbox, issues)
+    # Check 8: offset bounds — feature center + half-size must be inside parent.
+    # Feature-in-feature: offsets are in part-frame, so check against the
+    # root part instead of the immediate (pocket) parent.
+    if has_feature_parent and root_parent_id:
+        bounds_parent_feat = features.get(root_parent_id, {})
+        bounds_parent_bbox = _get_bbox(bounds_parent_feat)
+        _check_offset_bounds(fid, feat, bounds_parent_feat, bounds_parent_bbox, issues)
+        # Plus: feature must stay inside its IMMEDIATE pocket parent's footprint.
+        _check_offset_inside_pocket(fid, feat, parent_feat, parent_bbox, issues)
+    else:
+        _check_offset_bounds(fid, feat, parent_feat, parent_bbox, issues)
 
     # Check 10: hole pattern spacing fits parent
     if ftype == "hole_pattern_grid":
@@ -319,6 +373,82 @@ def _check_offset_bounds(
                     f"parent_half={parent_half_y:.1f}"
                 )
             ))
+
+
+def _check_offset_inside_pocket(
+    fid: str, feat: dict, pocket_feat: dict,
+    pocket_bbox: tuple[float, float, float] | None, issues: list
+) -> None:
+    """Verify a feature-in-feature child stays inside its pocket footprint.
+
+    The resolver places the child in part-frame coordinates, so we must
+    inverse-transform: subtract the pocket's offset and rotate back by
+    -pocket.angle_deg to recover the child's pocket-local position. Then
+    compare against the pocket's footprint (params.x × params.y).
+    """
+    # Pocket params use {x, y, depth} — _get_bbox requires {x, y, z}, so fall
+    # back to reading the footprint directly when bbox lookup failed.
+    if pocket_bbox is None:
+        pocket_params = pocket_feat.get("params", {}) or {}
+        try:
+            pocket_w = float(pocket_params.get("x"))
+            pocket_h = float(pocket_params.get("y"))
+            pocket_d = float(pocket_params.get("depth") or pocket_params.get("z") or 0)
+        except (TypeError, ValueError):
+            return
+        pocket_bbox = (pocket_w, pocket_h, pocket_d)
+    placement = feat.get("placement") or {}
+    pocket_placement = pocket_feat.get("placement") or {}
+    if not isinstance(placement, dict) or not isinstance(pocket_placement, dict):
+        return
+    try:
+        ox = float(placement.get("offset_x") or 0)
+        oy = float(placement.get("offset_y") or 0)
+        pox = float(pocket_placement.get("offset_x") or 0)
+        poy = float(pocket_placement.get("offset_y") or 0)
+        angle = float(pocket_placement.get("angle_deg") or 0)
+    except (TypeError, ValueError):
+        return
+    dx = ox - pox
+    dy = oy - poy
+    if angle:
+        rad = math.radians(-angle)
+        cos_a, sin_a = math.cos(rad), math.sin(rad)
+        local_x = dx * cos_a - dy * sin_a
+        local_y = dx * sin_a + dy * cos_a
+    else:
+        local_x, local_y = dx, dy
+
+    pocket_w, pocket_h, _ = pocket_bbox
+    params = feat.get("params", {}) or {}
+    ftype = feat.get("type", "")
+    if "hole" in ftype and params.get("diameter"):
+        feat_half_x = float(params["diameter"]) / 2
+        feat_half_y = feat_half_x
+    elif params.get("x") and params.get("y"):
+        feat_half_x = float(params["x"]) / 2
+        feat_half_y = float(params["y"]) / 2
+    else:
+        return
+
+    if abs(local_x) + feat_half_x > pocket_w / 2 + 0.1:
+        issues.append(CoordIssue(
+            severity="ERROR", feature_id=fid,
+            check="inside_pocket_x",
+            message=(
+                f"Feature exceeds pocket in X: pocket-local |x|={abs(local_x):.1f} + "
+                f"half_size={feat_half_x:.1f} > pocket_half={pocket_w/2:.1f}"
+            )
+        ))
+    if abs(local_y) + feat_half_y > pocket_h / 2 + 0.1:
+        issues.append(CoordIssue(
+            severity="ERROR", feature_id=fid,
+            check="inside_pocket_y",
+            message=(
+                f"Feature exceeds pocket in Y: pocket-local |y|={abs(local_y):.1f} + "
+                f"half_size={feat_half_y:.1f} > pocket_half={pocket_h/2:.1f}"
+            )
+        ))
 
 
 def _check_build_order_sorting(

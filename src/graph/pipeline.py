@@ -19,6 +19,7 @@ Routing-Funktionen (Condition-Edges):
   (in edges.py):
   route_after_entry_router            — alles → interpreter (auch Modifications)
   route_after_executor                — success → validator, fail → error_router
+                                        (template-mode: fail → end, kein Coder)
   route_after_validator               — end/inventar/feature_definierer/coder
   route_after_error_router            — coder/code_fixer/end
 
@@ -47,12 +48,14 @@ from src.graph.nodes import (
     entry_router_node,
     visioner_node,
     interpreter_node,
+    punctuation_node,
     inventar_node,
     position_extractor_node,
     text_splitter_node,
     feature_definierer_node,
     platzierer_node,
     assembly_node,
+    pocket_child_placer_node,
     blueprint_architect_node,
     blueprint_resolver_node,
     coordinate_validator_node,
@@ -76,9 +79,9 @@ log = structlog.get_logger()
 
 
 def route_after_interpreter(state: PipelineState) -> str:
-    """After interpreter: complete → inventar (3-step chain), not complete → loop back."""
+    """After interpreter: complete → punctuation → inventar, not complete → loop back."""
     if state.get("is_complete"):
-        return "inventar"
+        return "punctuation"
     return "interpreter"
 
 
@@ -167,8 +170,8 @@ def build_graph() -> StateGraph:
     Architecture (S0 — Modulare Trennung, feature_definierer + platzierer getrennt):
 
     Fresh AND modification requests (both use the 3-step chain):
-      entry_router → interpreter → inventar → position_extractor → text_splitter
-        → feature_definierer → platzierer → assembly
+      entry_router → interpreter → punctuation → inventar → text_splitter
+        → position_extractor → feature_definierer → platzierer → assembly
         → blueprint_resolver → coordinate_validator → plan_validator → ...
 
     Validation failures route back to the originating agent:
@@ -183,6 +186,8 @@ def build_graph() -> StateGraph:
     graph.add_node("entry_router", entry_router_node)
     graph.add_node("visioner", visioner_node)
     graph.add_node("interpreter", interpreter_node)
+    # Comma-setter — fixes voice input (no commas) before downstream agents
+    graph.add_node("punctuation", punctuation_node)
     # 3-Step Blueprint Chain (S0: feature + placement separated)
     graph.add_node("inventar", inventar_node)
     graph.add_node("position_extractor", position_extractor_node)
@@ -190,6 +195,9 @@ def build_graph() -> StateGraph:
     graph.add_node("feature_definierer", feature_definierer_node)
     graph.add_node("platzierer", platzierer_node)
     graph.add_node("assembly", assembly_node)
+    # Optional pre-resolver step: pulls "Bohrung in Tasche"-style features
+    # out of the spec and injects them as feature-in-feature children.
+    graph.add_node("pocket_child_placer", pocket_child_placer_node)
     # Monolithic fallback for modify/fix
     graph.add_node("blueprint_architect", blueprint_architect_node)
     graph.add_node("blueprint_resolver", blueprint_resolver_node)
@@ -219,24 +227,36 @@ def build_graph() -> StateGraph:
 
     graph.add_edge("visioner", "interpreter")
 
-    # Interpreter loops until spec is complete, then → inventar (3-step chain)
+    # Interpreter loops until spec is complete, then → punctuation → inventar
     graph.add_conditional_edges(
         "interpreter",
         route_after_interpreter,
-        {"inventar": "inventar", "interpreter": "interpreter"},
+        {"punctuation": "punctuation", "interpreter": "interpreter"},
     )
 
-    # 3-Step Blueprint Chain (S0): inventar → position_extractor → text_splitter
+    # Punctuation: comma-only pre-processor (voice-input safety net) → inventar
+    graph.add_edge("punctuation", "inventar")
+
+    # 3-Step Blueprint Chain (S0): inventar → text_splitter → position_extractor
     #   → feature_definierer → platzierer → assembly → resolver
-    graph.add_edge("inventar", "position_extractor")
-    graph.add_edge("position_extractor", "text_splitter")
-    graph.add_edge("text_splitter", "feature_definierer")
+    # text_splitter chunks the spec per teil (one short text per part).
+    # position_extractor then labels each per-teil chunk into placement vs.
+    # feature sentences — small inputs, focused job, no cross-teil confusion.
+    graph.add_edge("inventar", "text_splitter")
+    graph.add_edge("text_splitter", "position_extractor")
+    graph.add_edge("position_extractor", "feature_definierer")
     graph.add_edge("feature_definierer", "platzierer")
     graph.add_edge("platzierer", "assembly")
-    graph.add_edge("assembly", "blueprint_resolver")
+    # assembly → pocket_child_placer → blueprint_resolver. The placer
+    # is a no-op when the spec doesn't mention "in der Tasche", so this
+    # adds zero overhead to the common case.
+    graph.add_edge("assembly", "pocket_child_placer")
+    graph.add_edge("pocket_child_placer", "blueprint_resolver")
 
-    # Blueprint Architect (modify/fix fallback) → Resolver → validation chain
-    graph.add_edge("blueprint_architect", "blueprint_resolver")
+    # Blueprint Architect (modify/fix fallback) → pocket_child_placer →
+    # Resolver. Routing through the placer keeps feature-in-feature
+    # extraction consistent across both pipelines (3-step + monolithic).
+    graph.add_edge("blueprint_architect", "pocket_child_placer")
     graph.add_edge("blueprint_resolver", "coordinate_validator")
 
     graph.add_conditional_edges(
