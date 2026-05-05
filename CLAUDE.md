@@ -39,15 +39,29 @@ Stufe 4: Organisch/Parametrisch
 
 ## Architektur
 
-### Pipeline Flow
+### Pipeline Flow (Stand 2026-05-05, Phase 1 in Arbeit)
 ```
-entry_router → interpreter(9b) → blueprint_architect(30b)
+entry_router → interpreter(9b) → punctuation(26b)
+  → inventar(26b, 2-step)               — Teile + Aktions-Liste
+  → text_splitter(rule) → position_extractor(26b, per-Teil Labeler)
+  → feature_definierer(26b)             — Aktionen → Features
+  → platzierer(26b)                     — Multi-Part-Placement
+  → assembly(rule) → pocket_child_placer(26b)
   → blueprint_resolver(rule) → coordinate_validator(rule)
-  → plan_validator(9b) → function_decomposer(rule)
-  → [coder(30b) → code_review] → executor(sandbox)
-  → geometry_precheck(rule) → validator(9b)
+  → plan_validator(26b, mit determ. Post-Filter)
+  → function_decomposer(rule) → executor(sandbox)
+  → geometry_precheck(rule) → validator(26b)
   → [error_router → code_fixer]
 ```
+
+**Geplante Umstrukturierung (ADR 0003):** Inventar Step B und
+feature_definierer werden auf Pro-Aktion-Mikro-Calls aufgeteilt.
+Dazwischen kommt ein deterministischer Aktions-Splitter und ein
+neuer Aktions-Klassifizierer. Siehe
+[`docs/decisions/0003-inventar-feature-definierer-pro-aktion.md`](docs/decisions/0003-inventar-feature-definierer-pro-aktion.md).
+Motivation: aktueller Pipeline-Bottleneck ist feature_definierer
+(70-313s pro Call) und Inventar verklumpt Tasche+Bohrung-Verschachtelungen
+in eine Aktion.
 
 ### Zwei-Schicht Blueprint (V2, seit 2026-04-07)
 
@@ -83,11 +97,18 @@ data/sessions/runs.jsonl        — Alle Pipeline-Runs mit Traces
 
 ## Entwicklungs-Prinzipien
 
-### Determinismus vor Prompts
-- Jedes Problem das deterministisch loesbar ist, NICHT per Prompt loesen
-- LLM nur fuer Textverstaendnis und semantische Interpretation
-- Mathe, Offsets, Face-Berechnung, Dimension-Swaps → immer Code
-- Coordinate Validator, Blueprint Resolver, Geometry Precheck = zuverlaessig
+### Aufgaben-Trennung: Textverstaendnis = LLM, Rechen = deterministisch
+- LLM-Aufgaben: aus Text Bedeutung extrahieren (Containment "in der
+  Tasche?", Versatz-Werte, Anker-Vokabular, Aktionen identifizieren).
+- Deterministisch: Koordinaten-Mathe, Face-Auswahl, Rotation, Dim-Swap,
+  Code-Generierung aus Schema, Assembly via Union/Resolver.
+- **Wichtig:** Es gilt NICHT pauschal "Determinismus vor Prompts".
+  Determinismus als Pflaster fuer Textverstaendnis-Fehler schafft
+  enge Regeln, die zu starke Barrieren fuer den breiten Aufgaben-
+  Umfang sind. Wenn ein LLM-Call patzt: zuerst Prompt verbessern oder
+  Aufgabe aufteilen.
+- Coordinate Validator, Blueprint Resolver, Geometry Precheck =
+  zuverlaessig (deterministisch)
 - LLM-Validierung = unzuverlaessig (sagt oft "valid" bei offensichtlichen Fehlern)
 
 ### Kleine Schritte fuer kleine Modelle
@@ -118,30 +139,30 @@ data/sessions/runs.jsonl        — Alle Pipeline-Runs mit Traces
 
 ## Naechste Schritte (Roadmap)
 
-### Phase A: Blueprint Architect → 3-Step Chain (NAECHSTES)
-Den monolithischen Blueprint Architect in 3 einfache Schritte aufteilen:
+### Phase A: 3-Step Chain — UMGESETZT, im Refactor
+Der monolithische Blueprint Architect wurde in eine Kette aus
+Inventar → feature_definierer → platzierer → assembly aufgeteilt.
+Heute produktiv. Schwachstelle: feature_definierer ist trotzdem
+ein einziger LLM-Call pro Teil mit allen Aktionen darin — bei
+komplexen Specs 70-313s Latenz.
 
-**Step 1 — Inventar (9b, schnell):**
-Input: User-Text
-Output: Stueckliste mit Teile-Count, Teile-Namen, Rohdimensionen
-"Wie viele Teile? Liste sie auf mit Massen."
+### Phase A.5: Pro-Aktion-Mikro-Calls (LAUFENDE UMSETZUNG, ADR 0003)
+Der feature_definierer und Inventar Step B werden in Pro-Aktion-Calls
+zerlegt. Neuer deterministischer Aktions-Splitter trennt User-Spec in
+einzelne Phrasen, ein neuer Aktions-Klassifizierer ordnet Typ/Seite
+zu, der feature_definierer baut pro Phrase ein Feature. Aggregator
+fuegt deterministisch zusammen.
 
-**Step 2 — Teil-Definition (9b, pro Teil wiederholbar):**
-Input: Ein einzelnes Teil aus der Stueckliste + relevanter Kontext
-Output: Semantisches Feature fuer dieses Teil (type, params, orientation)
-"Beschreibe dieses eine Teil mit seinen Aktionen."
+Motivation:
+- Bottleneck-Aufloesung (lineare Skalierung statt monolithische
+  Mega-Calls)
+- Bug A behoben: Verschachtelung "Tasche mit Bohrung drin" geht
+  durch (heute: Bohrung verschwindet im notes-String)
+- Praezise Modifikations-Wiederauffindung: jede Aktion hat eigene
+  stabile ID
+- Zukunftsfest fuer Multi-Extrusion-Cases
 
-**Step 3 — Assembly (9b, einmalig):**
-Input: Alle Teil-Definitionen + User-Text
-Output: Vollstaendiges semantisches Blueprint (parent/position Beziehungen)
-"Wie haengen die Teile zusammen?"
-
-Vorteile:
-- Jeder Schritt ist trivial genug fuer kleine Modelle
-- Teil-Count vorab bekannt → KI erfindet keine Extra-Teile
-- Pro-Teil Definition skaliert: 3 Teile = 3 Calls, 20 Teile = 20 Calls
-- Bei langen Blueprints: Batching moeglich
-- Fehler isolierbar: welcher Schritt hat versagt?
+Details: [`docs/decisions/0003-inventar-feature-definierer-pro-aktion.md`](docs/decisions/0003-inventar-feature-definierer-pro-aktion.md).
 
 ### Phase B: Geometry Assertions (deterministisch)
 Aus dem resolved Blueprint automatisch Tests generieren:
@@ -362,5 +383,25 @@ Am Ende Phase 1 einmaliges Baseline-Training:
 - Kleine Modelle (9b): Versagen bei raeumlichem Reasoning ohne Think-Modus
 - Validator (LLM): Sagt oft "valid" bei offensichtlichen Fehlern
   → Wird durch deterministische Geometry Assertions ersetzt (Phase B)
+  → Konkrete bekannte False-Positives haben deterministische Post-Filter
+    (z.B. plan_validator pocket_floor — siehe ADR 0002)
 - Fix-Loop: KI gibt manchmal resolved statt semantic Format zurueck
   → Resolver handhabt das jetzt (orientation wird trotzdem angewandt)
+- Inventar Step B + feature_definierer: Mega-Calls bei vielen Aktionen
+  → Latenz 70-313s, verklumpt Tasche+Bohrung-Verschachtelungen
+  → ADR 0003 in Umsetzung: Pro-Aktion-Mikro-Calls
+- coordinate_validator bei rotierten Pockets nahe Kante: false positive
+  durch konservative bbox-Approximation (max(x,y)/2). Ein eigener
+  Fix-Punkt — bisher keine ADR.
+
+## Dokumentations-Konventionen
+
+- **CLAUDE.md** (diese Datei): Vision, Architektur-Ueberblick, aktive
+  Roadmap-Items, Kern-Dateien-Map. Bleibt das Einsteiger-Dokument.
+- **CHANGELOG.md**: chronologischer Eintrag pro nennenswerter Aenderung
+  mit Commit-Hash. Kein Versionsschema, nur Datum.
+- **docs/decisions/**: Architecture Decision Records (ADRs). Pro
+  groesserer Architektur-Entscheidung eine Datei mit Kontext, Entscheidung,
+  verworfenen Alternativen, Konsequenzen. Pflichtbestandteil bei Refactor.
+- **memory/**: persistenter Claude-Kontext, von claude-code automatisch
+  gepflegt. Nicht im Repo.
