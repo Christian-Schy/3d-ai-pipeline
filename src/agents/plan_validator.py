@@ -17,6 +17,7 @@ Model: qwen3.5:9b — logic validation, no CadQuery knowledge needed.
 """
 
 import json
+import re
 import structlog
 from src.agents.base import BaseAgent
 from src.config.loader import get_config
@@ -99,6 +100,15 @@ class PlanValidatorAgent(BaseAgent):
             errors = result.get("errors", result.get("issues", []))
             summary = result.get("summary", "")
 
+            # Deterministic post-filter: drop Check-6 false positives for
+            # holes that intentionally pierce the pocket floor. The LLM
+            # cannot reliably honor the prompt exception, so we strip these
+            # errors after the call. If nothing critical remains, we flip
+            # the verdict back to valid.
+            errors = _drop_pocket_floor_depth_errors(errors, blueprint)
+            if not is_valid and not _has_blocking_errors(errors):
+                is_valid = True
+
             if is_valid:
                 self.log.info("plan_validator_ok",
                               blueprint_desc=blueprint.get("description", "")[:60],
@@ -138,3 +148,77 @@ class PlanValidatorAgent(BaseAgent):
                 "plan_valid": True,
                 "plan_validation_issues": "",
             }
+
+
+# ── Deterministic error filters ────────────────────────────────────────────
+
+# Matches the LLM's typical Check-6 phrasing:
+#   "Feature 'foo' (depth 20) is larger than parent 'bar' (depth 10)"
+#   "Feature \"foo\" depth=20 exceeds parent ..."
+_DEPTH_VS_PARENT_PATTERN = re.compile(
+    r"feature[\s'\"]+(?P<fid>[\w\-]+)[\s'\"]*"
+    r".*?(?:larger\s+than|exceeds?)\s+parent",
+    re.IGNORECASE,
+)
+
+
+def _drop_pocket_floor_depth_errors(errors: list, blueprint: dict) -> list:
+    """Filter out Check-6 errors for holes that intentionally pierce the
+    pocket floor (depth_reference_applied="pocket_floor").
+
+    The LLM-validator's depth-vs-parent rule treats `depth = depth_local +
+    parent_depth` as oversized, but that is the resolver's intended output
+    for in-pocket holes — the bohrung goes through the pocket floor into
+    the parent material. We strip these errors deterministically.
+    """
+    if not isinstance(errors, list):
+        return errors
+
+    features = (blueprint.get("features") or {}) if isinstance(blueprint, dict) else {}
+    if not isinstance(features, dict):
+        features = {}
+
+    kept = []
+    for err in errors:
+        if not isinstance(err, dict):
+            kept.append(err)
+            continue
+        check = err.get("check", err.get("issue_type"))
+        msg = (err.get("message") or err.get("description") or "")
+
+        # Only consider Check 6 (or unnumbered errors with the same wording).
+        if check not in (6, "6", None) and not isinstance(check, str):
+            kept.append(err)
+            continue
+        m = _DEPTH_VS_PARENT_PATTERN.search(msg)
+        if not m:
+            kept.append(err)
+            continue
+
+        fid = m.group("fid")
+        feat = features.get(fid)
+        if not isinstance(feat, dict):
+            kept.append(err)
+            continue
+        params = feat.get("params") or {}
+        if (params.get("depth_reference_applied") or "").lower() == "pocket_floor":
+            log.info("plan_validator_filter_pocket_floor",
+                     feature=fid, dropped_message=msg[:80])
+            continue
+        kept.append(err)
+
+    return kept
+
+
+def _has_blocking_errors(errors: list) -> bool:
+    """Return True iff the list still contains at least one ERROR-severity
+    entry. WARNINGs do not block the pipeline."""
+    if not isinstance(errors, list):
+        return bool(errors)
+    for err in errors:
+        if not isinstance(err, dict):
+            return True
+        sev = (err.get("severity") or "ERROR").upper()
+        if sev == "ERROR":
+            return True
+    return False

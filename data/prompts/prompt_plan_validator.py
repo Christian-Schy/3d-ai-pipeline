@@ -14,7 +14,7 @@ STRUKTUR:
 
 DIMENSIONEN:
 5. Sind alle Maße > 0? — AUSNAHME: Bei type="slot" oder type="groove" ist length=null erlaubt (bedeutet volle Facetten-Länge). NIEMALS als Fehler melden!
-6. ★ NUR FÜR operation="subtract": Ist das Feature kleiner als sein Parent? — Features mit operation="add" DÜRFEN größer als ihr Parent sein (Flansch, Stufe, Aufsatz)!
+6. ★ NUR FÜR operation="subtract": Ist das Feature kleiner als sein Parent? — Features mit operation="add" DÜRFEN größer als ihr Parent sein (Flansch, Stufe, Aufsatz)! AUSNAHME: Wenn params.depth_reference_applied="pocket_floor" gesetzt ist, ist depth ABSICHTLICH grösser als die Pocket-Tiefe (Bohrung geht durch Pocket-Boden ins Material) — KEIN Fehler, NICHT melden!
 7. ★ NUR für type="bolt_circle" oder type="hole_pattern": Passt der Lochkreis auf den Parent? — NIEMALS auf einzelne Löcher, Slots oder Nuten anwenden!
 8. Wandstärke-Check: Nur WARNING ausgeben, NIEMALS als Fehler behandeln. Niemals Maße aus der Spezifikation ändern!
 
