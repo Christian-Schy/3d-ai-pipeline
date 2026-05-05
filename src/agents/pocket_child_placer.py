@@ -1,21 +1,24 @@
-"""
-src/agents/pocket_child_placer.py — Bohrungen-in-Taschen Extraktor.
+"""src/agents/pocket_child_placer.py — Bohrungen-zu-Taschen Zuordner.
 
 Laeuft NACH der Assembly, VOR dem Resolver. Schaut sich das fertige
-semantische Blueprint an, sucht alle Pocket-Features (subtraktiv,
-type=pocket_rect/cutout) und liest aus dem User-Text heraus, ob darin
-eine Bohrung sitzen soll.
+semantische Blueprint an und ordnet bestehende Bohrungs-Features einer
+Tasche zu, wenn der User-Text das so beschreibt ("in der Tasche", ...).
 
-Der Output sind zusaetzliche SemanticFeatures mit parent=<pocket_id>
-und position.depth_reference="pocket_floor". Der Resolver platziert sie
-ueber die _resolve_feature_in_feature-Logik im Pocket-Lokalframe.
+Aufgaben-Trennung (V2, ab 2026-05-05):
+  - Position parsen: macht der feature_definierer (er kennt center_offset,
+    edge_distances, angle_deg).
+  - Containment "in welcher Tasche?": macht dieser Agent per LLM.
+  - Position uebernehmen: deterministisch — der Code clont das Upstream-
+    Feature, aendert nur parent + ID + setzt depth_reference.
 
 Trigger-Heuristik (deterministisch, vor LLM-Call):
-  - Spec enthaelt "in der tasche" / "in der ausnehmung" / "im pocket"
-    / "am taschenboden" / "in der vertiefung" / "in der aushoehlung"
+  - Spec enthaelt "in der tasche" / "in der ausnehmung" / "im pocket" /
+    "am taschenboden" / "in der vertiefung" / "in der aushoehlung"
   - Mindestens eine Pocket im Blueprint vorhanden
+  - Mindestens eine zuordnungsfaehige Bohrung (hole_single subtractive,
+    nicht bereits einem Pocket zugeordnet)
 
-Wenn weder das eine noch das andere zutrifft: Skip ohne LLM-Call.
+Wenn eine der Vorbedingungen fehlt: Skip ohne LLM-Call.
 """
 
 from __future__ import annotations
@@ -50,17 +53,17 @@ _POCKET_TYPES = {"pocket_rect", "pocket_round", "cutout"}
 
 
 class PocketChildPlacer(BaseAgent):
-    """Extracts hole-in-pocket features from the user spec.
+    """Assigns existing hole features to pockets when the user said so.
 
     Runs after assembly, before blueprint_resolver. Returns a partial
-    state update that injects feature-in-feature entries into the
-    blueprint's features dict, with parent set to the matching pocket.
+    state update that re-parents matching hole features to a pocket and
+    drops the original entries (the re-parented copies replace them).
     """
 
     name = "pocket_child_placer"
     dspy_demo_fields = {
-        "input_fields": ["specification", "pockets_listing"],
-        "output_field": "pocket_holes",
+        "input_fields": ["specification", "pockets_listing", "holes_listing"],
+        "output_field": "assignments",
     }
 
     def __init__(self):
@@ -72,7 +75,9 @@ class PocketChildPlacer(BaseAgent):
         if not self._dspy_demos:
             self._dspy_demos = [
                 (
-                    f"specification: {ex['spec']}\npockets: {_json.dumps(ex['pockets'], ensure_ascii=False)}",
+                    f"specification: {ex['spec']}\n"
+                    f"pockets: {_json.dumps(ex['pockets'], ensure_ascii=False)}\n"
+                    f"holes: {_json.dumps(ex['holes'], ensure_ascii=False)}",
                     _json.dumps(ex["output"], ensure_ascii=False),
                 )
                 for ex in FEW_SHOT_EXAMPLES
@@ -90,14 +95,13 @@ class PocketChildPlacer(BaseAgent):
            "feature_ids_to_remove": [fid, ...]}
 
         Decision tree:
-          1. No spec or no blueprint                      → skip
-          2. No "in der tasche"-style phrase in spec      → skip
-          3. No pocket-typed feature in blueprint         → skip
-          4. Otherwise: build a pocket listing, ask LLM,
-             validate, and return new SemanticFeature dicts.
-             Plus: detect upstream-chain duplicates of the same hole that
-             were attached to the part instead of the pocket and mark
-             them for removal.
+          1. No spec or no blueprint                       → skip
+          2. No "in der tasche"-style phrase in spec       → skip
+          3. No pocket-typed feature in blueprint          → skip
+          4. No assignable hole features                   → skip
+          5. Otherwise: build pockets/holes listings, ask LLM
+             for assignments, then re-parent each matched
+             hole into a pocket-child copy.
         """
         if not specification or not blueprint:
             return {}
@@ -111,99 +115,54 @@ class PocketChildPlacer(BaseAgent):
             log.debug("pocket_child_skip", reason="no_pockets")
             return {}
 
-        log.info("pocket_child_extracting",
+        holes = self._collect_assignable_holes(blueprint)
+        if not holes:
+            log.debug("pocket_child_skip", reason="no_holes")
+            return {}
+
+        log.info("pocket_child_assigning",
                  pocket_count=len(pockets),
+                 hole_count=len(holes),
                  spec_len=len(specification))
 
         try:
-            holes = self._call_llm(specification, pockets)
+            assignments = self._call_llm(specification, pockets, holes)
         except Exception as e:
             log.warning("pocket_child_llm_failed", error=str(e)[:120])
             return {}
 
-        validated = self._validate_holes(holes, pockets, blueprint)
+        validated = self._validate_assignments(assignments, pockets, holes)
         if not validated:
-            log.info("pocket_child_no_holes_extracted")
+            log.info("pocket_child_no_assignments")
             return {}
 
-        # Find upstream-chain duplicates: holes the inventar/teil_definierer
-        # attached to the part because it didn't recognize "in der Tasche"
-        # as a feature-parent hint. We match by (parent=part-of-pocket,
-        # type, diameter, depth) since the upstream depth is the user-stated
-        # depth and our depth_local preserves that value.
-        to_remove = self._find_upstream_duplicates(validated, blueprint, pockets)
-        if to_remove:
-            log.info("pocket_child_dedup",
-                     removing=to_remove,
-                     for_new_holes=list(validated.keys()))
+        existing_ids = set((blueprint.get("features") or {}).keys())
+        features_to_add: dict[str, dict] = {}
+        feature_ids_to_remove: list[str] = []
+        per_pocket_counter: dict[str, int] = {}
 
-        log.info("pocket_child_done", added=len(validated), removed=len(to_remove))
+        for hole_id, pocket_id in validated:
+            upstream = (blueprint.get("features") or {}).get(hole_id)
+            if not isinstance(upstream, dict):
+                continue
+            per_pocket_counter[pocket_id] = per_pocket_counter.get(pocket_id, 0) + 1
+            new_fid = self._make_child_id(
+                pocket_id,
+                per_pocket_counter[pocket_id],
+                existing_ids | set(features_to_add.keys()),
+            )
+            features_to_add[new_fid] = self._reparent_hole(
+                hole_id, new_fid, pocket_id, upstream,
+            )
+            feature_ids_to_remove.append(hole_id)
+
+        log.info("pocket_child_done",
+                 added=len(features_to_add),
+                 removed=len(feature_ids_to_remove))
         return {
-            "features_to_add": validated,
-            "feature_ids_to_remove": to_remove,
+            "features_to_add": features_to_add,
+            "feature_ids_to_remove": feature_ids_to_remove,
         }
-
-    @staticmethod
-    def _find_upstream_duplicates(
-        validated: dict[str, dict],
-        blueprint: dict,
-        pockets: list[dict],
-    ) -> list[str]:
-        """Identify hole features that are duplicates of newly-extracted
-        pocket children, created by the upstream chain.
-
-        For each new in-pocket hole we look for a sibling on the SAME part
-        (the pocket's parent) with matching type, diameter and depth (the
-        upstream depth equals the user-stated depth, which we preserved
-        as depth_local on the new feature). Only an exact match is removed
-        to keep the dedup conservative.
-        """
-        features = blueprint.get("features") or {}
-        pocket_parent_by_id = {p["id"]: p.get("parent_part") for p in pockets}
-        # Tally upstream candidates so we don't double-claim a single
-        # candidate across multiple new holes.
-        claimed: set[str] = set()
-        to_remove: list[str] = []
-
-        for new_fid, new_feat in validated.items():
-            pocket_id = new_feat.get("parent")
-            part_id = pocket_parent_by_id.get(pocket_id)
-            if not part_id:
-                continue
-            new_params = new_feat.get("params") or {}
-            new_type = (new_feat.get("type") or "").lower()
-            new_diam = _safe_float(new_params.get("diameter"))
-            new_depth = _safe_float(new_params.get("depth"))
-            if new_diam is None:
-                continue
-
-            for fid, feat in features.items():
-                if fid in claimed or fid == new_fid:
-                    continue
-                if not isinstance(feat, dict):
-                    continue
-                if feat.get("parent") != part_id:
-                    continue
-                if (feat.get("type") or "").lower() != new_type:
-                    continue
-                if (feat.get("operation") or "add").lower() != "subtract":
-                    continue
-                fp = feat.get("params") or {}
-                fd = _safe_float(fp.get("diameter"))
-                ft = _safe_float(fp.get("depth"))
-                if fd is None or new_diam is None:
-                    continue
-                if abs(fd - new_diam) > 0.01:
-                    continue
-                # Match upstream depth against the user-stated depth, which
-                # we kept as depth_local on the new feature.
-                if ft is not None and new_depth is not None and abs(ft - new_depth) > 0.01:
-                    continue
-                claimed.add(fid)
-                to_remove.append(fid)
-                break
-
-        return to_remove
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -213,9 +172,8 @@ class PocketChildPlacer(BaseAgent):
     def _collect_pockets(blueprint: dict) -> list[dict]:
         """Walk blueprint.features and collect pocket-typed entries.
 
-        Returns dicts with id, parent_part (for context), x/y/depth, and
-        a position_hint inferred from the pocket's own placement (if
-        already resolved) or its semantic position (alignment/side).
+        Returns dicts with id, parent_part, x/y/depth, and a position_hint
+        derived from the pocket's own placement (alignment/side).
         """
         features = blueprint.get("features", {}) or {}
         if not isinstance(features, dict):
@@ -242,96 +200,138 @@ class PocketChildPlacer(BaseAgent):
             })
         return out
 
-    def _call_llm(self, specification: str, pockets: list[dict]) -> list[dict]:
-        """Call the LLM and parse the JSON response into a list of hole specs."""
+    @staticmethod
+    def _collect_assignable_holes(blueprint: dict) -> list[dict]:
+        """Collect hole_single features that are not already pocket children.
+
+        Excludes holes whose parent is itself a pocket (already assigned).
+        Returns dicts with feature_id, durchmesser, tiefe and source_text
+        (taken from the feature's notes, which carry the original user
+        snippet from the feature_definierer).
+        """
+        features = blueprint.get("features") or {}
+        if not isinstance(features, dict):
+            return []
+        pocket_ids = {
+            fid for fid, feat in features.items()
+            if isinstance(feat, dict)
+            and (feat.get("type") or "").lower() in _POCKET_TYPES
+            and (feat.get("operation") or "add").lower() == "subtract"
+        }
+        out: list[dict] = []
+        for fid, feat in features.items():
+            if not isinstance(feat, dict):
+                continue
+            if (feat.get("type") or "").lower() != "hole_single":
+                continue
+            if (feat.get("operation") or "add").lower() != "subtract":
+                continue
+            if feat.get("parent") in pocket_ids:
+                continue
+            params = feat.get("params") or {}
+            out.append({
+                "feature_id": fid,
+                "durchmesser": params.get("diameter"),
+                "tiefe": params.get("depth"),
+                "source_text": (feat.get("notes") or "")[:120],
+            })
+        return out
+
+    def _call_llm(
+        self, specification: str, pockets: list[dict], holes: list[dict],
+    ) -> list[dict]:
+        """Call the LLM and parse the JSON response into a list of assignments."""
         pockets_listing = _json.dumps(pockets, ensure_ascii=False, indent=2)
+        holes_listing = _json.dumps(holes, ensure_ascii=False, indent=2)
         prompt = POCKET_CHILD_PROMPT_TEMPLATE.format(
             specification=specification,
             pockets_listing=pockets_listing,
+            holes_listing=holes_listing,
         )
         result = self.call_json(prompt, system=SYSTEM_PROMPT)
         if isinstance(result, list):
             return result
         if isinstance(result, dict):
-            return result.get("pocket_holes", []) or []
+            return result.get("assignments", []) or []
         return []
 
-    def _validate_holes(
-        self, holes: list[dict], pockets: list[dict], blueprint: dict,
-    ) -> dict[str, dict]:
-        """Validate LLM output and convert to SemanticFeature-shaped dicts.
+    @staticmethod
+    def _validate_assignments(
+        assignments: list[dict],
+        pockets: list[dict],
+        holes: list[dict],
+    ) -> list[tuple[str, str]]:
+        """Filter LLM output to (hole_id, pocket_id) tuples for known IDs.
 
-        Drops anything that:
-          - References an unknown pocket_id
-          - Has non-positive diameter / depth
-          - Has a non-allowed type (only hole_single supported in MVP)
+        Drops assignments that:
+          - Reference an unknown hole_feature_id
+          - Reference an unknown pocket_id
+          - Map the same hole_id more than once (first-wins)
         """
         valid_pocket_ids = {p["id"] for p in pockets}
-        existing_ids = set((blueprint.get("features") or {}).keys())
-        out: dict[str, dict] = {}
-        for h in holes or []:
-            if not isinstance(h, dict):
+        valid_hole_ids = {h["feature_id"] for h in holes}
+        seen_holes: set[str] = set()
+        out: list[tuple[str, str]] = []
+        for entry in assignments or []:
+            if not isinstance(entry, dict):
                 continue
-            parent_id = h.get("parent_pocket_id") or h.get("parent")
-            if parent_id not in valid_pocket_ids:
-                log.warning("pocket_child_unknown_parent",
-                            parent=parent_id,
-                            valid=list(valid_pocket_ids))
+            hole_id = entry.get("hole_feature_id") or entry.get("hole_id")
+            pocket_id = entry.get("pocket_id") or entry.get("parent_pocket_id")
+            if not hole_id or not pocket_id:
                 continue
-            ftype = (h.get("type") or "hole_single").lower()
-            # MVP: only hole_single. Slot-in-pocket etc. is a phase-2 add.
-            if ftype != "hole_single":
-                log.info("pocket_child_skipping_unsupported_type", type=ftype)
+            if hole_id not in valid_hole_ids:
+                log.warning("pocket_child_unknown_hole",
+                            hole=hole_id, valid=list(valid_hole_ids))
                 continue
-            params = h.get("params") or {}
-            try:
-                d = float(params.get("diameter") or 0)
-                depth = params.get("depth")
-                depth_f = float(depth) if depth is not None else None
-            except (TypeError, ValueError):
+            if pocket_id not in valid_pocket_ids:
+                log.warning("pocket_child_unknown_pocket",
+                            pocket=pocket_id, valid=list(valid_pocket_ids))
                 continue
-            if d <= 0 or (depth_f is not None and depth_f <= 0):
+            if hole_id in seen_holes:
                 continue
-
-            fid = h.get("feature_id") or f"hole_in_{parent_id}_{len(out) + 1}"
-            # Avoid clobbering an existing feature.
-            base_fid = fid
-            i = 2
-            while fid in existing_ids or fid in out:
-                fid = f"{base_fid}_{i}"
-                i += 1
-
-            position = h.get("position") or {}
-            # Always force pocket_floor for the depth reference — the agent
-            # was prompted for it, but we re-enforce in case the LLM omitted it.
-            position.setdefault("side", "oben")
-            position.setdefault("alignment", "centered")
-            position["depth_reference"] = "pocket_floor"
-
-            out[fid] = {
-                "id": fid,
-                "type": ftype,
-                "parent": parent_id,
-                "operation": "subtract",
-                "orientation": "standard",
-                "params": {
-                    "diameter": d,
-                    "depth": depth_f if depth_f is not None else None,
-                },
-                "position": position,
-                "notes": h.get("source_text", "")[:80],
-            }
+            seen_holes.add(hole_id)
+            out.append((hole_id, pocket_id))
         return out
 
+    @staticmethod
+    def _make_child_id(pocket_id: str, idx: int, taken: set[str]) -> str:
+        """Build a unique child-hole id of the form hole_in_<pocket>_<idx>."""
+        base = f"hole_in_{pocket_id}_{idx}"
+        fid = base
+        i = 2
+        while fid in taken:
+            fid = f"{base}_{i}"
+            i += 1
+        return fid
 
-def _safe_float(value) -> float | None:
-    """float() that returns None on failure or empty input."""
-    if value is None:
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
+    @staticmethod
+    def _reparent_hole(
+        old_id: str, new_id: str, pocket_id: str, upstream: dict,
+    ) -> dict:
+        """Clone an upstream hole feature, re-parent to a pocket, set depth ref.
+
+        The position dict (with center_offset / edge_distances / alignment)
+        is preserved 1:1 from the upstream feature — that is the whole point
+        of this refactor. The resolver's _resolve_feature_in_feature pathway
+        interprets it in the pocket-local frame.
+        """
+        position = dict(upstream.get("position") or {})
+        position["depth_reference"] = "pocket_floor"
+        position.setdefault("side", "oben")
+        position.setdefault("alignment", "centered")
+
+        params = dict(upstream.get("params") or {})
+
+        return {
+            "id": new_id,
+            "type": (upstream.get("type") or "hole_single").lower(),
+            "parent": pocket_id,
+            "operation": "subtract",
+            "orientation": upstream.get("orientation") or "standard",
+            "params": params,
+            "position": position,
+            "notes": upstream.get("notes") or "",
+        }
 
 
 def _derive_position_hint(position: dict) -> str:
