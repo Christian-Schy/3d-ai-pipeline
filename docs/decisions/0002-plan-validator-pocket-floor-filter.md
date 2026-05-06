@@ -1,8 +1,17 @@
 # ADR 0002 — plan_validator filtert pocket_floor depth-Errors deterministisch
 
 - **Datum:** 2026-05-05
-- **Status:** accepted
+- **Status:** superseded (2026-05-06)
 - **Commit:** `ca15719`
+- **Aufgehoben durch:** Bug-2-Fix in der ADR-0003-Stufe-5c-Iteration.
+  Die Loesung "Regex-Filter auf LLM-Output" hat die Format-Drift des
+  LLM nicht abgefangen (siehe Run 3db7d152: 7 false positives statt 1).
+  Stattdessen wurde **Check 6** komplett aus dem plan_validator-Prompt
+  entfernt — `coordinate_validator.run_coordinate_check` Check 2
+  (depth_vs_material) macht den deterministischen Vergleich seit jeher
+  korrekt und behandelt feature-in-feature (depth = pocket+material)
+  bereits ueber `_resolve_root_parent_id`. Damit ist der Filter samt
+  Regex obsolet und entfaellt.
 
 ## Kontext
 

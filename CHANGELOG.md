@@ -10,6 +10,28 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **Bug 2: depth-vs-parent-Check raus aus LLM-plan_validator** —
+  Check 6 ("Feature kleiner als sein Parent?") aus
+  [data/prompts/prompt_plan_validator.py] entfernt; der LLM bekommt
+  jetzt explizit gesagt, dass diese Pruefung der deterministische
+  `coordinate_validator` macht (Check 2 / `depth_vs_material`,
+  feature-in-feature wird ueber `_resolve_root_parent_id` korrekt
+  gegen die Root-Part-Hoehe geprueft, nicht gegen die Pocket-Tiefe).
+  Damit entfaellt auch der Regex-Post-Filter aus ADR 0002 — die
+  Filter-Funktion `_drop_pocket_floor_depth_errors` plus
+  `_has_blocking_errors` sind aus [src/agents/plan_validator.py] raus,
+  ebenso die jetzt obsolete Test-Datei
+  `tests/agents/test_plan_validator_pocket_floor.py`.
+  ADR 0002 als superseded markiert.
+
+  Hintergrund: Run 3db7d152 hat den Regex-Filter aus ADR 0002 versagen
+  sehen — der LLM hat 7 von 8 nested Bohrungen als depth-violation
+  gemeldet, aber das Format der Fehlermeldung hat die Filter-Regex
+  nicht gematcht. Architektur-richtige Loesung: Mathe-Check gehoert in
+  den deterministischen Validator, nicht in den LLM-Prompt.
+
+  -83 Zeilen Code, -1 Test-Datei. 207/207 Tests gruen.
+
 - **Quick Wins fuer Stufe 5c** — zwei kleine Aenderungen aus der
   Real-Run-Analyse von Run 3c0212ae:
   - `agent_options.normalizer.think=false` (config.yaml). Im neuen Pfad
