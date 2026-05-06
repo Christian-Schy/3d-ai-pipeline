@@ -61,6 +61,9 @@ from src.graph.nodes import (
     coordinate_validator_node,
     plan_validator_node,
     function_decomposer_node,
+    aktions_splitter_node,
+    aktions_klassifizierer_node,
+    aktions_aggregator_node,
     coder_node,
     code_review_node,
     executor_node,
@@ -169,10 +172,14 @@ def build_graph() -> StateGraph:
 
     Architecture (S0 — Modulare Trennung, feature_definierer + platzierer getrennt):
 
-    Fresh AND modification requests (both use the 3-step chain):
-      entry_router → interpreter → punctuation → inventar → text_splitter
-        → position_extractor → feature_definierer → platzierer → assembly
-        → blueprint_resolver → coordinate_validator → plan_validator → ...
+    Fresh requests (Per-Aktion-Kette nach ADR 0003 Stufe 5b):
+      entry_router → interpreter → punctuation → inventar (Step A)
+        → aktions_splitter → aktions_klassifizierer → text_splitter
+        → position_extractor → feature_definierer → aktions_aggregator
+        → platzierer → assembly → blueprint_resolver
+        → coordinate_validator → plan_validator → ...
+
+    Modify/Error-Loop: blueprint_architect (legacy chain, unchanged).
 
     Validation failures route back to the originating agent:
       3-Step Chain → feature_definierer (redo features + placement)
@@ -190,9 +197,15 @@ def build_graph() -> StateGraph:
     graph.add_node("punctuation", punctuation_node)
     # 3-Step Blueprint Chain (S0: feature + placement separated)
     graph.add_node("inventar", inventar_node)
+    # Per-Aktion-Kette (ADR 0003 Stufe 5b): determ. Splitter → klassifizierer
+    # → feature_definierer → aggregator. Ersetzt das verklumpende Inventar
+    # Step B durch Pro-Aktion-Mikro-Calls + deterministische Aggregation.
+    graph.add_node("aktions_splitter", aktions_splitter_node)
+    graph.add_node("aktions_klassifizierer", aktions_klassifizierer_node)
     graph.add_node("position_extractor", position_extractor_node)
     graph.add_node("text_splitter", text_splitter_node)
     graph.add_node("feature_definierer", feature_definierer_node)
+    graph.add_node("aktions_aggregator", aktions_aggregator_node)
     graph.add_node("platzierer", platzierer_node)
     graph.add_node("assembly", assembly_node)
     # Optional pre-resolver step: pulls "Bohrung in Tasche"-style features
@@ -237,15 +250,24 @@ def build_graph() -> StateGraph:
     # Punctuation: comma-only pre-processor (voice-input safety net) → inventar
     graph.add_edge("punctuation", "inventar")
 
-    # 3-Step Blueprint Chain (S0): inventar → text_splitter → position_extractor
-    #   → feature_definierer → platzierer → assembly → resolver
-    # text_splitter chunks the spec per teil (one short text per part).
-    # position_extractor then labels each per-teil chunk into placement vs.
-    # feature sentences — small inputs, focused job, no cross-teil confusion.
-    graph.add_edge("inventar", "text_splitter")
+    # Per-Aktion-Chain (ADR 0003) — vollstaendiger Fluss:
+    #   inventar (Step A) → aktions_splitter (rule)
+    #     → aktions_klassifizierer (LLM-Loop, 1 call/Phrase)
+    #     → text_splitter (per-Teil Chunks fuer Multi-Part)
+    #     → position_extractor (placement vs. feature Labels — feature-
+    #       Labels sind im Pro-Aktion-Pfad redundant, placement_sentences
+    #       braucht der platzierer weiter)
+    #     → feature_definierer (LLM-Loop, define_feature pro Klassifikation)
+    #     → aktions_aggregator (rule, baut teil_definitionen[] mit
+    #       parent-Aufloesung fuer nested Children)
+    #     → platzierer → assembly → resolver
+    graph.add_edge("inventar", "aktions_splitter")
+    graph.add_edge("aktions_splitter", "aktions_klassifizierer")
+    graph.add_edge("aktions_klassifizierer", "text_splitter")
     graph.add_edge("text_splitter", "position_extractor")
     graph.add_edge("position_extractor", "feature_definierer")
-    graph.add_edge("feature_definierer", "platzierer")
+    graph.add_edge("feature_definierer", "aktions_aggregator")
+    graph.add_edge("aktions_aggregator", "platzierer")
     graph.add_edge("platzierer", "assembly")
     # assembly → pocket_child_placer → blueprint_resolver. The placer
     # is a no-op when the spec doesn't mention "in der Tasche", so this
@@ -406,10 +428,13 @@ class PipelineRunner:
             "geometry_state": {},
             "geometry_precheck_report": "",
             "agent_traces": [],
-            # 3-Step Blueprint Chain
+            # 3-Step Blueprint Chain + Per-Aktion-Kette (ADR 0003)
             "inventar": {},
             "position_extrakt": {},
             "teil_definitionen": [],
+            "aktions_phrases": [],
+            "aktions_klassifikationen": [],
+            "aktions_features": [],
             # Code generation
             "code_skeleton": "",
             "generation_mode": "",
@@ -537,10 +562,13 @@ class PipelineRunner:
             "geometry_state": previous_state.get("geometry_state", {}),
             "geometry_precheck_report": "",
             "agent_traces": [],
-            # 3-Step Blueprint Chain
+            # 3-Step Blueprint Chain + Per-Aktion-Kette (ADR 0003)
             "inventar": {},
             "position_extrakt": {},
             "teil_definitionen": [],
+            "aktions_phrases": [],
+            "aktions_klassifikationen": [],
+            "aktions_features": [],
             # Code generation
             "code_skeleton": "",
             "generation_mode": "",

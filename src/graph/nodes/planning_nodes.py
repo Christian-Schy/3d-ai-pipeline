@@ -34,18 +34,19 @@ log = structlog.get_logger()
 def inventar_node(state: PipelineState) -> dict:
     """Step 1: Extract parts inventory from the specification.
 
-    Counts bodies, lists their names/types/dimensions, and collects
-    actions (features) described for each part.
+    Fresh runs: Step A only (teile list). The deterministic
+    aktions_splitter_node and aktions_klassifizierer_node take over what
+    the legacy Step B used to do — see ADR 0003.
 
-    When re-entered from the validator loop with a dimension error, the
-    validator feedback is passed as retry context so the model knows which
-    raw_params to correct.
+    Retry from validator: legacy extract() with feedback so the model
+    can correct the teile dimensions. Aktionen produced on retry are
+    ignored downstream; the new chain re-derives them from the
+    corrected teile + spec.
     """
     spec = state.get("specification", state.get("description", ""))
     _t0 = time.time()
     _step = len(state.get("agent_traces", [])) + 1
 
-    # Retry context: validator feedback + previous inventar output
     retry_feedback = state.get("validator_feedback", "") or ""
     previous_inventar = state.get("inventar", {}) or {}
     is_retry = bool(previous_inventar and retry_feedback)
@@ -60,7 +61,7 @@ def inventar_node(state: PipelineState) -> dict:
                 previous_inventar=previous_inventar,
             )
         else:
-            inventar = agent.extract(spec)
+            inventar = agent.extract_teile_only(spec)
     except Exception as e:
         log.error("node_inventar_failed", error=str(e)[:200])
         _trace = _make_trace(
@@ -240,23 +241,28 @@ def text_splitter_node(state: PipelineState) -> dict:
 
 
 def feature_definierer_node(state: PipelineState) -> dict:
-    """Step 2: Define each part's features in raw/standard axes.
+    """Stufe 3 of ADR 0003: per-classified-action feature definition.
 
-    S0 (Modulare Trennung): Features ONLY — no parent, no position, no orientation.
-    The platzierer_node handles placement separately so the two concerns
-    cannot bleed into each other.
+    Reads:  state.aktions_klassifikationen, state.inventar.teile,
+            state.specification (for context).
+    Writes: state.aktions_features (raw SemanticFeatures with
+            _teil_id / _phrase_idx / _parent_phrase_idx markers).
 
-    Two-phase approach per action:
-      Phase A: NormalizerAgent (KI) — free text → standardized short-form
-               Input: feature-only text (placement sentence stripped out)
-      Phase B: FeatureBuilder (deterministic) — short-form → Feature JSON
+    Each classified action becomes exactly one SemanticFeature via
+    NormalizerAgent.define_feature(klass, teil). The aggregator
+    (aktions_aggregator_node) downstream consumes these into the final
+    teil_definitionen[] structure.
+
+    On retry from coordinate_validator: re-runs over the same
+    klassifikationen (phrases are stable; only the LLM-derived feature
+    details may change with feedback context).
     """
-    inventar = state.get("inventar", {})
+    inventar = state.get("inventar", {}) or {}
+    klassifikationen = state.get("aktions_klassifikationen", []) or []
     spec = state.get("specification", state.get("description", ""))
     _t0 = time.time()
     _step = len(state.get("agent_traces", [])) + 1
 
-    # On retry: include validation feedback
     validation_hint = (
         state.get("coordinate_validation_issues", "")
         or state.get("validator_feedback", "")
@@ -265,120 +271,79 @@ def feature_definierer_node(state: PipelineState) -> dict:
     if validation_hint:
         log.info("node_feature_definierer_retry", hint=validation_hint[:120])
 
-    if not inventar or not inventar.get("teile"):
+    if not inventar.get("teile"):
         log.warning("node_feature_definierer_skipped", reason="no_inventar")
-        return {"teil_definitionen": [], "agent_traces": [_make_trace(
+        return {"aktions_features": [], "agent_traces": [_make_trace(
             agent="feature_definierer", step=_step,
-            input_data={}, output_data={"skipped": True},
+            input_data={}, output_data={"skipped": True, "reason": "no_inventar"},
             start_time=_t0,
         )]}
 
-    normalizer = get_agent(NormalizerAgent)
-    teil_defs = []
-    traces = []
-    aktionen_by_teil = {}
+    if not klassifikationen:
+        log.warning("node_feature_definierer_skipped", reason="no_klassifikationen")
+        return {"aktions_features": [], "agent_traces": [_make_trace(
+            agent="feature_definierer", step=_step,
+            input_data={"teile": len(inventar.get("teile", []))},
+            output_data={"skipped": True, "reason": "no_klassifikationen"},
+            start_time=_t0,
+        )]}
 
-    # Build lookup: teil_id → labeled sentences from PositionExtractor.
-    # The labeler split each teil's text into feature_sentences (used here)
-    # and placement_sentences (used by platzierer). Each downstream agent
-    # gets only the sentences relevant to its concern.
-    position_extrakt = state.get("position_extrakt", {})
-    position_by_teil = {
-        p["teil_id"]: p
-        for p in position_extrakt.get("positionen", [])
-        if p.get("teil_id")
-    }
-
+    teile_by_id = {t["id"]: t for t in inventar.get("teile", []) if t.get("id")}
     teil_texte: dict[str, str] = state.get("teil_texte", {}) or {}
 
-    # Group actions by teil_id
-    for aktion in inventar.get("aktionen", []):
-        tid = aktion.get("teil_id", "")
-        aktionen_by_teil.setdefault(tid, []).append(aktion)
-
-    # If retrying, append validation feedback to spec
     spec_with_hint = spec
     if validation_hint:
-        spec_with_hint = f"{spec}\n\n★ KORREKTUR-HINWEIS (vorheriger Versuch hatte Fehler):\n{validation_hint}"
+        spec_with_hint = (
+            f"{spec}\n\n"
+            f"★ KORREKTUR-HINWEIS (vorheriger Versuch hatte Fehler):\n"
+            f"{validation_hint}"
+        )
 
-    all_teile = inventar["teile"]
-    root_teil_id = all_teile[0]["id"] if all_teile else ""
+    normalizer = get_agent(NormalizerAgent)
+    features: list[dict] = []
+    raw_responses: list[str] = []
 
-    for idx, teil in enumerate(all_teile):
-        teil_id = teil["id"]
-        teil_aktionen = aktionen_by_teil.get(teil_id, [])
-        t_start = time.time()
-        step_i = _step + len(traces)
+    for klass in klassifikationen:
+        teil_id = klass.get("teil_id", "")
+        teil = teile_by_id.get(teil_id)
+        if not teil:
+            log.warning("feature_definierer_unknown_teil",
+                        teil_id=teil_id, phrase=klass.get("beschreibung", "")[:60])
+            continue
 
-        # Build feature context from labeled feature_sentences (cleanest path).
-        # Falls back to per-teil text from text_splitter, then to full spec.
-        feature_sentences = position_by_teil.get(teil_id, {}).get("feature_sentences", [])
-        if feature_sentences:
-            feature_spec = " ".join(feature_sentences)
-        else:
-            feature_spec = teil_texte.get(teil_id, spec_with_hint) or spec_with_hint
-        if validation_hint:
-            feature_spec = f"{feature_spec}\n\n★ KORREKTUR-HINWEIS:\n{validation_hint}"
+        feature_text = teil_texte.get(teil_id, spec_with_hint) or spec_with_hint
 
-        # Phase A: Normalize each action via KI (features only, no placement)
-        normalized_actions = []
-        raw_responses = []
-        for aktion in teil_aktionen:
-            beschreibung = aktion.get("beschreibung", "")
-            seite = aktion.get("seite", "oben")
-            try:
-                norm = normalizer.normalize(beschreibung, seite, feature_spec)
-                if norm.get("typ", "").lower() == "ignorieren":
-                    log.warning("normalizer_skipped_placement",
-                                teil=teil_id, beschreibung=beschreibung[:80])
-                    raw_responses.append(getattr(normalizer, "_last_raw_response", ""))
-                    continue
-                normalized_actions.append(norm)
-                raw_responses.append(getattr(normalizer, "_last_raw_response", ""))
-                log.info("normalizer_done",
-                         teil=teil_id, typ=norm.get("typ"),
-                         seite=norm.get("seite"))
-            except Exception as e:
-                log.error("normalizer_failed",
-                          teil=teil_id, error=str(e)[:200])
+        try:
+            feat = normalizer.define_feature(klass, teil, feature_text=feature_text)
+        except Exception as e:
+            log.error("feature_definierer_failed",
+                      phrase=klass.get("beschreibung", "")[:80],
+                      error=str(e)[:200])
+            continue
 
-        # Phase B: Deterministic feature building
-        teil_def = build_teil_definition(teil, normalized_actions)
-
-        # Placement fields are left blank — platzierer_node fills them in.
-        teil_def["parent"] = None
-        teil_def["position"] = None
-        teil_def["orientation"] = "standard"
-
-        teil_defs.append(teil_def)
-
-        log.info("node_feature_definierer_part_done",
-                 teil=teil_id,
-                 features=len(teil_def.get("features", [])))
-
-        from src.config.loader import get_config as _gc
-        combined_raw = "\n---\n".join(raw_responses) if raw_responses else ""
-
-        traces.append(_make_trace(
-            agent="feature_definierer", step=step_i,
-            input_data={"teil": teil, "aktionen": teil_aktionen,
-                        "feature_spec": feature_spec[:300]},
-            output_data={
-                "teil_definition": teil_def,
-                "normalized_actions": normalized_actions,
-            },
-            start_time=t_start,
-            model=_gc().models.normalizer,
-            raw_response=combined_raw or None,
-        ))
+        features.append(feat)
+        raw = getattr(normalizer, "_last_raw_response", None)
+        if raw:
+            raw_responses.append(raw)
+        log.info("feature_definierer_done",
+                 teil=teil_id, typ=feat.get("type"),
+                 phrase_idx=feat.get("_phrase_idx"))
 
     log.info("node_feature_definierer_done",
-             teile=len(teil_defs),
-             total_features=sum(len(d.get("features", [])) for d in teil_defs))
+             features=len(features), of=len(klassifikationen))
 
+    from src.config.loader import get_config as _gc
     return {
-        "teil_definitionen": teil_defs,
-        "agent_traces": traces,
+        "aktions_features": features,
+        "agent_traces": [_make_trace(
+            agent="feature_definierer", step=_step,
+            input_data={"klassifikationen": len(klassifikationen),
+                        "teile": len(teile_by_id)},
+            output_data={"features": features},
+            start_time=_t0,
+            model=_gc().models.normalizer,
+            raw_response="\n---\n".join(raw_responses) if raw_responses else None,
+        )],
     }
 
 

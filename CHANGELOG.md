@@ -10,6 +10,32 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **Pipeline-Verdrahtung (Stufe 5b von ADR 0003)** — die in Stufe 5a
+  vorbereiteten Per-Aktion-Nodes sind jetzt im LangGraph aktiv.
+  Aenderungen am Graph:
+  - `inventar_node` ruft auf fresh runs `extract_teile_only()` (Step A
+    only). Retry-Pfad mit validator_feedback bleibt auf legacy
+    `extract()` damit Teil-Dimensions-Korrektur weiter funktioniert.
+  - Neue Edges: `inventar → aktions_splitter → aktions_klassifizierer
+    → text_splitter → position_extractor → feature_definierer →
+    aktions_aggregator → platzierer`. Damit ersetzt die deterministische
+    Splitter+Klassifizierer-Kombi den verklumpenden Inventar-Step-B.
+  - `feature_definierer_node` umgestellt auf
+    `NormalizerAgent.define_feature(klass, teil)`. Eingabe sind die
+    `aktions_klassifikationen` aus Stufe 2; Ausgabe sind `aktions_features`
+    mit `_teil_id / _phrase_idx / _parent_phrase_idx`-Markern. Ueberlebt
+    einzelne Klassifikationen ohne Teil-Zuordnung mit Warning.
+  - `aktions_aggregator_node` ist jetzt der Producer von
+    `teil_definitionen` (deterministisch). Nested Bohrung-in-Tasche
+    bekommt parent=tasche_id ohne dass `pocket_child_placer` noch das
+    LLM bemuehen muesste — der bleibt aber als Sicherheitsnetz im Graph.
+  - Initial-State init in pipeline.py um die neuen Felder ergaenzt.
+  - Modify/Error-Loop-Pfad ueber `blueprint_architect` ist unangetastet.
+  - Graph compiliert sauber (27 Nodes, +3 ggue. Stufe 5a). Suite weiter
+    217/217 gruen. Real-Run-Verifikation (Stufe 5c / ADR Stufe 6) folgt
+    separat — dort wird auch `agent_options.normalizer.think=false`
+    gegen die Latenz pruefen.
+
 - **Pipeline-Vorarbeit (Stufe 5a von ADR 0003)** — alles additiv, noch
   kein Graph-Wiring. Vorbereitet:
   - `InventarAgent.extract_teile_only(specification)` liefert die Step-A-
