@@ -825,16 +825,25 @@ def _compute_offsets(
     anchor: dict | None = None,
     angle_deg: float = 0.0,
     feat_type: str = "",
+    pocket_edge_distances: dict[str, float] | None = None,
 ) -> tuple[float, float]:
     """Compute numeric offset_x, offset_y from anchor / edges / center offsets / alignment.
 
-    Priority (highest first):
+    Priority (highest first, per axis):
       1. anchor: {child_point, parent_point, offset}  → point-on-point placement
-      2. edge_distances: {"right": 20}                → 20mm from right edge
+      2a. pocket_edge_distances: {"right": 20}        → Feature-Edge 20mm
+                                                        from Parent-Edge (edge-to-edge)
+      2b. edge_distances:        {"right": 20}        → Feature-Center 20mm
+                                                        from Parent-Edge (edge-to-center, default)
       3. center_offset:  {"left": 10}                 → from center 10mm toward left
       4. alignment keywords: flush_right, flush_top, centered, ...
 
-    All four are face-aware (world axis depends on which face the feature sits on).
+    Per axis ist pocket_edge UND edge gleichberechtigt: 2a gewinnt ueber 2b
+    auf derselben Achse, aber das LLM sollte ohnehin nur einen pro Achse
+    emittieren. Mischformen ueber zwei Achsen (z.B. abstand_oben +
+    kante_links) sind unterstuetzt und liefern pro Achse die richtige Mathe.
+
+    All face-aware (world axis depends on which face the feature sits on).
     angle_deg is forwarded to _apply_anchor so the anchored corner stays pinned
     after the assembler's face-rotation step.
     """
@@ -871,22 +880,18 @@ def _compute_offsets(
     ox = ox_from_alignment
     oy = oy_from_alignment
 
-    # Priority 2: Edge distances — per-axis override on top of alignment
+    # Priority 2b: edge_distances (DEFAULT edge-to-CENTER) per-axis
     ox_from_edges = oy_from_edges = 0.0
     ox_edge_set = oy_edge_set = False
     if edge_distances:
         non_zero = {k: v for k, v in edge_distances.items()
                     if isinstance(v, (int, float)) and float(v) > 0}
         if non_zero:
-            # Boxes need edge-to-edge distance (child half subtracted).
-            # Holes/slots/pockets: "from edge Xmm" always means edge→center,
-            # no subtraction. Convention reasoning: "Tasche 20mm von rechts"
+            # Default convention: edge-to-CENTER. "Tasche 20mm von rechts"
             # means the user wants the pocket CENTER 20mm from the parent
-            # edge — same mental model as "Bohrung 20mm von rechts". Only
-            # additive parts (boxes, plates) follow the "outer-edge of child
-            # 20mm from outer-edge of parent" convention. Match the type
-            # prefix so pocket_rect / pocket_round / hole_pattern_circular
-            # all hit the center-reference branch.
+            # edge — same mental model as "Bohrung 20mm von rechts". For
+            # additive plates/boxes (world-frame children) we still need
+            # edge-to-edge, hence the is_box check.
             _HOLE_LIKE_PREFIXES = ("hole", "slot", "groove", "pocket", "cutout",
                                    "chamfer", "fillet", "bevel", "recess")
             ftype_lower = (feat_type or "").lower()
@@ -897,6 +902,21 @@ def _compute_offsets(
                 face, non_zero, parent_w, parent_h, child_w, child_h, is_box
             )
             ox_from_edges, oy_from_edges = ox_e, oy_e
+
+    # Priority 2a: pocket_edge_distances (EXPLICIT edge-to-EDGE) per-axis
+    # Forciert is_box=True, also wird child_half abgezogen → Feature-Kante
+    # zur Parent-Kante. Ueberschreibt edge_distances auf derselben Achse.
+    ox_from_pocket_edges = oy_from_pocket_edges = 0.0
+    ox_pocket_set = oy_pocket_set = False
+    if pocket_edge_distances:
+        non_zero = {k: v for k, v in pocket_edge_distances.items()
+                    if isinstance(v, (int, float)) and float(v) > 0}
+        if non_zero:
+            ox_p, oy_p, ox_pocket_set, oy_pocket_set = _apply_edge_distances_axis(
+                face, non_zero, parent_w, parent_h, child_w, child_h,
+                is_box=True,
+            )
+            ox_from_pocket_edges, oy_from_pocket_edges = ox_p, oy_p
 
     # Priority 3: Center offsets — per-axis override (only if no edge on that axis)
     ox_from_center = oy_from_center = 0.0
@@ -910,13 +930,17 @@ def _compute_offsets(
             )
             ox_from_center, oy_from_center = ox_c, oy_c
 
-    # Compose per-axis: edge > center > alignment
-    if ox_edge_set:
+    # Compose per-axis: pocket_edge > edge > center > alignment
+    if ox_pocket_set:
+        ox = ox_from_pocket_edges
+    elif ox_edge_set:
         ox = ox_from_edges
     elif ox_center_set:
         ox = ox_from_center
     # else: keep ox_from_alignment (already assigned)
-    if oy_edge_set:
+    if oy_pocket_set:
+        oy = oy_from_pocket_edges
+    elif oy_edge_set:
         oy = oy_from_edges
     elif oy_center_set:
         oy = oy_from_center
@@ -1108,15 +1132,19 @@ def _resolve_feature(
     alignment = position.get("alignment", "centered")
     notes_text = position.get("notes", "") or feat.get("notes", "") or ""
     edge_distances = position.get("edge_distances")
+    pocket_edge_distances = position.get("pocket_edge_distances")
     alignment = _upgrade_alignment_from_notes(
         alignment, notes_text,
-        has_edge_distances=bool(edge_distances),
+        has_edge_distances=bool(edge_distances) or bool(pocket_edge_distances),
     )
     # Grid patterns (rarray) are inherently centered — inset handles the
     # edge distance, so edge_distances would shift the whole grid off-center.
     # Explicit center_offset and anchor still work for deliberate shifting.
-    if feat.get("type") in ("hole_pattern_grid",) and edge_distances:
-        edge_distances = None
+    if feat.get("type") in ("hole_pattern_grid",):
+        if edge_distances:
+            edge_distances = None
+        if pocket_edge_distances:
+            pocket_edge_distances = None
     center_offset = position.get("center_offset")
     anchor = position.get("anchor")
     if anchor is not None and not isinstance(anchor, dict):
@@ -1131,6 +1159,7 @@ def _resolve_feature(
         anchor=anchor,
         angle_deg=angle_deg,
         feat_type=feat_type,
+        pocket_edge_distances=pocket_edge_distances,
     )
     pre_rotation = anchor.get("pre_rotation") if isinstance(anchor, dict) else None
     # Tolerate malformed pre_rotation (must be a dict with numeric x/y/z)
@@ -1218,12 +1247,16 @@ def _resolve_feature_in_feature(
     alignment = position.get("alignment", "centered")
     notes_text = position.get("notes", "") or feat.get("notes", "") or ""
     edge_distances = position.get("edge_distances")
+    pocket_edge_distances = position.get("pocket_edge_distances")
     alignment = _upgrade_alignment_from_notes(
         alignment, notes_text,
-        has_edge_distances=bool(edge_distances),
+        has_edge_distances=bool(edge_distances) or bool(pocket_edge_distances),
     )
-    if feat.get("type") in ("hole_pattern_grid",) and edge_distances:
-        edge_distances = None
+    if feat.get("type") in ("hole_pattern_grid",):
+        if edge_distances:
+            edge_distances = None
+        if pocket_edge_distances:
+            pocket_edge_distances = None
     center_offset = position.get("center_offset")
     anchor = position.get("anchor")
     if anchor is not None and not isinstance(anchor, dict):
@@ -1241,6 +1274,7 @@ def _resolve_feature_in_feature(
         anchor=anchor,
         angle_deg=child_angle,
         feat_type=feat_type,
+        pocket_edge_distances=pocket_edge_distances,
     )
 
     # 2) Rotate the local offset by the pocket's own angle so children

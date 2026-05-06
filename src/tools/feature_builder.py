@@ -77,8 +77,40 @@ def _extract_center_offset(params: dict) -> dict | None:
     return offsets if offsets else None
 
 
+_EDGE_TO_EDGE_KEYS = {
+    "kante_oben":   "top",
+    "kante_unten":  "bottom",
+    "kante_rechts": "right",
+    "kante_links":  "left",
+    "kante_vorne":  "front",
+    "kante_hinten": "back",
+}
+
+
+def _extract_pocket_edge_distances(params: dict) -> dict | None:
+    """Extract explicit edge-to-edge distances ('kante_*' keys).
+
+    Bedeutung: Feature-Kante zur Parent-Kante. Nur fuer rechteckige
+    subtractive Features (pocket_rect, slot, cutout, groove) — bei
+    Bohrungen ist die Konvention immer edge-to-center (abstand_*).
+    Der Resolver subtrahiert child_half von der Distanz; die Pocket-
+    Kante landet damit `kante_<dir>` mm von der Cube-Kante.
+    """
+    distances = {}
+    for key, label in _EDGE_TO_EDGE_KEYS.items():
+        val = params.get(key)
+        if val is not None and isinstance(val, (int, float)):
+            distances[label] = val
+    return distances if distances else None
+
+
 def _extract_edge_distances(position: str, params: dict) -> dict | None:
-    """Extract edge_distances from position keyword + params."""
+    """Extract edge_distances from position keyword + params.
+
+    Konvention: edge-to-CENTER (Default). Center des Features ist
+    `abstand_<dir>` mm von der Parent-Kante. Fuer edge-to-edge siehe
+    `_extract_pocket_edge_distances` mit `kante_*` keys.
+    """
     # Explicit distances from params
     distances = {}
     for key, label in [
@@ -152,6 +184,7 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict:
     # Build position
     alignment = _POSITION_TO_ALIGNMENT.get(position, "centered")
     edge_distances = _extract_edge_distances(position, params)
+    pocket_edge_distances = _extract_pocket_edge_distances(params)
     center_offset = _extract_center_offset(params)
 
     # Build notes (direction info for slots/linear patterns)
@@ -187,6 +220,10 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict:
     }
     if center_offset:
         position_dict["center_offset"] = center_offset
+    if pocket_edge_distances:
+        # Edge-to-edge distances (Pocket-Kante zu Parent-Kante).
+        # Resolver wendet child_half-Subtraktion an.
+        position_dict["pocket_edge_distances"] = pocket_edge_distances
 
     return {
         "id": feat_id,

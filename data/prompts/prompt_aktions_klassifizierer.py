@@ -26,11 +26,30 @@ parameter_hints (optional):
     durchmesser, tiefe, laenge, breite, hoehe, radius,
     kantenlaenge, groesse
 
-  Position — Abstand von einer Kante nach innen:
+  Position — Abstand vom Feature-Center zur Parent-Kante (DEFAULT):
     abstand_oben | abstand_unten | abstand_rechts | abstand_links |
     abstand_vorne | abstand_hinten
+    Bedeutung: "von der oberen Kante 10mm entfernt" heisst: das ZENTRUM
+    des Features ist 10mm von der Parent-Kante entfernt. (Konsistent
+    mit der Bohrung-Konvention.)
     z.B. "von oberer Kante 10mm entfernt"        → abstand_oben: 10
-         "die linke Seite von links 10mm entfernt" → abstand_links: 10
+         "von der rechten Seite 25mm entfernt"   → abstand_rechts: 25
+
+  Position — Kante-zu-Kante (EXPLIZIT):
+    kante_oben | kante_unten | kante_rechts | kante_links |
+    kante_vorne | kante_hinten
+    Bedeutung: nur wenn die Phrase BEIDE Kanten benennt — die KANTE des
+    Features UND die Kante des Parents. Dann ist es edge-to-edge:
+    Feature-Kante X mm von Parent-Kante.
+    Erkennungsmerkmal: "die <seite> Kante/Seite [der Tasche/des Slots]
+    von <seite> X mm entfernt" — Akkusativ + zweite Praeposition.
+    z.B. "die obere Kante von oben 10mm entfernt"
+            → kante_oben: 10  (Feature-Top 10mm von Parent-Top)
+         "die linke Seite von links 10mm entfernt"
+            → kante_links: 10
+         "untere Kante der Tasche von unten 20mm entfernt"
+            → kante_unten: 20
+    Bei Bohrungen (Kreis ohne rect-Edge) bleibt es bei abstand_*.
 
   Position — Versatz von der Mitte in eine Richtung:
     versatz_oben | versatz_unten | versatz_rechts | versatz_links |
@@ -44,8 +63,9 @@ parameter_hints (optional):
     "im Uhrzeigersinn"    / "rechtsdrehend" / "CW" → NEGATIV
     Keine Richtung genannt → positiv (Standard CCW).
 
-  abstand_* und versatz_* sind exklusiv: ein und dieselbe Achse hat
-  entweder einen Kanten-Abstand ODER einen Mitten-Versatz, nie beides.
+  Pro Achse genau EIN Hint: abstand_* ODER kante_* ODER versatz_*.
+  Mischformen ueber zwei Achsen sind erlaubt (z.B. abstand_oben +
+  kante_links).
 
 Verschachtelte Phrasen ("in der Tasche ..." / "darin ..."):
   Wenn die Phrase keine eigene Seite nennt, nutze die Seite des
@@ -152,7 +172,8 @@ FEW_SHOT_EXAMPLES = [
         },
     },
     {
-        # Edge-distances — beide Achsen haben einen Kanten-Abstand
+        # EXPLIZITES edge-to-edge: beide Phrasen nennen die Pocket-Kante
+        # ("die obere Kante" / "die linke Seite") UND die Cube-Kante.
         "phrase": "oben eine Tasche 20x30x10 die obere Kante von oben 10mm entfernt die linke Seite von links 10mm entfernt",
         "teil_type": "box",
         "teil_params": {"x": 200, "y": 200, "z": 200},
@@ -161,7 +182,21 @@ FEW_SHOT_EXAMPLES = [
             "typ": "tasche",
             "seite": "oben",
             "parameter_hints": {"laenge": 20, "breite": 30, "tiefe": 10,
-                                "abstand_oben": 10, "abstand_links": 10},
+                                "kante_oben": 10, "kante_links": 10},
+        },
+    },
+    {
+        # DEFAULT abstand_* — Phrase nennt NUR die Cube-Kante, nicht die
+        # Pocket-Kante ("von der rechten Seite 25mm entfernt"). Center-zu-Cube-Edge.
+        "phrase": "oben eine Tasche 40x40x10 von der rechten Seite 25mm entfernt von der unteren Seite 25mm entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 200, "z": 200},
+        "parent_phrase": "(keine)",
+        "output": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 40, "breite": 40, "tiefe": 10,
+                                "abstand_rechts": 25, "abstand_unten": 25},
         },
     },
     {
@@ -178,7 +213,7 @@ FEW_SHOT_EXAMPLES = [
         },
     },
     {
-        # Edge-distances + Rotation gemischt
+        # Edge-to-edge + Rotation gemischt
         "phrase": "vorne eine Tasche 20x30x10 die obere Kante von oben 10mm entfernt die linke Seite von links 10mm entfernt gegen Uhrzeigersinn um 20grad rotiert",
         "teil_type": "box",
         "teil_params": {"x": 200, "y": 200, "z": 200},
@@ -187,12 +222,13 @@ FEW_SHOT_EXAMPLES = [
             "typ": "tasche",
             "seite": "vorne",
             "parameter_hints": {"laenge": 20, "breite": 30, "tiefe": 10,
-                                "abstand_oben": 10, "abstand_links": 10,
+                                "kante_oben": 10, "kante_links": 10,
                                 "rotation_deg": 20},
         },
     },
     {
-        # Nested Bohrung — Edge-distances in der Tasche, Seite vom Parent geerbt
+        # Nested Bohrung in einer Tasche — Bohrungen sind point-like
+        # (Kreis ohne rect-Extent), bleiben bei abstand_* (edge-to-center).
         "phrase": "in der Tasche von links 10mm und von der oberen Kante 10mm entfernt 18mm Bohrung 10tief",
         "teil_type": "box",
         "teil_params": {"x": 200, "y": 200, "z": 200},

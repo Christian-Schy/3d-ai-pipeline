@@ -10,6 +10,44 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **kante_<dir> Hints fuer explizites edge-to-edge** — User-Direktive
+  aus Run df5b92f6: "default: über center bewegt; zusätzlicher Punkt
+  wäre Kante zu Kante z.B. 'untere Kante der Tasche von unten 20mm
+  entfernt'". Damit hat der Klassifizierer jetzt zwei Hint-Klassen
+  fuer die gleiche Achse:
+
+  - `abstand_<dir>` (DEFAULT, edge-to-CENTER): Phrase nennt nur die
+    Cube-Kante. "von der rechten Seite 25mm entfernt" → Center 25mm
+    von Cube-Right → Pocket-Edge 5mm vom Cube-Edge.
+  - `kante_<dir>` (EXPLIZIT, edge-to-EDGE): Phrase nennt BEIDE Kanten —
+    die Pocket-Kante UND die Cube-Kante. "die obere Kante der Tasche
+    von oben 10mm entfernt" → Pocket-Top-Edge 10mm vom Cube-Top.
+
+  Aenderungen:
+  - `data/prompts/prompt_aktions_klassifizierer.py` — System-Prompt
+    erklaert beide Konventionen. Existing Few-Shot mit "die obere
+    Kante / die linke Seite" Phrasen umgestellt auf `kante_*`. Neuer
+    Few-Shot fuer puren `abstand_*`-Fall ("von der rechten Seite 25mm
+    entfernt"). Bohrungen bleiben bei abstand_* (point-like).
+  - `src/tools/feature_builder.py` — neue `_extract_pocket_edge_distances`
+    liest `kante_*` Keys; result landet in
+    `feature.position.pocket_edge_distances`.
+  - `src/tools/blueprint_resolver.py` — `_compute_offsets` nimmt
+    `pocket_edge_distances` als zusaetzlichen Parameter, wendet
+    `is_box=True` (child_half-Subtraktion) an. Per-Achse-Prioritaet:
+    pocket_edge > edge_distances > center_offset > alignment.
+    Mischformen ueber zwei Achsen (z.B. abstand_oben + kante_links)
+    werden unterstuetzt. Beide Caller (`_resolve_with_part_frame` und
+    `_resolve_feature_in_feature`) passthrough-fertig.
+
+  Tests: neue `tests/tools/test_kante_vs_abstand.py` mit 7 Faellen —
+  default abstand_* x2, explizit kante_* x3, Mischform pro Achse,
+  Override-Verhalten wenn beides auf derselben Achse. 215/215 Tests
+  gruen.
+
+  Hinweis: Bug-1 (coord_validator-False-Positive fuer rotierte
+  Pockets) bleibt offen, ist aber kosmetisch nach Bug 2/5-Fix.
+
 - **Bug 5: alle geometrischen Checks raus aus LLM-plan_validator** — Run
   4cebf8ff (selbe Spec wie 3db7d152 mit Bug-2- und Option-B-Fix) hat
   Bug 2 sauber bestaetigt (kein depth-vs-parent-Error mehr) und Bug 4
