@@ -168,8 +168,14 @@ def test_hints_fill_missing_params():
     assert feat["params"]["depth"] == 10
 
 
-def test_hints_do_not_override_normalizer_parses():
-    """Normalizer extracted durchmesser=10 explicitly; hint says 8 → keep 10."""
+def test_classifier_hints_override_normalizer_parses():
+    """ADR 0003 Stufe 5c: Classifier-Hints gewinnen ueber Normalizer-Parses.
+
+    Hintergrund: der Normalizer laeuft mit think=false und droppt bei
+    rotierten Taschen mit edge_distances gelegentlich einen Wert auf 0
+    (Bug 4 in Run 3db7d152). Wenn der Klassifizierer einen Hint
+    explizit emittiert, ueberschreibt er den Normalizer-Parse.
+    """
     agent = _make_agent()
     agent.normalize = MagicMock(return_value=_norm(
         parameter={"durchmesser": 10, "tiefe": 10},
@@ -178,7 +184,30 @@ def test_hints_do_not_override_normalizer_parses():
         _klass(parameter_hints={"durchmesser": 8}),
         _teil(),
     )
-    assert feat["params"]["diameter"] == 10
+    assert feat["params"]["diameter"] == 8
+
+
+def test_classifier_hint_overrides_normalizer_zero_value():
+    """Bug-4-Fall: Normalizer hat abstand_links=0 (verloren), Klassifizierer
+    hat abstand_links=10 (korrekt extrahiert) → Hint gewinnt."""
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="tasche",
+        position="von_kanten",
+        parameter={"laenge": 20, "breite": 30, "tiefe": 10,
+                   "abstand_oben": 10, "abstand_links": 0},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="tasche",
+               beschreibung="oben eine Tasche 20x30x10 die obere Kante "
+                            "von oben 10mm die linke Seite von links 10mm",
+               seite="oben",
+               parameter_hints={"laenge": 20, "breite": 30, "tiefe": 10,
+                                "abstand_oben": 10, "abstand_links": 10}),
+        _teil(),
+    )
+    assert feat["position"]["edge_distances"]["left"] == 10
+    assert feat["position"]["edge_distances"]["top"] == 10
 
 
 def test_rotation_deg_hint_maps_to_drehung_then_angle_deg():

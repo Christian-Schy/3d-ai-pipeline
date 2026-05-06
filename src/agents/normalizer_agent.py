@@ -49,10 +49,16 @@ _HINT_KEY_RENAME: dict[str, str] = {"rotation_deg": "drehung"}
 
 
 def _merge_param_hints(params: dict, hints: dict) -> None:
-    """In-place: fill missing param keys from classifier hints.
+    """In-place: classifier hints win over normalizer parses.
 
-    Existing values from the normalizer are NOT overridden — the hints
-    only fill gaps. None/"" count as missing.
+    Rationale (ADR 0003 Stufe 5c): the classifier sees one focused phrase
+    with explicit guidance for `abstand_*` / `versatz_*` / `durchmesser`
+    / `tiefe` / `rotation_deg`. The normalizer sees the same phrase but
+    runs with think=false through a much larger prompt and occasionally
+    drops one of two edge-distance values to 0 (Bug 4 in Run 3db7d152).
+    When the classifier explicitly emits a value, it overrides whatever
+    the normalizer parsed. Keys the classifier did not emit stay as the
+    normalizer set them (e.g. position keyword, richtung, kanten).
     """
     if not isinstance(params, dict) or not isinstance(hints, dict):
         return
@@ -60,8 +66,7 @@ def _merge_param_hints(params: dict, hints: dict) -> None:
         if val is None:
             continue
         target = _HINT_KEY_RENAME.get(key, key)
-        if target not in params or params[target] in (None, ""):
-            params[target] = val
+        params[target] = val
 
 
 def _reconcile_typ(classifier_typ: str, normalizer_typ: str) -> str:

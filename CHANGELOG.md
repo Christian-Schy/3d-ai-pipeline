@@ -10,6 +10,32 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **Option B: Klassifizierer extrahiert edge_distances + center_offsets**
+  (Stufe-5c-Iteration auf ADR 0003) — der Klassifizierer-Prompt
+  erweitert um `abstand_<seite>` (Kantenabstaende nach innen) und
+  `versatz_<seite>` (Mittenversatz) als parameter_hints. Vier neue
+  Few-Shots: edge-distances, center-offsets, gemischt mit Rotation,
+  und ein nested-Bohrung-Beispiel mit edge-distances in der Tasche.
+
+  Lastverteilung neu: Normalizer-Aufgabe schrumpft auf
+  position-keyword + richtung + Edge-Selector — typ/seite/Mass-Hints
+  liefert der Klassifizierer alle. Die Normalizer-Faelligkeit aus
+  Run 3db7d152 (Bug 4: rotierte Tasche + edge_distances → ein Wert
+  auf 0 verloren) wird damit umgangen.
+
+  `_merge_param_hints` Semantik geaendert: Klassifizierer-Hints
+  gewinnen jetzt ueber Normalizer-Parses (vorher: Normalizer wins).
+  Begruendung: der Klassifizierer hat einen kleineren Prompt mit
+  klarer Anleitung pro Hint-Typ und sieht nur die eine Phrase; der
+  Normalizer mit think=false durch den 329-Zeilen-Mega-Prompt fehlt
+  bei kniffligen Faellen sub-perfekt. Wenn der Klassifizierer einen
+  Wert explizit emittiert, ist das die zuverlaessigere Quelle.
+
+  Tests aktualisiert: `test_classifier_hints_override_normalizer_parses`
+  ersetzt das alte `test_hints_do_not_override`. Plus
+  `test_classifier_hint_overrides_normalizer_zero_value` als
+  Regression fuer Bug 4. 208/208 Tests gruen.
+
 - **Bug 2: depth-vs-parent-Check raus aus LLM-plan_validator** —
   Check 6 ("Feature kleiner als sein Parent?") aus
   [data/prompts/prompt_plan_validator.py] entfernt; der LLM bekommt
