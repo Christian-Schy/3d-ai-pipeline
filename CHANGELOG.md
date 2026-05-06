@@ -8,6 +8,20 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-06
+
+- **Aktions-Splitter (Stufe 1 von ADR 0003)** — neuer deterministischer
+  Modul `src/tools/aktions_splitter.py` segmentiert die User-Spec in
+  einzelne Aktions-Phrasen. Splittet an Komma, Seiten-Schluesselwoertern
+  und Verschachtelungs-Markern (`in der Tasche`, `in der Ausnehmung`,
+  `darin`, `innerhalb`). Verschachtelte Aktionen ("Bohrung in der
+  Tasche") bekommen `parent_phrase_idx` gesetzt — der Verschachtelungs-
+  Bug aus Run 6efaa489 (3 statt 6 Aktionen) und 14fa8d40 (16 statt 24)
+  ist damit deterministisch geloest. 17 Tests gruen, davon 3 Reference-
+  Runs aus dem ADR. Noch nicht in die Pipeline verdrahtet — Standalone-
+  Modul, integriert wird in Stufe 5. Siehe
+  [ADR 0003](docs/decisions/0003-inventar-feature-definierer-pro-aktion.md).
+
 ## 2026-05-05
 
 - **plan_validator filtert pocket_floor depth-Errors deterministisch**
