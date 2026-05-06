@@ -24,6 +24,11 @@ parameter_hints (optional):
              rotation_deg, kantenlaenge, groesse.
   Nicht raten, nicht rechnen, keine Defaults.
 
+  rotation_deg-Vorzeichen-Konvention (CadQuery: positiv = CCW):
+    "gegen Uhrzeigersinn" / "linksdrehend" / "CCW" → POSITIV
+    "im Uhrzeigersinn"    / "rechtsdrehend" / "CW" → NEGATIV
+    Keine Richtung genannt → positiv (Standard CCW).
+
 Verschachtelte Phrasen ("in der Tasche ..." / "darin ..."):
   Wenn die Phrase keine eigene Seite nennt, nutze die Seite des
   PARENT-Phrasen-Eintrags (steht im Kontext).
@@ -102,6 +107,30 @@ FEW_SHOT_EXAMPLES = [
             "typ": "fase",
             "seite": "oben",
             "parameter_hints": {"groesse": 2},
+        },
+    },
+    {
+        "phrase": "vorne eine Tasche 30x20x10 um 20 grad im Uhrzeigersinn gedreht",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 200, "z": 200},
+        "parent_phrase": "(keine)",
+        "output": {
+            "typ": "tasche",
+            "seite": "vorne",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 10,
+                                "rotation_deg": -20},
+        },
+    },
+    {
+        "phrase": "rechts eine Tasche 20x30x10 gegen Uhrzeigersinn um 20grad rotiert",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 200, "z": 200},
+        "parent_phrase": "(keine)",
+        "output": {
+            "typ": "tasche",
+            "seite": "rechts",
+            "parameter_hints": {"laenge": 20, "breite": 30, "tiefe": 10,
+                                "rotation_deg": 20},
         },
     },
 ]

@@ -10,6 +10,21 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **Quick Wins fuer Stufe 5c** — zwei kleine Aenderungen aus der
+  Real-Run-Analyse von Run 3c0212ae:
+  - `agent_options.normalizer.think=false` (config.yaml). Im neuen Pfad
+    hat der Aktions-Klassifizierer (Stufe 2) typ/seite/parameter_hints
+    bereits extrahiert; der Normalizer parst nur noch position/richtung
+    /Versatz-Details. Reasoning ist da Overkill und kostet 8-16s/Call.
+    Erwarteter Effekt: feature_definierer-Latenz von ~16s/Call auf
+    2-4s/Call.
+  - Klassifizierer-Prompt um Rotations-Vorzeichen-Konvention erweitert:
+    "im Uhrzeigersinn" → negativ, "gegen Uhrzeigersinn" → positiv
+    (CadQuery-CCW-positiv-Konvention). Plus zwei neue Few-Shot-
+    Beispiele die genau diese Faelle zeigen. Run 3c0212ae hatte 4 von
+    8 rotierten Taschen mit falschem Vorzeichen (alle "im
+    Uhrzeigersinn"-Faelle wurden als +20 statt -20 klassifiziert).
+
 - **Pipeline-Verdrahtung (Stufe 5b von ADR 0003)** — die in Stufe 5a
   vorbereiteten Per-Aktion-Nodes sind jetzt im LangGraph aktiv.
   Aenderungen am Graph:

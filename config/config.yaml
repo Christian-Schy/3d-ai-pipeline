@@ -47,6 +47,10 @@ agent_options:
     think: false       # Triviale Klassifikation in 5 Typen — kein Reasoning noetig
     temperature: 0.0   # Strikt deterministisch, eindeutige Ausgabe
     num_ctx: 4096      # Eine Phrase + Few-Shots passen locker rein
+  normalizer:
+    think: false       # Klassifizierer hat typ/seite/parameter_hints schon
+    temperature: 0.05  # geliefert — Aufgabe ist nur noch position/richtung
+    num_ctx: 6144      # extrahieren. Reasoning macht das langsam ohne Mehrwert.
 
 # --- Model routing ---
 # Each agent uses the model best suited for its task.
