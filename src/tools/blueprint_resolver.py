@@ -878,22 +878,21 @@ def _compute_offsets(
         non_zero = {k: v for k, v in edge_distances.items()
                     if isinstance(v, (int, float)) and float(v) > 0}
         if non_zero:
-            # Edge-distance convention by feature shape:
-            # - Holes / hole_pattern (circular, no rectangular extent in the
-            #   face plane): edge→center. "Bohrung 5mm von rechts" means
-            #   hole center is 5mm from the right edge — there is no hole
-            #   rectangle whose edge could otherwise be referenced.
-            # - Pockets / slots / grooves / cutouts (rectangular extent):
-            #   edge→edge. "Tasche 25mm von rechts" means the pocket's right
-            #   edge is 25mm from the parent's right edge. That matches
-            #   typical CAD dimensioning AND prevents the pocket from
-            #   silently exceeding the parent face when the user gives a
-            #   small abstand. Same convention as additive plates/boxes.
-            # - Edge ops (chamfer/fillet/bevel/recess): no offset_x/y
-            #   placement at all, so the branch is irrelevant for them.
+            # Boxes need edge-to-edge distance (child half subtracted).
+            # Holes/slots/pockets: "from edge Xmm" always means edge→center,
+            # no subtraction. Convention reasoning: "Tasche 20mm von rechts"
+            # means the user wants the pocket CENTER 20mm from the parent
+            # edge — same mental model as "Bohrung 20mm von rechts". Only
+            # additive parts (boxes, plates) follow the "outer-edge of child
+            # 20mm from outer-edge of parent" convention. Match the type
+            # prefix so pocket_rect / pocket_round / hole_pattern_circular
+            # all hit the center-reference branch.
+            _HOLE_LIKE_PREFIXES = ("hole", "slot", "groove", "pocket", "cutout",
+                                   "chamfer", "fillet", "bevel", "recess")
             ftype_lower = (feat_type or "").lower()
-            is_point_like_hole = ftype_lower.startswith("hole")
-            is_box = child_w > 0 and child_h > 0 and not is_point_like_hole
+            is_hole_like = any(ftype_lower.startswith(p) or ftype_lower == p
+                               for p in _HOLE_LIKE_PREFIXES)
+            is_box = child_w > 0 and child_h > 0 and not is_hole_like
             ox_e, oy_e, ox_edge_set, oy_edge_set = _apply_edge_distances_axis(
                 face, non_zero, parent_w, parent_h, child_w, child_h, is_box
             )

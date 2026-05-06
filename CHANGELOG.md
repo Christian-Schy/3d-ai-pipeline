@@ -10,37 +10,6 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
-- **Bug 6: Pocket folgt jetzt edge-to-edge statt edge-to-center** —
-  Pre-existing Konvention-Bug im `blueprint_resolver`. Bei
-  `pocket_rect`/`slot`/`groove`/`cutout` wurde `edge_distance` als
-  "Pocket-Mitte X mm von Face-Kante" interpretiert; `child_half`
-  wurde nicht abgezogen. Folge in Run fc2b3b45 (selbe Spec wie
-  vorher): bei einer 20x30 Tasche mit `abstand_oben=10` landet die
-  Pocket-Mitte bei oy=+90 → obere Pocket-Kante bei +105, ueber dem
-  Wuerfelrand. Bei einer 40x40 Tasche mit `abstand_rechts=25` nur 5mm
-  zum Cube-Rand statt 25mm.
-
-  Architektur-Ursache: alter Comment im resolver behauptete "pockets
-  follow same convention as holes" — bei einem Hole (Kreis ohne rect-
-  Extent in der Face-Ebene) macht edge-to-center Sinn; bei einem
-  Pocket (rechteckiger Extent) ist edge-to-edge die natuerliche
-  CAD-Konvention. Fix: `_HOLE_LIKE_PREFIXES` in
-  `blueprint_resolver._compute_offsets` reduziert auf reines
-  `"hole"`-Prefix (`_POINT_LIKE_PREFIXES`). Pockets/slots/cutouts/
-  grooves laufen jetzt durch denselben edge-to-edge-Branch wie
-  additive Boxen — `val_signed = sign * (parent_half - val - child_half)`.
-
-  - Existing Test `TestRun965da548Regression::test_full_pipeline_preserves_both_offsets`
-    auf neue Konvention nachgezogen (Pocket-Mitte (60,70)→(30,50),
-    Hole-1-offset (73.04,82.45)→(43.04,62.45), Hole-2-offset
-    (38.57,76.38)→(8.57,56.38)).
-  - Neuer expliziter Regression-Test
-    [tests/tools/test_pocket_edge_to_edge.py] mit 6 Faellen die die
-    Konvention pinnen: 4× pocket edge-to-edge,
-    2× hole edge-to-center (nicht angefasst).
-
-  214/214 Tests gruen.
-
 - **Bug 5: alle geometrischen Checks raus aus LLM-plan_validator** — Run
   4cebf8ff (selbe Spec wie 3db7d152 mit Bug-2- und Option-B-Fix) hat
   Bug 2 sauber bestaetigt (kein depth-vs-parent-Error mehr) und Bug 4
