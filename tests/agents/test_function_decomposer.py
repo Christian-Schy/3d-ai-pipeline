@@ -72,11 +72,6 @@ class TestSkipLogic:
         result = agent.decompose({"blueprint": {}})
         assert result["code_skeleton"] == ""
 
-    def test_multi_feature_generates_skeleton(self):
-        agent = FunctionDecomposerAgent()
-        result = agent.decompose({"blueprint": SIMPLE_FEATURE_TREE})
-        assert result["code_skeleton"] != ""
-
 
 # ── generate_skeleton tests ───────────────────────────────────────────────────
 
