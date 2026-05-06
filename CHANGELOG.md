@@ -10,6 +10,36 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **Aktions-Aggregator (Stufe 4 von ADR 0003)** — neuer deterministischer
+  Modul `src/tools/aktions_aggregator.py`. `aggregate(features, teile)`
+  baut die finale `teil_definitionen[]`-Struktur aus den Pro-Aktion-
+  Features von `define_feature` (Stufe 3). Gruppiert nach `_teil_id`,
+  sortiert per `_phrase_idx` (Spec-Reihenfolge), loest `_parent_phrase_idx`
+  in die Parent-Feature-ID auf (das fixt deterministisch den
+  Verschachtelungs-Pfad: Bohrung in Tasche kriegt jetzt `parent=tasche_*`
+  statt `parent=teil_id`). Strippt interne Marker im Output, damit das
+  Schema 1:1 zum heutigen `build_teil_definition`-Output passt.
+  Orientation aus `teil.beschreibung` (gleiche Heuristik wie heute:
+  hochkant / flach / standard). Dangling parent_phrase_idx faellt auf
+  `teil_id` zurueck und loggt. 16 Unit-Tests gruen. End-to-End-Smoke der
+  ganzen Stufe 1+2+3+4-Kette auf 2 Tasche+Bohrung-Paaren liefert eine
+  korrekte `teil_definitionen[]` mit aufgeloesten parent-Verweisen.
+  Standalone-Modul — Pipeline-Wiring folgt in Stufe 5.
+
+  Nebenaenderung in [src/agents/normalizer_agent.py]: `define_feature`
+  setzt jetzt zusaetzlich den `_teil_id`-Marker, damit der Aggregator
+  features auch nach parent-Rewrite korrekt gruppieren kann.
+
+- **Toten Test-Code entfernt** — 4 Test-Files mit collect-errors auf
+  geloeschte Module raus (`test_planner_diff.py`, `test_prompt_assembler.py`,
+  `test_feature_tagger.py`, `tests/graph/` komplett — der conftest dort
+  importierte 3 nicht mehr existierende Agents). Plus 7 stale Tests in
+  `test_config.py` (referenzierten `models.planner_*`) und 1 Assert in
+  `test_function_decomposer.py` (testete altes code_skeleton-Verhalten).
+  Vorher: 10 fail / 13 collect-error. Jetzt: 202/202 gruen (ohne
+  tests/golden/ — Ollama — und tests/test_app.py — eigener Bug
+  `SessionState.last_run_id`).
+
 - **feature_definierer-Refactor (Stufe 3 von ADR 0003)** — neue Methode
   `NormalizerAgent.define_feature(klassifikation, teil)` als Pro-Aktion-
   Eintrittspunkt. Eingabe: 1 klassifizierte Aktion (vom Aktions-

@@ -188,7 +188,9 @@ class NormalizerAgent(BaseAgent):
         # the pocket's feature_id for nested children.
         feature["parent"] = teil_id
 
-        # Markers for the Aggregator.
+        # Markers for the Aggregator. _teil_id stays a stable grouping key
+        # even after the Aggregator rewrites `parent` for nested children.
+        feature["_teil_id"] = teil_id
         feature["_phrase_idx"] = phrase_idx
         feature["_parent_phrase_idx"] = parent_phrase_idx
 
