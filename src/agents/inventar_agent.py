@@ -173,6 +173,50 @@ class InventarAgent(BaseAgent):
         result = self.call_json(prompt, system=system)
         return self._validate(result)
 
+    def extract_teile_only(self, specification: str) -> dict:
+        """Step A only: parts list, no actions.
+
+        Entry point for the per-action chain (ADR 0003 Stufe 5). The action
+        extraction that the legacy `extract()` does in Step B is handled by
+        the deterministic aktions_splitter and the aktions_klassifizierer
+        downstream — Step B is gone.
+
+        Returns the same shape as `extract()` so downstream code that reads
+        `inventar["teile"]` keeps working. `aktionen` is always [] in this
+        path; callers that still iterate it for the legacy chain will simply
+        see no actions and skip work — there is no implicit fallback.
+        """
+        teile_prompt = TEILE_LISTE_TEMPLATE.format(specification=specification)
+        teile_raw = self.call_json(teile_prompt, system=TEILE_LISTE_SYSTEM)
+        self._last_raw_response = "=STEP_A=\n" + getattr(
+            self, "_last_raw_response", ""
+        )
+
+        if isinstance(teile_raw, list):
+            teile = teile_raw
+        else:
+            teile = teile_raw.get("teile", [])
+
+        valid_teile = []
+        for t in teile:
+            if not isinstance(t, dict):
+                continue
+            if not t.get("id") or not t.get("raw_params"):
+                self.log.warning("inventar_step_a_invalid_teil", teil=t)
+                continue
+            if "type" not in t:
+                t["type"] = "box"
+            valid_teile.append(t)
+
+        log.info("inventar_teile_only_done", teil_count=len(valid_teile))
+
+        result = {
+            "teil_count": len(valid_teile),
+            "teile": valid_teile,
+            "aktionen": [],
+        }
+        return self._validate(result)
+
     def _extract_sequential(self, specification: str) -> dict:
         """Two-step extraction for complex multi-part specs.
 

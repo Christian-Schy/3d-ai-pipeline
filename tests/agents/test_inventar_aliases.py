@@ -2,6 +2,8 @@
 Beschreibungs-Key nach dem Inhalt benennt ('bohrung': '...' statt
 'beschreibung': '...'). Reproduziert aus Run 3f21f541."""
 
+from unittest.mock import MagicMock
+
 from src.agents.inventar_agent import _normalize_aktion_description
 
 
@@ -63,6 +65,72 @@ def test_smart_fallback_ignores_teil_id_string():
     a = {"seite": "oben", "teil_id": "wuerfel"}
     _normalize_aktion_description(a)
     assert "beschreibung" not in a
+
+
+def test_extract_teile_only_returns_step_a_shape():
+    """ADR 0003 Stufe 5: extract_teile_only() liefert Teile aus Step A,
+    aktionen ist immer leer (Step B uebernimmt der aktions_splitter)."""
+    from src.agents.inventar_agent import InventarAgent
+
+    agent = InventarAgent()
+    agent.call_json = MagicMock(return_value={
+        "teile": [
+            {"id": "wuerfel", "type": "box",
+             "raw_params": {"x": 200, "y": 200, "z": 200},
+             "beschreibung": "200mm wuerfel"},
+        ],
+    })
+
+    result = agent.extract_teile_only("200mm wuerfel mit Bohrung 10mm oben")
+
+    assert result["teil_count"] == 1
+    assert result["teile"][0]["id"] == "wuerfel"
+    assert result["aktionen"] == []
+    # Genau ein LLM-Call fuer Step A — Step B entfaellt
+    assert agent.call_json.call_count == 1
+
+
+def test_extract_teile_only_drops_invalid_teile():
+    from src.agents.inventar_agent import InventarAgent
+
+    agent = InventarAgent()
+    agent.call_json = MagicMock(return_value={
+        "teile": [
+            {"id": "wuerfel", "type": "box", "raw_params": {"x": 200}},
+            {"id": "", "raw_params": {"x": 100}},  # invalid: no id
+            {"raw_params": {}},                     # invalid: no id
+            "garbage",                              # invalid: not a dict
+        ],
+    })
+
+    result = agent.extract_teile_only("...")
+    assert len(result["teile"]) == 1
+    assert result["teile"][0]["id"] == "wuerfel"
+
+
+def test_extract_teile_only_accepts_list_response():
+    """LLM gibt manchmal nur die Liste zurueck statt {teile: [...]}."""
+    from src.agents.inventar_agent import InventarAgent
+
+    agent = InventarAgent()
+    agent.call_json = MagicMock(return_value=[
+        {"id": "wuerfel", "type": "box", "raw_params": {"x": 200}},
+    ])
+
+    result = agent.extract_teile_only("...")
+    assert result["teil_count"] == 1
+
+
+def test_extract_teile_only_defaults_type_to_box():
+    from src.agents.inventar_agent import InventarAgent
+
+    agent = InventarAgent()
+    agent.call_json = MagicMock(return_value={
+        "teile": [{"id": "wuerfel", "raw_params": {"x": 200}}],
+    })
+
+    result = agent.extract_teile_only("...")
+    assert result["teile"][0]["type"] == "box"
 
 
 def test_validate_normalizes_during_oneshot_path():

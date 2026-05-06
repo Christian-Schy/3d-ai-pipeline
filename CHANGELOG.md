@@ -10,6 +10,24 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **Pipeline-Vorarbeit (Stufe 5a von ADR 0003)** — alles additiv, noch
+  kein Graph-Wiring. Vorbereitet:
+  - `InventarAgent.extract_teile_only(specification)` liefert die Step-A-
+    Teile-Liste OHNE den verklumpenden Step B (aktionen=[] explizit).
+    Die alte `extract()` bleibt fuer Modify/Error-Loop-Pfad unangetastet.
+  - PipelineState bekommt drei neue Felder:
+    `aktions_phrases`, `aktions_klassifikationen`, `aktions_features`.
+  - Drei neue Node-Wrapper in [src/graph/nodes/planning_nodes.py]:
+    `aktions_splitter_node` (deterministisch), `aktions_klassifizierer_node`
+    (LLM-Loop), `aktions_aggregator_node` (deterministisch). Alle drei
+    emittieren agent_traces und sind ueber `src.graph.nodes` exportiert.
+    NOCH NICHT in den Graph eingehaengt — Stufe 5b verdrahtet.
+  - Klassifizierer-Node reicht parent_phrase fuer nested Children durch
+    (so dass Stufe 2 die seite vom Parent erben kann), ueberlebt einzelne
+    classify-Exceptions ohne den Loop abzubrechen.
+  - 11 Node-Tests + 4 Tests fuer extract_teile_only — alle gruen.
+  - Suite weiterhin 217/217 gruen.
+
 - **Aktions-Aggregator (Stufe 4 von ADR 0003)** — neuer deterministischer
   Modul `src/tools/aktions_aggregator.py`. `aggregate(features, teile)`
   baut die finale `teil_definitionen[]`-Struktur aus den Pro-Aktion-

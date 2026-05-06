@@ -23,6 +23,7 @@ PipelineState-Felder, gruppiert nach Producer-Node:
 
   3-Step Blueprint Chain (Phase A):
     inventar, teil_texte, position_extrakt, teil_definitionen
+    aktions_phrases, aktions_klassifikationen, aktions_features
 
   Planner / Blueprint (semantic + resolved):
     blueprint, previous_blueprint
@@ -310,6 +311,23 @@ class PipelineState(TypedDict):
     """Per-part feature definitions from TeilDefiniererAgent (Step 2).
     Each entry: {id, type, params, orientation, features[...]}.
     Empty list = teil_definierer not yet run."""
+
+    # --- Per-action chain (ADR 0003) ---
+    aktions_phrases: list
+    """Action phrases from aktions_splitter_node (Stufe 1, deterministic).
+    Each entry: {phrase, teil_id, phrase_idx, parent_phrase_idx}.
+    Empty list = splitter not yet run or single-part with no actions."""
+
+    aktions_klassifikationen: list
+    """Per-phrase classifications from aktions_klassifizierer_node (Stufe 2,
+    LLM loop). Each entry: {typ, seite, beschreibung, teil_id, phrase_idx,
+    parent_phrase_idx, parameter_hints}. Empty list = classifier not run."""
+
+    aktions_features: list
+    """Per-action SemanticFeatures from feature_definierer_node (Stufe 3,
+    via NormalizerAgent.define_feature). Carry _teil_id / _phrase_idx /
+    _parent_phrase_idx markers that the aktions_aggregator_node consumes
+    to build the final teil_definitionen[]. Empty list = stage not run."""
 
     # --- Agent Traces (Aufgabe 9) ---
     agent_traces: Annotated[list, operator.add]
