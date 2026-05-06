@@ -401,25 +401,30 @@ class TestRun965da548Regression:
         resolved = resolve_blueprint(post_pcp_bp)
         feats = resolved["features"]
 
-        # Hole 1: Pocket-Mitte (60, 70), angle 10°, lokal (15, 10)
-        # → erwartetes Welt-offset:
-        #     ox = 60 + 15·cos10° - 10·sin10° = 60 + 14.7721 - 1.7365 = 73.036
-        #     oy = 70 + 15·sin10° + 10·cos10° = 70 + 2.6047 + 9.8481 = 82.453
+        # Pocket Tasche 60x40 mit edge_distances {top: 30, right: 40}.
+        # Edge-to-edge-Konvention (ADR 0003 Stufe 5c Bug-6-Fix):
+        #   Pocket-Right-Edge = +100 - 40 = +60 → center ox = 60 - 30 = 30
+        #   Pocket-Top-Edge   = +100 - 30 = +70 → center oy = 70 - 20 = 50
+        # Pocket-Mitte also (30, 50), Drehung 10°.
+        #
+        # Hole 1: lokal (15, 10), rotated 10°
+        #   ox = 30 + 15·cos10° - 10·sin10° = 30 + 14.7721 - 1.7365 = 43.036
+        #   oy = 50 + 15·sin10° + 10·cos10° = 50 + 2.6047 + 9.8481 = 62.453
         h1 = feats["hole_in_tasche_oben_0_1"]["placement"]
-        assert abs(h1["offset_x"] - 73.0356) < 0.01, \
-            f"Hole 1 offset_x falsch: {h1['offset_x']}, erwartet ~73.04"
-        assert abs(h1["offset_y"] - 82.4528) < 0.01, \
-            f"Hole 1 offset_y falsch: {h1['offset_y']}, erwartet ~82.45"
+        assert abs(h1["offset_x"] - 43.0356) < 0.01, \
+            f"Hole 1 offset_x falsch: {h1['offset_x']}, erwartet ~43.04"
+        assert abs(h1["offset_y"] - 62.4528) < 0.01, \
+            f"Hole 1 offset_y falsch: {h1['offset_y']}, erwartet ~62.45"
 
-        # Hole 2: edge_distances {top: 10, left: 10} im Pocket-Lokalframe
-        # Pocket 60x40 → Mitte (0,0), top-left = (-30, +20)
-        # 10 von links / 10 von oben → lokal (-20, 10)
-        # rotated 10°: (-20·cos10° - 10·sin10°, -20·sin10° + 10·cos10°)
-        #            = (-19.696 - 1.7365, -3.4730 + 9.8481)
-        #            = (-21.4326, 6.3751)
-        # + Pocket (60, 70) = (38.5674, 76.3751)
+        # Hole 2: edge_distances {top: 10, left: 10} im Pocket-Lokalframe.
+        # Holes folgen weiterhin edge-to-center (kein rect-Extent), also
+        # local center bei (-30+10, +20-10) = (-20, +10).
+        # rotated 10° um Pocket-Mitte:
+        #   (-20·cos10° - 10·sin10°, -20·sin10° + 10·cos10°)
+        #   = (-19.696 - 1.7365, -3.4730 + 9.8481) = (-21.4326, 6.3751)
+        # + Pocket-Mitte (30, 50) = (8.5674, 56.3751)
         h2 = feats["hole_in_tasche_oben_0_2"]["placement"]
-        assert abs(h2["offset_x"] - 38.5674) < 0.01, \
+        assert abs(h2["offset_x"] - 8.5674) < 0.01, \
             f"Hole 2 offset_x falsch: {h2['offset_x']}"
-        assert abs(h2["offset_y"] - 76.3751) < 0.01, \
+        assert abs(h2["offset_y"] - 56.3751) < 0.01, \
             f"Hole 2 offset_y falsch: {h2['offset_y']}"
