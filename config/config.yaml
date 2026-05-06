@@ -43,6 +43,10 @@ agent_options:
     think: false       # Wenige Demos + klare Checkliste reichen, Think macht 26B sehr langsam
     temperature: 0.1   # Etwas Spielraum fuer Anker/Versatz-Disambiguierung
     num_ctx: 6144
+  aktions_klassifizierer:
+    think: false       # Triviale Klassifikation in 5 Typen — kein Reasoning noetig
+    temperature: 0.0   # Strikt deterministisch, eindeutige Ausgabe
+    num_ctx: 4096      # Eine Phrase + Few-Shots passen locker rein
 
 # --- Model routing ---
 # Each agent uses the model best suited for its task.
@@ -56,6 +60,7 @@ models:
 
   # Blueprint Chain (3-Step + Multi-Part split)
   inventar:                 "gemma4:26b"   # Stueckliste + Aktionen
+  aktions_klassifizierer:   "gemma4:26b"   # Pro-Aktion-Klassifikation (ADR 0003)
   position_extractor:       "gemma4:26b"   # Pre-digester pro Kind-Teil (Multi-Part)
   text_splitter:            "gemma4:26b"   # Spec → Text pro Teil (Multi-Part)
   normalizer:               "gemma4:26b"   # Feature-Normalisierung (in feature_definierer)

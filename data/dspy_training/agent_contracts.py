@@ -78,6 +78,19 @@ CONTRACTS: dict[str, AgentContract] = {
         output_fields=["inventar"],
         default_model="qwen3.5:9b",
     ),
+    "aktions_klassifizierer": AgentContract(
+        # Pro-Aktion-Mikro-Call (ADR 0003): nimmt EINE Phrase vom
+        # deterministischen Aktions-Splitter und liefert {typ, seite,
+        # parameter_hints}. Strukturelle Felder (teil_id, phrase_idx,
+        # parent_phrase_idx) reicht der Aufrufer durch — das LLM
+        # klassifiziert, der Code mergt. Kein aktives Training in
+        # Stufe 2; der Adapter steht hier vorbereitet.
+        name="aktions_klassifizierer",
+        input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
+        output_fields=["klassifikation"],
+        default_model="gemma4:26b",
+        active=False,  # Aktivieren in Stufe 7 (DSPy-Re-Training).
+    ),
     "position_extractor": AgentContract(
         # Per-Teil Labeler (ab 2026-05-04): bekommt EIN Teil-Text und labelt
         # die Saetze in placement_sentences vs feature_sentences. Ein Trainings-
@@ -163,6 +176,35 @@ def _adapter_inventar(trace: dict) -> list[dict]:
     if not inv or not spec:
         return []
     return [{"input": {"specification": spec}, "output": inv}]
+
+
+def _adapter_aktions_klassifizierer(trace: dict) -> list[dict]:
+    """Eine Trainings-Probe pro AKTIONS-PHRASE (1 Phrase → 1 Klassifikation).
+
+    Erwartet `trace["aktions_klassifizierer"]` als Liste von Pro-Phrase-
+    Eintraegen, jeweils mit {phrase, teil_id, parent_phrase, output}.
+    Forward-kompatibel: alte Traces ohne diese Annotation liefern [].
+    """
+    entries = trace.get("aktions_klassifizierer")
+    inv = trace.get("inventar")
+    spec = trace.get("specification")
+    if not isinstance(entries, list) or not entries or not inv or not spec:
+        return []
+
+    teile_by_id = {t["id"]: t for t in inv.get("teile", [])}
+    pairs = []
+    for e in entries:
+        teil = teile_by_id.get(e.get("teil_id", ""), {})
+        pairs.append({
+            "input": {
+                "phrase": e.get("phrase", ""),
+                "teil_type": teil.get("type", "box"),
+                "teil_params": teil.get("raw_params", {}),
+                "parent_phrase": e.get("parent_phrase", "(keine)"),
+            },
+            "output": e.get("output", {}),
+        })
+    return pairs
 
 
 def _adapter_position_extractor(trace: dict) -> list[dict]:
@@ -327,6 +369,7 @@ def _adapter_blueprint_architect(trace: dict) -> list[dict]:
 ADAPTERS: dict[str, Callable[[dict], list[dict]]] = {
     "punctuation": _adapter_punctuation,
     "inventar": _adapter_inventar,
+    "aktions_klassifizierer": _adapter_aktions_klassifizierer,
     "position_extractor": _adapter_position_extractor,
     "platzierer": _adapter_position_normalizer,
     "normalizer": _adapter_normalizer,

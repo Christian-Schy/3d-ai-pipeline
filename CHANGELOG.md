@@ -10,6 +10,19 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **Aktions-Klassifizierer (Stufe 2 von ADR 0003)** — neuer Agent
+  `src/agents/aktions_klassifizierer.py` klassifiziert genau EINE Phrase
+  vom Splitter in `{typ, seite, parameter_hints}`. Strukturelle Felder
+  vom Splitter (`teil_id`, `phrase_idx`, `parent_phrase_idx`) werden 1:1
+  durchgereicht; das LLM klassifiziert nur. Modell `gemma4:26b` mit
+  `think=false`, `temperature=0.0` — Aufgabe ist trivial (5 Typen).
+  Robust gegen defekte LLM-Outputs (unbekannter Typ → `"unbekannt"`,
+  unbekannte Seite → `"oben"`, kaputtes parameter_hints → leeres Dict,
+  LLM-Exception → Default-Klassifikation mit erhaltenen Splitter-Feldern).
+  13 Unit-Tests gruen. agent_contracts.py-Adapter und config-Eintrag
+  ergaenzt; aktiv geschaltet wird der Contract erst in Stufe 7
+  (DSPy-Re-Training). Standalone — Pipeline-Integration in Stufe 5.
+
 - **Aktions-Splitter (Stufe 1 von ADR 0003)** — neuer deterministischer
   Modul `src/tools/aktions_splitter.py` segmentiert die User-Spec in
   einzelne Aktions-Phrasen. Splittet an Komma, Seiten-Schluesselwoertern
