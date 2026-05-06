@@ -10,6 +10,35 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **Bug 5: alle geometrischen Checks raus aus LLM-plan_validator** — Run
+  4cebf8ff (selbe Spec wie 3db7d152 mit Bug-2- und Option-B-Fix) hat
+  Bug 2 sauber bestaetigt (kein depth-vs-parent-Error mehr) und Bug 4
+  geloest (alle 6 rotierten Taschen mit korrekten edge_distances), aber
+  eine NEUE Klasse von false positives gezeigt: der LLM hat
+  "Check 10: placement.offset_y=100 exceeds parent pocket dimension"
+  gemeldet — fuer Bohrungen die per coord_validator-Check (deterministisch)
+  korrekt platziert sind. Die Pruefung hat in der Prompt-Checkliste gar
+  keine Nummer 10 fuer Offset-Bounds; der LLM hat sie sich ausgedacht.
+
+  Selbe Wurzel wie Bug 2: das LLM macht geometrische / numerische
+  Mathe unzuverlaessig. Architektur-richtig: alle solchen Checks
+  gehoeren in den deterministischen `coordinate_validator`, der
+  Frame-Transformationen (Pocket-lokal, rotated) korrekt kann.
+
+  Prompt-Refactor:
+  - Neuer "ABSOLUT VERBOTEN"-Block am Anfang: keine Zahlen-Vergleiche,
+    kein "exceeds parent", kein Position/Offset/Bounds-Check, kein
+    Wandstaerke-/Lochkreis-/Pattern-Spacing-Check, keine
+    Tiefen/Hoehen-Vergleiche.
+  - Alte Rules 5, 7, 8 entfernt (Maße>0, Lochkreis, Wandstaerke) —
+    coord_validator macht alle drei deterministisch (Checks 6, 4, 5).
+  - Verbleibend: 9 strukturelle / semantische Rules: parent=null root,
+    unique IDs, parent-Existenz, build_order-Vollstaendigkeit,
+    placement/face/selector-Praesenz, Spec-Coverage,
+    Spec-Mass-Konsistenz.
+  - Token-Budget von ~1800 auf ~1700 gesunken; Aufgabe ist jetzt klar
+    abgegrenzt.
+
 - **Option B: Klassifizierer extrahiert edge_distances + center_offsets**
   (Stufe-5c-Iteration auf ADR 0003) — der Klassifizierer-Prompt
   erweitert um `abstand_<seite>` (Kantenabstaende nach innen) und
