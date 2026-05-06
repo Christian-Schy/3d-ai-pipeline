@@ -10,6 +10,28 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-06
 
+- **feature_definierer-Refactor (Stufe 3 von ADR 0003)** — neue Methode
+  `NormalizerAgent.define_feature(klassifikation, teil)` als Pro-Aktion-
+  Eintrittspunkt. Eingabe: 1 klassifizierte Aktion (vom Aktions-
+  Klassifizierer aus Stufe 2). Ausgabe: 1 SemanticFeature gemaess ADR-
+  Schnittstellen-Vertrag, inklusive `_phrase_idx` und `_parent_phrase_idx`-
+  Marker fuer den Aggregator (Stufe 4). `parent` defaultet auf die
+  teil_id; der Aggregator ueberschreibt fuer nested Children (Bohrung in
+  Tasche) mit der Pocket-Feature-ID. Type-Reconciliation respektiert
+  Familien (Classifier `bohrung` + Normalizer `lochkreis` → Normalizer
+  gewinnt; cross-family oder Normalizer `ignorieren` → Classifier
+  gewinnt). Classifier-Seite trumpft Normalizer-Seite (Stufe 2 hat sie
+  schon validiert / vom Parent geerbt). Hints aus Stufe 2 fuellen Luecken
+  in `parameter` (rotation_deg → drehung Translation), ueberschreiben
+  aber nicht was der Normalizer geparst hat. 17 Unit-Tests gruen.
+  Live-Smoke (Splitter → Klassifizierer → define_feature) auf 2 nested
+  Tasche+Bohrung-Paare laeuft strukturell korrekt, aber zeigt das alte
+  Latenz-Problem: Normalizer mit Default `think=true` braucht ~60s/Call.
+  Stufe 5 entscheidet ob `agent_options.normalizer.think=false` machbar
+  ist (Aufgabe ist mit Pre-Klassifikation deutlich kleiner). Existing
+  `normalize()` API bleibt unveraendert — Stufe 5 schaltet das Call-
+  Site um.
+
 - **Aktions-Klassifizierer (Stufe 2 von ADR 0003)** — neuer Agent
   `src/agents/aktions_klassifizierer.py` klassifiziert genau EINE Phrase
   vom Splitter in `{typ, seite, parameter_hints}`. Strukturelle Felder

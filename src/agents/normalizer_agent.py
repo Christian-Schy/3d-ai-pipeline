@@ -7,12 +7,18 @@ no JSON schema, no spatial reasoning.
 
 Output is plain text with key: value lines that the deterministic
 FeatureBuilder can parse reliably.
+
+Stufe 3 (ADR 0003) adds `define_feature(klassifikation, teil)` — the
+new per-action entry point that takes the classified action from
+AktionsKlassifizierer and returns one SemanticFeature with phrase
+markers for the Aggregator (Stufe 4).
 """
 
 import structlog
 
 from src.agents.base import BaseAgent
 from src.config.loader import get_config
+from src.tools.feature_builder import build_feature
 from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
@@ -20,6 +26,58 @@ log = structlog.get_logger()
 _prompt = load_prompt("prompt_normalizer.py")
 SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 NORMALIZER_PROMPT_TEMPLATE = _prompt.NORMALIZER_PROMPT_TEMPLATE
+
+
+# Classifier emits a small typ-set; normalizer's vocabulary is broader and
+# includes specific patterns (lochkreis, eckbohrungen, bohrungsreihe, ...).
+# When both agree on the family, the normalizer's more specific typ wins.
+# When they disagree across families OR the normalizer parsed "ignorieren",
+# the classifier's coarse typ wins.
+_NORMALIZER_FAMILY: dict[str, set[str]] = {
+    "bohrung": {"bohrung", "lochkreis", "eckbohrungen", "bohrungsreihe"},
+    "nut":     {"nut"},
+    "tasche":  {"tasche", "aushoelung"},
+    "fase":    {"fase"},
+    "rundung": {"rundung"},
+}
+
+
+# Classifier param-hint keys → normalizer param keys.
+# Most keys match (durchmesser, tiefe, laenge, breite, groesse, ...).
+# Only `rotation_deg` needs translation: build_feature reads `drehung`.
+_HINT_KEY_RENAME: dict[str, str] = {"rotation_deg": "drehung"}
+
+
+def _merge_param_hints(params: dict, hints: dict) -> None:
+    """In-place: fill missing param keys from classifier hints.
+
+    Existing values from the normalizer are NOT overridden — the hints
+    only fill gaps. None/"" count as missing.
+    """
+    if not isinstance(params, dict) or not isinstance(hints, dict):
+        return
+    for key, val in hints.items():
+        if val is None:
+            continue
+        target = _HINT_KEY_RENAME.get(key, key)
+        if target not in params or params[target] in (None, ""):
+            params[target] = val
+
+
+def _reconcile_typ(classifier_typ: str, normalizer_typ: str) -> str:
+    """Pick the typ to use for build_feature.
+
+    - classifier "unbekannt"/"" → trust normalizer
+    - normalizer "ignorieren" or different family → trust classifier
+    - same family → trust normalizer (more specific)
+    """
+    classifier_typ = (classifier_typ or "").lower()
+    normalizer_typ = (normalizer_typ or "").lower()
+    if classifier_typ not in _NORMALIZER_FAMILY:
+        return normalizer_typ
+    if normalizer_typ in _NORMALIZER_FAMILY[classifier_typ]:
+        return normalizer_typ
+    return classifier_typ
 
 
 class NormalizerAgent(BaseAgent):
@@ -63,6 +121,78 @@ class NormalizerAgent(BaseAgent):
         raw = self.call(prompt, system=SYSTEM_PROMPT, json_mode=False)
         self._last_raw_response = raw
         return self._parse(raw, seite)
+
+    def define_feature(
+        self,
+        klassifikation: dict,
+        teil: dict,
+        feature_text: str = "",
+    ) -> dict:
+        """Build ONE SemanticFeature from ONE classified action.
+
+        Stufe 3 of ADR 0003. Replaces the implicit (normalize → build_feature)
+        chain with a single per-action entry point that returns a feature
+        carrying `_phrase_idx` / `_parent_phrase_idx` markers — the Aggregator
+        (Stufe 4) uses those to wire `parent` for nested children.
+
+        Args:
+            klassifikation: Output from AktionsKlassifizierer.classify(): dict
+                with keys typ, seite, beschreibung, teil_id, phrase_idx,
+                parent_phrase_idx, parameter_hints.
+            teil: Inventar Step A teil (id, type, raw_params).
+            feature_text: Optional richer spec context (per-teil text or full
+                spec). Defaults to the phrase itself when empty.
+
+        Returns:
+            SemanticFeature dict per ADR 0003 contract:
+                {id, type, params, position, parent, operation,
+                 _phrase_idx, _parent_phrase_idx}
+        """
+        beschreibung = klassifikation.get("beschreibung", "")
+        seite = klassifikation.get("seite", "oben")
+        teil_id = teil.get("id", "")
+        phrase_idx = klassifikation.get("phrase_idx", 0)
+        parent_phrase_idx = klassifikation.get("parent_phrase_idx")
+        klass_typ = (klassifikation.get("typ") or "").lower()
+        klass_hints = klassifikation.get("parameter_hints") or {}
+
+        # LLM call (existing per-action normalize)
+        spec_context = feature_text or beschreibung
+        normalized = self.normalize(beschreibung, seite, spec_context)
+
+        # Reconcile typ — classifier wins when families diverge or normalizer
+        # rejected the phrase as placement.
+        chosen_typ = _reconcile_typ(klass_typ, normalized.get("typ", ""))
+        if chosen_typ != normalized.get("typ"):
+            self.log.info(
+                "define_feature_typ_override",
+                normalizer_typ=normalized.get("typ"),
+                klassifizierer_typ=klass_typ,
+                chosen=chosen_typ,
+                phrase=beschreibung[:80],
+            )
+            normalized["typ"] = chosen_typ
+
+        # Trust the classifier's seite verbatim (already validated in Stufe 2).
+        if klassifikation.get("seite"):
+            normalized["seite"] = klassifikation["seite"]
+
+        # Fold classifier hints into normalizer params (gaps only).
+        params = normalized.setdefault("parameter", {})
+        _merge_param_hints(params, klass_hints)
+
+        # Deterministic SemanticFeature build.
+        feature = build_feature(normalized, teil_id, phrase_idx)
+
+        # Default parent: the host teil. Aggregator (Stufe 4) overrides with
+        # the pocket's feature_id for nested children.
+        feature["parent"] = teil_id
+
+        # Markers for the Aggregator.
+        feature["_phrase_idx"] = phrase_idx
+        feature["_parent_phrase_idx"] = parent_phrase_idx
+
+        return feature
 
     def _parse(self, raw: str, fallback_seite: str) -> dict:
         """Parse the normalized text output into a dict.
