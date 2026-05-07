@@ -44,7 +44,7 @@ PipelineState-Felder, gruppiert nach Producer-Node:
 
   Coordinate-Validator (deterministisch, Geometrie):
     coordinate_valid, coordinate_validation_issues,
-    coordinate_validation_attempts
+    coordinate_validation_attempts, coordinate_errors_unresolved
 
   Code-Review:
     code_review_issues, code_review_approved, code_review_attempts
@@ -223,6 +223,12 @@ class PipelineState(TypedDict):
     coordinate_validation_attempts: int
     """How many times CoordinateValidator has rejected the blueprint (this run).
     Own counter — separate from plan_validation_attempts to prevent infinite loops."""
+
+    coordinate_errors_unresolved: bool
+    """Sticky flag: True when CoordinateValidator hit max_retries with ERROR-
+    severity issues still present and the run was forced to plan_validator
+    anyway. Used by session_logger / post-mortem to mark a run that produced
+    an STL but with known geometry violations (Bug 3 from Run e3ddd2d0)."""
 
     # --- Phase 2 — Code Review Agent ---
     code_review_issues: str

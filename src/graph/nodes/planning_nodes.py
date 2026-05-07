@@ -1119,23 +1119,52 @@ def coordinate_validator_node(state: PipelineState) -> dict:
     errors = [i for i in issues if i.severity == "ERROR"]
     warnings = [i for i in issues if i.severity == "WARNING"]
 
-    _trace = _make_trace(
-        agent="coordinate_validator", step=_step,
-        input_data={"build_order": blueprint.get("build_order", [])},
-        output_data={"errors": len(errors), "warnings": len(warnings)},
-        start_time=_t0,
-    )
+    # Bug 3 (e3ddd2d0): the trace previously only carried counts. When the
+    # retry loop hit max_retries, the actual issue texts vanished and the
+    # run reported success=True with silently-unresolved geometry errors.
+    # Persist the formatted issue list (capped) so post-mortem analysis
+    # can see WHAT failed without re-running anything.
+    issue_lines = [
+        f"[{i.severity}] {i.feature_id} — {i.check}: {i.message}"
+        for i in issues
+    ]
+
+    _output: dict = {
+        "errors": len(errors),
+        "warnings": len(warnings),
+        "issues": issue_lines[:50],  # cap for trace size
+    }
 
     if errors:
+        from src.config.loader import get_config as _gc_cv
         attempts = state.get("coordinate_validation_attempts", 0) + 1
+        max_retries = _gc_cv().plan_validator.max_retries
+        will_be_swallowed = attempts >= max_retries
+        _output["attempts"] = attempts
+        _output["max_retries"] = max_retries
+        _output["unresolved_at_max_retries"] = will_be_swallowed
+
         log.warning("node_coordinate_validator_failed",
                     errors=len(errors), warnings=len(warnings),
-                    attempt=attempts)
+                    attempt=attempts, max_retries=max_retries,
+                    swallowed=will_be_swallowed)
+        if will_be_swallowed:
+            log.error("node_coordinate_validator_swallowed",
+                      errors=len(errors), issues=issue_lines[:5])
         issues_text = format_issues_for_planner(issues)
+        _trace = _make_trace(
+            agent="coordinate_validator", step=_step,
+            input_data={"build_order": blueprint.get("build_order", [])},
+            output_data=_output,
+            start_time=_t0,
+        )
         return {
             "coordinate_validation_issues": issues_text,
             "coordinate_valid": False,
             "coordinate_validation_attempts": attempts,
+            # Sticky flag the executor / final state can read to mark a run
+            # as "succeeded structurally but with unresolved coord errors".
+            "coordinate_errors_unresolved": will_be_swallowed,
             "agent_traces": [_trace],
         }
 
@@ -1144,6 +1173,12 @@ def coordinate_validator_node(state: PipelineState) -> dict:
 
     log.info("node_coordinate_validator_ok",
              features=len(blueprint.get("build_order", [])))
+    _trace = _make_trace(
+        agent="coordinate_validator", step=_step,
+        input_data={"build_order": blueprint.get("build_order", [])},
+        output_data=_output,
+        start_time=_t0,
+    )
     return {
         "coordinate_validation_issues": "",
         "coordinate_valid": True,

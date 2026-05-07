@@ -157,6 +157,15 @@ class SessionLogger:
             "validation_error": state.get("validation_error", ""),
             "validator_feedback": state.get("validator_feedback", ""),
             "modification": state.get("modification", ""),
+            # Bug 3 (Run e3ddd2d0): persist whether coord_validator hit
+            # max_retries with unresolved ERRORs. success=True alone hides
+            # this — geometry violations would silently survive.
+            "coordinate_errors_unresolved": bool(
+                state.get("coordinate_errors_unresolved", False)
+            ),
+            "coordinate_validation_issues": state.get(
+                "coordinate_validation_issues", ""
+            ),
             "agent_traces": state.get("agent_traces", []),
         }
 

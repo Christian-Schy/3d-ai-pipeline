@@ -10,6 +10,39 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-07
 
+- **Bug 3 + Bug 4 aus derselben Real-Run-Analyse** in einem Folge-Commit
+  zu den ersten vier Fixes:
+
+  - **Bug 3: coord_validator-Errors in Trace + sticky Flag bei
+    max_retries** ([src/graph/nodes/planning_nodes.py],
+    [src/tools/session_logger.py], [src/graph/state.py]).
+    Run e3ddd2d0 hatte 5 ERROR-Issues, die nach `max_retries`
+    durchgereicht wurden — der Trace zeigte nur Counts, runs.jsonl
+    flagte den Run als success=True. Jetzt traegt der Trace bis zu 50
+    formatierte Issue-Zeilen plus `attempts / max_retries /
+    unresolved_at_max_retries`. Neue State-Variable
+    `coordinate_errors_unresolved` als sticky Flag — bei max_retries
+    mit ERRORs wird sie True, der session_logger persistiert sie in
+    runs.jsonl. Plus expliziter `node_coordinate_validator_swallowed`
+    error-log fuer alerting.
+  - **Bug 4: edge_distances + center_offset komponieren additiv**
+    ([src/tools/blueprint_resolver.py]). Run e3ddd2d0 tasche_rechts_22
+    hatte beide Felder gleichzeitig (`edge_distances={right:25}`
+    plus `center_offset={right:10}` aus der Phrase "...25mm entfernt
+    10mm nach rechts versetzt"). Resolver-Prioritaet edge>center hat
+    den 10mm-Offset stillschweigend verworfen. Neue Semantik:
+    edge / pocket_edge legt die Basis pro Achse, center_offset wirkt
+    als ADDITIVES Delta on top. Per Achse unabhaengig — Mischformen
+    (edge auf X, pure center auf Y) funktionieren weiterhin. 4 neue
+    Regression-Tests.
+
+  Tests: +4 splitter-coord-trace, +4 composition. Suite 234/234 gruen.
+
+- **ADR 0004 als Plan fuer Bug 7 + Bug 8** ([docs/decisions/0004-bug7-bug8-anchor-edge-and-splitter-feed.md]).
+  Beide Bugs brauchen mehr Vorlauf (LUT + Prompt-Erweiterung fuer
+  Bug 7, Pipeline-Edges-Refactor fuer Bug 8) — daher als ADR
+  vorbereitet, damit ein neuer Chat sauber einsteigen kann.
+
 - **Vier Bugs aus der Real-Run-Analyse e3ddd2d0 / da35a6ce / e1def0fa**
   behoben. Hintergrund: Run e3ddd2d0 hat ein 16-Tasche-Würfel-Setup
   durchlaufen, da35a6ce + e1def0fa zeigten Phantom-Features auf einer

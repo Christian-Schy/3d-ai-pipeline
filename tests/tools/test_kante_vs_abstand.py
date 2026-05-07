@@ -201,6 +201,57 @@ def test_kante_top_left_on_rechts_face_uses_pocket_y_as_height():
     assert p["offset_y"] == 75.0
 
 
+def test_center_offset_adds_on_top_of_abstand():
+    """Bug 4 (Run e3ddd2d0 tasche_rechts_22): User-Phrase
+    "von der rechten Seite 25mm entfernt ... 10mm nach rechts versetzt"
+    erzeugt edge_distances={right:25} UND center_offset={right:10}.
+    Erwartung: edge legt Basis (ox=+75), center_offset addiert (+10) → ox=85.
+    Vorher: center_offset ignoriert → ox=75."""
+    bp = _bp_pocket({
+        "edge_distances": {"right": 25},
+        "center_offset": {"right": 10},
+    }, pocket_size=(40, 40, 10))
+    res = resolve_blueprint(bp)
+    p = res["features"]["tasche"]["placement"]
+    assert p["offset_x"] == 85.0
+
+
+def test_center_offset_adds_on_top_of_kante():
+    """Same composition but with pocket_edge_distances (kante_*).
+    Pocket-Edge bei +75 → Center +55, plus 10mm versetzt → Center +65."""
+    bp = _bp_pocket({
+        "pocket_edge_distances": {"right": 25},
+        "center_offset": {"right": 10},
+    }, pocket_size=(40, 40, 10))
+    res = resolve_blueprint(bp)
+    p = res["features"]["tasche"]["placement"]
+    assert p["offset_x"] == 65.0
+
+
+def test_center_offset_alone_still_works():
+    """Regression: center_offset OHNE edge_distances/pocket_edge_distances
+    bleibt eigenstaendig (Versatz von der Mitte)."""
+    bp = _bp_pocket({"center_offset": {"right": 20, "top": 30}},
+                    pocket_size=(40, 40, 10))
+    res = resolve_blueprint(bp)
+    p = res["features"]["tasche"]["placement"]
+    assert p["offset_x"] == 20.0
+    assert p["offset_y"] == 30.0
+
+
+def test_center_offset_added_axis_independently():
+    """Mischform: edge auf X-Achse, center_offset NUR auf Y-Achse.
+    X = pure edge (ox=75), Y = pure center (oy=30 von der Mitte)."""
+    bp = _bp_pocket({
+        "edge_distances": {"right": 25},
+        "center_offset": {"top": 30},
+    }, pocket_size=(40, 40, 10))
+    res = resolve_blueprint(bp)
+    p = res["features"]["tasche"]["placement"]
+    assert p["offset_x"] == 75.0
+    assert p["offset_y"] == 30.0
+
+
 def test_box_child_on_side_face_keeps_world_axis_remap():
     """Regression: 3D-Box (Platte mit z-Param) muss weiterhin pro Face
     remappen — sonst landet Anchor-Berechnung fuer additive Kinder im Eimer."""

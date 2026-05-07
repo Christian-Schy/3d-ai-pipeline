@@ -947,7 +947,15 @@ def _compute_offsets(
             )
             ox_from_center, oy_from_center = ox_c, oy_c
 
-    # Compose per-axis: pocket_edge > edge > center > alignment
+    # Compose per-axis: pocket_edge > edge > alignment as the BASE position.
+    # Bug 4 (Run e3ddd2d0 tasche_rechts_22): when both an edge_distance AND
+    # a center_offset are emitted on the same axis (User-Phrasing
+    # "...25mm entfernt 10mm nach rechts versetzt"), the user's intent is
+    # additive — first place by the edge, THEN nudge by the offset. Old
+    # behavior: edge wins, center silently dropped → 10mm lost.
+    # New behavior: center_offset acts as an additive delta on top of the
+    # edge-based base; only "promotes" to a standalone axis value when no
+    # edge field set the axis.
     if ox_pocket_set:
         ox = ox_from_pocket_edges
     elif ox_edge_set:
@@ -961,6 +969,14 @@ def _compute_offsets(
         oy = oy_from_edges
     elif oy_center_set:
         oy = oy_from_center
+
+    # Additive center_offset on top of edge-based base — only apply when
+    # an edge / pocket_edge already set THIS axis (otherwise the value
+    # was already promoted via the elif chain above).
+    if ox_center_set and (ox_pocket_set or ox_edge_set):
+        ox += ox_from_center
+    if oy_center_set and (oy_pocket_set or oy_edge_set):
+        oy += oy_from_center
 
     return (_clean_zero(round(ox, 4)), _clean_zero(round(oy, 4)))
 
