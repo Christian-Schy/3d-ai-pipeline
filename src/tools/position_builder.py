@@ -56,6 +56,11 @@ _ANCHOR_POINT_KEYWORDS = {
     "front_edge", "back_edge",
     "top_face", "bottom_face", "left_face", "right_face",
     "front_face", "back_face",
+    # Edge endpoints (Bug 7, ADR 0004)
+    "right_edge_top", "right_edge_bottom",
+    "left_edge_top", "left_edge_bottom",
+    "top_edge_left", "top_edge_right",
+    "bottom_edge_left", "bottom_edge_right",
 }
 
 

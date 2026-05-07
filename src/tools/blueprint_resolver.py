@@ -662,6 +662,25 @@ _ANCHOR_POINT_LUT: dict[str, tuple[float, float]] = {
     "untere_kante":  ( 0.0, -0.5),
     "linke_kante":   (-0.5,  0.0),
     "rechte_kante":  (+0.5,  0.0),
+    # Edge endpoints — for "Ecke an Kante"-Phrasen wie "rechte untere Ecke
+    # auf der rechten Kante" (Bug 7, ADR 0004). Koordinaten = Ecke, aber
+    # Benennung macht das Endpunkt-Anpeilen explizit.
+    "right_edge_top":     (+0.5, +0.5),
+    "right_edge_bottom":  (+0.5, -0.5),
+    "left_edge_top":      (-0.5, +0.5),
+    "left_edge_bottom":   (-0.5, -0.5),
+    "top_edge_left":      (-0.5, +0.5),
+    "top_edge_right":     (+0.5, +0.5),
+    "bottom_edge_left":   (-0.5, -0.5),
+    "bottom_edge_right":  (+0.5, -0.5),
+    "rechte_kante_oben":  (+0.5, +0.5),
+    "rechte_kante_unten": (+0.5, -0.5),
+    "linke_kante_oben":   (-0.5, +0.5),
+    "linke_kante_unten":  (-0.5, -0.5),
+    "obere_kante_links":  (-0.5, +0.5),
+    "obere_kante_rechts": (+0.5, +0.5),
+    "untere_kante_links": (-0.5, -0.5),
+    "untere_kante_rechts":(+0.5, -0.5),
     # 3D corner keywords: resolver strips a leading depth prefix that does
     # not match the placement face axis (e.g. 'front_top_left' on >Z → 'top_left').
 }
@@ -716,6 +735,23 @@ _H_FLIP_MAP: dict[str, str] = {
     "unten_rechts":  "unten_links",
     "linke_kante":   "rechte_kante",
     "rechte_kante":  "linke_kante",
+    # Edge endpoints (Bug 7, ADR 0004) — left↔right flip on viewer-mirrored faces
+    "right_edge_top":      "left_edge_top",
+    "right_edge_bottom":   "left_edge_bottom",
+    "left_edge_top":       "right_edge_top",
+    "left_edge_bottom":    "right_edge_bottom",
+    "top_edge_left":       "top_edge_right",
+    "top_edge_right":      "top_edge_left",
+    "bottom_edge_left":    "bottom_edge_right",
+    "bottom_edge_right":   "bottom_edge_left",
+    "rechte_kante_oben":   "linke_kante_oben",
+    "rechte_kante_unten":  "linke_kante_unten",
+    "linke_kante_oben":    "rechte_kante_oben",
+    "linke_kante_unten":   "rechte_kante_unten",
+    "obere_kante_links":   "obere_kante_rechts",
+    "obere_kante_rechts":  "obere_kante_links",
+    "untere_kante_links":  "untere_kante_rechts",
+    "untere_kante_rechts": "untere_kante_links",
 }
 
 

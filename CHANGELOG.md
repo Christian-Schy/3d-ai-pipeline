@@ -10,6 +10,24 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-07
 
+- **Bug 7 (ADR 0004): Anchor-Edge-Endpunkte im Vokabular**
+  ([src/tools/blueprint_resolver.py], [src/tools/position_builder.py],
+  [data/prompts/prompt_position_anchor.py]). Run da35a6ce/e1def0fa-Phrase
+  "rechte untere ecke auf der rechten kante 10mm nach oben" mappte
+  `parent_point=right_edge` auf den Mittelpunkt der Kante — Plate landete
+  mittig statt am unteren Endpunkt. Fix: 8 Endpunkt-Schluessel additiv
+  ins `_ANCHOR_POINT_LUT` aufgenommen (`right_edge_top/bottom`,
+  `left_edge_top/bottom`, `top_edge_left/right`, `bottom_edge_left/right`)
+  plus deutsche Aliase (`rechte_kante_unten`, …). `_H_FLIP_MAP` analog
+  erweitert fuer viewer-mirror Faces (<X, >Y). Builder-Whitelist
+  `_ANCHOR_POINT_KEYWORDS` um die acht Endpunkte ergaenzt. Position-
+  Anchor-Prompt um Vokabular-Block + neue Standard-Regel "Ecke + Kante
+  zusammen genannt → Endpunkt" + zwei Few-Shots erweitert. Resolver
+  bleibt regel-arm, kein Heuristik-Fallback. Tests: +6 in
+  `test_anchor_placement.py` (inkl. da35a6ce-Smoke-Test mit 200³ Cube,
+  140x20x40 Plate, 20° CCW), +2 in `test_position_builder_anchor.py`.
+  Suite 238/238 gruen.
+
 - **Bug 3 + Bug 4 aus derselben Real-Run-Analyse** in einem Folge-Commit
   zu den ersten vier Fixes:
 

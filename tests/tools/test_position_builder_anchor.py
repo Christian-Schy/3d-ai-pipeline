@@ -76,3 +76,26 @@ def test_anchor_versatz_takes_precedence_over_abstand():
         abstand={"versatz_unten": 5, "abstand_oben": 10},
     ))
     assert pos["anchor"]["offset"] == {"down": 5.0}
+
+
+# ─── Bug 7 (ADR 0004): Edge-endpoint anchor keywords ────────────────
+
+
+def test_edge_endpoint_keyword_passes_through():
+    """parent_point='right_edge_bottom' is a valid keyword and must round-trip."""
+    pos = build_position(_base(anker="bottom_right_auf_right_edge_bottom"))
+    assert pos["anchor"]["child_point"] == "bottom_right"
+    assert pos["anchor"]["parent_point"] == "right_edge_bottom"
+
+
+def test_all_eight_endpoint_keywords_accepted():
+    """Every edge endpoint must be in the builder's whitelist."""
+    endpoints = [
+        "right_edge_top", "right_edge_bottom",
+        "left_edge_top", "left_edge_bottom",
+        "top_edge_left", "top_edge_right",
+        "bottom_edge_left", "bottom_edge_right",
+    ]
+    for ep in endpoints:
+        pos = build_position(_base(anker=f"center_auf_{ep}"))
+        assert pos["anchor"]["parent_point"] == ep, f"{ep} fell back to center"

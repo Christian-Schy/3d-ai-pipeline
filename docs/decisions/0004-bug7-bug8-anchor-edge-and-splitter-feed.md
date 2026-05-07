@@ -1,8 +1,9 @@
 # ADR 0004 — Bug 7 + Bug 8 aus Real-Run-Analyse: Anchor-Edge-Endpunkte + Splitter-Eingang
 
 - **Datum:** 2026-05-07
-- **Status:** proposed (Plan fuer naechste Iteration)
-- **Implementierung:** offen
+- **Status:** Bug 7 implementiert / Bug 8 proposed
+- **Implementierung:** Bug 7 ✓ (LUT + H_FLIP + Builder-Whitelist + Anchor-
+  Prompt + Tests). Bug 8 offen — Investigation als naechstes.
 
 Begleitdokument: die ersten vier Bugs (1, 2, 5, 6) aus derselben
 Analyse sind in Commit `980a0ac` gefixt. Bug 3 + 4 in einem direkten
