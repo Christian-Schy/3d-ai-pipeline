@@ -78,6 +78,67 @@ def test_adjective_form_rechten_does_not_split():
     assert "rechten seite" in out[0]["phrase"]
 
 
+def test_feature_phrase_without_bare_side_keyword_kept():
+    """Run da35a6ce regression: 'auf der rechten seite eine bohrung von
+    der linken kante 20mm entfernt von der oberen 30mm entfernt mit 20mm
+    durchmesser 10 tief' has NO bare side-keyword (only adjectives like
+    'rechten', 'linken', 'oberen'). Must not be dropped — the classifier
+    derives seite='rechts' from 'rechten seite'."""
+    spec = (
+        "auf der rechten seite eine bohrung von der linken kante 20mm "
+        "entfernt von der oberen 30mm entfernt mit 20mm durchmesser 10 tief"
+    )
+    out = split_spec_into_aktionen(spec, _teile_single())
+    assert len(out) == 1
+    # Whole phrase preserved — durchmesser/tiefe info must reach the classifier
+    assert "20mm durchmesser" in out[0]["phrase"]
+    assert "rechten seite" in out[0]["phrase"]
+
+
+def test_feature_phrase_with_internal_side_keyword_not_stripped():
+    """Run da35a6ce regression: 'auf der rechten seite eine nut 10x10
+    entlang der z-achse um 10mm nach rechts versetzt' contains the bare
+    'rechts' deep inside ('nach rechts versetzt'). Old behavior cut the
+    whole prefix, leaving only 'rechts versetzt'. New behavior: the prefix
+    has no part-keyword (wuerfel/platte/...) so it is NOT a part decl —
+    keep the full phrase."""
+    spec = (
+        "auf der rechten seite eine nut 10x10 entlang der z-achse "
+        "um 10mm nach rechts versetzt"
+    )
+    out = split_spec_into_aktionen(spec, _teile_single())
+    assert len(out) == 1
+    assert "nut 10x10" in out[0]["phrase"]
+    assert "z-achse" in out[0]["phrase"]
+
+
+def test_pure_part_decl_with_dimension_still_dropped():
+    """'200mm wuerfel' alone (no feature word) is still pure part decl."""
+    out = split_spec_into_aktionen("200mm wuerfel", _teile_single())
+    assert out == []
+
+
+def test_part_decl_with_side_kw_still_strips():
+    """'200mm wuerfel oben eine Bohrung 10mm' must still strip the prefix
+    — the side-keyword sits right behind a part-keyword."""
+    out = split_spec_into_aktionen(
+        "200mm wuerfel oben eine Bohrung 10mm",
+        _teile_single(),
+    )
+    assert len(out) == 1
+    assert out[0]["phrase"] == "oben eine Bohrung 10mm"
+
+
+def test_part_decl_with_dimensions_after_keyword():
+    """'platte 140x20x40' (part-keyword first, dimensions after) is also
+    a pure part decl when alone."""
+    out = split_spec_into_aktionen(
+        "platte 140x20x40",
+        [{"id": "platte", "type": "box", "raw_params": {"x": 140, "y": 20, "z": 40}}],
+    )
+    assert out == []
+
+
 # ─── Verschachtelung ──────────────────────────────────────────────────
 
 

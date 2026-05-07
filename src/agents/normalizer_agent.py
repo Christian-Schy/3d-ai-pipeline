@@ -132,7 +132,7 @@ class NormalizerAgent(BaseAgent):
         klassifikation: dict,
         teil: dict,
         feature_text: str = "",
-    ) -> dict:
+    ) -> dict | None:
         """Build ONE SemanticFeature from ONE classified action.
 
         Stufe 3 of ADR 0003. Replaces the implicit (normalize → build_feature)
@@ -186,8 +186,14 @@ class NormalizerAgent(BaseAgent):
         params = normalized.setdefault("parameter", {})
         _merge_param_hints(params, klass_hints)
 
-        # Deterministic SemanticFeature build.
+        # Deterministic SemanticFeature build. Returns None when both the
+        # classifier and the normalizer rejected the phrase as a real
+        # feature (typ in {"unbekannt", "ignorieren", ""}). The caller —
+        # feature_definierer_node — drops None results so phantom features
+        # never reach the aggregator.
         feature = build_feature(normalized, teil_id, phrase_idx)
+        if feature is None:
+            return None
 
         # Default parent: the host teil. Aggregator (Stufe 4) overrides with
         # the pocket's feature_id for nested children.

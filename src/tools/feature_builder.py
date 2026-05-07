@@ -147,7 +147,7 @@ def _extract_edge_distances(position: str, params: dict) -> dict | None:
     return distances if distances else None
 
 
-def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict:
+def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | None:
     """Build a complete feature dict from normalized action description.
 
     Args:
@@ -156,7 +156,13 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict:
         action_idx: Index for generating unique feature IDs
 
     Returns:
-        dict: Complete feature ready for the blueprint
+        dict: Complete feature ready for the blueprint.
+        None: If the normalized action carries no real feature (typ in
+              {"ignorieren", "unbekannt", ""}) — the caller must skip such
+              entries instead of producing a default-shaped phantom hole.
+              Runs da35a6ce / e1def0fa showed the old fallback emitted
+              5mm-Default-Bohrungen on plate centers from placement-only
+              phrases like "vorne soll eine platte hin mit 140x20x40".
     """
     typ = normalized.get("typ", "")
     seite = normalized.get("seite", "oben")
@@ -168,6 +174,16 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict:
     # Sometimes the normalizer puts richtung inside parameter instead of top-level
     if not richtung and "richtung" in params:
         richtung = str(params.pop("richtung")).lower()
+
+    # Drop sentinel typs explicitly. Both come from upstream agents that
+    # already decided the phrase is not a material-removing/adding feature
+    # (e.g. classifier "unbekannt" for a plate-creation phrase, normalizer
+    # "ignorieren" for placement-only sentences).
+    typ_lower = (typ or "").lower()
+    if typ_lower in {"", "ignorieren", "unbekannt"}:
+        log.info("feature_builder_skip_sentinel", typ=typ_lower,
+                 teil=teil_id, action_idx=action_idx)
+        return None
 
     # Map typ to feature type
     feature_type = _TYP_MAP.get(typ)
@@ -358,11 +374,13 @@ def build_teil_definition(teil: dict, normalized_actions: list[dict]) -> dict:
     else:
         orientation = "standard"
 
-    # Build features from normalized actions
+    # Build features from normalized actions. Skip sentinel typs
+    # (ignorieren / unbekannt / empty) — build_feature returns None for those.
     features = []
     for idx, norm in enumerate(normalized_actions):
         feat = build_feature(norm, teil_id, idx)
-        features.append(feat)
+        if feat is not None:
+            features.append(feat)
 
     return {
         "id": teil_id,

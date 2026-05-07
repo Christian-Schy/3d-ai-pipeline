@@ -152,6 +152,26 @@ def test_unbekannt_classifier_keeps_normalizer_typ():
     assert feat["type"] == "slot"
 
 
+def test_returns_none_when_both_sentinel():
+    """Run da35a6ce / e1def0fa regression: phrase 'vorne soll eine platte
+    hin mit 140x20x40' is part declaration, not a feature. Classifier
+    says 'unbekannt', normalizer says 'ignorieren' → MUST return None so
+    no phantom hole_single ends up on the platte."""
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="ignorieren", parameter={},
+    ))
+    feat = agent.define_feature(_klass(typ="unbekannt"), _teil())
+    assert feat is None
+
+
+def test_returns_none_when_classifier_empty_and_normalizer_ignorieren():
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(typ="ignorieren", parameter={}))
+    feat = agent.define_feature(_klass(typ=""), _teil())
+    assert feat is None
+
+
 # ── parameter_hints Merge ──────────────────────────────────────────────
 
 

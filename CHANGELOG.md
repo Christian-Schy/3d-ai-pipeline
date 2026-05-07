@@ -8,6 +8,78 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-07
+
+- **Vier Bugs aus der Real-Run-Analyse e3ddd2d0 / da35a6ce / e1def0fa**
+  behoben. Hintergrund: Run e3ddd2d0 hat ein 16-Tasche-Würfel-Setup
+  durchlaufen, da35a6ce + e1def0fa zeigten Phantom-Features auf einer
+  extrudierten Platte und verlorene Plattenfeatures. Detail-Analyse
+  hat vier saubere Bugs isoliert; alle vier sind jetzt gefixt mit
+  Tests. Suite 226/226 gruen.
+
+  - **Bug 5: Splitter `_strip_part_declaration` zerstoert Feature-
+    Phrasen ohne Teil-Decl-Praefix** ([src/tools/aktions_splitter.py]).
+    Phrasen wie "auf der rechten seite eine nut 10x10 entlang der
+    z-achse um 10mm nach rechts versetzt" wurden auf "rechts versetzt"
+    reduziert, weil der Strip alles vor dem ersten bare side-keyword
+    geworfen hat — auch wenn das Praefix gar keine Teil-Deklaration
+    war. Phrasen ohne bare side-keyword wurden komplett gedroppt.
+    Fix: nur strippen wenn Praefix ein Part-Keyword (`wuerfel/würfel/
+    platte/zylinder/quader/kugel/box/teil/stück`) traegt; Segmente ohne
+    bare side-keyword aber mit Feature-Keyword (`tasche/bohrung/nut/
+    fase/rundung/...`) bleiben — die Klassifizierer leitet die Seite
+    aus Beschreibern wie "rechten seite" ab. 6 neue Regression-Tests.
+  - **Bug 6: feature_builder emittiert Phantom-Features fuer Sentinel-
+    typs** ([src/tools/feature_builder.py], [src/agents/normalizer_agent.py]).
+    Wenn Klassifizierer "unbekannt" und Normalizer "ignorieren" sagen
+    (klassisch: Plattendekl-Phrase "vorne soll eine platte hin mit
+    140x20x40"), produzierte build_feature einen Default-`hole_single`
+    mit Diameter 5 und ID-Praefix "ignorieren_*". Diese Phantom-Bohrung
+    landete im Blueprint zentriert auf der Platte. Fix: build_feature
+    gibt None zurueck fuer typ in {"", "ignorieren", "unbekannt"};
+    define_feature und feature_definierer_node filtern None raus.
+    2 neue Regression-Tests in test_normalizer_define_feature.py.
+  - **Bug 2: Resolver `_get_child_face_size` liefert child_h=0 fuer
+    Pockets auf Side-Faces** ([src/tools/blueprint_resolver.py]).
+    pocket_rect-Features tragen `{x, y, depth}` (face-lokal), aber die
+    Funktion las cz/cy nach Face-Map, was auf <X/>X/<Y/>Y zu cz=0
+    (kein z-Param da) fuehrte. Konsequenz: kante_oben/unten verlor
+    die child_half-Subtraktion und verhielt sich wie abstand_*. Run
+    e3ddd2d0 tasche_vorne_5 / tasche_links_10 / tasche_rechts_18 alle
+    15mm zu hoch (= halbe Pocket-Hoehe). Fix: face-lokale Features
+    (Praesenz von `depth` ohne `z`) bekommen (cx, cy) ohne Remapping.
+    3-D-Boxes (mit `z`) bleiben beim alten Verhalten. 4 neue Regression-
+    Tests in test_kante_vs_abstand.py inkl. Box-Regression.
+  - **Bug 1: Klassifizierer-Prompt erkennt "Seite" nicht als Pocket-
+    Kante** ([data/prompts/prompt_aktions_klassifizierer.py]). Run
+    e3ddd2d0 phrase_idx 2: "die untere Seite von unten 10mm entfernt"
+    wurde als `abstand_unten=10` (edge-to-center) klassifiziert statt
+    `kante_unten=10` (edge-to-edge). Der Prompt benutzte "Kante" und
+    "Seite" inkonsistent — "die obere Kante" triggerte kante_*, "die
+    untere Seite" nicht. Fix: System-Prompt explizit erklaert, dass
+    "Kante" und "Seite" gleichwertig als Pocket-Edge-Marker zaehlen,
+    plus expliziter Few-Shot mit "die untere Seite von unten 10mm".
+
+  Offen aus der Analyse, fuer naechste Iteration:
+  - **Bug 7** (Anchor-LUT): "die rechte untere ecke auf der rechten
+    kante 10mm nach oben versetzt" mappt `right_edge` auf den Mittel-
+    punkt der Kante, nicht auf das untere Ende. Platte landet 100mm
+    zu hoch im <Y-Face. Braucht Erweiterung des Anchor-Vokabulars um
+    `right_edge_bottom` etc. plus Platzierer-Output.
+  - **Bug 8** (Splitter teil_id-Order): wenn der User Plattenfeatures
+    VOR der Plattendeklaration schreibt, fallen sie auf den vorigen
+    Teil. Two-Pass-Splitting waere strukturell richtiger; vorher steht
+    aber der text_splitter / position_extractor zur Korrektur an.
+  - **Bug 3** (coord_validator-Logging): die 5 Errors in e3ddd2d0
+    sind nur als Counts in den Traces. Issue-Texte sollten in den
+    Trace-Output gehen, plus Marker auf success=True wenn ERRORs nach
+    max_retries durchgereicht wurden.
+  - **Bug 4** (Schema-Composite edge_distances + center_offset):
+    feature_definierer setzt beide Felder bei Phrasen wie "...25mm
+    entfernt 10mm nach rechts versetzt", Resolver-Prioritaet ignoriert
+    center_offset. Schema oder feature_builder muss Composite-Verhalten
+    klar definieren (vermutlich: addieren).
+
 ## 2026-05-06
 
 - **kante_<dir> Hints fuer explizites edge-to-edge** — User-Direktive

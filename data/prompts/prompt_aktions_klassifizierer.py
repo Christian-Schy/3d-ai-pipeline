@@ -41,14 +41,30 @@ parameter_hints (optional):
     Bedeutung: nur wenn die Phrase BEIDE Kanten benennt — die KANTE des
     Features UND die Kante des Parents. Dann ist es edge-to-edge:
     Feature-Kante X mm von Parent-Kante.
-    Erkennungsmerkmal: "die <seite> Kante/Seite [der Tasche/des Slots]
-    von <seite> X mm entfernt" — Akkusativ + zweite Praeposition.
-    z.B. "die obere Kante von oben 10mm entfernt"
-            → kante_oben: 10  (Feature-Top 10mm von Parent-Top)
-         "die linke Seite von links 10mm entfernt"
-            → kante_links: 10
-         "untere Kante der Tasche von unten 20mm entfernt"
-            → kante_unten: 20
+
+    Erkennungsmuster (EINS davon reicht):
+      a) "die <seite> Kante/Seite [der Tasche/des Slots]
+          von <seite> X mm entfernt"  — Nominativ + zweite Praeposition.
+      b) Wiederholtes Seiten-Wort vor und nach "von":
+         "die UNTERE Seite von UNTEN X mm" / "die OBERE Seite von OBEN X mm".
+         Auch ohne "Tasche/Slot"-Qualifier: das wiederholte Seiten-Wort
+         IST schon der Hinweis "Pocket-Kante UND Cube-Kante".
+
+    !! WICHTIG: "Kante" und "Seite" sind hier AUSTAUSCHBAR !!
+    "die untere Seite von unten 10mm" ist genauso edge-to-edge wie
+    "die untere Kante von unten 10mm". Beides → kante_unten: 10.
+
+    Gegenbeispiele (NUR Cube-Kante, also DEFAULT abstand_*):
+      "von der rechten Seite 25mm entfernt"        → abstand_rechts: 25
+      "von oben 10mm entfernt"                     → abstand_oben: 10
+      Praefix-"von" + KEINE wiederholte Pocket-Kante = abstand_*.
+
+    Beispiele edge-to-edge:
+      "die obere Kante von oben 10mm entfernt"     → kante_oben: 10
+      "die linke Seite von links 10mm entfernt"    → kante_links: 10
+      "die untere Seite von unten 10mm entfernt"   → kante_unten: 10
+      "untere Kante der Tasche von unten 20mm"     → kante_unten: 20
+
     Bei Bohrungen (Kreis ohne rect-Edge) bleibt es bei abstand_*.
 
   Position — Versatz von der Mitte in eine Richtung:
@@ -210,6 +226,23 @@ FEW_SHOT_EXAMPLES = [
             "seite": "oben",
             "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 10,
                                 "versatz_oben": 20, "versatz_rechts": 20},
+        },
+    },
+    {
+        # EXPLIZITES edge-to-edge mit "Seite" statt "Kante" — Run e3ddd2d0
+        # phrase 2: "die untere Seite von unten 10mm" wurde faelschlicherweise
+        # als abstand_unten klassifiziert. "Seite" und "Kante" sind hier
+        # gleichwertig: die wiederholte Seiten-Erwaehnung ("untere ... von
+        # unten") ist DAS Erkennungsmerkmal.
+        "phrase": "oben eine Tasche 30x20x10 von der linken Seite 20mm entfernt die untere Seite von unten 10mm entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 200, "z": 200},
+        "parent_phrase": "(keine)",
+        "output": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 10,
+                                "abstand_links": 20, "kante_unten": 10},
         },
     },
     {

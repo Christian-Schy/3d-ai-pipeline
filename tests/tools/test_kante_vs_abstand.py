@@ -124,3 +124,110 @@ def test_kante_overrides_abstand_on_same_axis():
     }, pocket_size=(40, 40, 10))
     res = resolve_blueprint(bp)
     assert res["features"]["tasche"]["placement"]["offset_x"] == 55.0
+
+
+# ── Side-Faces: kante_* darf NICHT durch fehlendes z-Param gebrochen werden
+# (Run e3ddd2d0 Bug 2: tasche_vorne_5 / tasche_links_10 / tasche_rechts_18
+# alle 15mm zu hoch weil _get_child_face_size cz=0 las.) ─────────────
+
+
+def _bp_pocket_on_side(side: str, position_extras: dict,
+                       pocket_size=(20, 30, 10)) -> dict:
+    """200x200x200 Wuerfel mit Tasche auf side ∈ {vorne, links, rechts, hinten}."""
+    px, py, pz = pocket_size
+    position = {
+        "side": side, "alignment": "centered",
+        "edge_distances": None, "angle_deg": 0.0, "notes": "",
+    }
+    position.update(position_extras)
+    return {
+        "build_order": ["wuerfel", "tasche"],
+        "features": {
+            "wuerfel": {
+                "id": "wuerfel", "type": "box",
+                "params": {"x": 200, "y": 200, "z": 200},
+                "orientation": "standard",
+                "parent": None, "operation": "add",
+            },
+            "tasche": {
+                "id": "tasche", "type": "pocket_rect",
+                "params": {"x": px, "y": py, "depth": pz},
+                "orientation": "standard",
+                "parent": "wuerfel", "operation": "subtract",
+                "position": position,
+            },
+        },
+    }
+
+
+def test_kante_top_left_on_vorne_face_uses_pocket_y_as_height():
+    """Run e3ddd2d0 tasche_vorne_5: 20x30 Pocket auf <Y, kante_oben=10 +
+    kante_links=10. Erwartung wie auf >Z: Center (-80, +75). Vorher fiel
+    der Resolver auf cz=0 zurueck und lieferte (-75, +90)."""
+    bp = _bp_pocket_on_side(
+        "vorne",
+        {"pocket_edge_distances": {"top": 10, "left": 10}},
+        pocket_size=(20, 30, 10),
+    )
+    res = resolve_blueprint(bp)
+    p = res["features"]["tasche"]["placement"]
+    assert p["offset_x"] == -80.0
+    assert p["offset_y"] == 75.0
+
+
+def test_kante_top_left_on_links_face_uses_pocket_y_as_height():
+    """Run e3ddd2d0 tasche_links_10: identisch zu vorne_5 aber face <X."""
+    bp = _bp_pocket_on_side(
+        "links",
+        {"pocket_edge_distances": {"top": 10, "left": 10}},
+        pocket_size=(20, 30, 10),
+    )
+    res = resolve_blueprint(bp)
+    p = res["features"]["tasche"]["placement"]
+    assert p["offset_x"] == -80.0
+    assert p["offset_y"] == 75.0
+
+
+def test_kante_top_left_on_rechts_face_uses_pocket_y_as_height():
+    """Run e3ddd2d0 tasche_rechts_18: identisch aber face >X."""
+    bp = _bp_pocket_on_side(
+        "rechts",
+        {"pocket_edge_distances": {"top": 10, "left": 10}},
+        pocket_size=(20, 30, 10),
+    )
+    res = resolve_blueprint(bp)
+    p = res["features"]["tasche"]["placement"]
+    assert p["offset_x"] == -80.0
+    assert p["offset_y"] == 75.0
+
+
+def test_box_child_on_side_face_keeps_world_axis_remap():
+    """Regression: 3D-Box (Platte mit z-Param) muss weiterhin pro Face
+    remappen — sonst landet Anchor-Berechnung fuer additive Kinder im Eimer."""
+    bp = {
+        "build_order": ["wuerfel", "platte"],
+        "features": {
+            "wuerfel": {
+                "id": "wuerfel", "type": "box",
+                "params": {"x": 200, "y": 200, "z": 200},
+                "orientation": "standard",
+                "parent": None, "operation": "add",
+            },
+            "platte": {
+                "id": "platte", "type": "box",
+                "params": {"x": 140, "y": 40, "z": 20},  # 3D box, z is set
+                "orientation": "standard",
+                "parent": "wuerfel", "operation": "add",
+                "position": {
+                    "side": "vorne",
+                    "alignment": "flush_right",
+                    "edge_distances": None,
+                    "angle_deg": 0.0, "notes": "",
+                },
+            },
+        },
+    }
+    res = resolve_blueprint(bp)
+    p = res["features"]["platte"]["placement"]
+    # On <Y: child_w=cx=140, child_h=cz=20. flush_right → ox = +(200-140)/2 = 30.
+    assert p["offset_x"] == 30.0

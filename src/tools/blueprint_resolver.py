@@ -443,12 +443,29 @@ def _get_face_dimensions(parent_params: dict, face: str) -> tuple[float, float]:
 def _get_child_face_size(child_params: dict, face: str) -> tuple[float, float]:
     """Get the (width, height) of a child part on the given face.
 
-    Used for flush alignment calculations. Same logic as parent face dims
-    but using the child's resolved (post-orientation) params.
+    Two kinds of children to distinguish:
+
+    1. **Subtractive face-local features** (pocket, slot, ...) — `params`
+       carry `{x, y, depth}` where `x` / `y` are already the face-local
+       horizontal / vertical extents and `depth` is perpendicular into the
+       face. Side-face axis-remapping must NOT be applied here, otherwise
+       the side-face would read child_h from a non-existent `z` field
+       (returns 0) and pocket_edge_distances would silently fall back to
+       edge-to-CENTER on the vertical axis (Run e3ddd2d0: tasche_vorne_5
+       landed at oy=90 instead of 75 — 15mm too high).
+       Detection: presence of `depth` and absence of `z`.
+
+    2. **3D additive parts** (boxes) — `params` carry `{x, y, z}` which
+       are world-aligned. Side faces remap (cy, cz) etc. — same logic
+       as `_get_face_dimensions`.
     """
     cx = float(child_params.get("x") or child_params.get("diameter") or 0)
     cy = float(child_params.get("y") or child_params.get("diameter") or 0)
     cz = float(child_params.get("z") or child_params.get("height") or 0)
+
+    is_face_local = ("depth" in child_params) and ("z" not in child_params)
+    if is_face_local:
+        return (cx, cy)
 
     if face in (">Z", "<Z"):
         return (cx, cy)

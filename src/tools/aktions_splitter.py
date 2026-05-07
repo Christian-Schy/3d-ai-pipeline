@@ -43,6 +43,33 @@ _NESTED_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Part-declaration markers: dimension + part-keyword in any order. Used to
+# distinguish "200mm wuerfel oben eine Bohrung ..." (strippable prefix) from
+# "auf der rechten seite eine Bohrung ..." (already a feature phrase — must
+# not be stripped, even though it ends with bare 'rechts' deep inside).
+_PART_KEYWORDS = (
+    r"wuerfel", r"würfel", r"wurfel",
+    r"platte", r"zylinder", r"quader", r"kugel",
+    r"box", r"teil", r"stueck", r"stück", r"stuck",
+)
+_PART_DECL_RE = re.compile(
+    r"\b(?:" + "|".join(_PART_KEYWORDS) + r")\b",
+    re.IGNORECASE,
+)
+
+# Feature keywords — if a comma-segment lacks a bare side-keyword but mentions
+# one of these, it is still a real feature phrase (the classifier can derive
+# the side from descriptors like "auf der rechten seite"). Without this guard,
+# segments like "auf der rechten seite eine bohrung von der linken kante 20mm
+# entfernt von der oberen 30mm entfernt mit 20mm durchmesser 10 tief" would be
+# silently dropped because none of oben/unten/rechts/links/vorne/hinten appear
+# as a *bare* token.
+_FEATURE_RE = re.compile(
+    r"\b(?:tasche|bohrung|nut|fase|rundung|loch|"
+    r"ausnehmung|aush[oö]hlung|ausfr[äa]sung|aussparung)\b",
+    re.IGNORECASE,
+)
+
 
 def split_spec_into_aktionen(
     specification: str,
@@ -110,14 +137,28 @@ def _comma_split(spec: str) -> List[str]:
 
 
 def _strip_part_declaration(segment: str) -> str:
-    """Strip a leading part-declaration (e.g. '200mm wuerfel') by cutting
-    everything before the first bare side keyword. If no side keyword is
-    present, the segment is treated as a pure part declaration and dropped
-    by returning ''."""
+    """Strip a leading part-declaration (e.g. '200mm wuerfel') from the
+    front of a comma-segment.
+
+    Three cases:
+    1. Bare side-keyword present AND a part-keyword sits before it
+       ("200mm wuerfel oben ..." / "wuerfel oben ..."): strip the prefix,
+       keep from the side-keyword onward.
+    2. Bare side-keyword present but no part-keyword in the prefix
+       ("auf der rechten seite eine nut ... nach rechts versetzt"): the
+       side-keyword is just an internal direction marker. Keep the whole
+       segment — stripping would discard the actual feature description.
+    3. No bare side-keyword: keep the segment if it mentions a feature
+       (the classifier infers the side from "rechten seite" etc.); drop
+       it if it is a pure part declaration ("200mm wuerfel").
+    """
     m = _SIDE_RE.search(segment)
     if m is None:
-        return ""
-    return segment[m.start():].strip()
+        return segment.strip() if _FEATURE_RE.search(segment) else ""
+    prefix = segment[:m.start()]
+    if _PART_DECL_RE.search(prefix):
+        return segment[m.start():].strip()
+    return segment.strip()
 
 
 def _split_at_nested_markers(segment: str) -> tuple[str, List[str]]:

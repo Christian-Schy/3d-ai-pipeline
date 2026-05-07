@@ -321,6 +321,14 @@ def feature_definierer_node(state: PipelineState) -> dict:
                       error=str(e)[:200])
             continue
 
+        # define_feature returns None for sentinel typs (unbekannt /
+        # ignorieren) so placement-only phrases like "vorne soll eine platte
+        # hin mit 140x20x40" cannot fall through as phantom holes.
+        if feat is None:
+            log.info("feature_definierer_skip_sentinel",
+                     teil=teil_id, phrase=klass.get("beschreibung", "")[:80])
+            continue
+
         features.append(feat)
         raw = getattr(normalizer, "_last_raw_response", None)
         if raw:
