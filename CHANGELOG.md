@@ -10,6 +10,50 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-07
 
+- **Bug A + Bug C + Bug D aus Real-Run-Analyse 8a170a03 / dc21d2ab**
+  in einem Folge-Commit. Drei verkettete Probleme, die in den drei neuen
+  Real-Runs zutage kamen (Quell-Runs: `8a170a03`, `8ee557ef`,
+  `dc21d2ab`).
+
+  - **Bug C: Bug-7-Regression im Anchor-Prompt zurueckgenommen**
+    ([data/prompts/prompt_position_anchor.py]). Die "Ecke + Kante
+    zusammen genannt → ENDPUNKT der Kante"-Regel hat das LLM verleitet,
+    `right_edge_bottom` (Endpunkt) zu waehlen, obwohl der User
+    `right_edge` (Mitte) meinte. dc21d2ab zeigte die Plate bei
+    `offset_y=-104.5` statt `~ -4.5` (da35a6ce). Korrektur: die
+    aggressive Regel + die zwei Endpunkt-Few-Shots durch eine neutrale
+    Regel "Kind-Ecke auf Parent-Kante → Mitte der Parent-Kante"
+    ersetzt. LUT-Erweiterung aus Bug 7 bleibt — Endpunkt-Vokabular
+    nutzt das LLM nur noch wenn der User explizit "Ende der Kante"
+    sagt. Few-Shot fuer den expliziten Fall ergaenzt.
+  - **Bug A: Splitter laesst Part-Decl-Phrasen nicht mehr durch**
+    ([src/tools/aktions_splitter.py]). Phrasen ohne Feature-Keyword
+    (tasche/bohrung/nut/fase/rundung/loch/...) werden jetzt im
+    `_strip_part_declaration` gedroppt — dropout-Rule wurde von
+    "wenn _SIDE_RE nichts findet" auf "wenn _FEATURE_RE nichts findet"
+    verallgemeinert. Heilt die Phantom-Pockets aus 8a170a03 / dc21d2ab,
+    wo der `aktions_klassifizierer` "vorne soll eine platte hin mit
+    140x20x40" und "die 140x20 seite liegt auf davon die rechte untere
+    ecke ..." als `typ=tasche` mit den Plattenmassen klassifiziert
+    hat — ergab `tasche_vorne_0` und `tasche_unten_1` als phantom
+    Subtraktionen auf der Platte. Tests bleiben gruen.
+  - **Bug D: Splitter defaultet auf Basis-Teil statt last_teil**
+    ([src/tools/aktions_splitter.py]). `_assign_teil_id` Fallback
+    `return last_teil` ersetzt durch `return teil_ids[0]`. Heilt
+    dc21d2ab ("auf der rechten seite eine bohrung ..." nach
+    Platte-Decl landete auf Platte) und 8a170a03 (gleiche Phrasen
+    vor Platte-Decl landeten auf Wuerfel — auch korrekt). User-Regel:
+    Aktionen ohne expliziten "auf der platte X" oder gleichwertigen
+    Ueberordner gehen aufs Basis-Teil. Tests: 2 neue Cases
+    (`test_phrases_after_other_part_default_to_base`,
+    `test_explicit_other_part_mention_overrides_base_default`),
+    `test_unknown_teil_segment_falls_back_to_last_seen` umbenannt.
+
+  Suite 240/240 gruen. **Bug B (text_splitter halluziniert "auf der
+  platte" statt "auf der rechten seite")** bleibt offen — wenn Bug A+D
+  wirken, wird text_splitter's Output nicht mehr fuer teil_id
+  verwendet, daher zurueckgestellt.
+
 - **Bug 7 (ADR 0004): Anchor-Edge-Endpunkte im Vokabular**
   ([src/tools/blueprint_resolver.py], [src/tools/position_builder.py],
   [data/prompts/prompt_position_anchor.py]). Run da35a6ce/e1def0fa-Phrase

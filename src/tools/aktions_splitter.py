@@ -137,24 +137,33 @@ def _comma_split(spec: str) -> List[str]:
 
 
 def _strip_part_declaration(segment: str) -> str:
-    """Strip a leading part-declaration (e.g. '200mm wuerfel') from the
-    front of a comma-segment.
+    """Strip a leading part-declaration; drop segments that aren't actions.
 
-    Three cases:
-    1. Bare side-keyword present AND a part-keyword sits before it
-       ("200mm wuerfel oben ..." / "wuerfel oben ..."): strip the prefix,
-       keep from the side-keyword onward.
+    A segment is an ACTION only if it mentions a feature keyword
+    (tasche/bohrung/nut/fase/rundung/loch/...). Everything else is dropped
+    before the classifier sees it:
+      - Pure part declarations: '200mm wuerfel', 'platte 140x20x40'
+      - Side-led part declarations: 'vorne soll eine platte hin mit 140x20x40'
+      - Orientation/placement descriptions: 'die 140x20 seite liegt auf
+        davon die rechte untere ecke auf der rechten kante 10mm nach oben'
+    These would otherwise be misclassified as taschen by the LLM
+    (Bug A from runs 8a170a03 / dc21d2ab).
+
+    Remaining cases — segment HAS a feature keyword:
+    1. Bare side-keyword AND a part-keyword sits before it
+       ('200mm wuerfel oben eine bohrung'): strip the prefix.
     2. Bare side-keyword present but no part-keyword in the prefix
-       ("auf der rechten seite eine nut ... nach rechts versetzt"): the
-       side-keyword is just an internal direction marker. Keep the whole
-       segment — stripping would discard the actual feature description.
-    3. No bare side-keyword: keep the segment if it mentions a feature
-       (the classifier infers the side from "rechten seite" etc.); drop
-       it if it is a pure part declaration ("200mm wuerfel").
+       ('auf der rechten seite eine nut ... nach rechts versetzt'):
+       the side-keyword is just an internal direction marker.
+       Keep the whole segment.
+    3. No bare side-keyword ('auf der rechten seite eine bohrung ...'):
+       keep the whole segment — classifier infers side from descriptors.
     """
+    if not _FEATURE_RE.search(segment):
+        return ""
     m = _SIDE_RE.search(segment)
     if m is None:
-        return segment.strip() if _FEATURE_RE.search(segment) else ""
+        return segment.strip()
     prefix = segment[:m.start()]
     if _PART_DECL_RE.search(prefix):
         return segment[m.start():].strip()
@@ -185,8 +194,16 @@ def _assign_teil_id(
     last_teil: str,
 ) -> str:
     """Pick the teil this segment talks about. Single-part: trivial.
-    Multi-part: substring match on teil-id; otherwise carry the last seen
-    teil forward (positional context).
+    Multi-part: substring match on teil-id; otherwise default to the
+    BASE teil (teil_ids[0]) — actions belong to the base unless the user
+    explicitly names another part.
+
+    Bug D from runs 8a170a03 / dc21d2ab: 'auf der rechten seite eine
+    bohrung ...' phrases used to inherit last_teil (which could be a
+    later-declared platte). Per user rule, ambiguous side-led phrases
+    belong to the base teil. last_teil is kept in the signature for
+    backward compatibility but no longer consulted here — nested-marker
+    children inherit teil_id from their parent at the caller level.
     """
     if len(teil_ids) == 1:
         return teil_ids[0]
@@ -194,7 +211,7 @@ def _assign_teil_id(
     for tid in teil_ids:
         if tid.lower() in seg_lower:
             return tid
-    return last_teil
+    return teil_ids[0]
 
 
 def _last_parent_idx(aktionen: List[Dict], teil_id: str) -> Optional[int]:

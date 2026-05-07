@@ -33,11 +33,15 @@ VOKABULAR (dieselben Keywords fuer beide Punkte, immer aus Betrachterperspektive
   bottom_edge               — Mitte der unteren Kante
   left_edge                 — Mitte der linken Kante (links im Blick)
   right_edge                — Mitte der rechten Kante (rechts im Blick)
-  ★ ENDPUNKTE der Kanten (wenn User Ecke UND Kante zusammen nennt):
+  ★ ENDPUNKTE der Kanten — NUR wenn User explizit das ENDE der Kante nennt
+    (z.B. "am unteren Ende der rechten Kante", "oben an der linken Kante"):
   right_edge_top, right_edge_bottom    — oberes/unteres Ende der rechten Kante
   left_edge_top,  left_edge_bottom     — oberes/unteres Ende der linken Kante
   top_edge_left,  top_edge_right       — linkes/rechtes Ende der oberen Kante
   bottom_edge_left, bottom_edge_right  — linkes/rechtes Ende der unteren Kante
+  HINWEIS: "rechte UNTERE Ecke (am Kind) auf der rechten Kante (am Parent)"
+  meint NICHT den Endpunkt — das ist die Ecke am Kind UND die MITTE der
+  Kante am Parent. Endpunkt nur wenn User wirklich "Ende der Kante" sagt.
 
 STANDARD-REGELN:
   ★ Nichts genannt → kind_punkt: center, eltern_punkt: center
@@ -54,13 +58,12 @@ STANDARD-REGELN:
     (Ende der Kante von unten qualifiziert → untere Ecke + Abstand nach oben)
   ★ Generell: "von oben X mm" → oben-Ecke + abstand unten=X
               "von unten X mm" → unten-Ecke + abstand oben=X
-  ★ ECKE + KANTE zusammen genannt → ENDPUNKT der Kante:
-      "rechte untere ecke ... auf der rechten kante" → right_edge_bottom
-      "linke obere ecke ... auf der linken kante"    → left_edge_top
-      "obere ecke ... auf der oberen kante" + Seite  → top_edge_left/right
-    (Der User benennt eine Ecke des Kindes UND eine Kante des Parents
-     zusammen → er meint den passenden Endpunkt der Kante. Endpunkt
-     statt Mittelpunkt verwenden.)
+  ★ KIND-Ecke auf PARENT-Kante (z.B. "rechte untere Ecke der Platte
+    auf der rechten Kante des Wuerfels"):
+      kind_punkt = die genannte Ecke am Kind (z.B. bottom_right)
+      eltern_punkt = die MITTE der Kante am Parent (z.B. right_edge)
+    Der User meint: Kind-Ecke trifft Mitte der Parent-Kante. Endpunkt
+    nur waehlen wenn er explizit "am unteren/oberen Ende" sagt.
 
 ELTERN_ABSTAND (nur ausfuellen wenn User "X mm von [Ende der Kante]" sagt):
   Format: richtung=mm
@@ -155,20 +158,27 @@ Output:
 kind_punkt: center
 eltern_punkt: center
 
-Spec: "die rechte untere ecke auf der rechten kante 10mm nach oben"
+Spec: "die rechte untere ecke der platte auf der rechten kante des wuerfels, 10mm nach oben versetzt"
 Kind: platte_vorne, Parent: wuerfel
-→ ECKE (rechte untere) + KANTE (rechte) zusammen genannt → Endpunkt right_edge_bottom
-→ "10mm nach oben" ist ein Versatz, nicht eltern_abstand → wird vom Offset-Step gehandhabt
+→ Kind-Ecke (rechte untere) auf Parent-Kante (rechte) → Mitte der Kante
+→ "10mm nach oben" ist ein Versatz → wird vom Offset-Step gehandhabt
 Output:
 kind_punkt: bottom_right
-eltern_punkt: right_edge_bottom
+eltern_punkt: right_edge
 
 Spec: "linke obere Ecke der Platte auf der oberen Kante des Wuerfels"
 Kind: platte, Parent: wuerfel
-→ Ecke (linke obere) + Kante (obere) zusammen → Endpunkt top_edge_left
+→ Kind-Ecke (linke obere) auf Parent-Kante (obere) → Mitte der oberen Kante
 Output:
 kind_punkt: top_left
-eltern_punkt: top_edge_left"""
+eltern_punkt: top_edge
+
+Spec: "linke obere Ecke am oberen Ende der rechten Kante"
+Kind: platte, Parent: wuerfel
+→ "am oberen Ende der rechten Kante" qualifiziert den ENDPUNKT explizit
+Output:
+kind_punkt: top_left
+eltern_punkt: right_edge_top"""
 
 POSITION_ANCHOR_TEMPLATE = """POSITIONSBESCHREIBUNG:
 {specification}

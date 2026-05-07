@@ -210,10 +210,12 @@ def test_phrase_idx_runs_per_teil_in_multipart():
     assert by_teil["platte"] == [0]
 
 
-def test_unknown_teil_segment_falls_back_to_last_seen():
+def test_unknown_teil_segment_defaults_to_base():
+    """Bug D: Phrasen ohne expliziten Teil-Match landen auf dem Basis-Teil
+    (teil_ids[0]), nicht auf last_teil."""
     out = split_spec_into_aktionen(
         "wuerfel oben eine Bohrung 10mm, "
-        "oben eine Tasche 20x20x5",  # no teil-name → carry "wuerfel"
+        "oben eine Tasche 20x20x5",
         [
             {"id": "wuerfel", "type": "box", "raw_params": {"x": 50, "y": 50, "z": 50}},
             {"id": "platte", "type": "box", "raw_params": {"x": 40, "y": 40, "z": 20}},
@@ -221,6 +223,46 @@ def test_unknown_teil_segment_falls_back_to_last_seen():
     )
     assert len(out) == 2
     assert all(a["teil_id"] == "wuerfel" for a in out)
+
+
+def test_phrases_after_other_part_default_to_base():
+    """Bug D regression case (run dc21d2ab): nach 'platte' deklaration kommen
+    'auf der rechten seite ...' Phrasen — die gehoeren auf den Basis-Teil
+    (wuerfel), nicht auf die Platte, weil die Platte nicht explizit
+    erwaehnt wird."""
+    spec = (
+        "wuerfel 200mm, oben eine tasche 60x40x10, "
+        "vorne soll eine platte hin mit 140x20x40, "
+        "auf der rechten seite eine bohrung d20 10 tief, "
+        "auf der rechten seite eine nut 10x10"
+    )
+    teile = [
+        {"id": "wuerfel", "type": "box", "raw_params": {"x": 200, "y": 200, "z": 200}},
+        {"id": "platte", "type": "box", "raw_params": {"x": 140, "y": 20, "z": 40}},
+    ]
+    out = split_spec_into_aktionen(spec, teile)
+    # Platte-Decl-Phrase wird gedroppt (Bug A); die 3 Feature-Phrasen bleiben.
+    assert len(out) == 3
+    # Alle landen auf wuerfel (Basis), weil keine 'platte' explizit nennt.
+    assert all(a["teil_id"] == "wuerfel" for a in out), \
+        f"expected all wuerfel, got {[a['teil_id'] for a in out]}"
+
+
+def test_explicit_other_part_mention_overrides_base_default():
+    """Bug D: 'auf der platte X' soll explizit auf der Platte landen."""
+    spec = (
+        "wuerfel 200mm, "
+        "vorne soll eine platte hin mit 100x100x10, "
+        "auf der platte eine bohrung d10"
+    )
+    teile = [
+        {"id": "wuerfel", "type": "box", "raw_params": {"x": 200, "y": 200, "z": 200}},
+        {"id": "platte", "type": "box", "raw_params": {"x": 100, "y": 100, "z": 10}},
+    ]
+    out = split_spec_into_aktionen(spec, teile)
+    assert len(out) == 1
+    assert out[0]["teil_id"] == "platte"
+    assert "bohrung" in out[0]["phrase"].lower()
 
 
 # ─── Reference-Runs aus ADR 0003 ──────────────────────────────────────
