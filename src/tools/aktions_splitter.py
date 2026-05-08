@@ -70,6 +70,44 @@ _FEATURE_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Safety-net for missing punctuation between actions (Run-944d-Pattern).
+# Voice-style input glues sentences without commas: "...20mm tiefe links
+# soll eine nut...". Punctuation-Agent should catch this — but if it
+# doesn't, the splitter falls back to inserting a comma when a typical
+# action-end word is immediately followed by "<side> soll".
+# Conservative: only triggers on the closed list of action-end words to
+# avoid false positives in nested markers ("in der tasche oben ...") or
+# part declarations ("100mm wuerfel oben ...").
+_PARAM_END_WORDS = (
+    "tiefe", "tief",
+    "breite", "breit",
+    "h[oö]he", "hoch",
+    "durchmesser", "radius",
+    "l[aä]nge", "lang",
+    "kantenl[aä]nge",
+    "hin",
+    "versetzt", "rotiert", "gedreht",
+)
+_MISSING_COMMA_RE = re.compile(
+    r"(\b(?:" + "|".join(_PARAM_END_WORDS) + r")\b)\s+"
+    r"(\b(?:" + "|".join(_SIDE_KEYWORDS) + r")\s+soll\b)",
+    re.IGNORECASE,
+)
+
+
+def _insert_missing_commas(spec: str) -> str:
+    """Insert a comma before '<side> soll' when the preceding word is a
+    typical action-end token. Defensive against voice-style input where
+    the user runs sentences together without punctuation.
+
+    Example: '...20mm tiefe links soll eine nut...'
+          → '...20mm tiefe, links soll eine nut...'
+
+    See `tests/golden/components/SPLIT_run_944d_missing_comma_side_soll/`
+    for the regression case.
+    """
+    return _MISSING_COMMA_RE.sub(r"\1, \2", spec)
+
 
 def split_spec_into_aktionen(
     specification: str,
@@ -86,6 +124,8 @@ def split_spec_into_aktionen(
     """
     if not specification or not teile:
         return []
+
+    specification = _insert_missing_commas(specification)
 
     teil_ids = [t["id"] for t in teile]
     counters: Dict[str, int] = {tid: 0 for tid in teil_ids}

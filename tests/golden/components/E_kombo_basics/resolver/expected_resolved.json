@@ -1,0 +1,153 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 100, "y": 100, "z": 100},
+      "parent": null
+    },
+    "e01_vorne_centered": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 20, "z": 40},
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "e02_vorne_corner_top_right": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 20, "z": 40},
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 30.0,
+        "angle_deg": 0.0
+      }
+    },
+    "e03_vorne_corner_with_left_offset": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 20, "z": 40},
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 30.0,
+        "angle_deg": 0.0
+      }
+    },
+    "e04_vorne_edge_bottom_anchor": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 20, "z": 40},
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": -30.0,
+        "angle_deg": 0.0
+      }
+    },
+    "e05_vorne_corner_with_rotation_ccw": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 20, "z": 40},
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 19.2527,
+        "offset_y": 17.5253,
+        "angle_deg": 20.0
+      }
+    },
+    "e06_vorne_corner_bottom_left": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 20, "z": 40},
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": -10.0,
+        "offset_y": -30.0,
+        "angle_deg": 0.0
+      }
+    },
+    "e07_vorne_edge_top_with_down_offset": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 20, "z": 40},
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 25.0,
+        "angle_deg": 0.0
+      }
+    },
+    "e08_oben_plate_centered": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "e09_oben_plate_corner_to_corner": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 30.0,
+        "angle_deg": 0.0
+      }
+    },
+    "e10_rechts_plate_centered": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 20, "y": 80, "z": 40},
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "e11_vorne_centered_cw_rotation": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 20, "z": 40},
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": -20.0
+      }
+    },
+    "e12_vorne_corner_to_edge_with_up_offset": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 80, "y": 20, "z": 40},
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": -40.0,
+        "offset_y": -20.0,
+        "angle_deg": 0.0
+      }
+    }
+  }
+}

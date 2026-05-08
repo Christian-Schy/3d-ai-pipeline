@@ -1,0 +1,177 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 100, "y": 100, "z": 100},
+      "parent": null
+    },
+    "t01_versatz_rechts": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t02_kanten_top_left": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -20.0,
+        "offset_y": 30.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t03_rotated_ccw_centered": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 20.0
+      }
+    },
+    "t04_pocket_edge_right_bottom": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": -30.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t05_pocket_edge_top_left": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -15.0,
+        "offset_y": 25.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t06_mix_edge_and_center": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 20.0,
+        "offset_y": -5.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t07_mix_pocket_edge_and_center": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 10.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t08_anchor_corner_with_offset": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 30.0,
+        "offset_y": 40.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t09_anchor_corner_to_corner": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 35.0,
+        "offset_y": 40.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t10_anchor_corner_to_edge_with_offset": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 35.0,
+        "offset_y": -15.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t11_face_rechts_centered": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 40, "y": 30, "depth": 8},
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "t12_rotated_cw_with_offset": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 50, "y": 30, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 0.0,
+        "angle_deg": -25.0
+      }
+    },
+    "t13_rotated_ccw_with_edges": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 50, "y": 30, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 25.0,
+        "offset_y": 20.0,
+        "angle_deg": 15.0
+      }
+    },
+    "t14_rotated_anchor_corner_to_corner": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 42.0096,
+        "offset_y": 33.8397,
+        "angle_deg": 30.0
+      }
+    }
+  }
+}

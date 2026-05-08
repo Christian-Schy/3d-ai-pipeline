@@ -1,0 +1,88 @@
+{
+  "description": "B_kombo_asymmetric_multiface — Asymmetrischer 200x100x80 Wuerfel, Bohrungen auf >Z + >X",
+  "build_order": [
+    "wuerfel",
+    "asym_z_top_right_kanten",
+    "asym_z_unten_links_kanten",
+    "asym_z_versatz_oben_rechts",
+    "asym_x_top_right_kanten",
+    "asym_x_versatz_unten_links",
+    "asym_x_mix_axes"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 200, "y": 100, "z": 80},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "asym_z_top_right_kanten": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 10, "right": 10}
+      },
+      "operation": "subtract"
+    },
+    "asym_z_unten_links_kanten": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"bottom": 10, "left": 10}
+      },
+      "operation": "subtract"
+    },
+    "asym_z_versatz_oben_rechts": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"top": 20, "right": 30}
+      },
+      "operation": "subtract"
+    },
+    "asym_x_top_right_kanten": {
+      "type": "hole_single",
+      "params": {"diameter": 12, "depth": 8},
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered",
+        "edge_distances": {"top": 10, "right": 10}
+      },
+      "operation": "subtract"
+    },
+    "asym_x_versatz_unten_links": {
+      "type": "hole_single",
+      "params": {"diameter": 12, "depth": 8},
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered",
+        "center_offset": {"bottom": 15, "left": 20}
+      },
+      "operation": "subtract"
+    },
+    "asym_x_mix_axes": {
+      "type": "hole_single",
+      "params": {"diameter": 12, "depth": 8},
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered",
+        "edge_distances": {"top": 5},
+        "center_offset": {"left": 20}
+      },
+      "operation": "subtract"
+    }
+  }
+}

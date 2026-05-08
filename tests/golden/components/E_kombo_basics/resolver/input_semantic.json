@@ -1,0 +1,196 @@
+{
+  "description": "E_kombo_basics — 12 Extrusion-Platten-Variationen",
+  "build_order": [
+    "wuerfel",
+    "e01_vorne_centered",
+    "e02_vorne_corner_top_right",
+    "e03_vorne_corner_with_left_offset",
+    "e04_vorne_edge_bottom_anchor",
+    "e05_vorne_corner_with_rotation_ccw",
+    "e06_vorne_corner_bottom_left",
+    "e07_vorne_edge_top_with_down_offset",
+    "e08_oben_plate_centered",
+    "e09_oben_plate_corner_to_corner",
+    "e10_rechts_plate_centered",
+    "e11_vorne_centered_cw_rotation",
+    "e12_vorne_corner_to_edge_with_up_offset"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 100, "y": 100, "z": 100},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "e01_vorne_centered": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered"
+      },
+      "operation": "add"
+    },
+    "e02_vorne_corner_top_right": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right"
+        }
+      },
+      "operation": "add"
+    },
+    "e03_vorne_corner_with_left_offset": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right",
+          "offset": {"left": 10}
+        }
+      },
+      "operation": "add"
+    },
+    "e04_vorne_edge_bottom_anchor": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "bottom_edge",
+          "parent_point": "bottom_edge"
+        }
+      },
+      "operation": "add"
+    },
+    "e05_vorne_corner_with_rotation_ccw": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right"
+        },
+        "angle_deg": 20
+      },
+      "operation": "add"
+    },
+    "e06_vorne_corner_bottom_left": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "bottom_left",
+          "parent_point": "bottom_left"
+        }
+      },
+      "operation": "add"
+    },
+    "e07_vorne_edge_top_with_down_offset": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_edge",
+          "parent_point": "top_edge",
+          "offset": {"down": 5}
+        }
+      },
+      "operation": "add"
+    },
+    "e08_oben_plate_centered": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "add"
+    },
+    "e09_oben_plate_corner_to_corner": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right"
+        }
+      },
+      "operation": "add"
+    },
+    "e10_rechts_plate_centered": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered"
+      },
+      "operation": "add"
+    },
+    "e11_vorne_centered_cw_rotation": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "angle_deg": -20
+      },
+      "operation": "add"
+    },
+    "e12_vorne_corner_to_edge_with_up_offset": {
+      "type": "box",
+      "params": {"x": 80, "y": 40, "z": 20},
+      "orientation": "80x40_liegt_auf",
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "bottom_right",
+          "parent_point": "bottom_edge",
+          "offset": {"up": 10}
+        }
+      },
+      "operation": "add"
+    }
+  }
+}

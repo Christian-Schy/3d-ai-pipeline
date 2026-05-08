@@ -1,0 +1,86 @@
+{
+  "description": "B_kombo_additive_anchor — Bug-4-additiv + Anchor-Corner-Offset",
+  "build_order": [
+    "wuerfel",
+    "add_right_edge_plus_versatz",
+    "add_left_edge_plus_versatz",
+    "add_top_edge_plus_versatz_y",
+    "anchor_top_right_corner_offset",
+    "anchor_bottom_left_corner_offset"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 200, "y": 200, "z": 200},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "add_right_edge_plus_versatz": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"right": 20},
+        "center_offset": {"right": 10}
+      },
+      "operation": "subtract"
+    },
+    "add_left_edge_plus_versatz": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"left": 30},
+        "center_offset": {"right": 5}
+      },
+      "operation": "subtract"
+    },
+    "add_top_edge_plus_versatz_y": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 25},
+        "center_offset": {"bottom": 5}
+      },
+      "operation": "subtract"
+    },
+    "anchor_top_right_corner_offset": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "center",
+          "parent_point": "top_right",
+          "offset": {"down": 20, "left": 30}
+        }
+      },
+      "operation": "subtract"
+    },
+    "anchor_bottom_left_corner_offset": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "center",
+          "parent_point": "bottom_left",
+          "offset": {"up": 25, "right": 15}
+        }
+      },
+      "operation": "subtract"
+    }
+  }
+}

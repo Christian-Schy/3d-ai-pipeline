@@ -1,0 +1,69 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 200, "y": 200, "z": 200},
+      "parent": null
+    },
+    "add_right_edge_plus_versatz": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 90.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "add_left_edge_plus_versatz": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -65.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "add_top_edge_plus_versatz_y": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 70.0,
+        "angle_deg": 0.0
+      }
+    },
+    "anchor_top_right_corner_offset": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 70.0,
+        "offset_y": 80.0,
+        "angle_deg": 0.0
+      }
+    },
+    "anchor_bottom_left_corner_offset": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -85.0,
+        "offset_y": -75.0,
+        "angle_deg": 0.0
+      }
+    }
+  }
+}

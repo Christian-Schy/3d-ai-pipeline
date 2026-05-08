@@ -1,0 +1,58 @@
+{
+  "phrases": [
+    {
+      "phrase": "oben soll von der hinteren kante entfernt um 20mm und von der rechten kante 10mm entfernt eine 20mm bohrung hin mit 10mm tiefe",
+      "teil_id": "wuerfel",
+      "phrase_idx": 0,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "rechts vom würfel soll eine nut entlang der y-achse mit 5x5 hin",
+      "teil_id": "wuerfel",
+      "phrase_idx": 1,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "rechts soll 10mm über der mitte eine 10mm bohrung hin mit 20mm tiefe",
+      "teil_id": "wuerfel",
+      "phrase_idx": 2,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "links soll eine nut 10x10 entlang der z-achse hin",
+      "teil_id": "wuerfel",
+      "phrase_idx": 3,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "vorne soll oben rechts jweils von den kanten 10mm entfernt eine 20mm bohrung mit 20mm tiefe hin",
+      "teil_id": "wuerfel",
+      "phrase_idx": 4,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben soll von der vorderen kante 20mm und von der linken 10mm entfernt eine 20mm bohrung hin mit 20mm tiefe",
+      "teil_id": "wuerfel",
+      "phrase_idx": 5,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "unten soll von der unteren kante 10mm entfernt und vond er rechten kante 20mm entfernt eine 10mm bohrung mit 10mm tiefe hin",
+      "teil_id": "wuerfel",
+      "phrase_idx": 6,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "unten soll entlang der y-achse eine 5x5 nut hin von der mitte 10mm nach rechts versetzt",
+      "teil_id": "wuerfel",
+      "phrase_idx": 7,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "unten soll eine nut entlang der x-ache hin",
+      "teil_id": "wuerfel",
+      "phrase_idx": 8,
+      "parent_phrase_idx": null
+    }
+  ]
+}

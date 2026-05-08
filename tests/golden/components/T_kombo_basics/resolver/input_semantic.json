@@ -1,0 +1,201 @@
+{
+  "description": "T_kombo_basics — 14 Tasche-Variationen auf 100mm Wuerfel",
+  "build_order": [
+    "wuerfel",
+    "t01_versatz_rechts",
+    "t02_kanten_top_left",
+    "t03_rotated_ccw_centered",
+    "t04_pocket_edge_right_bottom",
+    "t05_pocket_edge_top_left",
+    "t06_mix_edge_and_center",
+    "t07_mix_pocket_edge_and_center",
+    "t08_anchor_corner_with_offset",
+    "t09_anchor_corner_to_corner",
+    "t10_anchor_corner_to_edge_with_offset",
+    "t11_face_rechts_centered",
+    "t12_rotated_cw_with_offset",
+    "t13_rotated_ccw_with_edges",
+    "t14_rotated_anchor_corner_to_corner"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 100, "y": 100, "z": 100},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "t01_versatz_rechts": {
+      "type": "pocket_rect",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"right": 10}
+      },
+      "operation": "subtract"
+    },
+    "t02_kanten_top_left": {
+      "type": "pocket_rect",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 20, "left": 30}
+      },
+      "operation": "subtract"
+    },
+    "t03_rotated_ccw_centered": {
+      "type": "pocket_rect",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "angle_deg": 20
+      },
+      "operation": "subtract"
+    },
+    "t04_pocket_edge_right_bottom": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "pocket_edge_distances": {"right": 25, "bottom": 10}
+      },
+      "operation": "subtract"
+    },
+    "t05_pocket_edge_top_left": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "pocket_edge_distances": {"top": 15, "left": 20}
+      },
+      "operation": "subtract"
+    },
+    "t06_mix_edge_and_center": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"right": 30},
+        "center_offset": {"bottom": 5}
+      },
+      "operation": "subtract"
+    },
+    "t07_mix_pocket_edge_and_center": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "pocket_edge_distances": {"right": 25},
+        "center_offset": {"top": 10}
+      },
+      "operation": "subtract"
+    },
+    "t08_anchor_corner_with_offset": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "center",
+          "parent_point": "top_right",
+          "offset": {"down": 10, "left": 20}
+        }
+      },
+      "operation": "subtract"
+    },
+    "t09_anchor_corner_to_corner": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right"
+        }
+      },
+      "operation": "subtract"
+    },
+    "t10_anchor_corner_to_edge_with_offset": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "right_edge",
+          "offset": {"down": 5}
+        }
+      },
+      "operation": "subtract"
+    },
+    "t11_face_rechts_centered": {
+      "type": "pocket_rect",
+      "params": {"x": 40, "y": 30, "depth": 8},
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "t12_rotated_cw_with_offset": {
+      "type": "pocket_rect",
+      "params": {"x": 50, "y": 30, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"right": 10},
+        "angle_deg": -25
+      },
+      "operation": "subtract"
+    },
+    "t13_rotated_ccw_with_edges": {
+      "type": "pocket_rect",
+      "params": {"x": 50, "y": 30, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 30, "right": 25},
+        "angle_deg": 15
+      },
+      "operation": "subtract"
+    },
+    "t14_rotated_anchor_corner_to_corner": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right"
+        },
+        "angle_deg": 30
+      },
+      "operation": "subtract"
+    }
+  }
+}

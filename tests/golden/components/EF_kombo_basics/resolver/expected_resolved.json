@@ -1,0 +1,141 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 100, "y": 100, "z": 100},
+      "parent": null
+    },
+    "plate": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {"x": 60, "y": 40, "z": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ef01_bohrung_default_centered": {
+      "type": "hole_single",
+      "parent": "plate",
+      "params": {"diameter": 5, "depth": 5},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ef02_bohrung_kanten_top10_left8": {
+      "type": "hole_single",
+      "parent": "plate",
+      "params": {"diameter": 5, "depth": 5},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -22.0,
+        "offset_y": 10.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ef03_bohrung_other_face_unten": {
+      "type": "hole_single",
+      "parent": "plate",
+      "params": {"diameter": 5, "depth": 5},
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ef04_bohrung_anchor_corner_offset": {
+      "type": "hole_single",
+      "parent": "plate",
+      "params": {"diameter": 5, "depth": 5},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 22.0,
+        "offset_y": 15.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ef05_bohrung_versatz_aus_mitte": {
+      "type": "hole_single",
+      "parent": "plate",
+      "params": {"diameter": 6, "depth": 4},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 5.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ef06_bohrung_anchor_corner_to_corner": {
+      "type": "hole_single",
+      "parent": "plate",
+      "params": {"diameter": 5, "depth": 5},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 27.5,
+        "offset_y": 17.5,
+        "angle_deg": 0.0
+      }
+    },
+    "ef07_bohrung_anchor_edge_to_edge": {
+      "type": "hole_single",
+      "parent": "plate",
+      "params": {"diameter": 5, "depth": 5},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 27.5,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ef08_tasche_pocket_edge_on_plate": {
+      "type": "pocket_rect",
+      "parent": "plate",
+      "params": {"x": 30, "y": 20, "depth": 5},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": -7.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ef09_tasche_rotated_on_plate": {
+      "type": "pocket_rect",
+      "parent": "plate",
+      "params": {"x": 30, "y": 20, "depth": 5},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 30.0
+      }
+    },
+    "ef10_nut_on_plate": {
+      "type": "slot",
+      "parent": "plate",
+      "params": {"length": 30, "width": 5, "depth": 3},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 8.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    }
+  }
+}

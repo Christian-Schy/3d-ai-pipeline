@@ -1,0 +1,156 @@
+{
+  "description": "EF_kombo_basics — 10 Feature-Variationen auf Platte oben",
+  "build_order": [
+    "wuerfel",
+    "plate",
+    "ef01_bohrung_default_centered",
+    "ef02_bohrung_kanten_top10_left8",
+    "ef03_bohrung_other_face_unten",
+    "ef04_bohrung_anchor_corner_offset",
+    "ef05_bohrung_versatz_aus_mitte",
+    "ef06_bohrung_anchor_corner_to_corner",
+    "ef07_bohrung_anchor_edge_to_edge",
+    "ef08_tasche_pocket_edge_on_plate",
+    "ef09_tasche_rotated_on_plate",
+    "ef10_nut_on_plate"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 100, "y": 100, "z": 100},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "plate": {
+      "type": "box",
+      "params": {"x": 60, "y": 40, "z": 10},
+      "orientation": "standard",
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "add"
+    },
+    "ef01_bohrung_default_centered": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "plate",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "ef02_bohrung_kanten_top10_left8": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "plate",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 10, "left": 8}
+      },
+      "operation": "subtract"
+    },
+    "ef03_bohrung_other_face_unten": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "plate",
+      "position": {
+        "side": "unten",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "ef04_bohrung_anchor_corner_offset": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "plate",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "center",
+          "parent_point": "top_right",
+          "offset": {"down": 5, "left": 8}
+        }
+      },
+      "operation": "subtract"
+    },
+    "ef05_bohrung_versatz_aus_mitte": {
+      "type": "hole_single",
+      "params": {"diameter": 6, "depth": 4},
+      "parent": "plate",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"right": 10, "top": 5}
+      },
+      "operation": "subtract"
+    },
+    "ef06_bohrung_anchor_corner_to_corner": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "plate",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right"
+        }
+      },
+      "operation": "subtract"
+    },
+    "ef07_bohrung_anchor_edge_to_edge": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "plate",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "right_edge",
+          "parent_point": "right_edge"
+        }
+      },
+      "operation": "subtract"
+    },
+    "ef08_tasche_pocket_edge_on_plate": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 5},
+      "parent": "plate",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "pocket_edge_distances": {"right": 5, "bottom": 3}
+      },
+      "operation": "subtract"
+    },
+    "ef09_tasche_rotated_on_plate": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 5},
+      "parent": "plate",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "angle_deg": 30
+      },
+      "operation": "subtract"
+    },
+    "ef10_nut_on_plate": {
+      "type": "slot",
+      "params": {"length": 30, "width": 5, "depth": 3},
+      "parent": "plate",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"right": 8},
+        "angle_deg": 0
+      },
+      "operation": "subtract"
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "description": "B_kombo — 6 Bohrungs-Variationen auf 200³ Wuerfel oben",
+  "build_order": [
+    "wuerfel",
+    "bohrung_var1_oben_rechts_kanten",
+    "bohrung_var2_unten_rechts_kanten",
+    "bohrung_var3_versatz_links_unten",
+    "bohrung_var4_versatz_oben_rechts",
+    "bohrung_var5_kante_top_versatz_links",
+    "bohrung_var6_unten_links_kanten"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 200, "y": 200, "z": 200},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "bohrung_var1_oben_rechts_kanten": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 10, "right": 10}
+      },
+      "operation": "subtract"
+    },
+    "bohrung_var2_unten_rechts_kanten": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"bottom": 10, "right": 10}
+      },
+      "operation": "subtract"
+    },
+    "bohrung_var3_versatz_links_unten": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"left": 10, "bottom": 10}
+      },
+      "operation": "subtract"
+    },
+    "bohrung_var4_versatz_oben_rechts": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"top": 10, "right": 10}
+      },
+      "operation": "subtract"
+    },
+    "bohrung_var5_kante_top_versatz_links": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 10},
+        "center_offset": {"left": 90}
+      },
+      "operation": "subtract"
+    },
+    "bohrung_var6_unten_links_kanten": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"bottom": 10, "left": 10}
+      },
+      "operation": "subtract"
+    }
+  }
+}

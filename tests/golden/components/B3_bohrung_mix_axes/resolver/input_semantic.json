@@ -1,0 +1,25 @@
+{
+  "description": "B3 — Bohrung Mischung Achsen (edge_distance + center_offset)",
+  "build_order": ["wuerfel", "bohrung_oben_0"],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 200, "y": 200, "z": 200},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "bohrung_oben_0": {
+      "type": "hole_single",
+      "params": {"diameter": 18, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 10},
+        "center_offset": {"left": 90}
+      },
+      "operation": "subtract"
+    }
+  }
+}

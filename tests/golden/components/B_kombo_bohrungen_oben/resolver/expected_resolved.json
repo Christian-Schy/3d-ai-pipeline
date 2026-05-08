@@ -1,0 +1,81 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 200, "y": 200, "z": 200},
+      "parent": null
+    },
+    "bohrung_var1_oben_rechts_kanten": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 90.0,
+        "offset_y": 90.0,
+        "angle_deg": 0.0
+      }
+    },
+    "bohrung_var2_unten_rechts_kanten": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 90.0,
+        "offset_y": -90.0,
+        "angle_deg": 0.0
+      }
+    },
+    "bohrung_var3_versatz_links_unten": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -10.0,
+        "offset_y": -10.0,
+        "angle_deg": 0.0
+      }
+    },
+    "bohrung_var4_versatz_oben_rechts": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 10.0,
+        "angle_deg": 0.0
+      }
+    },
+    "bohrung_var5_kante_top_versatz_links": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -90.0,
+        "offset_y": 90.0,
+        "angle_deg": 0.0
+      }
+    },
+    "bohrung_var6_unten_links_kanten": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 18, "depth": 10},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -90.0,
+        "offset_y": -90.0,
+        "angle_deg": 0.0
+      }
+    }
+  }
+}
