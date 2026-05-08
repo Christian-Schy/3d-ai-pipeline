@@ -8,6 +8,32 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-08
+
+- **Component-Goldens-Coverage komplett (B/M/N/T/E/EF/NEST) +
+  Splitter Voice-Resilienz** (Commit `2129818` + Folge-Commit fuer NEST).
+  Vollstaendige Phase-A-Coverage aus
+  [ADR 0005](docs/decisions/0005-regressions-baseline-feature-matrix.md):
+
+  - **13 Component-Goldens, ~79 Test-Cases**, alle deterministischen
+    Resolver-Pfade abgedeckt (B Bohrungen, M Lochmuster mit Grid-Bypass,
+    N Nuten, T Taschen mit pocket_edge_distances, E Extrusion-Platten
+    Multi-Part-Anchor, EF Features auf Platte, NEST Bohrung-in-Tasche
+    mit pocket_floor depth_reference + Rotation-Pre-Multiply).
+  - **Splitter Pre-Processor** `_insert_missing_commas` in
+    [src/tools/aktions_splitter.py] — Sicherheitsnetz fuer Voice-Input
+    wenn Punctuation-Agent das Komma vor `<param-end> <side> soll`
+    droppt. Konservative geschlossene Liste (tiefe/hin/versetzt/...)
+    plus side-keyword + "soll" → automatischer Komma-Insert vor
+    Komma-Split. Run-944d-Pattern als Regression-Sentinel.
+  - **Test-Runner** [tests/golden/components/test_splitter_components.py]
+    mit Discovery fuer `<scope>/splitter/spec.txt + expected_phrases.json`.
+  - **Knopfdruck-Workflow**: `pytest tests/golden/components/` laeuft in
+    0.04s und liefert klare Diagnose-Outputs bei Regressionen.
+  - **Vorbereitet** fuer Architektur-Pivot (ADR 0005 Phase 4) und
+    DSPy-Training (Phase 5) — Schema eingefroren, jede unbeabsichtigte
+    Verhaltensaenderung wird durch ~79 Sicherheitsnetze sofort gefangen.
+
 ## 2026-05-07
 
 - **Bug A + Bug C + Bug D aus Real-Run-Analyse 8a170a03 / dc21d2ab**

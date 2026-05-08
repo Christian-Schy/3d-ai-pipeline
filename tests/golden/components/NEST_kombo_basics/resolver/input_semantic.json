@@ -1,0 +1,135 @@
+{
+  "description": "NEST_kombo_basics — 6 Bohrung-in-Tasche Variationen",
+  "build_order": [
+    "wuerfel",
+    "nest_tasche_a_centered",
+    "nest_tasche_b_offset",
+    "nest_tasche_c_rotated30",
+    "nest_tasche_d_rotated45",
+    "n1_centered_in_centered_tasche",
+    "n2_kanten_in_centered_tasche",
+    "n3_centered_in_offset_tasche",
+    "n4_centered_in_rotated_tasche",
+    "n5_versatz_in_rotated_tasche",
+    "n6_anchor_corner_in_tasche"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 100, "y": 100, "z": 100},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "nest_tasche_a_centered": {
+      "type": "pocket_rect",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "nest_tasche_b_offset": {
+      "type": "pocket_rect",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"right": 10}
+      },
+      "operation": "subtract"
+    },
+    "nest_tasche_c_rotated30": {
+      "type": "pocket_rect",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "angle_deg": 30
+      },
+      "operation": "subtract"
+    },
+    "nest_tasche_d_rotated45": {
+      "type": "pocket_rect",
+      "params": {"x": 60, "y": 40, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "angle_deg": 45
+      },
+      "operation": "subtract"
+    },
+    "n1_centered_in_centered_tasche": {
+      "type": "hole_single",
+      "params": {"diameter": 8, "depth": 5},
+      "parent": "nest_tasche_a_centered",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "n2_kanten_in_centered_tasche": {
+      "type": "hole_single",
+      "params": {"diameter": 8, "depth": 5},
+      "parent": "nest_tasche_a_centered",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 5, "left": 8}
+      },
+      "operation": "subtract"
+    },
+    "n3_centered_in_offset_tasche": {
+      "type": "hole_single",
+      "params": {"diameter": 8, "depth": 5},
+      "parent": "nest_tasche_b_offset",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "n4_centered_in_rotated_tasche": {
+      "type": "hole_single",
+      "params": {"diameter": 8, "depth": 5},
+      "parent": "nest_tasche_c_rotated30",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "n5_versatz_in_rotated_tasche": {
+      "type": "hole_single",
+      "params": {"diameter": 8, "depth": 5},
+      "parent": "nest_tasche_d_rotated45",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"right": 5}
+      },
+      "operation": "subtract"
+    },
+    "n6_anchor_corner_in_tasche": {
+      "type": "hole_single",
+      "params": {"diameter": 8, "depth": 5},
+      "parent": "nest_tasche_a_centered",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "center",
+          "parent_point": "top_right",
+          "offset": {"down": 3, "left": 5}
+        }
+      },
+      "operation": "subtract"
+    }
+  }
+}
