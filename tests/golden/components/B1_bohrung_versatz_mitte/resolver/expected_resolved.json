@@ -1,0 +1,21 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 200, "y": 200, "z": 200},
+      "parent": null
+    },
+    "bohrung_oben_0": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {"diameter": 10, "depth": 5},
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 20.0,
+        "angle_deg": 0.0
+      }
+    }
+  }
+}

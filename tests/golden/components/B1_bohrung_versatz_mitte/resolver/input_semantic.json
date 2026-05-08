@@ -1,0 +1,24 @@
+{
+  "description": "B1 — Bohrung Versatz aus Mitte",
+  "build_order": ["wuerfel"],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 200, "y": 200, "z": 200},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "bohrung_oben_0": {
+      "type": "hole_single",
+      "params": {"diameter": 10, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"top": 20, "right": 10}
+      },
+      "operation": "subtract"
+    }
+  }
+}

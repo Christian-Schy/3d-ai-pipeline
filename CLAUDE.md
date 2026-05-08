@@ -231,10 +231,15 @@ Phase 1 wird versiegelt wenn folgende Punkte stabil laufen:
 7. DSPy-Training auf der stabilen Baseline (Prompts von Inventar,
    Teil-Definierer, Assembly, PositionExtractor separat trainiert)
 
-★ NAECHSTER SCHRITT: Punkt 3 in mehr realen Runs verifizieren (Pocket-Cases
-  P1-P4 noch ungetestet). Danach Punkt 4 (Nuten) bauen, dann Punkt 5
-  (Fasen/Rundungen ausbauen), dann Punkt 6 (Validator-Reverse-Kette).
-  Erst nach Punkt 6 Punkt 7 (DSPy-Re-Train auf konsolidierter Baseline).
+★ NAECHSTER SCHRITT (2026-05-08, ADR 0005 setzt Phase 1 fort):
+  Regressions-Baseline aufbauen — Component-Goldens (Layer 1) und
+  Pipeline-Goldens mit Text-Variationen (Layer 2) — BEVOR weitere
+  Bug-Fixes, Architektur-Pivots oder DSPy-Training. Feature-Matrix
+  (B1-B4, M1-M3, N1-N2, T1-T4, E1-E5, EF1-EF3, NEST), Phase-Sequenz und
+  offene Bugs (E + Run-Befunde) in
+  `docs/decisions/0005-regressions-baseline-feature-matrix.md`.
+  Beispiele: `tests/golden/components/B1_bohrung_versatz_mitte/`,
+  `B2_bohrung_abstand_kanten/`.
 
 Nach Phase 1: alle weiteren Phasen (B Teil 2, C, D, E, F) bauen additiv
 darauf auf. Schema bleibt eingefroren, neue Feature-Typen nur als Erweiterung.
