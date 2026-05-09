@@ -1,0 +1,35 @@
+{
+  "_note": "GE-FIXED — heute ROT, weil _FEATURE_RE die Komposita 'lochmuster', 'lochkreis', 'lochreihe' und das Plural 'bohrungen' nicht matcht (Wortgrenzen-Mismatch). Fix: _FEATURE_RE-Stems um optionalen Buchstaben-Suffix erweitern, sodass 'loch' auch 'lochmuster/lochkreis/lochreihe' faengt und 'bohrung' auch 'bohrungen'.",
+  "phrases": [
+    {
+      "phrase": "oben ein 2x2 lochmuster mit 8mm bohrungen 5 tief randabstand 10mm zur kante",
+      "teil_id": "wuerfel",
+      "phrase_idx": 0,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben ein lochkreis mit 6 bohrungen 8mm durchmesser 5 tief auf einem teilkreis von 60mm",
+      "teil_id": "wuerfel",
+      "phrase_idx": 1,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben ein lochkreis mit 4 bohrungen 6mm durchmesser 4 tief auf einem teilkreis von 40mm 15mm nach rechts und 10mm nach oben versetzt",
+      "teil_id": "wuerfel",
+      "phrase_idx": 2,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben eine lochreihe entlang x mit 5 bohrungen 8mm durchmesser 5 tief abstand 15mm startversatz 10mm ankerpunkt obere rechte ecke 10mm nach unten versetzt",
+      "teil_id": "wuerfel",
+      "phrase_idx": 3,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "rechts ein 2x2 lochmuster mit 8mm bohrungen 5 tief randabstand 10mm zur kante.",
+      "teil_id": "wuerfel",
+      "phrase_idx": 4,
+      "parent_phrase_idx": null
+    }
+  ]
+}

@@ -57,16 +57,31 @@ _PART_DECL_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Feature keywords — if a comma-segment lacks a bare side-keyword but mentions
+# Feature keywords — if a segment lacks a bare side-keyword but mentions
 # one of these, it is still a real feature phrase (the classifier can derive
 # the side from descriptors like "auf der rechten seite"). Without this guard,
 # segments like "auf der rechten seite eine bohrung von der linken kante 20mm
 # entfernt von der oberen 30mm entfernt mit 20mm durchmesser 10 tief" would be
 # silently dropped because none of oben/unten/rechts/links/vorne/hinten appear
 # as a *bare* token.
+#
+# Plurals + compounds: each stem accepts a small enumerated suffix list so the
+# regex catches "bohrungen", "taschen", "nuten", "fasen", "rundungen" plus
+# loch-compounds "lochmuster", "lochkreis", "lochreihe", "lochbild" without
+# matching unrelated words like "fasern" or "nutzbar".
 _FEATURE_RE = re.compile(
-    r"\b(?:tasche|bohrung|nut|fase|rundung|loch|"
-    r"ausnehmung|aush[oö]hlung|ausfr[äa]sung|aussparung)\b",
+    r"\b(?:"
+    r"tasche(?:n)?"
+    r"|bohrung(?:en)?"
+    r"|nut(?:en)?"
+    r"|fase(?:n)?"
+    r"|rundung(?:en)?"
+    r"|loch(?:muster|kreis|reihe|bild|er)?"
+    r"|ausnehmung(?:en)?"
+    r"|aush[oö]hlung(?:en)?"
+    r"|ausfr[äa]sung(?:en)?"
+    r"|aussparung(?:en)?"
+    r")\b",
     re.IGNORECASE,
 )
 
@@ -170,10 +185,16 @@ def split_spec_into_aktionen(
     return aktionen
 
 
+_TOP_LEVEL_SEP_RE = re.compile(r"[,;]")
+
+
 def _comma_split(spec: str) -> List[str]:
-    """Top-level comma-separated segments. Empty/whitespace-only segments
-    are dropped — handles ',,' and trailing ',' gracefully."""
-    return [s.strip() for s in spec.split(",") if s.strip()]
+    """Top-level segment-separated chunks. Splits on both ',' and ';' —
+    semicolons are a stylistic alternative for separating feature actions
+    (User-Spec aus B_kombo_asymmetric_multiface). Empty/whitespace-only
+    segments are dropped, handles ',,' / ';;' / trailing ','/';' gracefully.
+    """
+    return [s.strip() for s in _TOP_LEVEL_SEP_RE.split(spec) if s.strip()]
 
 
 def _strip_part_declaration(segment: str) -> str:
