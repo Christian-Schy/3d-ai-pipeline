@@ -28,6 +28,7 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from pydantic import BaseModel
 
 from src.graph.pipeline import PipelineRunner
+from src.graph.run_status import failure_reason, is_successful_state
 from src.tools.session_logger import SessionLogger
 try:
     from langgraph.errors import GraphInterrupt
@@ -833,7 +834,7 @@ def modify(req: ModifyRequest):
 def _build_response(state: dict) -> PipelineResponse:
     """Convert a PipelineState dict into a PipelineResponse."""
     stl_path = state.get("stl_path", "")
-    success = bool(stl_path) and not state.get("validator_feedback")
+    success = is_successful_state(state)
 
     stl_b64 = None
     stl_filename = None
@@ -844,12 +845,7 @@ def _build_response(state: dict) -> PipelineResponse:
 
     error = None
     if not success:
-        error = (
-            state.get("execution_error")
-            or state.get("validation_error")
-            or state.get("validator_feedback")
-            or "Unknown error"
-        )
+        error = failure_reason(state) or "Unknown error"
 
     return PipelineResponse(
         success=success,

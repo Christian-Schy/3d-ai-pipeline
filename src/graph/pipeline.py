@@ -44,6 +44,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 
 from src.graph.state import PipelineState
+from src.graph.run_status import is_successful_state
 from src.graph.nodes import (
     entry_router_node,
     visioner_node,
@@ -468,7 +469,7 @@ class PipelineRunner:
         if bp_desc and state.get("stl_path"):
             state["description"] = bp_desc
 
-        success = bool(state.get("stl_path")) and not state.get("validator_feedback")
+        success = is_successful_state(state)
         log.info("pipeline_run_complete",
                  success=success,
                  stl_path=state.get("stl_path"),

@@ -25,6 +25,20 @@ Tools.
 **Bevor wir architektur-pivoten oder DSPy-trainieren, bauen wir eine
 Regressions-Baseline.** Zwei Test-Layer:
 
+Die Baseline ist nicht auf Demo-Teile beschraenkt. Sie soll komplexe
+Standard-Feature-Kompositionen stabilisieren, aber gestuft:
+
+| Level | Fokus | Gate-Status |
+|-------|-------|-------------|
+| 1 | Einzel-Features: Bohrung, Tasche, Nut, einfache Extrusion | hartes Gate |
+| 2 | mehrere Features auf einem Grundkoerper | hartes Gate nach Level 1 |
+| 3 | Nested Features wie Bohrung in Tasche | gezielt hart fuer NEST1 |
+| 4 | Extrusionen mit Features | hart sobald E/EF-Basis gruen ist |
+| 5 | grosse Kombi-Teile mit vielen Varianten | Stress-/Zielbild, nicht erstes hartes Gate |
+
+Damit koennen wir schon frueh grosse Teile beobachten, ohne die Arbeit an
+den kleineren, besser attribuierbaren Fehlern zu blockieren.
+
 ### Layer 1 — Component-Goldens (deterministisch, schnell)
 
 Testen einzelne Pipeline-Stufen deterministisch:

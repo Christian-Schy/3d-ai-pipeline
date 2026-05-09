@@ -86,3 +86,30 @@ Beispiel: B3 (Bohrung Mischung Versatz + Abstand) als Resolver-Golden.
 | Deckung | Deterministische Tools | End-to-End inkl. Sprachverstaendnis |
 | Wann laufen | Auf jedem Commit | Vor Releases / Architektur-Aenderungen |
 | Skalierung | Beliebig viele | Begrenzt durch LLM-Kosten |
+
+## Real-Run-Heatmap nach Levels
+
+`scripts/run_real_goldens.py` verbindet Component-Goldens mit echten
+Pipeline-Specs aus `pipeline/specs.txt`. Das ist das bevorzugte Gate fuer
+komplexe Standard-Teile, weil jeder rote Fall direkt einem Layer
+zugeschrieben wird.
+
+```bash
+# Discovery ohne LLM-Run
+uv run python -m scripts.run_real_goldens --list
+
+# Level-1/2 Smoke: eine Variante pro Component
+uv run python -m scripts.run_real_goldens --filter B,N,T --first-only
+
+# Nested Features
+uv run python -m scripts.run_real_goldens --filter NEST
+
+# Extrusionen + Features auf Extrusionen
+uv run python -m scripts.run_real_goldens --filter E,EF
+
+# Offline erneut auswerten, ohne neue Modell-Calls
+uv run python -m scripts.run_real_goldens --replay
+```
+
+Wenn ein Heatmap-Fall rot wird: erst den kleinsten deterministischen Layer
+mit einem Component-Golden absichern, dann den Real-Run erneut laufen lassen.

@@ -52,6 +52,7 @@ class ModelsConfig(BaseModel):
 
     # Blueprint Chain (3-Step + Multi-Part split)
     inventar: str = "qwen3.5:9b"
+    aktions_klassifizierer: str = "qwen3.5:9b"
     position_extractor: str = "qwen3.5:9b"
     text_splitter: str = "qwen3.5:9b"
     normalizer: str = "qwen3.5:9b"

@@ -33,6 +33,8 @@ from pathlib import Path
 
 import structlog
 
+from src.graph.run_status import is_successful_state
+
 log = structlog.get_logger()
 
 # Absolute path anchored to project root (2 levels up from src/tools/)
@@ -151,7 +153,7 @@ class SessionLogger:
             "error_agent": None,
             "error_note": None,
             "task_id": task_id or "",
-            "success": bool(state.get("stl_path")) and not state.get("validator_feedback"),
+            "success": is_successful_state(state),
             "stats": state.get("validator_stats", {}),
             "execution_error": state.get("execution_error", ""),
             "validation_error": state.get("validation_error", ""),

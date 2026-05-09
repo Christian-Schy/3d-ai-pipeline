@@ -24,6 +24,7 @@ dependencies = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+addopts = ["-m", "not slow"]
 markers = [
     "slow: integration tests that need Ollama and real models",
 ]

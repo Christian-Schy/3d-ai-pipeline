@@ -24,6 +24,14 @@ class TestLoadConfig:
         assert cfg.models.coder == "custom-coder"
         assert cfg.sandbox.timeout_seconds == 60
 
+    def test_aktions_klassifizierer_model_is_validated(self, tmp_path):
+        """Config must not silently drop the per-action classifier model."""
+        cfg = self.load(
+            "models:\n  aktions_klassifizierer: 'custom-classifier'\n",
+            tmp_path,
+        )
+        assert cfg.models.aktions_klassifizierer == "custom-classifier"
+
 
 class TestGetConfig:
     """get_config() Smoke-Test — nur pruefen ob es laeuft."""

@@ -45,15 +45,39 @@ echo "dein spec text" > tests/golden/mein_case/spec.txt
 ## Tests ausführen
 
 ```bash
-# Alle Golden Cases
-pytest tests/golden/ -v
+# Schnelle Tests inkl. Component-Goldens, ohne LLM-Pipeline-Goldens
+uv run pytest -q
 
-# Nur bestimmte
-pytest tests/golden/ -v -k "wuerfel"
+# Nur echte Pipeline-Goldens mit Ollama/LLMs
+uv run pytest -q -m slow tests/golden/test_golden_runs.py
 
-# Schnelle Unit-Tests (ohne Golden)
-pytest tests/ --ignore=tests/golden/
+# Bestimmte Pipeline-Goldens
+uv run pytest -q -m slow tests/golden/test_golden_runs.py -k "wuerfel"
+
+# Schnelle Unit-Tests ohne irgendeinen Golden-Ordner
+uv run pytest -q --ignore=tests/golden
 ```
+
+`pyproject.toml` setzt standardmaessig `-m not slow`, damit ein
+versehentliches `pytest` keine echten Modell-Runs startet. Pipeline-Goldens
+muessen deshalb explizit mit `-m slow` gestartet werden.
+
+## Capability Ladder fuer komplexe Standard-Teile
+
+Die Baseline waechst bewusst stufenweise. Komplexe Kombi-Teile bleiben als
+Zielbild sichtbar, werden aber erst als harte Gates genutzt, wenn die
+darunterliegenden Levels stabil sind.
+
+| Level | Ziel | Harte Gate-Quelle |
+|-------|------|-------------------|
+| 1 | Einzel-Features: Bohrung, Tasche, Nut, einfache Extrusion | Component-Goldens + erste Pipeline-Variante |
+| 2 | Mehrere Features auf einem Grundkoerper | Heatmap `--filter B,N,T` |
+| 3 | Nested Features, besonders Bohrungen in Taschen | Heatmap `--filter NEST` |
+| 4 | Extrusionen mit Features | Heatmap `--filter E,EF` |
+| 5 | grosse Kombi-Teile mit vielen Feature-Varianten | Stress-/Zielbild, erst spaeter blockierend |
+
+Echte User-Formulierungen aus `data/sessions/runs.jsonl` sollen bevorzugt
+als `pipeline/specs.txt`-Varianten aufgenommen werden.
 
 ## Wenn ein Test rot wird
 

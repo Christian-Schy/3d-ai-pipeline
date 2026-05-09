@@ -8,6 +8,18 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-10
+
+- **Baseline-Hygiene fuer komplexe Standard-Teile gestartet.**
+  Pipeline-Goldens sind als `slow` markiert und werden per Default nicht
+  von `pytest` gestartet; Component-Goldens bleiben schnell. Config nimmt
+  `models.aktions_klassifizierer` jetzt explizit an, UI-History-Testdrift
+  wurde auf die aktuelle Restore-Outputliste synchronisiert, und ein
+  gemeinsames Run-Success-Gate verhindert, dass STL-only/leer-Blueprint
+  oder unresolved-coordinate Runs als Erfolg in UI/API/Logs erscheinen.
+  Die Golden-Doku beschreibt nun die Capability Ladder von Einzel-Features
+  bis grossen Kombi-Teilen samt Heatmap-Kommandos.
+
 ## 2026-05-08
 
 - **Component-Goldens-Coverage komplett (B/M/N/T/E/EF/NEST) +

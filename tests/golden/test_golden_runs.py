@@ -6,8 +6,8 @@ Der Test fährt die Pipeline mit spec.txt und vergleicht das resolved Blueprint
 gegen expected_blueprint.json.
 
 Starten:
-    pytest tests/golden/ -v
-    pytest tests/golden/ -v -k "wuerfel"   # nur passende Fälle
+    pytest -m slow tests/golden/test_golden_runs.py -v
+    pytest -m slow tests/golden/test_golden_runs.py -v -k "wuerfel"
 
 Was verglichen wird (Toleranzen):
     - placement.face        exakt (">Z", "<X" etc.)
@@ -32,6 +32,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
+pytestmark = pytest.mark.slow
 
 # ── Pfade ─────────────────────────────────────────────────────────────────────
 

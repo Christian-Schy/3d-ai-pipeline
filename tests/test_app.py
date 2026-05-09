@@ -31,6 +31,7 @@ class TestSessionState:
         session.runner = MagicMock()
         session.last_result = None
         session.history = []
+        session.last_run_id = ""
         session.pending_question = None
         session.user_answer = ""
         session.is_running = False
@@ -196,8 +197,8 @@ class TestCallbacks:
         from app import on_restore_history, _session
         _session.history = []
         result = on_restore_history("[1] Nonexistent Model")
-        # Should return 8 no-op gr.update()s (one per output)
-        assert len(result) == 8
+        # Should return one no-op gr.update() per restore output.
+        assert len(result) == 11
 
     def test_on_thumb_good_returns_update(self):
         from app import on_thumb_good, _session

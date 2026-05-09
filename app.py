@@ -27,6 +27,7 @@ import structlog
 import gradio as gr
 
 from src.graph.pipeline import PipelineRunner
+from src.graph.run_status import failure_reason, is_successful_state
 from src.tools.transcriber import Transcriber
 from src.tools.session_logger import SessionLogger
 from src.tools.session_store import save_history, load_history
@@ -114,7 +115,7 @@ class SessionState:
             return
         label = state.get("description", "Model")[:60]
         # Store run_id for identification in history
-        run_id = self.last_run_id or ""
+        run_id = getattr(self, "last_run_id", "") or ""
         self.history.append({"label": label, "state": state, "run_id": run_id})
         if len(self.history) > self.MAX_HISTORY:
             self.history.pop(0)
@@ -828,7 +829,7 @@ def stream_logs():
 
     # Run finished
     result = _session.last_result
-    success = bool(result and result.get("stl_path") and not result.get("validator_feedback"))
+    success = is_successful_state(result)
 
     # Log the run immediately — before any further processing that could raise.
     if result:
@@ -848,9 +849,7 @@ def stream_logs():
         history_value = history_choices[0] if history_choices else None
     else:
         stl = None
-        error = (result or {}).get("execution_error") or \
-                (result or {}).get("validation_error") or \
-                (result or {}).get("validator_feedback") or "Unknown error"
+        error = failure_reason(result) or "Unknown error"
         status_msg = f"❌ Failed: {error[:120]}"
         blueprint_text = ""
         code_text = ""
