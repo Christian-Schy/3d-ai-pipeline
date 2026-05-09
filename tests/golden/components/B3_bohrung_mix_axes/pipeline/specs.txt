@@ -1,0 +1,3 @@
+# Spec-Varianten fuer B3 (Bohrung Mischung edge_distance + center_offset).
+200mm wuerfel, oben soll von der oberen kante 10mm entfernt und nach links um 90mm versetzt eine 18mm bohrung hin mit 10 tiefe
+200mm wuerfel, oben eine 18mm bohrung 10mm von oberer kante, 90mm aus mitte nach links, 10 tief

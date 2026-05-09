@@ -1,0 +1,4 @@
+# Spec fuer NEST_kombo_basics (Bohrung-in-Tasche, feature-in-feature Resolver). KONSTRUIERT aus der Tabelle in notes.md.
+# Setup: 100mm Wuerfel + 4 Taschen (a/b/c/d) + 6 Bohrungen darin verteilt.
+# Bei Real-Run-Auffaelligkeiten Wording verfeinern.
+100mm wuerfel, oben eine tasche 60x40x10 zentral, in der tasche eine 8mm bohrung 5 tief zentral, in der tasche eine 8mm bohrung 5 tief von der oberen kante 5mm und von der linken kante 8mm entfernt, in der tasche eine 8mm bohrung 5 tief obere rechte ecke 3mm nach unten und 5mm nach links versetzt, oben eine tasche 60x40x10 10mm nach rechts versetzt, in der tasche eine 8mm bohrung 5 tief zentral, oben eine tasche 60x40x10 zentral 30 grad gegen uhrzeigersinn gedreht, in der tasche eine 8mm bohrung 5 tief zentral, oben eine tasche 60x40x10 zentral 45 grad gegen uhrzeigersinn gedreht, in der tasche eine 8mm bohrung 5 tief 5mm nach rechts versetzt.

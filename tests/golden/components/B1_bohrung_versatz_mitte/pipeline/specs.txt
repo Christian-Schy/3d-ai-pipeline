@@ -1,0 +1,6 @@
+# Spec-Varianten fuer B1 (Bohrung Versatz aus Mitte).
+# Eine Spec pro Zeile. Leere Zeilen + # Kommentare werden ignoriert.
+# Jede Variante muss dasselbe expected_resolved.json produzieren.
+200mm wuerfel, oben eine 10mm bohrung 10mm nach rechts und 20mm nach oben versetzt 5 tief
+200mm wuerfel, oben eine 10mm bohrung um 10 nach rechts versetzt um 20 nach oben versetzt 5 tief
+200mm wuerfel, oben 10mm nach rechts 20mm nach oben versetzt eine 10mm bohrung 5mm tief
