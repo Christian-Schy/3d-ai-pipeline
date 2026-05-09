@@ -6,7 +6,7 @@
 # --- Ollama ---
 ollama:
   base_url: "http://localhost:11434"
-  timeout_seconds: 600
+  timeout_seconds: 120
   # Global defaults for every agent call:
   think: true        # qwen3/qwen3.5: false = skip chain-of-thought → viel schneller für JSON
   temperature: 0.15   # 0.0–1.0 | niedrig = deterministischer JSON, hoch = kreativer
