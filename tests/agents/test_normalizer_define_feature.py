@@ -230,6 +230,59 @@ def test_classifier_hint_overrides_normalizer_zero_value():
     assert feat["position"]["edge_distances"]["top"] == 10
 
 
+def test_slot_y_axis_sets_angle_deg_90():
+    """Slot 'entlang y-achse' → angle_deg=90 (deterministische Achsen→
+    Winkel-Konvention aus N_kombo_basics notes.md). LLM erkennt richtung,
+    Code mappt zu Winkel.
+    """
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="oben",
+        richtung="y",
+        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="nut",
+               beschreibung="oben eine nut 5x5 entlang y-achse laenge 40mm",
+               seite="oben"),
+        _teil(),
+    )
+    assert feat["type"] == "slot"
+    assert feat["position"]["angle_deg"] == 90.0
+
+
+def test_slot_y_axis_combines_with_explicit_rotation():
+    """Slot 'entlang y-achse 15 grad gedreht' → 90 + 15 = 105."""
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="oben",
+        richtung="y",
+        parameter={"breite": 5, "tiefe": 5, "laenge": 40, "drehung": 15},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="nut",
+               beschreibung="oben eine nut 5x5 entlang y-achse 15 grad gedreht",
+               seite="oben"),
+        _teil(),
+    )
+    assert feat["position"]["angle_deg"] == 105.0
+
+
+def test_slot_x_axis_keeps_angle_deg_0():
+    """Slot 'entlang x-achse' → angle_deg=0 (default; keine Achsen-Korrektur)."""
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="oben",
+        richtung="x",
+        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
+    ))
+    feat = agent.define_feature(_klass(typ="nut", seite="oben"), _teil())
+    assert feat["position"]["angle_deg"] == 0.0
+
+
 def test_rotation_deg_hint_maps_to_drehung_then_angle_deg():
     """Classifier hints rotation_deg=10 → params['drehung']=10
     → feature.position.angle_deg=10."""

@@ -83,6 +83,17 @@ parameter_hints (optional):
   Mischformen ueber zwei Achsen sind erlaubt (z.B. abstand_oben +
   kante_links).
 
+Mehrere Side-Woerter in einer Phrase ("oben soll unten rechts ..."):
+  Das ERSTE bare Side-Wort in der Phrase ist die FACE-Auswahl. Spaetere
+  Side-Woerter beschreiben die POSITION auf dieser Face — uebersetze sie
+  in abstand_<seite> oder versatz_<seite>, NICHT in seite=...
+  z.B. "oben soll unten rechts eine Bohrung von den Kanten 10mm entfernt"
+       → seite=oben, abstand_unten=10, abstand_rechts=10
+       (NICHT seite=unten oder seite=rechts.)
+  "jeweils von den Kanten" auf einer Bohrung meint die Kanten passend
+  zu den Position-Side-Woertern: "unten rechts ... 10mm" → 10mm Abstand
+  zur unteren UND zur rechten Kante.
+
 Verschachtelte Phrasen ("in der Tasche ..." / "darin ..."):
   Wenn die Phrase keine eigene Seite nennt, nutze die Seite des
   PARENT-Phrasen-Eintrags (steht im Kontext).
@@ -257,6 +268,24 @@ FEW_SHOT_EXAMPLES = [
             "parameter_hints": {"laenge": 20, "breite": 30, "tiefe": 10,
                                 "kante_oben": 10, "kante_links": 10,
                                 "rotation_deg": 20},
+        },
+    },
+    {
+        # FACE-ZUERST-Pattern (Run f28b958a phrase_idx=1): "oben soll
+        # unten rechts ..." — der erste bare Side-Term (oben) ist die
+        # FACE, "unten rechts" beschreiben die Position auf der Face.
+        # NICHT als seite=unten klassifizieren! "jeweils von den kanten
+        # 10mm entfernt" auf einer Bohrung meint abstand_unten=10 +
+        # abstand_rechts=10 (point-like, edge-to-center).
+        "phrase": "oben soll unten rechts eine 18mm Bohrung jeweils von den Kanten 10mm entfernt mit 10mm Tiefe hin",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 200, "z": 200},
+        "parent_phrase": "(keine)",
+        "output": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 18, "tiefe": 10,
+                                "abstand_unten": 10, "abstand_rechts": 10},
         },
     },
     {

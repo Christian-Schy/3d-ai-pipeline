@@ -227,6 +227,18 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | Non
             if angle_deg:
                 break
 
+    # Slot-Achsen-Konvention (notes.md N_kombo_basics):
+    # "entlang x-achse" → angle_deg=0 (Slot horizontal auf Face)
+    # "entlang y-achse" → angle_deg=90 (Slot vertikal auf Face)
+    # Kombiniert mit expliziter Rotation: "entlang y-achse 15 grad gedreht"
+    # → angle = 90 + 15 = 105.
+    # Deterministische Achsen→Winkel-Konvention; das LLM erkennt nur die Achse,
+    # die Mappierung ist Code-Aufgabe.
+    if feature_type == "slot":
+        richtung_norm = (richtung or "").strip().lower()
+        if richtung_norm in ("y", "y-achse", "y-axis"):
+            angle_deg += 90.0
+
     position_dict = {
         "side": seite,
         "alignment": alignment,
