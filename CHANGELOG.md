@@ -20,7 +20,220 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
   Die Golden-Doku beschreibt nun die Capability Ladder von Einzel-Features
   bis grossen Kombi-Teilen samt Heatmap-Kommandos.
 
+## 2026-05-09
+
+- **LLM-Layer-Fix-Runde 1: Slot-Achsen-Konvention + Klassifizierer
+  Face-zuerst Few-Shot + DSPy-Trainings-Daten.**
+  Heatmap-Auswertung nach Splitter-Fix zeigte 4 LLM-Layer-Bugs: 2
+  Klassifizierer (B_asym + B_kombo_bohrungen face-mismatches), 2
+  feature_definierer (N_kombo angle/length, NEST diameter). Trace-
+  Buendel-Analyse aus runs.jsonl, dann Fixes:
+
+  - **NEST Spec-Bug:** mein konstruierter Spec sagte "5mm bohrung",
+    expected_resolved.json hatte diameter=8 fuer alle NEST-Bohrungen.
+    Korrigiert in [tests/golden/components/NEST_kombo_basics/pipeline/specs.txt].
+  - **Slot-Achsen-Konvention deterministisch** in
+    [src/tools/feature_builder.py]: notes.md N_kombo definiert
+    "entlang x-achse" → angle_deg=0, "entlang y-achse" → angle_deg=90
+    (kombiniert mit Rotation: 0+15 oder 90+15). Diese Konvention war
+    bisher NICHT codiert — feature_builder hat richtung nur in notes
+    geschrieben und angle_deg=0 gelassen. Jetzt: y-Achse mappt
+    additiv +90° auf angle_deg. Drei neue Unit-Tests
+    (`test_slot_y_axis_sets_angle_deg_90`,
+    `test_slot_y_axis_combines_with_explicit_rotation`,
+    `test_slot_x_axis_keeps_angle_deg_0`).
+    Memory-Begruendung: Aufgaben-Trennung Memory `feedback_determinism_scope`
+    — Achsen→Winkel-Mappierung ist Mathe (deterministisch), das LLM
+    erkennt nur die Achse aus dem Text.
+  - **Klassifizierer Few-Shot fuer Face-zuerst-Pattern** in
+    [data/prompts/prompt_aktions_klassifizierer.py]: System-Prompt um
+    Block "Mehrere Side-Woerter in einer Phrase" erweitert (erstes bare
+    Side-Wort ist Face, spaetere sind Position auf der Face). Plus
+    Few-Shot mit User-Phrase "oben soll unten rechts eine 18mm Bohrung
+    jeweils von den kanten 10mm entfernt" → seite=oben, abstand_unten:10,
+    abstand_rechts:10. Pattern stammt aus Run f28b958a phrase_idx=1.
+  - **DSPy-Trainings-Datenfundament gelegt:**
+    `data/dspy_training/klassifizierer_traces.py` (3 Cases: Face-zuerst
+    fixed + 2 Face-Erbung deferred) und
+    `data/dspy_training/feature_definierer_traces.py` (4 Cases: Slot-
+    Achsen 2x fixed + Slot-durchgehend-Default + Slot-Anchor-Edge
+    deferred). Doppelt nutzbar: DSPy-Material + Few-Shot-Quelle +
+    spaetere Regression-Sentinels.
+  - **Memory-Defer fuer Architektur-Issues:**
+    `project_klassifizierer_face_inheritance_deferred.md` — B_asym
+    Phrasen ohne eigene Face-Decl muessen vom geschwister-Vorgaenger
+    erben. Klassifizierer-Schema-Erweiterung um `previous_seite`
+    (additiv) noetig — separates Refactor.
+
+  **Heatmap-Effekt:**
+  | Layer | nach Splitter | nach LLM-Runde |
+  |-------|--------------:|---------------:|
+  | aktions_splitter | 2 | 2 (Spec-Coverage + E_kombo deferred) |
+  | aktions_klassifizierer | 2 | 1 (B_bohrungen PASS, B_asym deferred) |
+  | blueprint_resolver | 2 | 3 (NEST n6 anchor-in-tasche jetzt sichtbar) |
+  | feature_definierer | 2 | 1 (N_kombo angle behoben, length offen) |
+  | function_decomposer | 2 | 2 |
+  | executor | 1 | 1 |
+  | **Total** | 11 FAIL | **10 FAIL / 7 PASS** |
+
+  B_kombo_bohrungen_oben gruen geworden, NEST von 20 Diffs auf 2.
+  262/262 Unit-Tests + 15/15 Component-Goldens gruen.
+
+- **Splitter-Fix-Runde 1: Plural/Komposita + Semicolon-Top-Level-Split**
+  ([src/tools/aktions_splitter.py]). Erste Heatmap-Auswertung nach
+  strukturellem Pairing zeigte 3 Drop-All-Cases unter
+  `aktions_splitter` (M_kombo, B_kombo_asym, E_kombo). Trace-Analyse:
+
+  - **M_kombo (Run 5cc0bb53):** `_FEATURE_RE` matcht `\bbohrung\b`,
+    nicht aber `bohrungen` (Plural-Suffix-`en`) und auch nicht die
+    Loch-Komposita `lochmuster`/`lochkreis`/`lochreihe` (kein
+    Wortgrenze nach `loch`). Konsequenz: jede Mustertyp-Phrase wird
+    gedroppt, Pipeline produziert 0 Features.
+  - **B_kombo_asym (Run 69931839):** User-Spec verwendet `;` als
+    Top-Level-Separator. `_comma_split` splittet nur an `,`, also
+    landet alles in einer Mega-Phrase. Klassifizierer kann mit 6
+    verschachtelten Aktionen in einer Phrase nichts anfangen.
+  - **E_kombo (Run 55863562):** Nicht ueber Splitter heilbar — Inventar
+    segmentiert die 12 "vorne soll eine platte 80x40x20"-Phrasen als
+    11 Teile statt 1 Teil + 12 Plate-Features. Multi-Part-Anchor-Pfad,
+    architektonische Entscheidung noetig (Memory
+    `project_e_kombo_multipart_deferred`). Deferred.
+
+  **Fix:**
+  - `_FEATURE_RE` Stems um enumerierten Suffix erweitert:
+    `tasche(?:n)?`, `bohrung(?:en)?`, `nut(?:en)?`, `fase(?:n)?`,
+    `rundung(?:en)?`, `loch(?:muster|kreis|reihe|bild|er)?`,
+    `ausnehmung(?:en)?`, `aush[oö]hlung(?:en)?`,
+    `ausfr[äa]sung(?:en)?`, `aussparung(?:en)?`. Konservativ —
+    keine Wildcard-`[a-z]*` um false positives wie `fasern`/`nutzbar`
+    zu vermeiden.
+  - `_comma_split` erweitert auf Regex `[,;]` (semicolons als
+    semantisch-aequivalenter Top-Level-Trenner).
+
+  **Goldens (GE-FIXED-Pattern aus Memory `project_goldens_workflow_2026_05_08`):**
+  - `tests/golden/components/M_kombo_basics/splitter/` — 5 Phrasen
+    erwartet, vor Fix 0 (rot), nach Fix gruen.
+  - `tests/golden/components/B_kombo_asymmetric_multiface/splitter/` —
+    6 Phrasen erwartet (eine Phrase pro `;`-Segment), vor Fix 1 Mega-
+    Phrase (rot), nach Fix gruen.
+
+  **Heatmap-Effekt** (Replay-Modus):
+  - aktions_splitter: 3 → 2 (M_kombo verliert nur noch 1 Feature wegen
+    Spec-Coverage-Luecke m02, E_kombo bleibt deferred).
+  - aktions_klassifizierer: 1 → 2 (B_asym jetzt sichtbar als
+    face-mismatch `>X`→`<Z` — vorher von Splitter-Drop verdeckt).
+  - Pipeline lebt, downstream-Bugs werden sichtbar — bug-by-bug-
+    Drilldown wirkt.
+
+  259 Unit-Tests + 15/15 Component-Goldens (3 Splitter, 12 Resolver)
+  gruen.
+
+- **Strukturelles Feature-Pairing im Real-Run-Heatmap-Compare +
+  Replay-Modus.**
+  Erste Heatmap-Runde 2026-05-08 hatte 11/17 Fails, davon 6 false
+  positives durch reines ID-Matching: `compare_blueprints` hat Features
+  nach ID gepaart, aber `expected_resolved.json` traegt handverlesene
+  IDs (`t05_pocket_edge_top_left`) waehrend die Pipeline auto-IDs
+  (`tasche_oben_4`) erzeugt. Identische Geometrie wurde als
+  "missing+unexpected" gemeldet, Layer faelschlich `blueprint_resolver`.
+
+  - [scripts/run_real_goldens.py] `compare_blueprints` umgebaut auf
+    strukturelles `_pair_level`: paart Sibling-Features pro Parent-
+    Ebene zuerst per `(type, face)`-Signatur, dann innerhalb gleicher
+    Signatur per offset-distance-Greedy. Rekursiv ueber Parent-Pairs
+    hinweg, sodass NEST-Bohrungen (parent=tasche_a vs parent=
+    tasche_oben_0) korrekt ueber die Tasche-Pairing weiter geleitet
+    werden.
+  - `attribute_layer` erkennt jetzt face-mismatches zwischen unmatched
+    expected/got (z.B. 1 fehlt auf >Z, 1 extra auf <Z → Klassifizierer-
+    Side-Bug). Total-Feature-Count statt Per-Root-Count fuer Splitter-
+    Drop-Detection (Pairing macht Per-Root-Korrelation schon).
+  - Neuer `--replay`-Modus: liest persistierte Heatmap-Runs aus
+    `data/sessions/runs.jsonl` (task_id=real_goldens_heatmap) und
+    re-evaluiert sie offline gegen die aktuelle expected — spart ~20
+    min LLM-Pipeline bei Compare-Logik-Iterationen.
+  - Neue Heatmap (Replay): 6 PASS / 11 FAIL, sauber aufgeteilt:
+    aktions_splitter=3, blueprint_resolver=2, feature_definierer=2,
+    function_decomposer=2, aktions_klassifizierer=1, executor=1.
+    Vorher pauschal blueprint_resolver=5 — die 3 Fehlattribuierten
+    sind jetzt korrekt feature_definierer (N angle/length, NEST
+    diameter) bzw. aktions_klassifizierer (B_kombo_bohrungen_oben
+    bohrung_unten_1 statt bohrung_oben_*).
+
 ## 2026-05-08
+
+- **Coder-Skip global per `error_loop.disable_coder` (Default: true) +
+  Heatmap-Runs persistieren in runs.jsonl.**
+  Memory `project_coder_elimination` und
+  `feedback_template_mode_no_coder` haben den Coder schon laenger als
+  Eliminations-Kandidat markiert; in Real-Runs wird er trotzdem
+  haeufig aktiviert (placement-error im Validator, llm-Modus aus
+  function_decomposer, phase=1 im Error-Router) und kostet Zeit ohne
+  Mehrwert. Jetzt deterministisch geblockt.
+
+  - Neuer Config-Flag `error_loop.disable_coder: bool = True` in
+    [src/config/loader.py] und [config/config.yaml]. Default true —
+    der alte Coder-Pfad ist via `disable_coder: false` reaktivierbar.
+  - [src/graph/edges.py]: drei Routes umgelenkt.
+    `route_after_executor` short-circuited zu END (zusaetzlich zum
+    bereits existierenden template-mode-Bypass), `route_after_validator`
+    placement-error → END statt coder, `route_after_error_router`
+    skipt phase=1 + phase=2 → END.
+  - [src/graph/pipeline.py]: zwei weitere Routes.
+    `route_after_function_decomposer` llm-mode + disabled → END
+    (Conditional-Edge-Mapping um `"end": END` ergaenzt),
+    `route_after_code_review` issues + disabled → executor (durchwinken,
+    Code-Review wird nicht kuenstlich blockiert).
+  - Effekt fuer Real-Runs: Pipeline laeuft normal durch alle
+    deterministischen Stufen, schliesst auch bei Codegen-/Validator-
+    Faults sauber ab (kein STL bei Fail, aber Blueprint+Traces bleiben
+    vollstaendig erhalten).
+  - [scripts/run_real_goldens.py]: ruft pro Run `SessionLogger.log_run`
+    auf — jeder Heatmap-Run bekommt eine `run_id` in
+    `data/sessions/runs.jsonl` (mit allen agent_traces fuer Deep-Dive).
+    Run-ID erscheint in der CLI-Tabelle (`run=8c4c7498`) und im
+    persistenten Heatmap-Markdown. `--no-jsonl` deaktiviert den Append.
+  - 244/244 Unit-Tests gruen, 13/13 Component-Goldens gruen, B1-Smoke
+    Real-Run PASS in 48s mit run_id-Persistenz verifiziert.
+
+- **Real-Run-Heatmap-Skript fuer Component-Goldens.**
+  Neuer Knopfdruck-Workflow fuer den naechsten Roadmap-Schritt aus
+  Memory `project_next_real_run_analysis_2026_05_08.md`: Component-
+  Spec-Varianten durch die echte LLM-Pipeline schicken und Bug-Heatmap
+  pro Layer auswerten.
+
+  - Pro Component (B1-3, B_kombo_*, M/N/T/E/EF/NEST_kombo_basics)
+    eine `pipeline/specs.txt` mit einer oder mehreren Spec-Varianten
+    angelegt — B1/B2 mit drei Wording-Varianten, B3 mit zwei, restliche
+    Components mit der jeweiligen Original-User-Spec aus notes.md.
+    Fuer M/E/EF/NEST (notes.md hat dort nur Resolver-Tabellen, keinen
+    User-Spec-Block) wurden Specs aus den Tabellen konstruiert und im
+    File als KONSTRUIERT markiert — Wording soll bei Real-Run-Auffallen
+    iterativ verfeinert werden.
+  - Neues Skript `scripts/run_real_goldens.py`. Discovery: jede
+    `tests/golden/components/<X>/pipeline/specs.txt` plus
+    `<X>/resolver/expected_resolved.json` wird ein Real-Run-Case.
+    Filter (`--filter B`, `--filter B1,NEST`), `--first-only` fuer
+    Quick-Pass, `--list` fuer Discovery-only.
+  - Pro Spec: `PipelineRunner.run`, dann Vergleich des resolved
+    Blueprints gegen `expected_resolved.json` mit den gleichen
+    Toleranzen wie `test_resolver_components.py`.
+  - Heuristische Layer-Attribution: Pipeline-Crash mit error_tag →
+    Trace-Agent; root-Teile-Anzahl falsch → inventar; Feature-Count
+    pro Teil falsch → aktions_splitter; parent-Rewriting falsch →
+    aktions_aggregator (NEST); type/face/side-Diff →
+    aktions_klassifizierer; params-Diff → feature_definierer;
+    offset/angle-Diff → blueprint_resolver.
+  - Output: tabellarische Pro-Spec-Zeile (PASS/FAIL + Layer + erste
+    Diagnose), Layer-Heatmap mit ASCII-Bars, persistenter Report
+    `data/sessions/heatmap_<datum>_<zeit>.md` mit allen Diffs +
+    State-Pointers fuer Deep-Dive.
+  - Smoke-Test: `--filter B1 --first-only` PASS in 43.8s gegen die
+    B1-v0-Spec. Discovery findet 17 Specs in 12 Components.
+  - Vorbereitet fuer ADR 0005 Phase 3: erste Real-Run-Heatmap nach
+    Component-Familien (B/M/N/T/E/EF/NEST) liefert die Daten fuer die
+    Architektur-Entscheidung Spezialisten-Fan-Out vs. Front-Layer-
+    Haerten.
 
 - **Component-Goldens-Coverage komplett (B/M/N/T/E/EF/NEST) +
   Splitter Voice-Resilienz** (Commit `2129818` + Folge-Commit fuer NEST).
