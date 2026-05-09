@@ -104,6 +104,15 @@ class SandboxConfig(BaseModel):
 class ErrorLoopConfig(BaseModel):
     max_attempts: int = 6
     max_semantic_retries: int = 2
+    disable_coder: bool = True
+    """Coder-Elimination (Memory project_coder_elimination, feedback_template_mode_no_coder).
+
+    Default true — alle Routes die historisch auf 'coder' gegangen sind
+    (route_after_validator placement-error, route_after_error_router phase=1,
+    route_after_function_decomposer mode=llm, route_after_code_review issues)
+    enden stattdessen am END. Der Run wird mit dem aktuellen Pipeline-State
+    gespeichert (kein STL bei Codegen-Fail, aber Blueprint+Traces fuer Analyse).
+    Auf False setzen reaktiviert den alten LLM-Coder-Pfad."""
 
 
 class UIConfig(BaseModel):

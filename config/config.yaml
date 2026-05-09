@@ -107,6 +107,10 @@ sandbox:
 error_loop:
   max_attempts: 6
   max_semantic_retries: 3
+  # Coder-Elimination (Memory project_coder_elimination): true → alle Coder-
+  # Routes (placement-error im Validator, phase=1 im Error-Router, llm-mode
+  # im function_decomposer) gehen auf END. Run wird trotzdem gespeichert.
+  disable_coder: true
 
 # --- UI ---
 ui:

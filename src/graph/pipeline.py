@@ -12,8 +12,10 @@ STRUKTUR (bei Aenderungen pflegen! Siehe CLAUDE.md)
 Routing-Funktionen (Condition-Edges):
   route_after_interpreter             — Interpreter-Loop bis Spec komplett
   route_after_coordinate_validator    — zurueck zu feature_definierer oder architect
-  route_after_code_review             — zurueck zu coder bei Issues (max 2)
-  route_after_function_decomposer     — template-Modus ueberspringt Coder
+  route_after_code_review             — zurueck zu coder bei Issues (max 2);
+                                        bei disable_coder → executor durchwinken
+  route_after_function_decomposer     — template-Modus ueberspringt Coder;
+                                        bei disable_coder + llm-Modus → END
   route_after_plan_validator          — zurueck zu assembly oder architect
   _is_3step_chain                     — Helper: unterscheidet Chain vs. Architect
   (in edges.py):
@@ -127,6 +129,12 @@ def route_after_code_review(state: PipelineState) -> str:
         log.warning("route_code_review", decision="executor",
                     reason="max_retries_exceeded", attempts=cr_attempts)
         return "executor"
+    from src.config.loader import get_config
+    if get_config().error_loop.disable_coder:
+        log.warning("route_code_review", decision="executor",
+                    reason="coder_disabled",
+                    issues=state.get("code_review_issues", "")[:60])
+        return "executor"
     log.info("route_code_review", decision="coder",
              issues=state.get("code_review_issues", "")[:60])
     return "coder"
@@ -139,6 +147,11 @@ def route_after_function_decomposer(state: PipelineState) -> str:
         log.info("route_function_decomposer", decision="executor",
                  reason="all_features_template")
         return "executor"
+    from src.config.loader import get_config
+    if get_config().error_loop.disable_coder:
+        log.warning("route_function_decomposer", decision="end",
+                    reason="coder_disabled_llm_mode_unreachable", mode=mode)
+        return "end"
     log.info("route_function_decomposer", decision="coder", mode=mode)
     return "coder"
 
@@ -301,11 +314,12 @@ def build_graph() -> StateGraph:
         },
     )
 
-    # Function decomposer → coder (or skip to executor for template mode)
+    # Function decomposer → coder (or skip to executor for template mode,
+    # or end if llm-mode and coder is disabled)
     graph.add_conditional_edges(
         "function_decomposer",
         route_after_function_decomposer,
-        {"executor": "executor", "coder": "coder"},
+        {"executor": "executor", "coder": "coder", "end": END},
     )
 
     # Coder → code review → executor

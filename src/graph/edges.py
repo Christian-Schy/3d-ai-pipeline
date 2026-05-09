@@ -50,6 +50,9 @@ def _max_attempts() -> int:
 def _max_semantic_retries() -> int:
     return get_config().error_loop.max_semantic_retries
 
+def _coder_disabled() -> bool:
+    return get_config().error_loop.disable_coder
+
 # Keep module-level names for tests that import them directly
 MAX_ATTEMPTS = 6
 MAX_SEMANTIC_RETRIES = 2
@@ -74,6 +77,13 @@ def route_after_executor(state: PipelineState) -> str:
     if state.get("generation_mode") == "template":
         log.warning("route_executor", decision="end",
                     reason="template_mode_no_coder_repair",
+                    error=(state.get("execution_error")
+                           or state.get("validation_error", ""))[:120])
+        return "end"
+
+    if _coder_disabled():
+        log.warning("route_executor", decision="end",
+                    reason="coder_disabled",
                     error=(state.get("execution_error")
                            or state.get("validation_error", ""))[:120])
         return "end"
@@ -123,6 +133,11 @@ def route_after_validator(state: PipelineState) -> str:
 
     # Placement/position errors: coder generated wrong offset. Route to coder.
     if any(kw in feedback_lower for kw in _PLACEMENT_ERROR_KEYWORDS):
+        if _coder_disabled():
+            log.warning("route_validator", decision="end",
+                        reason="placement_error_coder_disabled",
+                        feedback=feedback[:80])
+            return "end"
         log.info("route_validator", decision="coder",
                  reason="placement_error", feedback=feedback[:80])
         return "coder"
@@ -156,6 +171,11 @@ def route_after_error_router(state: PipelineState) -> str:
     Phase 3 → end         (give up)
     """
     phase = state.get("phase", 1)
+
+    if _coder_disabled():
+        log.warning("route_error_router", decision="end",
+                    reason="coder_disabled", phase=phase)
+        return "end"
 
     if phase == 1:
         log.info("route_error_router", decision="coder", phase=1)
