@@ -429,6 +429,29 @@ def test_pocket_corner_to_corner_anchor_uses_child_corner():
     }
 
 
+def test_hole_edge_to_edge_anchor_uses_child_edge():
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="bohrung",
+        seite="oben",
+        position="rechts",
+        parameter={"durchmesser": 5, "tiefe": 5, "kante_rechts": 0},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="bohrung",
+               beschreibung="oben eine 5mm bohrung 5 tief rechte kante "
+                            "der bohrung auf rechte kante der platte",
+               seite="oben",
+               parameter_hints={"durchmesser": 5, "tiefe": 5,
+                                "kante_rechts": 0}),
+        _teil(),
+    )
+    assert feat["position"]["anchor"] == {
+        "child_point": "right_edge",
+        "parent_point": "right_edge",
+    }
+
+
 def test_rotation_deg_hint_maps_to_drehung_then_angle_deg():
     """Classifier hints rotation_deg=10 → params['drehung']=10
     → feature.position.angle_deg=10."""

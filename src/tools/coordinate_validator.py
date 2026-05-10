@@ -459,24 +459,41 @@ def _check_offset_inside_pocket(
     else:
         return
 
-    if abs(local_x) + feat_half_x > pocket_w / 2 + 0.1:
-        issues.append(CoordIssue(
-            severity="ERROR", feature_id=fid,
-            check="inside_pocket_x",
-            message=(
-                f"Feature exceeds pocket in X: pocket-local |x|={abs(local_x):.1f} + "
-                f"half_size={feat_half_x:.1f} > pocket_half={pocket_w/2:.1f}"
-            )
-        ))
-    if abs(local_y) + feat_half_y > pocket_h / 2 + 0.1:
-        issues.append(CoordIssue(
-            severity="ERROR", feature_id=fid,
-            check="inside_pocket_y",
-            message=(
-                f"Feature exceeds pocket in Y: pocket-local |y|={abs(local_y):.1f} + "
-                f"half_size={feat_half_y:.1f} > pocket_half={pocket_h/2:.1f}"
-            )
-        ))
+    def _append_pocket_bound_issue(axis: str, local_abs: float, feat_half: float, pocket_half: float) -> None:
+        if feat_half > pocket_half + 0.1 and local_abs < 0.1:
+            issues.append(CoordIssue(
+                severity="ERROR", feature_id=fid,
+                check=f"inside_pocket_{axis}",
+                message=(
+                    f"Feature is larger than pocket in {axis.upper()}: "
+                    f"half_size={feat_half:.1f} > pocket_half={pocket_half:.1f}"
+                )
+            ))
+            return
+        if local_abs - feat_half > pocket_half + 0.1:
+            issues.append(CoordIssue(
+                severity="ERROR", feature_id=fid,
+                check=f"inside_pocket_{axis}",
+                message=(
+                    f"Feature is fully outside pocket in {axis.upper()}: "
+                    f"pocket-local |{axis}|={local_abs:.1f} - half_size={feat_half:.1f} "
+                    f"> pocket_half={pocket_half:.1f}"
+                )
+            ))
+            return
+        if local_abs + feat_half > pocket_half + 0.1:
+            issues.append(CoordIssue(
+                severity="WARNING", feature_id=fid,
+                check=f"inside_pocket_overhang_{axis}",
+                message=(
+                    f"Subtractive feature opens past pocket edge in {axis.upper()}: "
+                    f"pocket-local |{axis}|={local_abs:.1f} + half_size={feat_half:.1f} "
+                    f"> pocket_half={pocket_half:.1f}"
+                )
+            ))
+
+    _append_pocket_bound_issue("x", abs(local_x), feat_half_x, pocket_w / 2)
+    _append_pocket_bound_issue("y", abs(local_y), feat_half_y, pocket_h / 2)
 
 
 def _check_build_order_sorting(

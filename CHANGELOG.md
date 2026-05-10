@@ -10,6 +10,26 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-10
 
+- **EF/NEST/T Anchor-Cluster fokussiert stabilisiert.**
+  Nach dem Nuten-Fix waren `T_kombo` live bereits gruen, `EF_kombo`
+  scheiterte noch an `ef07` (`rechte kante der bohrung auf rechte kante
+  der platte`) und `NEST_kombo` war blueprint-gruen, aber mit
+  `coordinate_errors_unresolved` wegen einer bewusst offenen Bohrung an
+  der Taschenkante. `NormalizerAgent` erkennt nun explizite
+  Child-Edge-Phrasen (`rechte/linke/obere/untere kante der bohrung/...`)
+  als `child_point=*_edge`; der Coordinate-Validator stuft teilweise
+  ueberstehende subtraktive Feature-in-Pocket-Cuts als Warnung ein,
+  vollstaendig ausserhalb liegende Pocket-Children bleiben Fehler.
+  Tests: `uv run pytest -q tests/agents/test_normalizer_define_feature.py
+  tests/tools/test_coordinate_validator.py tests/graph/test_coord_validator_node.py
+  tests/golden/components/test_resolver_components.py -k 'not slow'`
+  → `51 passed`; Live-Heatmap
+  `uv run python -m scripts.run_real_goldens --filter EF_,NEST_ --first-only --no-persist`
+  → `2 PASS / 0 FAIL`, Runs `3adbf438`, `c229d2b0`, beide
+  `success=True`. `T_kombo` war im vorigen Fokuslauf ebenfalls PASS
+  (`4933a5f7`). Replay-Heatmap danach: `11 PASS / 6 FAIL`; der
+  `blueprint_resolver`-Cluster ist aus der Fail-Heatmap raus.
+
 - **N_kombo live gruen: Nuten-Laenge, Face-Achsen, Anchors und Validator.**
   `NormalizerAgent.define_feature` fuellt bei Nuten ohne explizite `laenge`
   die volle Parent-Face-Achsdimension deterministisch aus `teil.raw_params`.

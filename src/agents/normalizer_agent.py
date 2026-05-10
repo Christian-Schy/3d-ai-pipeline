@@ -84,6 +84,18 @@ _CHILD_CORNER_RE = re.compile(
     r"(?:der|des)\s+(?:tasche|nut|bohrung|platte|features?)\b"
 )
 
+_CHILD_EDGE_RE = re.compile(
+    r"\b(?P<edge>rechte|linke|obere|untere)\s+kante\s+"
+    r"(?:der|des)\s+(?:tasche|nut|bohrung|platte|features?)\b"
+)
+
+_EDGE_WORD_TO_POINT: dict[str, str] = {
+    "rechte": "right_edge",
+    "linke": "left_edge",
+    "obere": "top_edge",
+    "untere": "bottom_edge",
+}
+
 _EDGE_ANCHOR_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?rechte[ern]?\s+kante\b"), "right_edge"),
     (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?linke[ern]?\s+kante\b"), "left_edge"),
@@ -224,6 +236,10 @@ def _infer_phrase_anchor(phrase: str) -> dict | None:
     child_match = _CHILD_CORNER_RE.search(text)
     if child_match:
         child_point = _corner_point_from_text(child_match.group("corner")) or "center"
+    else:
+        child_edge_match = _CHILD_EDGE_RE.search(text)
+        if child_edge_match:
+            child_point = _EDGE_WORD_TO_POINT.get(child_edge_match.group("edge"), "center")
 
     parent_point = None
     for pattern, point in _EDGE_ANCHOR_PATTERNS:
