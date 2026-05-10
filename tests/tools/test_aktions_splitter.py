@@ -67,6 +67,29 @@ def test_trailing_comma_ignored():
     assert len(out) == 1
 
 
+def test_placement_continuation_attaches_to_previous_feature():
+    """Comma-only offset fragments refine the previous action, not a new one."""
+    out = split_spec_into_aktionen(
+        "oben eine nut 5x5 entlang y-achse laenge 40mm liegt auf rechter kante an, "
+        "10mm nach oben versetzt, "
+        "oben eine nut 5x5 entlang x-achse laenge 30mm zentral",
+        _teile_single(),
+    )
+    assert len(out) == 2
+    assert "10mm nach oben versetzt" in out[0]["phrase"]
+    assert out[1]["phrase"].startswith("oben eine nut 5x5 entlang x-achse")
+
+
+def test_placement_continuation_after_dropped_part_decl_is_not_attached():
+    out = split_spec_into_aktionen(
+        "oben eine Bohrung 10mm, vorne soll eine platte 80x40x20, "
+        "10mm nach oben versetzt",
+        _teile_single(),
+    )
+    assert len(out) == 1
+    assert "10mm nach oben versetzt" not in out[0]["phrase"]
+
+
 def test_adjective_form_rechten_does_not_split():
     """'rechten' (adjective) inside a phrase must not be confused with the
     bare side-keyword 'rechts'. The whole text stays one phrase."""

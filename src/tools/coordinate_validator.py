@@ -346,33 +346,61 @@ def _check_offset_bounds(
     else:
         return  # can't determine size
 
+    def _append_bound_issue(axis: str, offset_abs: float, feat_half: float, parent_half: float) -> None:
+        if is_subtractive:
+            if feat_half > parent_half + 0.1 and offset_abs < 0.1:
+                issues.append(CoordIssue(
+                    severity="ERROR", feature_id=fid,
+                    check=f"offset_bounds_{axis}",
+                    message=(
+                        f"Feature is larger than parent in {axis.upper()}: "
+                        f"half_size={feat_half:.1f} > parent_half={parent_half:.1f}"
+                    )
+                ))
+                return
+            if offset_abs - feat_half > parent_half + 0.1:
+                issues.append(CoordIssue(
+                    severity="ERROR", feature_id=fid,
+                    check=f"offset_bounds_{axis}",
+                    message=(
+                        f"Feature is fully outside parent in {axis.upper()}: "
+                        f"|offset_{axis}|={offset_abs:.1f} - half_size={feat_half:.1f} "
+                        f"> parent_half={parent_half:.1f}"
+                    )
+                ))
+                return
+            if offset_abs + feat_half > parent_half + 0.1:
+                issues.append(CoordIssue(
+                    severity="WARNING", feature_id=fid,
+                    check=f"offset_overhang_{axis}",
+                    message=(
+                        f"Subtractive feature opens past parent edge in {axis.upper()}: "
+                        f"|offset_{axis}|={offset_abs:.1f} + half_size={feat_half:.1f} = "
+                        f"{offset_abs + feat_half:.1f} > parent_half={parent_half:.1f}"
+                    )
+                ))
+            return
+
+        if offset_abs + feat_half > parent_half + 0.1:
+            issues.append(CoordIssue(
+                severity=severity, feature_id=fid,
+                check=f"offset_bounds_{axis}",
+                message=(
+                    f"Feature exceeds parent in {axis.upper()}: |offset_{axis}|={offset_abs:.1f} + "
+                    f"half_size={feat_half:.1f} = {offset_abs + feat_half:.1f} > "
+                    f"parent_half={parent_half:.1f}"
+                )
+            ))
+
     # Check X offset
     if offset_x is not None:
         ox = abs(float(offset_x))
-        if ox + feat_half_x > parent_half_x + 0.1:  # 0.1mm tolerance
-            issues.append(CoordIssue(
-                severity=severity, feature_id=fid,
-                check="offset_bounds_x",
-                message=(
-                    f"Feature exceeds parent in X: |offset_x|={ox:.1f} + "
-                    f"half_size={feat_half_x:.1f} = {ox + feat_half_x:.1f} > "
-                    f"parent_half={parent_half_x:.1f}"
-                )
-            ))
+        _append_bound_issue("x", ox, feat_half_x, parent_half_x)
 
     # Check Y offset
     if offset_y is not None:
         oy = abs(float(offset_y))
-        if oy + feat_half_y > parent_half_y + 0.1:
-            issues.append(CoordIssue(
-                severity=severity, feature_id=fid,
-                check="offset_bounds_y",
-                message=(
-                    f"Feature exceeds parent in Y: |offset_y|={oy:.1f} + "
-                    f"half_size={feat_half_y:.1f} = {oy + feat_half_y:.1f} > "
-                    f"parent_half={parent_half_y:.1f}"
-                )
-            ))
+        _append_bound_issue("y", oy, feat_half_y, parent_half_y)
 
 
 def _check_offset_inside_pocket(

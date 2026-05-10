@@ -62,6 +62,29 @@ _VERSATZ_KEYS = {
     "versatz_hinten": "back",
 }
 
+_SLOT_AXIS_TO_ANGLE = {
+    "oben": {"x": 0.0, "y": 90.0, "z": 0.0},
+    "unten": {"x": 0.0, "y": 90.0, "z": 0.0},
+    "rechts": {"y": 0.0, "z": 90.0, "x": 0.0},
+    "links": {"y": 0.0, "z": 90.0, "x": 0.0},
+    "vorne": {"x": 0.0, "z": 90.0, "y": 0.0},
+    "hinten": {"x": 0.0, "z": 90.0, "y": 0.0},
+}
+
+
+def _axis_from_richtung(richtung: str) -> str | None:
+    richtung_norm = (richtung or "").strip().lower().replace("_", "-")
+    for axis in ("x", "y", "z"):
+        if richtung_norm in {
+            axis,
+            f"{axis}-achse",
+            f"{axis}achse",
+            f"{axis}-axis",
+            f"{axis}axis",
+        }:
+            return axis
+    return None
+
 
 def _extract_center_offset(params: dict) -> dict | None:
     """Extract center-relative offsets ("versatz_*" keys) from params.
@@ -228,16 +251,15 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | Non
                 break
 
     # Slot-Achsen-Konvention (notes.md N_kombo_basics):
-    # "entlang x-achse" → angle_deg=0 (Slot horizontal auf Face)
-    # "entlang y-achse" → angle_deg=90 (Slot vertikal auf Face)
+    # >Z: "entlang x-achse" → angle_deg=0, "entlang y-achse" → 90.
+    # >X: "entlang y-achse" → angle_deg=0, "entlang z-achse" → 90.
     # Kombiniert mit expliziter Rotation: "entlang y-achse 15 grad gedreht"
     # → angle = 90 + 15 = 105.
     # Deterministische Achsen→Winkel-Konvention; das LLM erkennt nur die Achse,
     # die Mappierung ist Code-Aufgabe.
     if feature_type == "slot":
-        richtung_norm = (richtung or "").strip().lower()
-        if richtung_norm in ("y", "y-achse", "y-axis"):
-            angle_deg += 90.0
+        axis = _axis_from_richtung(richtung)
+        angle_deg += _SLOT_AXIS_TO_ANGLE.get(seite, {}).get(axis, 0.0)
 
     position_dict = {
         "side": seite,

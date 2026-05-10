@@ -10,6 +10,23 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-10
 
+- **N_kombo live gruen: Nuten-Laenge, Face-Achsen, Anchors und Validator.**
+  `NormalizerAgent.define_feature` fuellt bei Nuten ohne explizite `laenge`
+  die volle Parent-Face-Achsdimension deterministisch aus `teil.raw_params`.
+  Slot-Winkel sind jetzt face-lokal (`>Z`: X=0/Y=90, `>X`: Y=0/Z=90).
+  Der Splitter haengt reine Versatz-Folgefragmente wie
+  `10mm nach oben versetzt` an die vorherige Feature-Phrase, und der
+  Normalizer leitet klare Kanten-/Eckenanker (`liegt auf rechter kante`,
+  `obere rechte ecke ...`) additiv nach `position.anchor` ab. Der
+  Coordinate-Validator behandelt teilweise ueberstehende subtraktive
+  Kanten-Cuts als Warnung statt Fehler, vollstaendig ausserhalb liegende
+  Features bleiben Fehler. Die Real-Run-Heatmap paart gleiche
+  `(type, face, offset)`-Features zusaetzlich ueber Winkel/Parameter, damit
+  Nuten mit gleichem Zentrum sauber verglichen werden.
+  Tests: gezielte Splitter/Normalizer/Validator/Heatmap-Tests gruen;
+  `uv run python -m scripts.run_real_goldens --filter N_kombo --first-only --no-persist`
+  → `1 PASS / 0 FAIL`, Run `633015ee`, Pipeline `success=True`.
+
 - **Baseline-Hygiene fuer komplexe Standard-Teile gestartet.**
   Pipeline-Goldens sind als `slow` markiert und werden per Default nicht
   von `pytest` gestartet; Component-Goldens bleiben schnell. Config nimmt

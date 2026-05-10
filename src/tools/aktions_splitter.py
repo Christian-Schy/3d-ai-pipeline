@@ -109,6 +109,13 @@ _MISSING_COMMA_RE = re.compile(
     re.IGNORECASE,
 )
 
+_PLACEMENT_CONTINUATION_RE = re.compile(
+    r"^\s*(?:und\s+)?(?:\d+(?:[.,]\d+)?\s*mm\s+)?"
+    r"(?:nach|um)\s+(?:oben|unten|rechts|links|vorne|hinten)\b"
+    r".*\b(?:versetzt|verschoben)\b",
+    re.IGNORECASE,
+)
+
 
 def _insert_missing_commas(spec: str) -> str:
     """Insert a comma before '<side> soll' when the preceding word is a
@@ -122,6 +129,11 @@ def _insert_missing_commas(spec: str) -> str:
     for the regression case.
     """
     return _MISSING_COMMA_RE.sub(r"\1, \2", spec)
+
+
+def _is_placement_continuation(segment: str) -> bool:
+    """True for comma fragments that only refine the previous feature."""
+    return bool(_PLACEMENT_CONTINUATION_RE.search(segment or ""))
 
 
 def split_spec_into_aktionen(
@@ -146,11 +158,23 @@ def split_spec_into_aktionen(
     counters: Dict[str, int] = {tid: 0 for tid in teil_ids}
     last_teil = teil_ids[0]
     aktionen: List[Dict] = []
+    last_action_idx: Optional[int] = None
+    last_segment_was_action = False
 
     for raw_segment in _comma_split(specification):
         seg_teil = _assign_teil_id(raw_segment, teil_ids, last_teil)
         seg = _strip_part_declaration(raw_segment)
         if not seg:
+            if (
+                last_segment_was_action
+                and last_action_idx is not None
+                and _is_placement_continuation(raw_segment)
+            ):
+                aktionen[last_action_idx]["phrase"] = (
+                    f"{aktionen[last_action_idx]['phrase']}, {raw_segment.strip()}"
+                )
+            else:
+                last_segment_was_action = False
             continue
 
         parent_text, children = _split_at_nested_markers(seg)
@@ -164,6 +188,7 @@ def split_spec_into_aktionen(
                 "phrase_idx": parent_idx,
                 "parent_phrase_idx": None,
             })
+            last_action_idx = len(aktionen) - 1
             counters[seg_teil] += 1
         else:
             # Segment opens directly with "in der Tasche ..." — no fresh
@@ -178,9 +203,11 @@ def split_spec_into_aktionen(
                 "phrase_idx": counters[seg_teil],
                 "parent_phrase_idx": parent_idx,
             })
+            last_action_idx = len(aktionen) - 1
             counters[seg_teil] += 1
 
         last_teil = seg_teil
+        last_segment_was_action = True
 
     return aktionen
 

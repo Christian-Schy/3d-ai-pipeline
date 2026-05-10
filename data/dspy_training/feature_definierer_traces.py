@@ -87,16 +87,12 @@ TRACES = [
         "status": "fixed",
     },
 
-    # ── N_kombo phrase_idx=2 (run 08f46bc1) — OPEN ────────────────────────
+    # ── N_kombo phrase_idx=2 (run 08f46bc1) — FIXED 2026-05-10 ───────────
     # Bug-Pattern: Slot ohne explizite laenge → durchgehend (parent-dim).
     # User-Phrase: "oben eine nut 5x5 entlang x-achse 10mm nach rechts versetzt"
     # — keine laenge. Klassifizierer emittiert keinen laenge-Hint.
-    # feature_builder setzt length=None, Resolver kommt damit nicht klar.
-    # Erwartung: length sollte zu parent-face-axis-dim defaulten (100 hier).
-    # Fix-Optionen: Resolver fuellt None mit parent-Dim; ODER feature_builder
-    # default mit Marker "durchgehend"; ODER Klassifizierer Few-Shot
-    # "ohne explizite laenge → laenge=parent-Dim" (aber Klassifizierer kennt
-    # parent-Dim nicht). Sauber: Resolver-Fix.
+    # Fix: NormalizerAgent.define_feature kennt teil.raw_params und fuellt
+    # slot.laenge deterministisch aus der Face-Achse (100 hier).
     {
         "id": "definierer_slot_durchgehend_default_n_kombo_idx2",
         "klassifikation": {
@@ -118,17 +114,18 @@ TRACES = [
             "position_side": "oben",
         },
         "source_run": "08f46bc1",
-        "bug_pattern": "slot ohne laenge → durchgehend = parent-face-axis-dim. Resolver-Fix noetig",
-        "status": "open",
+        "bug_pattern": "slot ohne laenge → durchgehend = parent-face-axis-dim",
+        "status": "fixed",
     },
 
-    # ── N_kombo phrase_idx=6 (run 08f46bc1) — OPEN ────────────────────────
+    # ── N_kombo phrase_idx=6 (run 08f46bc1) — FIXED 2026-05-10 ───────────
     # Bug-Pattern: Anchor "liegt auf rechter kante" wird vom Klassifizierer
     # als kante_rechts=0 missverstanden — eigentlich ein Anchor-Marker
     # (parent_point=right_edge). Klassifizierer-Schema kennt parent_point
     # nicht; Anchors gehen ueber Normalizer (richtung/anchor-Felder).
-    # Fix: erfordert Schema-Erweiterung des Klassifizierers ODER Normalizer-
-    # Few-Shot fuer Anchor-Phrasen.
+    # Fix: Splitter haengt reine Versatz-Folgefragmente an die vorherige
+    # Feature-Phrase, NormalizerAgent leitet anchor parent_point=right_edge
+    # deterministisch aus der Phrase ab.
     {
         "id": "definierer_slot_anchor_edge_n_kombo_idx6",
         "klassifikation": {
@@ -139,7 +136,7 @@ TRACES = [
             "phrase_idx": 6,
             "parent_phrase_idx": None,
             "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 40,
-                                "kante_rechts": 0},
+                                "kante_rechts": 0, "versatz_oben": 10},
         },
         "teil": {"id": "wuerfel", "type": "box",
                   "raw_params": {"x": 100, "y": 100, "z": 100}},
@@ -153,7 +150,7 @@ TRACES = [
         },
         "source_run": "08f46bc1",
         "bug_pattern": "anchor 'liegt auf rechter kante' wird als kante_rechts=0 statt parent_point=right_edge erkannt",
-        "status": "open",
+        "status": "fixed",
     },
 ]
 

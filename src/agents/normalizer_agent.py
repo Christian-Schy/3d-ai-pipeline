@@ -14,6 +14,8 @@ AktionsKlassifizierer and returns one SemanticFeature with phrase
 markers for the Aggregator (Stufe 4).
 """
 
+import re
+
 import structlog
 
 from src.agents.base import BaseAgent
@@ -46,6 +48,48 @@ _NORMALIZER_FAMILY: dict[str, set[str]] = {
 # Most keys match (durchmesser, tiefe, laenge, breite, groesse, ...).
 # Only `rotation_deg` needs translation: build_feature reads `drehung`.
 _HINT_KEY_RENAME: dict[str, str] = {"rotation_deg": "drehung"}
+
+_SIDE_FACE_AXES: dict[str, tuple[str, str]] = {
+    "oben": ("x", "y"),
+    "unten": ("x", "y"),
+    "rechts": ("y", "z"),
+    "links": ("y", "z"),
+    "vorne": ("x", "z"),
+    "hinten": ("x", "z"),
+}
+
+_ANCHOR_OFFSET_PARAM_MAP: dict[str, str] = {
+    "versatz_oben": "top",
+    "versatz_unten": "bottom",
+    "versatz_rechts": "right",
+    "versatz_links": "left",
+    "versatz_vorne": "front",
+    "versatz_hinten": "back",
+}
+
+_CORNER_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\bobere\s+rechte\s+ecke\b"), "top_right"),
+    (re.compile(r"\brechte\s+obere\s+ecke\b"), "top_right"),
+    (re.compile(r"\bobere\s+linke\s+ecke\b"), "top_left"),
+    (re.compile(r"\blinke\s+obere\s+ecke\b"), "top_left"),
+    (re.compile(r"\buntere\s+rechte\s+ecke\b"), "bottom_right"),
+    (re.compile(r"\brechte\s+untere\s+ecke\b"), "bottom_right"),
+    (re.compile(r"\buntere\s+linke\s+ecke\b"), "bottom_left"),
+    (re.compile(r"\blinke\s+untere\s+ecke\b"), "bottom_left"),
+)
+
+_CHILD_CORNER_RE = re.compile(
+    r"\b(?P<corner>(?:obere|untere|rechte|linke)\s+"
+    r"(?:rechte|linke|obere|untere)\s+ecke)\s+"
+    r"(?:der|des)\s+(?:tasche|nut|bohrung|platte|features?)\b"
+)
+
+_EDGE_ANCHOR_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?rechte[ern]?\s+kante\b"), "right_edge"),
+    (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?linke[ern]?\s+kante\b"), "left_edge"),
+    (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?obere[ern]?\s+kante\b"), "top_edge"),
+    (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?untere[ern]?\s+kante\b"), "bottom_edge"),
+)
 
 
 def _merge_param_hints(params: dict, hints: dict) -> None:
@@ -83,6 +127,135 @@ def _reconcile_typ(classifier_typ: str, normalizer_typ: str) -> str:
     if normalizer_typ in _NORMALIZER_FAMILY[classifier_typ]:
         return normalizer_typ
     return classifier_typ
+
+
+def _axis_from_richtung(richtung: str) -> str | None:
+    richtung_norm = (richtung or "").strip().lower().replace("_", "-")
+    for axis in ("x", "y", "z"):
+        if richtung_norm in {
+            axis,
+            f"{axis}-achse",
+            f"{axis}achse",
+            f"{axis}-axis",
+            f"{axis}axis",
+        }:
+            return axis
+    return None
+
+
+def _part_dimension(raw_params: dict, axis: str) -> float | int | None:
+    value = raw_params.get(axis)
+    if value is None and axis in ("x", "y"):
+        value = raw_params.get("diameter") or raw_params.get("durchmesser")
+    if value is None and axis == "z":
+        value = raw_params.get("height") or raw_params.get("hoehe")
+    if isinstance(value, (int, float)):
+        return value
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _infer_full_slot_length(teil: dict, seite: str, richtung: str) -> float | int | None:
+    """Infer the through/full slot length from the host part dimensions.
+
+    The normalizer only identifies "slot along axis"; the deterministic path
+    owns the parent-dimension default used by N_kombo when no explicit
+    `laenge` is present.
+    """
+    raw_params = teil.get("raw_params") or {}
+    face_axes = _SIDE_FACE_AXES.get((seite or "").lower(), ("x", "y"))
+    axis = _axis_from_richtung(richtung) or face_axes[0]
+    if axis not in face_axes:
+        axis = face_axes[0]
+    return _part_dimension(raw_params, axis)
+
+
+def _fill_missing_slot_length(normalized: dict, teil: dict) -> None:
+    params = normalized.get("parameter")
+    if not isinstance(params, dict):
+        return
+    if params.get("laenge") is not None:
+        return
+    inferred = _infer_full_slot_length(
+        teil,
+        normalized.get("seite", "oben"),
+        normalized.get("richtung", ""),
+    )
+    if inferred is not None:
+        params["laenge"] = inferred
+
+
+def _normalize_phrase(text: str) -> str:
+    return (
+        (text or "")
+        .lower()
+        .replace("ä", "ae")
+        .replace("ö", "oe")
+        .replace("ü", "ue")
+        .replace("ß", "ss")
+    )
+
+
+def _corner_point_from_text(text: str) -> str | None:
+    for pattern, point in _CORNER_PATTERNS:
+        if pattern.search(text):
+            return point
+    return None
+
+
+def _anchor_offset_from_params(params: dict) -> dict | None:
+    offset = {}
+    for param_key, anchor_key in _ANCHOR_OFFSET_PARAM_MAP.items():
+        value = params.get(param_key)
+        if not isinstance(value, (int, float)) or float(value) == 0:
+            continue
+        offset[anchor_key] = value
+    return offset or None
+
+
+def _infer_phrase_anchor(phrase: str) -> dict | None:
+    text = _normalize_phrase(phrase)
+    if not text:
+        return None
+
+    child_point = "center"
+    child_match = _CHILD_CORNER_RE.search(text)
+    if child_match:
+        child_point = _corner_point_from_text(child_match.group("corner")) or "center"
+
+    parent_point = None
+    for pattern, point in _EDGE_ANCHOR_PATTERNS:
+        if pattern.search(text):
+            parent_point = point
+            break
+
+    if parent_point is None:
+        if child_match and " auf " in text:
+            after_anchor = text.split(" auf ", 1)[1]
+            parent_point = _corner_point_from_text(after_anchor)
+        else:
+            parent_point = _corner_point_from_text(text)
+
+    if parent_point is None:
+        return None
+    return {"child_point": child_point, "parent_point": parent_point}
+
+
+def _apply_phrase_anchor(feature: dict, phrase: str, params: dict) -> None:
+    anchor = _infer_phrase_anchor(phrase)
+    if not anchor:
+        return
+    offset = _anchor_offset_from_params(params)
+    if offset:
+        anchor["offset"] = offset
+
+    position = feature.setdefault("position", {})
+    position["anchor"] = anchor
+    position.pop("center_offset", None)
+    position.pop("edge_distances", None)
+    position.pop("pocket_edge_distances", None)
 
 
 class NormalizerAgent(BaseAgent):
@@ -185,6 +358,8 @@ class NormalizerAgent(BaseAgent):
         # Fold classifier hints into normalizer params (gaps only).
         params = normalized.setdefault("parameter", {})
         _merge_param_hints(params, klass_hints)
+        if normalized.get("typ") == "nut":
+            _fill_missing_slot_length(normalized, teil)
 
         # Deterministic SemanticFeature build. Returns None when both the
         # classifier and the normalizer rejected the phrase as a real
@@ -194,6 +369,7 @@ class NormalizerAgent(BaseAgent):
         feature = build_feature(normalized, teil_id, phrase_idx)
         if feature is None:
             return None
+        _apply_phrase_anchor(feature, beschreibung, params)
 
         # Default parent: the host teil. Aggregator (Stufe 4) overrides with
         # the pocket's feature_id for nested children.

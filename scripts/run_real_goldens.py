@@ -181,6 +181,42 @@ def _offset_distance(a: dict, b: dict) -> float:
         return float("inf")
 
 
+def _angle_distance(a: dict, b: dict) -> float:
+    pa = a.get("placement") or {}
+    pb = b.get("placement") or {}
+    try:
+        return abs(float(pa.get("angle_deg") or 0) - float(pb.get("angle_deg") or 0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _param_distance(a: dict, b: dict) -> float:
+    ap = a.get("params") or {}
+    bp = b.get("params") or {}
+    distance = 0.0
+    for key, aval in ap.items():
+        bval = bp.get(key)
+        if isinstance(aval, (int, float)) and isinstance(bval, (int, float)):
+            distance += abs(float(aval) - float(bval))
+        elif bval != aval:
+            distance += 100.0
+    return distance
+
+
+def _pair_cost(expected_feat: dict, got_feat: dict) -> float:
+    """Cost for pairing siblings with the same coarse signature.
+
+    Offset remains dominant, but angle/params break ties for cases like
+    N_kombo where multiple slots share (type, face, offset) and only differ
+    by rotation/length.
+    """
+    return (
+        _offset_distance(expected_feat, got_feat)
+        + _angle_distance(expected_feat, got_feat) * 0.1
+        + _param_distance(expected_feat, got_feat) * 0.01
+    )
+
+
 def _pair_level(
     expected: dict, got: dict,
     exp_parent: str | None, got_parent: str | None,
@@ -216,7 +252,7 @@ def _pair_level(
             best_cost = float("inf")
             for ei, (eid, ef) in enumerate(exp_list):
                 for gi, (gid, gf) in enumerate(got_list):
-                    cost = _offset_distance(ef, gf)
+                    cost = _pair_cost(ef, gf)
                     if cost < best_cost:
                         best_cost = cost
                         best = (ei, gi, eid, gid, ef, gf)

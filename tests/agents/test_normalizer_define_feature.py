@@ -283,6 +283,152 @@ def test_slot_x_axis_keeps_angle_deg_0():
     assert feat["position"]["angle_deg"] == 0.0
 
 
+def test_slot_without_length_defaults_to_parent_axis_dimension():
+    """Slot ohne explizite Laenge bedeutet in N_kombo durchgehend entlang Achse."""
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="oben",
+        richtung="x",
+        parameter={"breite": 5, "tiefe": 5, "versatz_rechts": 10},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="nut",
+               beschreibung="oben eine nut 5x5 entlang x-achse 10mm nach rechts versetzt",
+               seite="oben",
+               parameter_hints={"breite": 5, "tiefe": 5, "versatz_rechts": 10}),
+        _teil(raw_params={"x": 100, "y": 80, "z": 30}),
+    )
+    assert feat["params"]["length"] == 100
+    assert feat["position"]["center_offset"] == {"right": 10}
+
+
+def test_slot_explicit_length_is_kept():
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="oben",
+        richtung="x",
+        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="nut", seite="oben",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40}),
+        _teil(raw_params={"x": 100, "y": 80, "z": 30}),
+    )
+    assert feat["params"]["length"] == 40
+
+
+def test_slot_right_face_y_axis_keeps_angle_deg_0():
+    """Auf >X Face ist die lokale horizontale Achse global Y."""
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="rechts",
+        richtung="y",
+        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="nut", seite="rechts",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40}),
+        _teil(),
+    )
+    assert feat["position"]["angle_deg"] == 0.0
+
+
+def test_slot_right_face_z_axis_sets_angle_deg_90():
+    """Auf >X Face ist die lokale vertikale Achse global Z."""
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="rechts",
+        richtung="z",
+        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="nut", seite="rechts",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40}),
+        _teil(),
+    )
+    assert feat["position"]["angle_deg"] == 90.0
+
+
+def test_slot_right_edge_anchor_from_phrase():
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="oben",
+        position="von_kanten",
+        richtung="y",
+        parameter={"breite": 5, "tiefe": 5, "laenge": 40,
+                   "kante_rechts": 0, "versatz_oben": 10},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="nut",
+               beschreibung="oben eine nut 5x5 entlang y-achse laenge 40mm "
+                            "liegt auf rechter kante an, 10mm nach oben versetzt",
+               seite="oben",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40,
+                                "kante_rechts": 0, "versatz_oben": 10}),
+        _teil(),
+    )
+    assert feat["position"]["anchor"] == {
+        "child_point": "center",
+        "parent_point": "right_edge",
+        "offset": {"top": 10},
+    }
+    assert "center_offset" not in feat["position"]
+    assert "edge_distances" not in feat["position"]
+
+
+def test_slot_corner_anchor_from_phrase_offsets_from_corner():
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="oben",
+        position="von_mitte",
+        richtung="y",
+        parameter={"breite": 5, "tiefe": 5, "laenge": 30,
+                   "versatz_unten": 10, "versatz_links": 20},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="nut",
+               beschreibung="oben eine nut 5x5 entlang y-achse laenge 30mm "
+                            "obere rechte ecke 10mm nach unten und 20mm nach links versetzt",
+               seite="oben",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 30,
+                                "versatz_unten": 10, "versatz_links": 20}),
+        _teil(),
+    )
+    assert feat["position"]["anchor"] == {
+        "child_point": "center",
+        "parent_point": "top_right",
+        "offset": {"bottom": 10, "left": 20},
+    }
+    assert "center_offset" not in feat["position"]
+
+
+def test_pocket_corner_to_corner_anchor_uses_child_corner():
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="tasche",
+        seite="oben",
+        parameter={"laenge": 30, "breite": 20, "tiefe": 10},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="tasche",
+               beschreibung="oben eine tasche 30x20x10 obere rechte ecke "
+                            "der tasche auf obere rechte ecke des wuerfels",
+               seite="oben",
+               parameter_hints={"laenge": 30, "breite": 20, "tiefe": 10}),
+        _teil(),
+    )
+    assert feat["position"]["anchor"] == {
+        "child_point": "top_right",
+        "parent_point": "top_right",
+    }
+
+
 def test_rotation_deg_hint_maps_to_drehung_then_angle_deg():
     """Classifier hints rotation_deg=10 → params['drehung']=10
     → feature.position.angle_deg=10."""
