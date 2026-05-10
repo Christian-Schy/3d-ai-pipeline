@@ -10,6 +10,26 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-10
 
+- **DSPy Variation Pack 1 fuer natuerliche CAD-Formulierungen angelegt.**
+  `data/dspy_training/variation_traces.py` ergaenzt 8 kuratierte
+  Trainings-Traces fuer Sprach-/User-Varianten ohne neue Runtime-Regex:
+  Bauteil-Mass-Reihenfolgen (`bei einem 200mm Wuerfel`,
+  `Wuerfel mit 75mm`, `Quader mit den Massen ...`, `200er Platte`),
+  fehlendes Komma nach dem Grundkoerper, Kanten-/Seiten-Abstaende mit
+  unterschiedlichen Werten (`18`, `21`, `23`, `31`), Edge-to-Edge-
+  Formulierungen und Center-Versatzvarianten (`16/24`, `19/26`). Der
+  `aktions_klassifizierer` kann nun ueber `train_dspy.py --agent
+  aktions_klassifizierer` trainiert werden, bleibt aber fuer `--all`
+  inaktiv. Batch-Traces aus `runs.jsonl` werden dafuer in phrase-level
+  Beispiele expandiert. Statistik danach: 202 Pipeline-Traces,
+  `aktions_klassifizierer (inactive)` mit 8 Trace-, 323 Run- und 3
+  Seed-Beispielen, Gesamt 334. Tests:
+  `uv run pytest -q tests/test_dspy_training_variations.py
+  tests/agents/test_aktions_klassifizierer.py
+  tests/agents/test_inventar_aliases.py` -> `30 passed`;
+  `uv run python train_dspy.py --stats` gruen; Fast Gate
+  `uv run pytest -q --ignore=tests/golden` -> `289 passed`.
+
 - **B_kombo_asymmetric_multiface Abschnittsseiten stabilisiert.**
   `aktions_klassifizierer_node` fuehrt nun pro Teil eine deterministische
   Abschnittsseite aus Phrasen wie `oben (...):` oder `rechts (...):`.

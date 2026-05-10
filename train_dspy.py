@@ -76,6 +76,12 @@ def load_traces() -> list[dict]:
         traces.extend(LABELER_TRACES)
     except Exception as e:
         print(f"WARN: labeler_platzierer_traces nicht ladbar: {e}")
+    # Hand-curated variation pack for language variety (voice/user phrasing).
+    try:
+        from variation_traces import TRACES as VARIATION_TRACES
+        traces.extend(VARIATION_TRACES)
+    except Exception as e:
+        print(f"WARN: variation_traces nicht ladbar: {e}")
     return traces
 
 
@@ -123,6 +129,34 @@ def load_punctuation_seed() -> list[dict]:
     ]
 
 
+def load_aktions_klassifizierer_seed() -> list[dict]:
+    """Hand-curated classifier bug/variation cases.
+
+    `klassifizierer_traces.py` predates full trace projection and stores
+    direct phrase-level examples. Keep it as seed material so the classifier
+    can be trained without forcing those entries into whole-pipeline traces.
+    """
+    try:
+        sys.path.insert(0, str(PROJECT_ROOT / "data" / "dspy_training"))
+        from klassifizierer_traces import TRACES as KLASS_TRACES
+    except Exception as e:
+        print(f"WARN: klassifizierer seed nicht ladbar: {e}")
+        return []
+    pairs = []
+    for ex in KLASS_TRACES:
+        pairs.append({
+            "input": {
+                "phrase": ex.get("phrase", ""),
+                "teil_type": ex.get("teil_type", "box"),
+                "teil_params": ex.get("teil_params", {}),
+                "parent_phrase": ex.get("parent_phrase", "(keine)"),
+            },
+            "output": ex.get("expected", {}),
+            "feedback": "good",
+        })
+    return pairs
+
+
 def manual_to_agent_pairs(examples: list[dict], agent_name: str) -> list[dict]:
     """Konvertiere kuratierte Legacy-Beispiele (examples.json) in Agent-Pairs.
 
@@ -166,6 +200,74 @@ def extract_run_examples(runs: list[dict], agent_name: str,
     return examples
 
 
+def extract_aktions_klassifizierer_run_examples(
+    runs: list[dict],
+    only_successful: bool = True,
+) -> list[dict]:
+    """Expand logged classifier node traces into phrase-level examples.
+
+    Live runs log `aktions_klassifizierer` as one node output containing
+    `klassifikationen: [...]`. DSPy training needs one example per phrase,
+    matching the actual agent call contract.
+    """
+    examples = []
+    for run in runs:
+        if only_successful and not run.get("success"):
+            continue
+        traces = run.get("agent_traces", []) or []
+        inventar_trace = next(
+            (t for t in traces if t.get("agent") == "inventar"),
+            None,
+        )
+        classifier_trace = next(
+            (t for t in traces if t.get("agent") == "aktions_klassifizierer"),
+            None,
+        )
+        if not inventar_trace or not classifier_trace:
+            continue
+        inventar_out = inventar_trace.get("output") or {}
+        klassifikationen = (classifier_trace.get("output") or {}).get(
+            "klassifikationen", []
+        )
+        if not isinstance(klassifikationen, list):
+            continue
+
+        teile_by_id = {
+            t.get("id"): t
+            for t in inventar_out.get("teile", [])
+            if isinstance(t, dict) and t.get("id")
+        }
+        by_idx: dict[tuple[str, int], dict] = {}
+        for k in klassifikationen:
+            if not isinstance(k, dict):
+                continue
+            teil_id = k.get("teil_id", "")
+            teil = teile_by_id.get(teil_id, {})
+            parent_phrase = "(keine)"
+            parent_idx = k.get("parent_phrase_idx")
+            if parent_idx is not None:
+                parent = by_idx.get((teil_id, parent_idx))
+                if parent:
+                    parent_phrase = parent.get("beschreibung", "(keine)")
+
+            examples.append({
+                "input": {
+                    "phrase": k.get("beschreibung", ""),
+                    "teil_type": teil.get("type", "box"),
+                    "teil_params": teil.get("raw_params", {}),
+                    "parent_phrase": parent_phrase,
+                },
+                "output": {
+                    "typ": k.get("typ", ""),
+                    "seite": k.get("seite", ""),
+                    "parameter_hints": k.get("parameter_hints", {}),
+                },
+                "feedback": run.get("feedback", ""),
+            })
+            by_idx[(teil_id, k.get("phrase_idx", 0))] = k
+    return examples
+
+
 def print_stats():
     """Zeigt Statistik über verfügbare Trainingsdaten (Traces + Legacy + Runs)."""
     manual = load_manual_examples()
@@ -180,16 +282,31 @@ def print_stats():
     print(f"  Feedback=good: {sum(1 for r in runs if r.get('feedback') == 'good')}")
 
     agents = list(AGENT_CONFIG.keys())
-    print(f"\n{'Agent':<22} {'Traces':>8} {'Legacy':>8} {'Runs':>6} {'Seed':>6} {'Gesamt':>8}")
-    print("-" * 64)
+    name_width = 34
+    print(f"\n{'Agent':<{name_width}} {'Traces':>8} {'Legacy':>8} "
+          f"{'Runs':>6} {'Seed':>6} {'Gesamt':>8}")
+    print("-" * (name_width + 42))
     for agent in agents:
         t = traces_to_agent_pairs(traces, agent)
         m = manual_to_agent_pairs(manual, agent)
-        r = [p for p in extract_run_examples(runs, agent, only_successful=True)
-             if p.get("feedback") == "good"]
-        s = load_punctuation_seed() if agent == "punctuation" else []
-        active = "" if CONTRACTS.get(agent) and CONTRACTS[agent].active else " (legacy)"
-        print(f"{agent+active:<22} {len(t):>8} {len(m):>8} {len(r):>6} "
+        if agent == "aktions_klassifizierer":
+            run_source = extract_aktions_klassifizierer_run_examples(
+                runs, only_successful=True
+            )
+        else:
+            run_source = extract_run_examples(runs, agent, only_successful=True)
+        r = [p for p in run_source if p.get("feedback") == "good"]
+        if agent == "punctuation":
+            s = load_punctuation_seed()
+        elif agent == "aktions_klassifizierer":
+            s = load_aktions_klassifizierer_seed()
+        else:
+            s = []
+        active = (
+            "" if CONTRACTS.get(agent) and CONTRACTS[agent].active
+            else " (inactive)"
+        )
+        print(f"{agent+active:<{name_width}} {len(t):>8} {len(m):>8} {len(r):>6} "
               f"{len(s):>6} {len(t)+len(m)+len(r)+len(s):>8}")
 
 
@@ -221,6 +338,32 @@ class InventarSignature(dspy.Signature):
     inventar: str = dspy.OutputField(
         desc="JSON-Objekt mit teil_count, teile[{id, type, beschreibung, raw_params}], "
              "aktionen[{teil_id, seite, beschreibung}]"
+    )
+
+
+class AktionsKlassifiziererSignature(dspy.Signature):
+    """Klassifiziere EINE Aktions-Phrase in typ, seite und parameter_hints.
+
+    Aufgabe bleibt eng: keine Feature-Struktur bauen, keine Offsets berechnen,
+    keine strukturellen Splitter-Felder erfinden. Der Code reicht teil_id und
+    phrase_idx separat durch.
+    """
+
+    phrase: str = dspy.InputField(
+        desc="Eine einzelne Aktions-Phrase aus dem deterministischen Splitter."
+    )
+    teil_type: str = dspy.InputField(
+        desc="Form des Host-Teils (box, cylinder, ...)."
+    )
+    teil_params: str = dspy.InputField(
+        desc="JSON der Roh-Parameter des Host-Teils."
+    )
+    parent_phrase: str = dspy.InputField(
+        desc="Parent-Phrase fuer nested Features, sonst '(keine)'."
+    )
+    klassifikation: str = dspy.OutputField(
+        desc="JSON {typ, seite, parameter_hints}. parameter_hints enthaelt "
+             "nur explizite Zahlen aus der Phrase."
     )
 
 
@@ -328,6 +471,20 @@ class InventarModule(dspy.Module):
 
     def forward(self, specification: str) -> dspy.Prediction:
         return self.predict(specification=specification)
+
+
+class AktionsKlassifiziererModule(dspy.Module):
+    def __init__(self):
+        self.predict = dspy.Predict(AktionsKlassifiziererSignature)
+
+    def forward(self, phrase: str, teil_type: str,
+                teil_params: str, parent_phrase: str) -> dspy.Prediction:
+        return self.predict(
+            phrase=phrase,
+            teil_type=teil_type,
+            teil_params=teil_params,
+            parent_phrase=parent_phrase,
+        )
 
 
 class NormalizerModule(dspy.Module):
@@ -511,6 +668,47 @@ def inventar_metric(example, prediction, trace=None) -> float:
         return 0.0
 
 
+def aktions_klassifizierer_metric(example, prediction, trace=None) -> float:
+    """Bewerte phrase → {typ, seite, parameter_hints}.
+
+    Weighting mirrors the agent contract:
+      typ 0.25, seite 0.25, hint keys 0.25, hint values 0.25.
+    """
+    try:
+        expected = _parse_json_safe(getattr(example, "klassifikation", None))
+        predicted = _parse_json_safe(getattr(prediction, "klassifikation", None))
+        if not isinstance(predicted, dict) or not isinstance(expected, dict):
+            return 0.0
+
+        score = 0.0
+        if predicted.get("typ") == expected.get("typ"):
+            score += 0.25
+        if predicted.get("seite") == expected.get("seite"):
+            score += 0.25
+
+        exp_hints = expected.get("parameter_hints") or {}
+        pred_hints = predicted.get("parameter_hints") or {}
+        if isinstance(exp_hints, dict) and isinstance(pred_hints, dict):
+            exp_keys = set(exp_hints)
+            pred_keys = set(pred_hints)
+            if exp_keys == pred_keys:
+                score += 0.25
+            elif exp_keys:
+                score += 0.25 * (len(exp_keys & pred_keys) / len(exp_keys))
+            if exp_keys:
+                matches = sum(
+                    1 for key in exp_keys
+                    if key in pred_hints and pred_hints[key] == exp_hints[key]
+                )
+                score += 0.25 * (matches / len(exp_keys))
+            elif not pred_keys:
+                score += 0.25
+
+        return score
+    except Exception:
+        return 0.0
+
+
 def normalizer_metric(example, prediction, trace=None) -> float:
     """Bewerte Normalizer: 1 Aktion → 1 Feature.
 
@@ -685,6 +883,16 @@ def to_dspy_examples(raw: list[dict], agent_name: str) -> list[dspy.Example]:
                 inventar=_j(out),
             ).with_inputs("specification")
 
+        elif agent_name == "aktions_klassifizierer":
+            ex = dspy.Example(
+                phrase=inp.get("phrase", ""),
+                teil_type=inp.get("teil_type", "box"),
+                teil_params=_j(inp.get("teil_params", {})),
+                parent_phrase=inp.get("parent_phrase", "(keine)"),
+                klassifikation=_j(out),
+            ).with_inputs("phrase", "teil_type", "teil_params",
+                          "parent_phrase")
+
         elif agent_name == "normalizer":
             ex = dspy.Example(
                 beschreibung=inp.get("beschreibung", ""),
@@ -746,6 +954,11 @@ AGENT_CONFIG = {
         "metric": inventar_metric,
         "default_model": "qwen3.5:9b",
     },
+    "aktions_klassifizierer": {
+        "module_cls": AktionsKlassifiziererModule,
+        "metric": aktions_klassifizierer_metric,
+        "default_model": "gemma4:26b",
+    },
     "position_extractor": {
         "module_cls": PositionExtractorModule,
         "metric": position_extractor_metric,
@@ -798,12 +1011,19 @@ def train_agent(agent_name: str,
         manual_pairs = manual_to_agent_pairs(manual, agent_name)
 
     runs = load_runs()
-    run_pairs = extract_run_examples(runs, agent_name, only_successful=True)
+    if agent_name == "aktions_klassifizierer":
+        run_pairs = extract_aktions_klassifizierer_run_examples(
+            runs, only_successful=True
+        )
+    else:
+        run_pairs = extract_run_examples(runs, agent_name, only_successful=True)
     run_pairs = [p for p in run_pairs if p.get("feedback") == "good"]
 
     seed_pairs: list[dict] = []
     if agent_name == "punctuation":
         seed_pairs = load_punctuation_seed()
+    elif agent_name == "aktions_klassifizierer":
+        seed_pairs = load_aktions_klassifizierer_seed()
 
     all_pairs = trace_pairs + manual_pairs + run_pairs + seed_pairs
 
