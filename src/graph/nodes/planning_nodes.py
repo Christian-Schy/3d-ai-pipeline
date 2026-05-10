@@ -1,6 +1,7 @@
 """Planning nodes: 3-step chain (S0: feature_definierer + platzierer), blueprint_architect, blueprint_resolver, coordinate_validator, plan_validator, function_decomposer."""
 from __future__ import annotations
 import json
+import re
 import time
 import structlog
 
@@ -1271,6 +1272,20 @@ def plan_validator_node(state: PipelineState) -> dict:
 # Per-Action Chain (ADR 0003) — wired in Stufe 5b, additive in 5a
 # ══════════════════════════════════════════════════════════════════
 
+_SECTION_SIDE_RE = re.compile(
+    r"^\s*(oben|unten|rechts|links|vorne|hinten)\b"
+    r"(?:\s*\([^)]*\))?\s*:",
+    re.IGNORECASE,
+)
+
+
+def _section_side_from_phrase(phrase: str) -> str | None:
+    """Return the face side from section headers like 'rechts (...): ...'."""
+    match = _SECTION_SIDE_RE.match(phrase or "")
+    if not match:
+        return None
+    return match.group(1).lower()
+
 def aktions_splitter_node(state: PipelineState) -> dict:
     """Stufe 1 of ADR 0003 — deterministic spec → action phrases.
 
@@ -1352,6 +1367,7 @@ def aktions_klassifizierer_node(state: PipelineState) -> dict:
     klassifikationen: list[dict] = []
     raw_responses: list[str] = []
     by_idx_per_teil: dict[tuple[str, int], dict] = {}
+    section_side_by_teil: dict[str, str] = {}
 
     for p in phrases:
         teil_id = p.get("teil_id", "")
@@ -1368,12 +1384,26 @@ def aktions_klassifizierer_node(state: PipelineState) -> dict:
             if parent is not None:
                 parent_phrase = parent.get("beschreibung")
 
+        section_side = _section_side_from_phrase(p.get("phrase", ""))
+        if section_side:
+            section_side_by_teil[teil_id] = section_side
+
         try:
             k = agent.classify(p, teil, parent_phrase=parent_phrase)
         except Exception as e:
             log.error("aktions_klassifizierer_failed",
                       phrase=p.get("phrase", "")[:80], error=str(e)[:200])
             continue
+
+        inherited_side = section_side_by_teil.get(teil_id)
+        if inherited_side and k.get("seite") != inherited_side:
+            log.info(
+                "aktions_klassifizierer_section_side_override",
+                phrase=p.get("phrase", "")[:80],
+                original=k.get("seite"),
+                inherited=inherited_side,
+            )
+            k["seite"] = inherited_side
 
         klassifikationen.append(k)
         by_idx_per_teil[(teil_id, p.get("phrase_idx"))] = k

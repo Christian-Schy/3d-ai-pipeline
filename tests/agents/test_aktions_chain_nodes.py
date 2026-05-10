@@ -177,6 +177,48 @@ def test_klassifizierer_node_passes_parent_phrase_for_nested(monkeypatch, fresh_
     assert second_kwargs.get("parent_phrase") == "oben eine Tasche"
 
 
+def test_klassifizierer_node_inherits_section_side(monkeypatch, fresh_state):
+    """Section headers like 'rechts (...):' define the face for following
+    local-position phrases in the same semicolon list."""
+    from src.graph.nodes import aktions_klassifizierer_node
+
+    fresh_state["aktions_phrases"] = [
+        {"phrase": "oben (also auf der 200x100 flaeche): oben rechts eine Bohrung",
+         "teil_id": "wuerfel", "phrase_idx": 0, "parent_phrase_idx": None},
+        {"phrase": "unten links eine Bohrung",
+         "teil_id": "wuerfel", "phrase_idx": 1, "parent_phrase_idx": None},
+        {"phrase": "rechts (also auf der 100x80 flaeche): oben rechts eine Bohrung",
+         "teil_id": "wuerfel", "phrase_idx": 2, "parent_phrase_idx": None},
+        {"phrase": "nach unten 15mm und nach links 20mm versetzt eine Bohrung",
+         "teil_id": "wuerfel", "phrase_idx": 3, "parent_phrase_idx": None},
+    ]
+    classifications = [
+        {"typ": "bohrung", "seite": "oben",
+         "beschreibung": fresh_state["aktions_phrases"][0]["phrase"],
+         "teil_id": "wuerfel", "phrase_idx": 0, "parent_phrase_idx": None,
+         "parameter_hints": {}},
+        {"typ": "bohrung", "seite": "unten",
+         "beschreibung": fresh_state["aktions_phrases"][1]["phrase"],
+         "teil_id": "wuerfel", "phrase_idx": 1, "parent_phrase_idx": None,
+         "parameter_hints": {}},
+        {"typ": "bohrung", "seite": "rechts",
+         "beschreibung": fresh_state["aktions_phrases"][2]["phrase"],
+         "teil_id": "wuerfel", "phrase_idx": 2, "parent_phrase_idx": None,
+         "parameter_hints": {}},
+        {"typ": "bohrung", "seite": "oben",
+         "beschreibung": fresh_state["aktions_phrases"][3]["phrase"],
+         "teil_id": "wuerfel", "phrase_idx": 3, "parent_phrase_idx": None,
+         "parameter_hints": {}},
+    ]
+    _patch_klassifizierer(monkeypatch, side_effect=classifications)
+
+    out = aktions_klassifizierer_node(fresh_state)
+
+    assert [k["seite"] for k in out["aktions_klassifikationen"]] == [
+        "oben", "oben", "rechts", "rechts",
+    ]
+
+
 def test_klassifizierer_node_skips_phrase_with_unknown_teil(monkeypatch, fresh_state):
     from src.graph.nodes import aktions_klassifizierer_node
 

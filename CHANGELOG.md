@@ -10,6 +10,19 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-10
 
+- **B_kombo_asymmetric_multiface Abschnittsseiten stabilisiert.**
+  `aktions_klassifizierer_node` fuehrt nun pro Teil eine deterministische
+  Abschnittsseite aus Phrasen wie `oben (...):` oder `rechts (...):`.
+  Folgephrasen mit lokalen Positionswoertern (`unten links`,
+  `nach unten ...`) erben diese Flaeche, statt als neue Weltseite
+  klassifiziert zu werden. Damit ist der bisherige Replay-Fail
+  `B_kombo_asymmetric_multiface` im Live-Fokuslauf gruen.
+  Tests: `uv run pytest -q tests/agents/test_aktions_chain_nodes.py`
+  → `12 passed`; `uv run pytest -q tests/golden/components/test_splitter_components.py tests/golden/components/test_resolver_components.py`
+  → `15 passed`; `uv run python -m scripts.run_real_goldens --filter B_kombo_asymmetric_multiface --no-persist --no-jsonl`
+  → `1 PASS / 0 FAIL`; Fast Gate
+  `uv run pytest -q --ignore=tests/golden` → `286 passed`.
+
 - **EF/NEST/T Anchor-Cluster fokussiert stabilisiert.**
   Nach dem Nuten-Fix waren `T_kombo` live bereits gruen, `EF_kombo`
   scheiterte noch an `ef07` (`rechte kante der bohrung auf rechte kante
