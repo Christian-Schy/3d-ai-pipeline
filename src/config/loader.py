@@ -53,6 +53,11 @@ class ModelsConfig(BaseModel):
     # Blueprint Chain (3-Step + Multi-Part split)
     inventar: str = "qwen3.5:9b"
     aktions_klassifizierer: str = "qwen3.5:9b"
+    hole_classifier: str = "qwen3.5:9b"
+    pocket_classifier: str = "qwen3.5:9b"
+    slot_classifier: str = "qwen3.5:9b"
+    pattern_classifier: str = "qwen3.5:9b"
+    edge_feature_classifier: str = "qwen3.5:9b"
     position_extractor: str = "qwen3.5:9b"
     text_splitter: str = "qwen3.5:9b"
     normalizer: str = "qwen3.5:9b"
@@ -126,6 +131,19 @@ class PlanValidatorConfig(BaseModel):
     max_retries: int = 2
 
 
+class ClassifierSubagentsConfig(BaseModel):
+    """Feature flags for ADR-0006 classifier sub-agents.
+
+    Default false keeps runtime identical to the monolithic classifier until
+    each sub-agent is trained and adopted via heatmap.
+    """
+    hole_enabled: bool = False
+    pocket_enabled: bool = False
+    slot_enabled: bool = False
+    pattern_enabled: bool = False
+    edge_feature_enabled: bool = False
+
+
 class AppConfig(BaseModel):
     """Root config object. All sections have sensible defaults
     so the app works even if config.yaml is partially missing."""
@@ -138,6 +156,9 @@ class AppConfig(BaseModel):
     ui: UIConfig = Field(default_factory=UIConfig)
     agent_options: dict[str, AgentOptions] = Field(default_factory=dict)
     plan_validator: PlanValidatorConfig = Field(default_factory=PlanValidatorConfig)
+    classifier_subagents: ClassifierSubagentsConfig = Field(
+        default_factory=ClassifierSubagentsConfig
+    )
 
     def get_agent_options(self, agent_name: str) -> tuple[bool, float, int]:
         """Return (think, temperature, num_ctx) for an agent, merging global + per-agent."""

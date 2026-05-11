@@ -116,6 +116,17 @@ _PLACEMENT_CONTINUATION_RE = re.compile(
     re.IGNORECASE,
 )
 
+_CORNER_PREFIX_RE = re.compile(
+    r"\b(?:obere|untere|rechte|linke)\s+"
+    r"(?:rechte|linke|obere|untere)\s+ecke\b",
+    re.IGNORECASE,
+)
+
+_SECTION_ANCHOR_PREFIX_RE = re.compile(
+    r"^\s*(?:" + "|".join(_SIDE_KEYWORDS) + r")\s*:\s+.*\b(?:ecke|kante)\b",
+    re.IGNORECASE,
+)
+
 
 def _insert_missing_commas(spec: str) -> str:
     """Insert a comma before '<side> soll' when the preceding word is a
@@ -134,6 +145,24 @@ def _insert_missing_commas(spec: str) -> str:
 def _is_placement_continuation(segment: str) -> bool:
     """True for comma fragments that only refine the previous feature."""
     return bool(_PLACEMENT_CONTINUATION_RE.search(segment or ""))
+
+
+def _is_pre_feature_anchor_prefix(segment: str) -> bool:
+    """True for comma fragments that introduce an anchor for the next feature.
+
+    Example from B_kombo_additive_anchor:
+      "oben: obere rechte ecke der oberseite, 20mm nach unten ..."
+
+    The comma is not an action boundary there. The first fragment has no
+    feature keyword, but carries the corner anchor needed by the next
+    bohrung phrase.
+    """
+    if not segment or _FEATURE_RE.search(segment):
+        return False
+    return bool(
+        _SECTION_ANCHOR_PREFIX_RE.search(segment)
+        or _CORNER_PREFIX_RE.search(segment)
+    )
 
 
 def split_spec_into_aktionen(
@@ -160,19 +189,28 @@ def split_spec_into_aktionen(
     aktionen: List[Dict] = []
     last_action_idx: Optional[int] = None
     last_segment_was_action = False
+    pending_anchor_prefix = ""
 
     for raw_segment in _comma_split(specification):
-        seg_teil = _assign_teil_id(raw_segment, teil_ids, last_teil)
-        seg = _strip_part_declaration(raw_segment)
+        current_segment = raw_segment
+        if pending_anchor_prefix:
+            current_segment = f"{pending_anchor_prefix}, {raw_segment.strip()}"
+            pending_anchor_prefix = ""
+
+        seg_teil = _assign_teil_id(current_segment, teil_ids, last_teil)
+        seg = _strip_part_declaration(current_segment)
         if not seg:
             if (
                 last_segment_was_action
                 and last_action_idx is not None
-                and _is_placement_continuation(raw_segment)
+                and _is_placement_continuation(current_segment)
             ):
                 aktionen[last_action_idx]["phrase"] = (
-                    f"{aktionen[last_action_idx]['phrase']}, {raw_segment.strip()}"
+                    f"{aktionen[last_action_idx]['phrase']}, {current_segment.strip()}"
                 )
+            elif _is_pre_feature_anchor_prefix(current_segment):
+                pending_anchor_prefix = current_segment.strip()
+                last_segment_was_action = False
             else:
                 last_segment_was_action = False
             continue

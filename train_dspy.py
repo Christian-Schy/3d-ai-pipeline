@@ -45,7 +45,8 @@ OPTIMIZED_DIR = PROJECT_ROOT / "data" / "dspy_optimized"
 # ── Trace-Quellen (Pipeline-Traces via agent_contracts) ──────────
 sys.path.insert(0, str(PROJECT_ROOT / "data" / "dspy_training"))
 from agent_contracts import (  # noqa: E402
-    project_traces, active_agents, CONTRACTS
+    project_traces, active_agents, CONTRACTS,
+    classifier_sub_agent_name_for_pair,
 )
 
 
@@ -157,6 +158,36 @@ def load_aktions_klassifizierer_seed() -> list[dict]:
             "feedback": "good",
         })
     return pairs
+
+
+CLASSIFIER_SUB_AGENTS = {
+    "hole_classifier",
+    "pocket_classifier",
+    "slot_classifier",
+    "pattern_classifier",
+    "edge_feature_classifier",
+}
+
+
+def filter_classifier_pairs_for_subagent(
+    pairs: list[dict],
+    agent_name: str,
+) -> list[dict]:
+    """Filter monolithic classifier pairs into one ADR-0006 sub-contract."""
+    if agent_name not in CLASSIFIER_SUB_AGENTS:
+        return pairs
+    return [
+        p for p in pairs
+        if classifier_sub_agent_name_for_pair(p) == agent_name
+    ]
+
+
+def load_classifier_subagent_seed(agent_name: str) -> list[dict]:
+    """Direct seed examples for ADR-0006 classifier sub-agents."""
+    return filter_classifier_pairs_for_subagent(
+        load_aktions_klassifizierer_seed(),
+        agent_name,
+    )
 
 
 def manual_to_agent_pairs(examples: list[dict], agent_name: str) -> list[dict]:
@@ -291,10 +322,14 @@ def print_stats():
     for agent in agents:
         t = traces_to_agent_pairs(traces, agent)
         m = manual_to_agent_pairs(manual, agent)
-        if agent == "aktions_klassifizierer":
+        if agent == "aktions_klassifizierer" or agent in CLASSIFIER_SUB_AGENTS:
             run_source = extract_aktions_klassifizierer_run_examples(
                 runs, only_successful=True
             )
+            if agent in CLASSIFIER_SUB_AGENTS:
+                run_source = filter_classifier_pairs_for_subagent(
+                    run_source, agent
+                )
         else:
             run_source = extract_run_examples(runs, agent, only_successful=True)
         r = [p for p in run_source if p.get("feedback") == "good"]
@@ -302,6 +337,8 @@ def print_stats():
             s = load_punctuation_seed()
         elif agent == "aktions_klassifizierer":
             s = load_aktions_klassifizierer_seed()
+        elif agent in CLASSIFIER_SUB_AGENTS:
+            s = load_classifier_subagent_seed(agent)
         else:
             s = []
         active = (
@@ -367,6 +404,76 @@ class AktionsKlassifiziererSignature(dspy.Signature):
         desc="JSON {typ, seite, parameter_hints}. parameter_hints enthaelt "
              "nur explizite Werte aus der Phrase; Zahlen plus optional "
              "richtung=x|y|z fuer Achsen."
+    )
+
+
+class HoleClassifierSignature(dspy.Signature):
+    """Klassifiziere EINE Bohrungs-Phrase.
+
+    Enger ADR-0006 Sub-Contract: typ muss bohrung sein. Keine Tasche/Nut/
+    Pattern-Struktur bauen; nur seite und explizite Bohrungs-Hints.
+    """
+
+    phrase: str = dspy.InputField(desc="Eine einzelne Bohrungs-/Loch-Phrase.")
+    teil_type: str = dspy.InputField(desc="Form des Host-Teils.")
+    teil_params: str = dspy.InputField(desc="JSON der Host-Teil-Parameter.")
+    parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
+    klassifikation: str = dspy.OutputField(
+        desc="JSON {typ:'bohrung', seite, parameter_hints}; erlaubte Hints: "
+             "durchmesser, tiefe, abstand_*, versatz_*."
+    )
+
+
+class PocketClassifierSignature(dspy.Signature):
+    """Klassifiziere EINE Taschen-/Ausnehmungs-Phrase."""
+
+    phrase: str = dspy.InputField(desc="Eine einzelne Tasche/Ausnehmung-Phrase.")
+    teil_type: str = dspy.InputField(desc="Form des Host-Teils.")
+    teil_params: str = dspy.InputField(desc="JSON der Host-Teil-Parameter.")
+    parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
+    klassifikation: str = dspy.OutputField(
+        desc="JSON {typ:'tasche', seite, parameter_hints}; erlaubte Hints: "
+             "laenge, breite, tiefe, rotation_deg, abstand_*, kante_*, versatz_*."
+    )
+
+
+class SlotClassifierSignature(dspy.Signature):
+    """Klassifiziere EINE Nut-/Slot-Phrase."""
+
+    phrase: str = dspy.InputField(desc="Eine einzelne Nut/Slot-Phrase.")
+    teil_type: str = dspy.InputField(desc="Form des Host-Teils.")
+    teil_params: str = dspy.InputField(desc="JSON der Host-Teil-Parameter.")
+    parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
+    klassifikation: str = dspy.OutputField(
+        desc="JSON {typ:'nut', seite, parameter_hints}; erlaubte Hints: "
+             "laenge, breite, tiefe, richtung=x|y|z, abstand_*, versatz_*."
+    )
+
+
+class PatternClassifierSignature(dspy.Signature):
+    """Klassifiziere EINE Lochmuster-Phrase als Bohrungs-Familie."""
+
+    phrase: str = dspy.InputField(desc="Eine einzelne Lochkreis/Eckbohrungen/Reihe-Phrase.")
+    teil_type: str = dspy.InputField(desc="Form des Host-Teils.")
+    teil_params: str = dspy.InputField(desc="JSON der Host-Teil-Parameter.")
+    parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
+    klassifikation: str = dspy.OutputField(
+        desc="JSON {typ:'bohrung', seite, parameter_hints}; Pattern-Hints "
+             "duerfen anzahl, kreis_durchmesser, abstand, abstand_kante, "
+             "durchmesser, tiefe, richtung enthalten."
+    )
+
+
+class EdgeFeatureClassifierSignature(dspy.Signature):
+    """Klassifiziere EINE Fase- oder Rundungs-Phrase."""
+
+    phrase: str = dspy.InputField(desc="Eine einzelne Fase/Rundung-Phrase.")
+    teil_type: str = dspy.InputField(desc="Form des Host-Teils.")
+    teil_params: str = dspy.InputField(desc="JSON der Host-Teil-Parameter.")
+    parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
+    klassifikation: str = dspy.OutputField(
+        desc="JSON {typ:'fase'|'rundung', seite, parameter_hints}; erlaubte "
+             "Hints: groesse, radius, kantenlaenge."
     )
 
 
@@ -555,6 +662,42 @@ class AktionsKlassifiziererModule(dspy.Module):
             teil_params=teil_params,
             parent_phrase=parent_phrase,
         )
+
+
+class _ClassifierModule(dspy.Module):
+    signature_cls = AktionsKlassifiziererSignature
+
+    def __init__(self):
+        self.predict = dspy.Predict(self.signature_cls)
+
+    def forward(self, phrase: str, teil_type: str,
+                teil_params: str, parent_phrase: str) -> dspy.Prediction:
+        return self.predict(
+            phrase=phrase,
+            teil_type=teil_type,
+            teil_params=teil_params,
+            parent_phrase=parent_phrase,
+        )
+
+
+class HoleClassifierModule(_ClassifierModule):
+    signature_cls = HoleClassifierSignature
+
+
+class PocketClassifierModule(_ClassifierModule):
+    signature_cls = PocketClassifierSignature
+
+
+class SlotClassifierModule(_ClassifierModule):
+    signature_cls = SlotClassifierSignature
+
+
+class PatternClassifierModule(_ClassifierModule):
+    signature_cls = PatternClassifierSignature
+
+
+class EdgeFeatureClassifierModule(_ClassifierModule):
+    signature_cls = EdgeFeatureClassifierSignature
 
 
 class NormalizerModule(dspy.Module):
@@ -1107,7 +1250,7 @@ def to_dspy_examples(raw: list[dict], agent_name: str) -> list[dspy.Example]:
                 inventar=_j(out),
             ).with_inputs("specification")
 
-        elif agent_name == "aktions_klassifizierer":
+        elif agent_name == "aktions_klassifizierer" or agent_name in CLASSIFIER_SUB_AGENTS:
             ex = dspy.Example(
                 phrase=inp.get("phrase", ""),
                 teil_type=inp.get("teil_type", "box"),
@@ -1218,6 +1361,31 @@ AGENT_CONFIG = {
         "metric": aktions_klassifizierer_metric,
         "default_model": "gemma4:26b",
     },
+    "hole_classifier": {
+        "module_cls": HoleClassifierModule,
+        "metric": aktions_klassifizierer_metric,
+        "default_model": "gemma4:26b",
+    },
+    "pocket_classifier": {
+        "module_cls": PocketClassifierModule,
+        "metric": aktions_klassifizierer_metric,
+        "default_model": "gemma4:26b",
+    },
+    "slot_classifier": {
+        "module_cls": SlotClassifierModule,
+        "metric": aktions_klassifizierer_metric,
+        "default_model": "gemma4:26b",
+    },
+    "pattern_classifier": {
+        "module_cls": PatternClassifierModule,
+        "metric": aktions_klassifizierer_metric,
+        "default_model": "gemma4:26b",
+    },
+    "edge_feature_classifier": {
+        "module_cls": EdgeFeatureClassifierModule,
+        "metric": aktions_klassifizierer_metric,
+        "default_model": "gemma4:26b",
+    },
     "position_extractor": {
         "module_cls": PositionExtractorModule,
         "metric": position_extractor_metric,
@@ -1285,10 +1453,14 @@ def train_agent(agent_name: str,
         manual_pairs = manual_to_agent_pairs(manual, agent_name)
 
     runs = load_runs()
-    if agent_name == "aktions_klassifizierer":
+    if agent_name == "aktions_klassifizierer" or agent_name in CLASSIFIER_SUB_AGENTS:
         run_pairs = extract_aktions_klassifizierer_run_examples(
             runs, only_successful=True
         )
+        if agent_name in CLASSIFIER_SUB_AGENTS:
+            run_pairs = filter_classifier_pairs_for_subagent(
+                run_pairs, agent_name
+            )
     else:
         run_pairs = extract_run_examples(runs, agent_name, only_successful=True)
     run_pairs = [p for p in run_pairs if p.get("feedback") == "good"]
@@ -1298,6 +1470,8 @@ def train_agent(agent_name: str,
         seed_pairs = load_punctuation_seed()
     elif agent_name == "aktions_klassifizierer":
         seed_pairs = load_aktions_klassifizierer_seed()
+    elif agent_name in CLASSIFIER_SUB_AGENTS:
+        seed_pairs = load_classifier_subagent_seed(agent_name)
 
     all_pairs = trace_pairs + manual_pairs + run_pairs + seed_pairs
 

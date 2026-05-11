@@ -1,0 +1,101 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "phrase": "oben eine 8mm bohrung 10mm nach rechts und 5mm nach oben versetzt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"versatz_rechts\": 10, \"versatz_oben\": 5}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "links eine 5mm bohrung 12mm tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"links\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 12}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "oben eine 10mm bohrung 20mm tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 10, \"tiefe\": 20}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "oben soll rechts unten eine 12mm bohrung jeweils von den kanten 14mm entfernt 9 tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 100, \"z\": 50}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 12, \"tiefe\": 9, \"abstand_rechts\": 14, \"abstand_unten\": 14}}"
+      },
+      {
+        "phrase": "auf der Oberseite ein Loch mit 9mm Durchmesser mittig",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 75, \"y\": 75, \"z\": 75}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 9}}"
+      },
+      {
+        "phrase": "oben links unten eine 10mm bohrung jeweils 12.5mm von den kanten entfernt 6 tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 10, \"tiefe\": 6, \"abstand_links\": 12.5, \"abstand_unten\": 12.5}}"
+      },
+      {
+        "phrase": "oben ein 7er Loch 19 nach links und 26 nach unten verschoben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 85, \"y\": 85, \"z\": 85}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 7, \"versatz_links\": 19, \"versatz_unten\": 26}}"
+      },
+      {
+        "phrase": "an der vorderen seite eine bohrung 8mm durchmesser 15mm tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 60}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 15}}"
+      }
+    ],
+    "signature": {
+      "instructions": "Klassifiziere EINE Bohrungs-Phrase.\n\nEnger ADR-0006 Sub-Contract: typ muss bohrung sein. Keine Tasche/Nut/\nPattern-Struktur bauen; nur seite und explizite Bohrungs-Hints.",
+      "fields": [
+        {
+          "prefix": "Phrase:",
+          "description": "Eine einzelne Bohrungs-/Loch-Phrase."
+        },
+        {
+          "prefix": "Teil Type:",
+          "description": "Form des Host-Teils."
+        },
+        {
+          "prefix": "Teil Params:",
+          "description": "JSON der Host-Teil-Parameter."
+        },
+        {
+          "prefix": "Parent Phrase:",
+          "description": "Parent-Phrase, sonst '(keine)'."
+        },
+        {
+          "prefix": "Klassifikation:",
+          "description": "JSON {typ:'bohrung', seite, parameter_hints}; erlaubte Hints: durchmesser, tiefe, abstand_*, versatz_*."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

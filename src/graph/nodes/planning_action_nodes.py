@@ -6,6 +6,8 @@ import structlog
 
 from src.graph.state import PipelineState
 from src.agents.aktions_klassifizierer import AktionsKlassifizierer
+from src.agents.classifier_sub_agents import CLASSIFIER_SUB_AGENT_CLASSES
+from src.config.loader import get_config
 from src.tools.aktions_aggregator import aggregate as aktions_aggregate
 from src.tools.aktions_splitter import split_spec_into_aktionen
 from . import _registry
@@ -30,6 +32,67 @@ def _section_side_from_phrase(phrase: str) -> str | None:
     if not match:
         return None
     return match.group(1).lower()
+
+
+_PATTERN_RE = re.compile(
+    r"\b(?:"
+    r"lochkreis|teilkreis|eckbohr\w*|bohrungsreihe|lochreihe|lochmuster|lochbild"
+    r"|loecher\s+der\s+reihe|locher\s+der\s+reihe"
+    r"|bohrungen\s+(?:in\s+einer\s+reihe|entlang)"
+    r"|bohrungen\s+.*\b(?:abstand|achse)\b"
+    r"|an\s+jeder\s+ecke"
+    r")\b",
+    re.IGNORECASE,
+)
+_HOLE_RE = re.compile(r"\b(?:bohrung(?:en)?|loch|loecher|locher)\b", re.IGNORECASE)
+_POCKET_RE = re.compile(
+    r"\b(?:tasche(?:n)?|ausnehmung(?:en)?|ausfraesung(?:en)?|aussparung(?:en)?)\b",
+    re.IGNORECASE,
+)
+_SLOT_RE = re.compile(r"\bnut(?:en)?\b", re.IGNORECASE)
+_EDGE_RE = re.compile(r"\b(?:fase(?:n)?|rundung(?:en)?|abrunden|radius)\b", re.IGNORECASE)
+
+_SUBAGENT_FLAG = {
+    "hole_classifier": "hole_enabled",
+    "pocket_classifier": "pocket_enabled",
+    "slot_classifier": "slot_enabled",
+    "pattern_classifier": "pattern_enabled",
+    "edge_feature_classifier": "edge_feature_enabled",
+}
+
+
+def detect_classifier_subagent(phrase: str) -> str | None:
+    """Return the ADR-0006 sub-classifier name for an unambiguous phrase.
+
+    Pattern phrases are checked before generic holes because they naturally
+    contain words like "bohrungen". If two real feature families remain in
+    one phrase, return None so the monolithic fallback handles it.
+    """
+    text = phrase or ""
+    matches: list[str] = []
+
+    if _PATTERN_RE.search(text):
+        matches.append("pattern_classifier")
+    elif _HOLE_RE.search(text):
+        matches.append("hole_classifier")
+
+    if _POCKET_RE.search(text):
+        matches.append("pocket_classifier")
+    if _SLOT_RE.search(text):
+        matches.append("slot_classifier")
+    if _EDGE_RE.search(text):
+        matches.append("edge_feature_classifier")
+
+    unique = list(dict.fromkeys(matches))
+    return unique[0] if len(unique) == 1 else None
+
+
+def _subagent_enabled(agent_name: str) -> bool:
+    flag = _SUBAGENT_FLAG.get(agent_name)
+    if not flag:
+        return False
+    return bool(getattr(get_config().classifier_subagents, flag, False))
+
 
 def aktions_splitter_node(state: PipelineState) -> dict:
     """Stufe 1 of ADR 0003 — deterministic spec → action phrases.
@@ -108,7 +171,9 @@ def aktions_klassifizierer_node(state: PipelineState) -> dict:
             )],
         }
 
-    agent = _registry.get_agent(AktionsKlassifizierer)
+    fallback_agent = _registry.get_agent(AktionsKlassifizierer)
+    sub_agents: dict[str, object] = {}
+    route_counts = {"fallback": 0}
     klassifikationen: list[dict] = []
     raw_responses: list[str] = []
     by_idx_per_teil: dict[tuple[str, int], dict] = {}
@@ -133,12 +198,51 @@ def aktions_klassifizierer_node(state: PipelineState) -> dict:
         if section_side:
             section_side_by_teil[teil_id] = section_side
 
+        route = "fallback"
+        classifier = fallback_agent
+        sub_agent_name = detect_classifier_subagent(p.get("phrase", ""))
+        if sub_agent_name and _subagent_enabled(sub_agent_name):
+            route = sub_agent_name
+            if sub_agent_name not in sub_agents:
+                sub_cls = CLASSIFIER_SUB_AGENT_CLASSES[sub_agent_name]
+                sub_agents[sub_agent_name] = _registry.get_agent(sub_cls)
+            classifier = sub_agents[sub_agent_name]
+        elif sub_agent_name:
+            route_counts[f"{sub_agent_name}_disabled"] = (
+                route_counts.get(f"{sub_agent_name}_disabled", 0) + 1
+            )
+        else:
+            route_counts["ambiguous_or_unknown"] = (
+                route_counts.get("ambiguous_or_unknown", 0) + 1
+            )
+
         try:
-            k = agent.classify(p, teil, parent_phrase=parent_phrase)
+            k = classifier.classify(p, teil, parent_phrase=parent_phrase)
         except Exception as e:
-            log.error("aktions_klassifizierer_failed",
-                      phrase=p.get("phrase", "")[:80], error=str(e)[:200])
-            continue
+            if classifier is not fallback_agent:
+                log.warning(
+                    "aktions_klassifizierer_subagent_failed_fallback",
+                    sub_agent=route,
+                    phrase=p.get("phrase", "")[:80],
+                    error=str(e)[:200],
+                )
+                route = "fallback_after_subagent_error"
+                try:
+                    k = fallback_agent.classify(
+                        p, teil, parent_phrase=parent_phrase
+                    )
+                except Exception as fallback_error:
+                    log.error(
+                        "aktions_klassifizierer_failed",
+                        phrase=p.get("phrase", "")[:80],
+                        error=str(fallback_error)[:200],
+                    )
+                    continue
+            else:
+                log.error("aktions_klassifizierer_failed",
+                          phrase=p.get("phrase", "")[:80], error=str(e)[:200])
+                continue
+        route_counts[route] = route_counts.get(route, 0) + 1
 
         inherited_side = section_side_by_teil.get(teil_id)
         if inherited_side and k.get("seite") != inherited_side:
@@ -152,23 +256,26 @@ def aktions_klassifizierer_node(state: PipelineState) -> dict:
 
         klassifikationen.append(k)
         by_idx_per_teil[(teil_id, p.get("phrase_idx"))] = k
-        raw = getattr(agent, "_last_raw_response", None)
+        raw = getattr(classifier, "_last_raw_response", None)
         if raw:
             raw_responses.append(raw)
 
     log.info("node_aktions_klassifizierer_done",
              classified=len(klassifikationen), of=len(phrases))
 
-    from src.config.loader import get_config as _gc
+    cfg = get_config()
     return {
         "aktions_klassifikationen": klassifikationen,
         "agent_traces": [_make_trace(
             agent="aktions_klassifizierer", step=_step,
             input_data={"phrase_count": len(phrases)},
-            output_data={"klassifikationen": klassifikationen},
+            output_data={
+                "klassifikationen": klassifikationen,
+                "routes": route_counts,
+            },
             start_time=_t0,
-            model=getattr(_gc().models, "aktions_klassifizierer",
-                           _gc().models.inventar),
+            model=getattr(cfg.models, "aktions_klassifizierer",
+                          cfg.models.inventar),
             raw_response="\n---\n".join(raw_responses) if raw_responses else None,
         )],
     }

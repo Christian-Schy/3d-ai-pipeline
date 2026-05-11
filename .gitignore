@@ -32,8 +32,9 @@ config/bambu.json
 .env
 .env.local
 
-# DSPy outputs (regenerable)
-data/dspy_optimized/
+# DSPy outputs (mostly regenerable; adopted artifacts are explicitly versioned)
+data/dspy_optimized/*
+!data/dspy_optimized/hole_classifier_optimized.json
 
 # Internal cleanup planning files
 CLEANUP_PLAN.md

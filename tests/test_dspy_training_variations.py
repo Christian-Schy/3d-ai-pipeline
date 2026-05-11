@@ -30,7 +30,7 @@ def test_aktions_klassifizierer_seed_is_trainable():
 
     raw = load_aktions_klassifizierer_seed()
     assert raw
-    assert len(raw) >= 70
+    assert len(raw) >= 75
     assert len(raw) == len(KLASS_TRACES)
 
     valid_types = {"tasche", "bohrung", "nut", "fase", "rundung"}
@@ -106,6 +106,47 @@ def test_aktions_klassifizierer_seed_is_trainable():
         "phrase", "teil_type", "teil_params", "parent_phrase"
     }
     assert getattr(first, "klassifikation")
+
+
+def test_aktions_klassifizierer_split_contracts_are_trainable():
+    from agent_contracts import CONTRACTS, project_traces
+    from train_dspy import (
+        load_aktions_klassifizierer_seed,
+        load_classifier_subagent_seed,
+        to_dspy_examples,
+    )
+    from variation_traces import TRACES as VARIATION_TRACES
+
+    expected_counts = {
+        "hole_classifier": 21,
+        "pocket_classifier": 21,
+        "slot_classifier": 13,
+        "pattern_classifier": 10,
+        "edge_feature_classifier": 10,
+    }
+
+    for agent, expected_count in expected_counts.items():
+        assert agent in CONTRACTS
+        assert CONTRACTS[agent].active is (agent == "hole_classifier")
+        seed_pairs = load_classifier_subagent_seed(agent)
+        assert len(seed_pairs) == expected_count
+        trace_pairs = project_traces(VARIATION_TRACES, agent)
+        examples = to_dspy_examples(seed_pairs[:1], agent)
+        assert examples
+        assert set(examples[0].inputs().keys()) == {
+            "phrase", "teil_type", "teil_params", "parent_phrase"
+        }
+        assert getattr(examples[0], "klassifikation")
+
+        if agent == "pattern_classifier":
+            assert len(seed_pairs) >= 10
+        if agent in {"hole_classifier", "pocket_classifier"}:
+            assert trace_pairs
+
+    assert sum(
+        len(load_classifier_subagent_seed(agent))
+        for agent in expected_counts
+    ) == len(load_aktions_klassifizierer_seed())
 
 
 def test_aktions_klassifizierer_run_trace_expands_per_phrase():

@@ -1,7 +1,7 @@
 # ADR 0006 — Klassifizierer-Split + nachfolgende Sub-Agent-Splits
 
 - **Datum:** 2026-05-11
-- **Status:** active (Plan, noch nicht implementiert)
+- **Status:** active (Phase A-C implementiert, Phase D: `hole_classifier` adoptiert)
 - **Vorgaenger-ADRs:** 0003 (Pro-Aktion-Mikro-Calls), 0005 (Regressions-Baseline)
 - **Verwandt:** Memory `project_split_pattern_candidates.md`,
   `project_klassifizierer_tasche_regress.md`
@@ -22,10 +22,13 @@ Zusaetzlich beobachtet: das Modell schwankt bei mehrdeutigen Tasche-Phrasen
 edge-to-edge (`kante_rechts`) und edge-to-center (`abstand_rechts`)
 Interpretation — pure LLM-Coin-Flip auf ein 26b-Modell ohne Stuetze.
 
-Heutige Heatmap (`data/sessions/heatmap_20260511_210435.md`) zeigt **4 von 5
-verbleibenden Fails sind Klassifizierer-Themen**: B1 v2 (Wert-Swap),
-B_kombo_additive_anchor (Anker ignoriert), M_kombo (achse-Schema fehlt),
-T_kombo (kante/abstand Coin-Flip). E_kombo ist Inventar-segmentierung.
+Heatmap (`data/sessions/heatmap_20260511_210435.md`) zeigte **4 von 5
+verbleibenden Fails als Klassifizierer-nahe Themen**: B1 v2 (Wert-Swap),
+B_kombo_additive_anchor (Anker ging vor der Klassifikation verloren),
+M_kombo (achse-Schema fehlt), T_kombo (kante/abstand Coin-Flip). In Phase D
+stellte sich B_kombo_additive_anchor als Splitter-Verlust heraus: der
+comma-getrennte Prefix `oben: obere rechte ecke ...` wurde verworfen, bevor
+Normalizer/Resolver den Anchor sehen konnten.
 
 **Gleicher Bug-Typ wie bei Platzierer (vor seinem Split):** ein zu breiter
 Single-LLM-Call. Pattern hat sich beim Platzierer (Split in 4 Sub-Agents
@@ -123,15 +126,31 @@ typ-spezifischen Sub-Klassifizierer.
 
 **Phase A — Kontrakte + Adapter (keine Runtime-Aenderung)**
 
+Status 2026-05-11: **implementiert**. `train_dspy.py --stats` zeigt:
+`hole_classifier` 27 Pairs, `pocket_classifier` 23, `slot_classifier` 13,
+`pattern_classifier` 10, `edge_feature_classifier` 10. Im ersten Schritt
+blieben alle fuenf `active=False`; nach Phase D ist `hole_classifier` der
+erste aktive Sub-Contract. `aktions_klassifizierer` bleibt der Runtime-
+Fallback.
+
 1. In `data/dspy_training/agent_contracts.py` fuenf neue `AgentContract`-
    Eintraege (`hole_classifier` ... `edge_feature_classifier`), jeweils
    `active=False` im ersten Schritt.
 2. Fuenf neue `_adapter_*_classifier`-Funktionen — projizieren aus den
    bestehenden Klassifizierer-Traces nur die Eintraege ihres Typs.
-3. `klassifizierer_traces.py`: keine Aenderung. Filter passiert im Adapter.
+3. `klassifizierer_traces.py`: Quelle bleibt ein File; Filter passiert im
+   Adapter. Drei Pattern-Seeds wurden ergaenzt, damit `pattern_classifier`
+   die Mindestbasis von 10 Pairs erreicht.
 4. `train_dspy.py --stats` zeigt fuenf neue Zeilen mit Pair-Counts pro Typ.
 
 **Phase B — Sub-Agent-Implementierung**
+
+Status 2026-05-11: **implementiert**. Neuer Runtime-
+Codepfad in `src/agents/classifier_sub_agents.py`, eigene Prompt-Dateien
+`data/prompts/prompt_classifier_{hole,pocket,slot,pattern,edge_feature}.py`
+und eigene DSPy-Signatures/Module in `train_dspy.py`. Die Sub-Agenten liefern
+weiterhin das ADR-0003-kompatible Ergebnis `{typ, seite, parameter_hints}`,
+damit Phase C nur dispatchen und fallbacken musste.
 
 5. Neuer Code-Pfad in `src/agents/classifier_sub_agents.py` (oder
    gleichwertig) der pro Sub-Agent einen call macht. Eigene Prompt-Datei
@@ -141,19 +160,55 @@ typ-spezifischen Sub-Klassifizierer.
 
 **Phase C — Dispatcher + Fallback in Runtime**
 
+Status 2026-05-11: **implementiert, initial Flags default false**. Der Node nutzt
+`detect_classifier_subagent(phrase)` in `planning_action_nodes.py`, routet
+nur bei eindeutigem Treffer und aktiviertem Flag
+`classifier_subagents.<typ>_enabled`. Bei deaktiviertem Flag, Ambiguitaet
+oder Sub-Agent-Fehler faellt er auf `AktionsKlassifizierer` zurueck. Die
+Trace-Ausgabe enthaelt `routes`, damit Heatmaps spaeter sehen, welcher Pfad
+benutzt wurde. Initial liess die Default-Config alle Flags auf `false`,
+damit Runtime bis zur Phase-D-Adoption identisch blieb.
+
 7. `aktions_klassifizierer_node` bekommt:
    - `detect_typ(phrase)` als deterministischen Pre-Step
    - Routing zu `<typ>_classifier`-Agent wenn typ erkannt UND Sub-Agent
-     aktiviert (per Feature-Flag z.B. `cfg.classifiers.hole_enabled`)
+     aktiviert (per Feature-Flag z.B. `classifier_subagents.hole_enabled`)
    - Fallback auf bestehenden Klassifizierer sonst
-8. Aktivierungen kommen einzeln, je Sub-Agent eine Heatmap-Iteration:
-   `active=True` setzen, trainieren, Heatmap-Diff, adopt-oder-rollback.
+8. Aktivierungen kommen einzeln in Phase D, je Sub-Agent eine Heatmap-
+   Iteration: trainieren, Flag setzen, Heatmap-Diff, adopt-oder-rollback.
 
 **Phase D — Klein-Bestaetigungs-Zyklus pro Sub-Agent**
 
-Pro Sub-Agent: Backup-Bak-File anlegen, trainieren, Heatmap 2x laufen
-lassen (Noise-Check), Layer-Diff vergleichen, dann erst Feature-Flag auf
-true setzen.
+Status 2026-05-11: **`hole_classifier` adoptiert**.
+
+Der `hole_classifier` wurde separat trainiert:
+
+- Trainingsbasis: 27 Pairs (`6` Trace + `21` Seed), Train `21`, Dev `6`.
+- DSPy-Ergebnis: Dev-Score `0.90`, Artefakt
+  `data/dspy_optimized/hole_classifier_optimized.json` mit 8 Demos. Dieses
+  adoptierte Artefakt ist gezielt aus dem sonst ignorierten
+  `data/dspy_optimized/` ausgenommen, damit `hole_enabled: true` im
+  oeffentlichen Git reproduzierbar ist.
+- Feature-Flag: `classifier_subagents.hole_enabled: true`; DSPy-Contract
+  `hole_classifier.active=True`.
+- Gate: `.venv/bin/python -m scripts.run_real_goldens --filter B --no-persist --no-jsonl`
+  -> `11 PASS / 0 FAIL`.
+
+Im selben Zyklus wurde `B_kombo_additive_anchor` stabilisiert: der
+deterministische Splitter puffert jetzt comma-getrennte Corner-Anchor-
+Praefixe und haengt sie an die folgende Feature-Phrase. Neue
+Component-Golden:
+`tests/golden/components/B_kombo_additive_anchor/splitter/`.
+
+Cross-Family-Smoke:
+`.venv/bin/python -m scripts.run_real_goldens --filter EF,T,NEST,M --first-only --no-persist --no-jsonl`
+-> `EF` PASS, `NEST` PASS, `M` FAIL (bestehender Pattern/Splitter-
+Feature-Count), `T` FAIL (bestehender Pocket/Resolver-kante-vs-abstand-
+Pfad). Diese Fails blockieren den Hole-Rollout nicht, bleiben aber die
+naechsten separaten Sub-Agent-/Deterministik-Themen.
+
+Fuer die uebrigen Sub-Agenten gilt weiter: trainieren, Flag setzen,
+Heatmap-Diff, adoptieren oder rollbacken.
 
 **Phase E — Monolith-Abloesung (am Ende)**
 

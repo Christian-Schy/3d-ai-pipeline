@@ -1,0 +1,34 @@
+{
+  "phrases": [
+    {
+      "phrase": "oben: 20mm von rechter kante und zusaetzlich 10mm nach rechts versetzt eine 18mm bohrung 10 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 0,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben: 30mm von linker kante und zusaetzlich 5mm nach rechts versetzt eine 18mm bohrung 10 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 1,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben: 25mm von oberer kante und zusaetzlich 5mm nach unten versetzt eine 18mm bohrung 10 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 2,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben: obere rechte ecke der oberseite, 20mm nach unten und 30mm nach links versetzt eine 18mm bohrung 10 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 3,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben: untere linke ecke der oberseite, 25mm nach oben und 15mm nach rechts versetzt eine 18mm bohrung 10 tief.",
+      "teil_id": "wuerfel",
+      "phrase_idx": 4,
+      "parent_phrase_idx": null
+    }
+  ]
+}

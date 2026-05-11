@@ -10,6 +10,68 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-11
 
+- **ADR 0006 Phase D gestartet: `hole_classifier` adoptiert.**
+  Separates DSPy-Training fuer `hole_classifier` mit 27 Pairs ergab
+  Dev-Score `0.90` und erzeugte
+  `data/dspy_optimized/hole_classifier_optimized.json` (gezielt versioniertes
+  adoptiertes Artefakt). `classifier_subagents.hole_enabled` ist jetzt `true`
+  und der DSPy-Contract `hole_classifier` ist aktiv;
+  B-Heatmap mit aktivem Sub-Agenten:
+  `.venv/bin/python -m scripts.run_real_goldens --filter B --no-persist --no-jsonl`
+  -> `11 PASS / 0 FAIL`. Der zunaechst rote `B_kombo_additive_anchor`
+  war kein Hole-Classifier-Ausfall, sondern ein Splitter-Verlust von
+  comma-getrennten Corner-Anchor-Prefixes. Fix in `src/tools/aktions_splitter.py`
+  plus neue Component-Golden unter
+  `tests/golden/components/B_kombo_additive_anchor/splitter/`.
+  Cross-Family-Smoke `EF,T,NEST,M --first-only` ergab `EF`/`NEST` PASS und
+  bestaetigte bestehende separate Fails in `M` (Pattern/Splitter) und `T`
+  (Pocket/Resolver kante-vs-abstand).
+
+- **ADR 0006 Phase C umgesetzt: Dispatcher, Flags und Fallback.**
+  `aktions_klassifizierer_node` erkennt mit
+  `detect_classifier_subagent(phrase)` eindeutige Sub-Agent-Ziele und routet
+  nur dann zu `hole/pocket/slot/pattern/edge_feature_classifier`, wenn das
+  passende Flag unter `classifier_subagents.*_enabled` gesetzt ist. Alle
+  Flags sind per Default `false`, daher bleibt die Runtime ohne Adoption
+  identisch zum Monolithen. Bei deaktiviertem Flag, ambigen Phrasen oder
+  Sub-Agent-Fehlern faellt der Node auf `AktionsKlassifizierer` zurueck und
+  schreibt `routes` in den Trace. Config enthaelt Modelle/Agent-Options fuer
+  die Sub-Agenten. Tests:
+  `.venv/bin/python -m pytest tests/agents/test_classifier_sub_agents.py
+  tests/agents/test_aktions_chain_nodes.py tests/test_dspy_training_variations.py
+  tests/agents/test_aktions_klassifizierer.py
+  tests/agents/test_normalizer_define_feature.py -q` -> `73 passed`.
+
+- **ADR 0006 Phase B umgesetzt: Klassifizierer-Sub-Agent-Codepfad.**
+  Neuer Runtime-Codepfad in `src/agents/classifier_sub_agents.py` mit
+  `HoleClassifier`, `PocketClassifier`, `SlotClassifier`,
+  `PatternClassifier` und `EdgeFeatureClassifier`. Jeder Sub-Agent hat eine
+  eigene schmale Prompt-Datei in `data/prompts/prompt_classifier_*.py`,
+  laedt spaeter eigene DSPy-Artefakte per Agent-Name und liefert weiterhin
+  den ADR-0003-kompatiblen Output `{typ, seite, parameter_hints}`. In
+  `train_dspy.py` nutzen die fuenf Sub-Targets jetzt eigene schmale
+  DSPy-Signatures/Module statt der generischen Monolith-Signature. Runtime-
+  Routing bleibt fuer Phase C offen. Tests:
+  `.venv/bin/python -m pytest tests/agents/test_classifier_sub_agents.py
+  tests/test_dspy_training_variations.py tests/agents/test_aktions_klassifizierer.py
+  tests/agents/test_normalizer_define_feature.py -q` -> `57 passed`;
+  `.venv/bin/python train_dspy.py --stats` gruen.
+
+- **ADR 0006 Phase A umgesetzt: Klassifizierer-Sub-Contracts ohne Runtime-
+  Aenderung.** `data/dspy_training/agent_contracts.py` hat nun fuenf
+  inaktive typ-spezifische DSPy-Ziele: `hole_classifier`,
+  `pocket_classifier`, `slot_classifier`, `pattern_classifier` und
+  `edge_feature_classifier`. Die Adapter filtern aus derselben
+  Klassifizierer-Seedquelle, damit keine Doppelpflege entsteht.
+  `train_dspy.py --stats` weist die Sub-Spalten separat aus:
+  hole `27`, pocket `23`, slot `13`, pattern `10`, edge `10` Gesamtpairs.
+  Drei Pattern-Seeds wurden ergaenzt, damit auch `pattern_classifier` die
+  ADR-Mindestbasis von 10 Pairs erreicht. Runtime-Routing bleibt bewusst
+  unveraendert und faellt weiter auf den Monolithen zurueck. Tests:
+  `.venv/bin/python -m pytest tests/test_dspy_training_variations.py
+  tests/agents/test_aktions_klassifizierer.py
+  tests/agents/test_normalizer_define_feature.py -q` -> `51 passed`.
+
 - **Heatmap-Stand 12/5 (Baseline war 11/6).** Drei Netto-Gewinne durch
   drei voneinander unabhaengige Eingriffe; ein Tasche-Coin-Flip-Verlust
   durch latenten Klassifizierer-LLM-Bug. Bericht:

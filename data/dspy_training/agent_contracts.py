@@ -47,6 +47,7 @@ Trace-Struktur (alle Felder optional ausser `specification`):
 
 from __future__ import annotations
 import json
+import re
 from dataclasses import dataclass
 from typing import Callable
 
@@ -93,6 +94,43 @@ CONTRACTS: dict[str, AgentContract] = {
         # -EF (tasche pocket_edge) und -T_kombo (tasche params.y swap).
         # Vor naechstem Versuch: Tasche-Traces auditieren. Siehe Memory
         # project_klassifizierer_tasche_regress.md.
+    ),
+    "hole_classifier": AgentContract(
+        # ADR 0006 Phase D: erster adoptierter typ-spezifischer Sub-Agent.
+        # Isoliert einzelne Bohrungen von Tasche/Nut/Pattern; Runtime-Flag
+        # classifier_subagents.hole_enabled ist nach gruenem B-Gate aktiv.
+        name="hole_classifier",
+        input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
+        output_fields=["klassifikation"],
+        default_model="gemma4:26b",
+    ),
+    "pocket_classifier": AgentContract(
+        name="pocket_classifier",
+        input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
+        output_fields=["klassifikation"],
+        default_model="gemma4:26b",
+        active=False,
+    ),
+    "slot_classifier": AgentContract(
+        name="slot_classifier",
+        input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
+        output_fields=["klassifikation"],
+        default_model="gemma4:26b",
+        active=False,
+    ),
+    "pattern_classifier": AgentContract(
+        name="pattern_classifier",
+        input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
+        output_fields=["klassifikation"],
+        default_model="gemma4:26b",
+        active=False,
+    ),
+    "edge_feature_classifier": AgentContract(
+        name="edge_feature_classifier",
+        input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
+        output_fields=["klassifikation"],
+        default_model="gemma4:26b",
+        active=False,
     ),
     "position_extractor": AgentContract(
         # Per-Teil Labeler (ab 2026-05-04): bekommt EIN Teil-Text und labelt
@@ -235,6 +273,90 @@ def _adapter_aktions_klassifizierer(trace: dict) -> list[dict]:
             "output": e.get("output", {}),
         })
     return pairs
+
+
+_CLASSIFIER_SUB_AGENTS = {
+    "hole_classifier",
+    "pocket_classifier",
+    "slot_classifier",
+    "pattern_classifier",
+    "edge_feature_classifier",
+}
+
+_PATTERN_PHRASE_RE = re.compile(
+    r"\b(?:"
+    r"lochkreis|teilkreis|eckbohr\w*|bohrungsreihe|lochreihe|lochmuster|lochbild"
+    r"|loecher\s+der\s+reihe|locher\s+der\s+reihe"
+    r"|bohrungen\s+(?:in\s+einer\s+reihe|entlang)"
+    r"|bohrungen\s+.*\b(?:abstand|achse)\b"
+    r"|an\s+jeder\s+ecke"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def classifier_sub_agent_name_for_pair(pair: dict) -> str | None:
+    """Return the ADR-0006 sub-classifier target for one classifier pair.
+
+    The source pair still uses the monolithic classifier output shape
+    `{typ, seite, parameter_hints}`. Pattern phrases are detected from the
+    input phrase because the monolith deliberately coarse-labels them as
+    `bohrung`; the Normalizer later refines them to lochkreis/eckbohrungen/
+    bohrungsreihe.
+    """
+    inp = pair.get("input") or {}
+    out = pair.get("output") or {}
+    phrase = str(inp.get("phrase") or "").lower()
+    typ = str(out.get("typ") or "").lower()
+
+    if typ == "bohrung" and _PATTERN_PHRASE_RE.search(phrase):
+        return "pattern_classifier"
+    if typ == "bohrung":
+        return "hole_classifier"
+    if typ == "tasche":
+        return "pocket_classifier"
+    if typ == "nut":
+        return "slot_classifier"
+    if typ in {"fase", "rundung"}:
+        return "edge_feature_classifier"
+    return None
+
+
+def _filter_classifier_pairs(pairs: list[dict], sub_agent: str) -> list[dict]:
+    return [
+        p for p in pairs
+        if classifier_sub_agent_name_for_pair(p) == sub_agent
+    ]
+
+
+def _adapter_hole_classifier(trace: dict) -> list[dict]:
+    return _filter_classifier_pairs(
+        _adapter_aktions_klassifizierer(trace), "hole_classifier"
+    )
+
+
+def _adapter_pocket_classifier(trace: dict) -> list[dict]:
+    return _filter_classifier_pairs(
+        _adapter_aktions_klassifizierer(trace), "pocket_classifier"
+    )
+
+
+def _adapter_slot_classifier(trace: dict) -> list[dict]:
+    return _filter_classifier_pairs(
+        _adapter_aktions_klassifizierer(trace), "slot_classifier"
+    )
+
+
+def _adapter_pattern_classifier(trace: dict) -> list[dict]:
+    return _filter_classifier_pairs(
+        _adapter_aktions_klassifizierer(trace), "pattern_classifier"
+    )
+
+
+def _adapter_edge_feature_classifier(trace: dict) -> list[dict]:
+    return _filter_classifier_pairs(
+        _adapter_aktions_klassifizierer(trace), "edge_feature_classifier"
+    )
 
 
 def _adapter_position_extractor(trace: dict) -> list[dict]:
@@ -683,6 +805,11 @@ ADAPTERS: dict[str, Callable[[dict], list[dict]]] = {
     "punctuation": _adapter_punctuation,
     "inventar": _adapter_inventar,
     "aktions_klassifizierer": _adapter_aktions_klassifizierer,
+    "hole_classifier": _adapter_hole_classifier,
+    "pocket_classifier": _adapter_pocket_classifier,
+    "slot_classifier": _adapter_slot_classifier,
+    "pattern_classifier": _adapter_pattern_classifier,
+    "edge_feature_classifier": _adapter_edge_feature_classifier,
     "position_extractor": _adapter_position_extractor,
     "platzierer": _adapter_position_normalizer,
     "platzierer_frame": _adapter_platzierer_frame,

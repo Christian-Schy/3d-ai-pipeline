@@ -9,6 +9,7 @@ Drei Nodes:
 Tests pruefen Wiring (Input aus state, Output in state, agent_traces),
 nicht die Tool-/Agent-Internals (die haben eigene Tests).
 """
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -114,6 +115,35 @@ def _patch_klassifizierer(monkeypatch, side_effect=None, return_value=None):
     return stub
 
 
+def _fake_classifier_config(**flags):
+    defaults = {
+        "hole_enabled": False,
+        "pocket_enabled": False,
+        "slot_enabled": False,
+        "pattern_enabled": False,
+        "edge_feature_enabled": False,
+    }
+    defaults.update(flags)
+    return SimpleNamespace(
+        classifier_subagents=SimpleNamespace(**defaults),
+        models=SimpleNamespace(
+            aktions_klassifizierer="test-classifier",
+            inventar="test-inventar",
+        ),
+    )
+
+
+def test_detect_classifier_subagent_routes_only_unambiguous_phrases():
+    from src.graph.nodes.planning_action_nodes import detect_classifier_subagent
+
+    assert detect_classifier_subagent("oben eine 8mm bohrung") == "hole_classifier"
+    assert detect_classifier_subagent("oben eine tasche 20x10x5") == "pocket_classifier"
+    assert detect_classifier_subagent("rechts eine nut 5x3 entlang z") == "slot_classifier"
+    assert detect_classifier_subagent("oben lochkreis 60mm mit 6 bohrungen") == "pattern_classifier"
+    assert detect_classifier_subagent("oben eine fase 2mm") == "edge_feature_classifier"
+    assert detect_classifier_subagent("oben eine tasche mit bohrung") is None
+
+
 def test_klassifizierer_node_classifies_each_phrase(monkeypatch, fresh_state):
     from src.graph.nodes import aktions_klassifizierer_node
 
@@ -142,6 +172,123 @@ def test_klassifizierer_node_classifies_each_phrase(monkeypatch, fresh_state):
     assert out["aktions_klassifikationen"][0]["typ"] == "tasche"
     assert out["aktions_klassifikationen"][1]["typ"] == "bohrung"
     assert stub.classify.call_count == 2
+
+
+def test_klassifizierer_node_uses_fallback_when_subagent_disabled(monkeypatch, fresh_state):
+    from src.graph.nodes import aktions_klassifizierer_node
+    import src.graph.nodes.planning_action_nodes as action_nodes
+
+    monkeypatch.setattr(action_nodes, "get_config", lambda: _fake_classifier_config())
+    fresh_state["aktions_phrases"] = [
+        {"phrase": "oben eine 8mm bohrung",
+         "teil_id": "wuerfel", "phrase_idx": 0, "parent_phrase_idx": None},
+    ]
+    stub = _patch_klassifizierer(monkeypatch, return_value={
+        "typ": "bohrung", "seite": "oben",
+        "beschreibung": "oben eine 8mm bohrung",
+        "teil_id": "wuerfel", "phrase_idx": 0, "parent_phrase_idx": None,
+        "parameter_hints": {"durchmesser": 8},
+    })
+
+    out = aktions_klassifizierer_node(fresh_state)
+
+    assert stub.classify.call_count == 1
+    routes = out["agent_traces"][0]["output"]["routes"]
+    assert routes["hole_classifier_disabled"] == 1
+    assert routes["fallback"] == 1
+
+
+def test_klassifizierer_node_routes_to_enabled_subagent(monkeypatch, fresh_state):
+    from src.agents.aktions_klassifizierer import AktionsKlassifizierer
+    from src.agents.classifier_sub_agents import HoleClassifier
+    from src.graph.nodes import aktions_klassifizierer_node
+    from src.graph.nodes import _registry
+    import src.graph.nodes.planning_action_nodes as action_nodes
+
+    monkeypatch.setattr(
+        action_nodes, "get_config",
+        lambda: _fake_classifier_config(hole_enabled=True),
+    )
+    fresh_state["aktions_phrases"] = [
+        {"phrase": "oben eine 8mm bohrung",
+         "teil_id": "wuerfel", "phrase_idx": 0, "parent_phrase_idx": None},
+    ]
+
+    fallback_stub = MagicMock(spec=AktionsKlassifizierer)
+    fallback_stub._last_raw_response = "FALLBACK"
+    hole_stub = MagicMock(spec=HoleClassifier)
+    hole_stub._last_raw_response = "HOLE"
+    hole_stub.classify.return_value = {
+        "typ": "bohrung", "seite": "oben",
+        "beschreibung": "oben eine 8mm bohrung",
+        "teil_id": "wuerfel", "phrase_idx": 0, "parent_phrase_idx": None,
+        "parameter_hints": {"durchmesser": 8},
+    }
+
+    _registry.get_agent.cache_clear()
+    monkeypatch.setattr(
+        _registry,
+        "get_agent",
+        lambda cls: (
+            fallback_stub if cls is AktionsKlassifizierer
+            else hole_stub if cls is HoleClassifier
+            else cls()
+        ),
+    )
+
+    out = aktions_klassifizierer_node(fresh_state)
+
+    assert hole_stub.classify.call_count == 1
+    assert fallback_stub.classify.call_count == 0
+    routes = out["agent_traces"][0]["output"]["routes"]
+    assert routes["hole_classifier"] == 1
+
+
+def test_klassifizierer_node_falls_back_when_subagent_fails(monkeypatch, fresh_state):
+    from src.agents.aktions_klassifizierer import AktionsKlassifizierer
+    from src.agents.classifier_sub_agents import HoleClassifier
+    from src.graph.nodes import aktions_klassifizierer_node
+    from src.graph.nodes import _registry
+    import src.graph.nodes.planning_action_nodes as action_nodes
+
+    monkeypatch.setattr(
+        action_nodes, "get_config",
+        lambda: _fake_classifier_config(hole_enabled=True),
+    )
+    fresh_state["aktions_phrases"] = [
+        {"phrase": "oben eine 8mm bohrung",
+         "teil_id": "wuerfel", "phrase_idx": 0, "parent_phrase_idx": None},
+    ]
+
+    fallback_stub = MagicMock(spec=AktionsKlassifizierer)
+    fallback_stub._last_raw_response = "FALLBACK"
+    fallback_stub.classify.return_value = {
+        "typ": "bohrung", "seite": "oben",
+        "beschreibung": "oben eine 8mm bohrung",
+        "teil_id": "wuerfel", "phrase_idx": 0, "parent_phrase_idx": None,
+        "parameter_hints": {"durchmesser": 8},
+    }
+    hole_stub = MagicMock(spec=HoleClassifier)
+    hole_stub._last_raw_response = "HOLE"
+    hole_stub.classify.side_effect = RuntimeError("subagent unavailable")
+
+    _registry.get_agent.cache_clear()
+    monkeypatch.setattr(
+        _registry,
+        "get_agent",
+        lambda cls: (
+            fallback_stub if cls is AktionsKlassifizierer
+            else hole_stub if cls is HoleClassifier
+            else cls()
+        ),
+    )
+
+    out = aktions_klassifizierer_node(fresh_state)
+
+    assert hole_stub.classify.call_count == 1
+    assert fallback_stub.classify.call_count == 1
+    routes = out["agent_traces"][0]["output"]["routes"]
+    assert routes["fallback_after_subagent_error"] == 1
 
 
 def test_klassifizierer_node_passes_parent_phrase_for_nested(monkeypatch, fresh_state):

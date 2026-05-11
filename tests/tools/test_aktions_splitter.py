@@ -90,6 +90,30 @@ def test_placement_continuation_after_dropped_part_decl_is_not_attached():
     assert "10mm nach oben versetzt" not in out[0]["phrase"]
 
 
+def test_corner_anchor_prefix_before_comma_attaches_to_next_feature():
+    """A comma after a corner anchor phrase is local punctuation, not an
+    action boundary. The following bohrung needs the corner text so the
+    normalizer can build position.anchor.
+    """
+    out = split_spec_into_aktionen(
+        "200mm wuerfel; oben: obere rechte ecke der oberseite, "
+        "20mm nach unten und 30mm nach links versetzt eine 18mm bohrung 10 tief; "
+        "oben: untere linke ecke der oberseite, "
+        "25mm nach oben und 15mm nach rechts versetzt eine 18mm bohrung 10 tief.",
+        _teile_single(),
+    )
+
+    assert len(out) == 2
+    assert out[0]["phrase"] == (
+        "oben: obere rechte ecke der oberseite, "
+        "20mm nach unten und 30mm nach links versetzt eine 18mm bohrung 10 tief"
+    )
+    assert out[1]["phrase"] == (
+        "oben: untere linke ecke der oberseite, "
+        "25mm nach oben und 15mm nach rechts versetzt eine 18mm bohrung 10 tief."
+    )
+
+
 def test_adjective_form_rechten_does_not_split():
     """'rechten' (adjective) inside a phrase must not be confused with the
     bare side-keyword 'rechts'. The whole text stays one phrase."""

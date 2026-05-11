@@ -47,6 +47,26 @@ agent_options:
     think: false       # Triviale Klassifikation in 5 Typen — kein Reasoning noetig
     temperature: 0.0   # Strikt deterministisch, eindeutige Ausgabe
     num_ctx: 4096      # Eine Phrase + Few-Shots passen locker rein
+  hole_classifier:
+    think: false
+    temperature: 0.0
+    num_ctx: 4096
+  pocket_classifier:
+    think: false
+    temperature: 0.0
+    num_ctx: 4096
+  slot_classifier:
+    think: false
+    temperature: 0.0
+    num_ctx: 4096
+  pattern_classifier:
+    think: false
+    temperature: 0.0
+    num_ctx: 4096
+  edge_feature_classifier:
+    think: false
+    temperature: 0.0
+    num_ctx: 4096
   normalizer:
     think: false       # Klassifizierer hat typ/seite/parameter_hints schon
     temperature: 0.05  # geliefert — Aufgabe ist nur noch position/richtung
@@ -65,6 +85,11 @@ models:
   # Blueprint Chain (3-Step + Multi-Part split)
   inventar:                 "gemma4:26b"   # Stueckliste + Aktionen
   aktions_klassifizierer:   "gemma4:26b"   # Pro-Aktion-Klassifikation (ADR 0003)
+  hole_classifier:          "gemma4:26b"   # ADR 0006 Sub-Klassifizierer
+  pocket_classifier:        "gemma4:26b"
+  slot_classifier:          "gemma4:26b"
+  pattern_classifier:       "gemma4:26b"
+  edge_feature_classifier:  "gemma4:26b"
   position_extractor:       "gemma4:26b"   # Pre-digester pro Kind-Teil (Multi-Part)
   text_splitter:            "gemma4:26b"   # Spec → Text pro Teil (Multi-Part)
   normalizer:               "gemma4:26b"   # Feature-Normalisierung (in feature_definierer)
@@ -121,3 +146,14 @@ ui:
 
 plan_validator:
   max_retries: 2
+
+# --- ADR 0006 classifier sub-agent rollout flags ---
+# Enable one sub-agent at a time only after training and heatmap adoption.
+# hole_classifier is the first adopted sub-agent; all other families still
+# use the monolithic fallback until their own Phase-D cycle is green.
+classifier_subagents:
+  hole_enabled: true
+  pocket_enabled: false
+  slot_enabled: false
+  pattern_enabled: false
+  edge_feature_enabled: false
