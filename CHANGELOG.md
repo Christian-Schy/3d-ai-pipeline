@@ -8,6 +8,135 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-11
+
+- **Heatmap-Stand 12/5 (Baseline war 11/6).** Drei Netto-Gewinne durch
+  drei voneinander unabhaengige Eingriffe; ein Tasche-Coin-Flip-Verlust
+  durch latenten Klassifizierer-LLM-Bug. Bericht:
+  `data/sessions/heatmap_20260511_210435.md`. Folgeaufgaben in ADR 0006.
+
+- **ADR 0006 — Klassifizierer-Split + nachfolgende Sub-Agent-Splits**
+  (`docs/decisions/0006-classifier-split-and-future-splits.md`). Planung:
+  `aktions_klassifizierer` analog Platzierer in 5 typ-spezifische
+  Sub-Agents zerlegen (`hole/pocket/slot/pattern/edge_feature_classifier`),
+  additive Migration mit Dispatcher + Fallback auf den Monolithen.
+  Danach im gleichen Pattern: `plan_validator` (pro Aspekt), `normalizer`
+  (per-Feature-Typ oder Konsolidierung mit Klassifizierer), spaeter
+  `feature_definierer` und ggf. `position_extractor`. Begruendung: empirisch
+  belegte Cross-Contamination im Monolith-Training (siehe naechster Punkt).
+
+- **Klassifizierer-Monolith-Aktivierung getestet, dann zurueckgerollt.**
+  Mit 78 Pairs (70 Seed + 8 Trace) trainiert (Dev-Score 0.88). Heatmap-Diff:
+  +B1 v2 PASS (Wert-Swap-Bug deterministisch fixbar), aber -EF und -T_kombo
+  durch Tasche-Demo-Cross-Pollution → Netto -1. Rollback: `active=False`
+  in `data/dspy_training/agent_contracts.py`, optimized JSON umbenannt zu
+  `data/dspy_optimized/aktions_klassifizierer_optimized.json.disabled_tasche_regress`.
+  Lehre: Monolith-Training skaliert nicht ueber Feature-Typen → Split-
+  Architektur als richtige Antwort (siehe ADR 0006).
+
+- **Deterministischer Post-Filter in `position_extractor_node` fixt EF-
+  Mis-Split.** Neuer Helper `_relabel_features_on_self` in
+  `src/graph/nodes/planning_inventory_nodes.py`: verschiebt Saetze die
+  mit `auf der/dem <teil_id>` oder `in der/dem <teil_id>` beginnen aus
+  `placement_sentences` in `feature_sentences`. Adressiert deterministisch
+  den LLM-Labeler-Mis-Split, der bei EF-Specs Feature-on-self-Saetze
+  faelschlich in placement legt. Folge: Platzierer-Offset-Step bekam
+  noisy pos_spec und extrahierte Spurious-Werte → Plate landete bei
+  offset_x=23 statt 0. 10 Unit-Tests in
+  `tests/graph/test_position_extractor_relabel.py` decken Kanonisches,
+  Parent-Referenzen (bleiben in placement), Case-/Whitespace-Robustheit,
+  Suffix-IDs, Mehrfach-Verschiebungen ab.
+
+- **`feature_builder` routet `pocket_edge_distances` nur noch fuer
+  rechteckige Subtraktiv-Features.** Aenderung in
+  `src/tools/feature_builder.py`: wenn der LLM `kante_*`-Keys auf Bohrungen
+  oder Kantenfeatures (chamfer, fillet, shell, alle hole_*) leakt, werden
+  sie in `edge_distances` (edge-to-center) umgeleitet statt in
+  `pocket_edge_distances` (edge-to-edge), damit der Resolver nicht
+  child_half subtrahiert. Behebt B3 v1 (Run bc28acc5): hole_single mit
+  spurious pocket_edge_distances `{top:10}` ergab offset_y `81` statt `90`
+  (90 = erwartet, 81 = 90-9_radius). Heatmap: B3 v1 stabil PASS, 0
+  Regressions in den 4 anderen B*-Specs.
+
+- **`labeler_platzierer_traces.py` um 20 Traces erweitert (Z/ZR/V/EF
+  Serien) und alle 4 Platzierer-Sub-Agents nachtrainiert.** Neue
+  Kategorien: 6× pure zentral (verschiedene Faces/Sizes/Wording),
+  2× zentral+Rotation, 2× pure Versatz, 8× EF-Noise (placement_sents
+  mit nachgelagerten "auf der platte..."-Saetzen + Output simpel zentral).
+  Adressiert Class-Imbalance der vorherigen 21 Traces (zu wenig
+  Pure-zentriert-Demos) und das Bootstrap-Problem dass Hard-Cases nicht
+  gewaehlt wurden. Dev-Scores: frame 0.96, alignment 0.83, offset 0.95
+  (vorher 0.60 monolithisch). Stuetzt unter anderem den oben genannten
+  Post-Filter-Fix fuer EF.
+
+- **DSPy-Inventar-Retraining adoptiert.** Mit 222 Pairs (Trace + Legacy)
+  trainiert, Dev-Score 0.95. Heatmap-Diff: +B2 v1 PASS stabil ueber
+  zwei verifizierte Runs. Eliminiert die `function_decomposer` und
+  `feature_definierer` Fail-Layer ganz aus der Heatmap. Backup unter
+  `inventar_optimized.json.bak_baseline_20260510_232326`. Andere
+  DSPy-Retrainings derselben Session (position_extractor, platzierer
+  monolithisch, normalizer) sind als neutral oder regressiv eingestuft und
+  entweder zurueckgerollt (position_extractor) oder als Sub-Agent-Variante
+  ersetzt (platzierer); Details und Lessons in Memory
+  `feedback_dspy_retraining_discipline.md`.
+
+- **runs.jsonl archiviert und neu gestartet.** Pollution durch nicht
+  zuverlaessig markierte Bad-Runs unterbunden — neue Datei ist leer,
+  alte unter `data/sessions/runs.jsonl.archive_20260510_233100`. Bis
+  ein `--annotate-runs`-Mechanismus in `scripts/run_real_goldens.py`
+  existiert (Memory: `feedback_dspy_retraining_discipline.md`) hilft das
+  als Schutz vor versehentlichem Bulk-Marker-Schaden.
+
+- **Klassifizierer-Seedbasis deutlich verbreitert und validiert.**
+  `data/dspy_training/klassifizierer_traces.py` enthaelt nun 72 direkte,
+  hand-kuratierte Phrase-Level-Beispiele fuer den `aktions_klassifizierer`
+  statt 3: `bohrung`, `tasche`, `nut`, `fase`, `rundung` ueber alle sechs
+  Seiten, inklusive Center-Abstand, explizitem Edge-to-Edge, Versatz,
+  Rotationsvorzeichen, Parent-Seitenvererbung, Kombi-nahe Nested-Faelle,
+  Pattern-Phrasen (`lochkreis`, `eckbohrungen`, `bohrungsreihe`) als grobe
+  `bohrung`-Familie sowie adjektivische Seitenformulierungen
+  (`rechte Seite`, `obere Flaeche`, `Unterseite`). Der Klassifizierer-Contract
+  erlaubt additiv `parameter_hints.richtung = x|y|z` fuer explizite
+  `entlang <Achse>`-Phrasen; der Normalizer hebt diesen Hint vor der
+  Slot-Laengen-Inferenz auf das top-level Feld `richtung`. Der Seed bleibt
+  strikt im bestehenden Contract: keine neuen Typen, keine neuen Seiten, nur
+  bekannte `parameter_hints` und nur explizite Werte.
+  `tests/test_dspy_training_variations.py`
+  validiert Count, eindeutige IDs, erlaubte Typen/Seiten/Hint-Keys und
+  numerische Hint-Werte sowie Mindestabdeckung fuer Nested-, Pattern- und
+  Seitenadjektiv-Faelle. Statistik danach: `aktions_klassifizierer
+  (inactive)` mit 8 Trace-, 72 Seed- und 80 Gesamtbeispielen. Tests/Checks:
+  `.venv/bin/python train_dspy.py --stats`; `.venv/bin/python -m pytest
+  tests/test_dspy_training_variations.py tests/agents/test_normalizer_define_feature.py
+  -q` -> `37 passed`; Pycompile der geaenderten Trainingsdateien gruen.
+
+- **Platzierer-Anchor-Traces um fehlende Corner-Anker ergaenzt.**
+  `labeler_platzierer_traces.py` deckt im Split-Training fuer
+  `platzierer_anchor` nun auch `bottom_left`, `bottom_right` und diagonale
+  Corner-Paarungen (`top_left` auf `bottom_right`, `bottom_right` auf
+  `top_left`) ab. Statistik danach: `platzierer_anchor` 9 Trace-Beispiele;
+  Frame/Alignment/Offset jeweils 39.
+
+- **Platzierer-DSPy-Training in Runtime-kompatible Mini-Contracts
+  gesplittet.** Der alte monolithische `platzierer`-Trainingscontract ist
+  inaktiv, weil dessen `normalized_position`-Demos im falschen Format in alle
+  vier Runtime-Mini-Calls eingespeist wurden. Neue aktive Trainingsziele:
+  `platzierer_frame`, `platzierer_alignment`, `platzierer_anchor` und
+  `platzierer_offset`. `PositionNormalizerAgent` laedt nun step-spezifische
+  DSPy-Artefakte und injiziert sie nur in den passenden Mini-Prompt. Die
+  Trainingsprojektion filtert alte Sonnet-Platziererlabels mit Legacy-
+  Vokabular aus und nutzt nur current-schema Labels fuer die Split-Ziele.
+  Der Train/Dev-Split ist stabil gemischt, damit kleine kuratierte Packs
+  nicht nach Kategorie in Train/Dev zerfallen. Neu erzeugte labeled-only
+  Artefakte: `platzierer_frame_optimized.json`,
+  `platzierer_alignment_optimized.json`, `platzierer_anchor_optimized.json`,
+  `platzierer_offset_optimized.json`. Dev-Scores nach Korrektur:
+  Frame `1.00`, Alignment `1.00`, Anchor `1.00`, Offset `1.00`.
+  Tests/Checks: `.venv/bin/python train_dspy.py --stats`;
+  `.venv/bin/python -m pytest tests/test_dspy_training_variations.py -q`
+  -> `5 passed`; Pycompile der geaenderten Trainings-/Agent-Dateien gruen;
+  Runtime-Demo-Load-Check -> `13/13/4/10` nicht-leere Demos.
+
 ## 2026-05-10
 
 - **DSPy Variation Pack 1 fuer natuerliche CAD-Formulierungen angelegt.**

@@ -2,7 +2,8 @@
 train_dspy.py — DSPy Prompt-Optimierung für die 3-Step Blueprint Chain + BA.
 
 Aktive Agents (via data/dspy_training/agent_contracts.py):
-    inventar, position_extractor, platzierer, normalizer
+    inventar, position_extractor, platzierer_frame, platzierer_alignment,
+    platzierer_anchor, platzierer_offset, normalizer
     (assembly_node ist deterministisch — kein LLM-Training)
 Legacy (inaktiv, Training möglich):
     blueprint_architect
@@ -29,6 +30,7 @@ Voraussetzungen:
 
 import argparse
 import json
+import random
 import sys
 from pathlib import Path
 
@@ -363,7 +365,8 @@ class AktionsKlassifiziererSignature(dspy.Signature):
     )
     klassifikation: str = dspy.OutputField(
         desc="JSON {typ, seite, parameter_hints}. parameter_hints enthaelt "
-             "nur explizite Zahlen aus der Phrase."
+             "nur explizite Werte aus der Phrase; Zahlen plus optional "
+             "richtung=x|y|z fuer Achsen."
     )
 
 
@@ -437,6 +440,73 @@ class PositionNormalizerSignature(dspy.Signature):
     normalized_position: str = dspy.OutputField(
         desc="JSON-Objekt mit {parent, seite, ausrichtung, orientierung, "
              "anliegende_flaeche, abstand, winkel, anker, pre_rotation, notes}."
+    )
+
+
+class PlatziererFrameSignature(dspy.Signature):
+    """Bestimme NUR Parent, Parent-Flaeche, Kind-Orientierung und Kontaktflaeche.
+    Antworte als key:value Zeilen: parent, seite, orientierung, anliegende_flaeche."""
+
+    teil_id: str = dspy.InputField(desc="ID des zu platzierenden Kind-Teils.")
+    teil_type: str = dspy.InputField(desc="Typ des Kind-Teils.")
+    teil_params: str = dspy.InputField(desc="JSON der Roh-Parameter des Kind-Teils.")
+    alle_teile: str = dspy.InputField(desc="JSON-Liste aller Teile.")
+    position_sentence: str = dspy.InputField(desc="Platzierungsbeschreibung.")
+    frame: str = dspy.OutputField(
+        desc="Vier Zeilen: parent: ..., seite: ..., orientierung: ..., anliegende_flaeche: ..."
+    )
+
+
+class PlatziererAlignmentSignature(dspy.Signature):
+    """Bestimme NUR die 2D-Ausrichtung auf der bereits gewaehlten Parent-Flaeche.
+    Antworte mit genau einer Zeile: ausrichtung: <keyword>.
+
+    Grenzen:
+    - versetzt/verschoben/von der Mitte -> von_mitte
+    - X mm von Kante/Abstand zur Kante -> von_kanten
+    - Anker-Sprache wie Ecke/Kante der Platte auf/von Ecke/Kante des Parents
+      nicht als buendig klassifizieren; wenn keine weitere Ausrichtung da ist:
+      zentriert. Anchor-Punkte macht ein anderer Agent.
+    - nach aussen/Ueberstand an Kante -> buendig_rechts/links/oben/unten,
+      an Ecke -> kombiniertes buendig_*.
+    """
+
+    seite: str = dspy.InputField(desc="Bereits gewaehlte Parent-Flaeche.")
+    position_sentence: str = dspy.InputField(desc="Platzierungsbeschreibung.")
+    alignment: str = dspy.OutputField(
+        desc="Eine Zeile: ausrichtung: zentriert|buendig_*|von_kanten|von_mitte."
+    )
+
+
+class PlatziererAnchorSignature(dspy.Signature):
+    """Bestimme NUR Ankerpunkte, wenn ein Kind-Punkt auf einem Parent-Punkt liegt.
+    Antworte als key:value Zeilen: kind_punkt, eltern_punkt, optional eltern_abstand."""
+
+    teil_id: str = dspy.InputField(desc="ID des Kind-Teils.")
+    teil_type: str = dspy.InputField(desc="Typ des Kind-Teils.")
+    teil_params: str = dspy.InputField(desc="JSON der Roh-Parameter des Kind-Teils.")
+    parent: str = dspy.InputField(desc="Parent-Teil-ID.")
+    position_sentence: str = dspy.InputField(desc="Platzierungsbeschreibung.")
+    anchor: str = dspy.OutputField(
+        desc="Zeilen: kind_punkt: ..., eltern_punkt: ..., optional eltern_abstand: richtung=wert."
+    )
+
+
+class PlatziererOffsetSignature(dspy.Signature):
+    """Extrahiere NUR Winkel, Versatz, Kantenabstand und pre_rotation.
+    Antworte mit key:value Zeilen; lasse Felder ohne Wert weg.
+
+    Regeln:
+    - "im Uhrzeigersinn"/CW = negativer winkel.
+    - "gegen Uhrzeigersinn"/CCW = positiver winkel.
+    - "versetzt", "verschoben", "von der Mitte ... nach ..." = versatz.
+    - "X mm von [Kante] entfernt", "Abstand zur Kante" = kantenabstand.
+    - Flaechenmasse wie "100x20 Seite liegt auf" ignorieren.
+    """
+
+    position_sentence: str = dspy.InputField(desc="Platzierungsbeschreibung.")
+    offset: str = dspy.OutputField(
+        desc="Zeilen fuer winkel, versatz, kantenabstand, pre_rotation. Leer wenn nichts genannt."
     )
 
 
@@ -530,6 +600,52 @@ class PositionNormalizerModule(dspy.Module):
             alle_teile=alle_teile, specification=specification,
             position_sentence=position_sentence,
         )
+
+
+class PlatziererFrameModule(dspy.Module):
+    def __init__(self):
+        self.predict = dspy.Predict(PlatziererFrameSignature)
+
+    def forward(self, teil_id: str, teil_type: str, teil_params: str,
+                alle_teile: str, position_sentence: str) -> dspy.Prediction:
+        return self.predict(
+            teil_id=teil_id,
+            teil_type=teil_type,
+            teil_params=teil_params,
+            alle_teile=alle_teile,
+            position_sentence=position_sentence,
+        )
+
+
+class PlatziererAlignmentModule(dspy.Module):
+    def __init__(self):
+        self.predict = dspy.Predict(PlatziererAlignmentSignature)
+
+    def forward(self, seite: str, position_sentence: str) -> dspy.Prediction:
+        return self.predict(seite=seite, position_sentence=position_sentence)
+
+
+class PlatziererAnchorModule(dspy.Module):
+    def __init__(self):
+        self.predict = dspy.Predict(PlatziererAnchorSignature)
+
+    def forward(self, teil_id: str, teil_type: str, teil_params: str,
+                parent: str, position_sentence: str) -> dspy.Prediction:
+        return self.predict(
+            teil_id=teil_id,
+            teil_type=teil_type,
+            teil_params=teil_params,
+            parent=parent,
+            position_sentence=position_sentence,
+        )
+
+
+class PlatziererOffsetModule(dspy.Module):
+    def __init__(self):
+        self.predict = dspy.Predict(PlatziererOffsetSignature)
+
+    def forward(self, position_sentence: str) -> dspy.Prediction:
+        return self.predict(position_sentence=position_sentence)
 
 
 # ── Metriken ─────────────────────────────────────────────────────
@@ -856,6 +972,114 @@ def position_normalizer_metric(example, prediction, trace=None) -> float:
         return 0.0
 
 
+def _parse_kv_lines(text) -> dict[str, str]:
+    if text is None:
+        return {}
+    if not isinstance(text, str):
+        text = str(text)
+    result: dict[str, str] = {}
+    for line in text.strip().splitlines():
+        if ":" not in line:
+            continue
+        key, _, value = line.partition(":")
+        key = key.strip().lower().replace(" ", "_")
+        value = value.strip()
+        if key and value:
+            result[key] = value
+    return result
+
+
+def _parse_assignments(text: str) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for part in str(text or "").split(","):
+        part = part.strip()
+        if "=" not in part:
+            continue
+        key, _, value = part.partition("=")
+        result[key.strip().lower()] = value.strip()
+    return result
+
+
+def _numeric_text_equal(a: str, b: str) -> bool:
+    try:
+        return abs(float(a) - float(b)) < 1e-6
+    except (TypeError, ValueError):
+        return str(a).strip().lower() == str(b).strip().lower()
+
+
+def _assignment_match(exp: str, pred: str) -> float:
+    exp_dict = _parse_assignments(exp)
+    pred_dict = _parse_assignments(pred)
+    if not exp_dict and not pred_dict:
+        return 1.0
+    if not exp_dict or not pred_dict:
+        return 0.0
+    exp_keys = set(exp_dict)
+    pred_keys = set(pred_dict)
+    key_score = len(exp_keys & pred_keys) / max(len(exp_keys), len(pred_keys), 1)
+    value_matches = sum(
+        1 for key in exp_keys & pred_keys
+        if _numeric_text_equal(exp_dict[key], pred_dict[key])
+    )
+    value_score = value_matches / max(len(exp_keys), 1)
+    return 0.5 * key_score + 0.5 * value_score
+
+
+def platzierer_frame_metric(example, prediction, trace=None) -> float:
+    expected = _parse_kv_lines(getattr(example, "frame", ""))
+    predicted = _parse_kv_lines(getattr(prediction, "frame", ""))
+    if not expected or not predicted:
+        return 0.0
+    fields = ("parent", "seite", "orientierung", "anliegende_flaeche")
+    return sum(
+        1 for field in fields
+        if predicted.get(field) == expected.get(field)
+    ) / len(fields)
+
+
+def platzierer_alignment_metric(example, prediction, trace=None) -> float:
+    expected = _parse_kv_lines(getattr(example, "alignment", ""))
+    predicted = _parse_kv_lines(getattr(prediction, "alignment", ""))
+    return 1.0 if predicted.get("ausrichtung") == expected.get("ausrichtung") else 0.0
+
+
+def platzierer_anchor_metric(example, prediction, trace=None) -> float:
+    expected = _parse_kv_lines(getattr(example, "anchor", ""))
+    predicted = _parse_kv_lines(getattr(prediction, "anchor", ""))
+    if not expected and not predicted:
+        return 1.0
+    if not expected or not predicted:
+        return 0.0
+    score = 0.0
+    if predicted.get("kind_punkt") == expected.get("kind_punkt"):
+        score += 0.4
+    if predicted.get("eltern_punkt") == expected.get("eltern_punkt"):
+        score += 0.4
+    score += 0.2 * _assignment_match(
+        expected.get("eltern_abstand", ""),
+        predicted.get("eltern_abstand", ""),
+    )
+    return score
+
+
+def platzierer_offset_metric(example, prediction, trace=None) -> float:
+    expected = _parse_kv_lines(getattr(example, "offset", ""))
+    predicted = _parse_kv_lines(getattr(prediction, "offset", ""))
+    if not expected and not predicted:
+        return 1.0
+    fields = ("winkel", "versatz", "kantenabstand", "pre_rotation")
+    score = 0.0
+    for field in fields:
+        exp_value = expected.get(field, "")
+        pred_value = predicted.get(field, "")
+        if field == "winkel":
+            field_score = 1.0 if _numeric_text_equal(exp_value or "0", pred_value or "0") else 0.0
+        else:
+            field_score = _assignment_match(exp_value, pred_value)
+        score += 0.25 * field_score
+    return score
+
+
 # ── Beispiele konvertieren ───────────────────────────────────────
 
 def to_dspy_examples(raw: list[dict], agent_name: str) -> list[dspy.Example]:
@@ -933,6 +1157,41 @@ def to_dspy_examples(raw: list[dict], agent_name: str) -> list[dspy.Example]:
                 normalized_position=_j(out),
             ).with_inputs("teil_id", "teil_type", "teil_params",
                           "alle_teile", "specification", "position_sentence")
+
+        elif agent_name == "platzierer_frame":
+            ex = dspy.Example(
+                teil_id=inp.get("teil_id", ""),
+                teil_type=inp.get("teil_type", "box"),
+                teil_params=_j(inp.get("teil_params", {})),
+                alle_teile=_j(inp.get("alle_teile", [])),
+                position_sentence=inp.get("position_sentence", ""),
+                frame=out if isinstance(out, str) else str(out),
+            ).with_inputs("teil_id", "teil_type", "teil_params",
+                          "alle_teile", "position_sentence")
+
+        elif agent_name == "platzierer_alignment":
+            ex = dspy.Example(
+                seite=inp.get("seite", "oben"),
+                position_sentence=inp.get("position_sentence", ""),
+                alignment=out if isinstance(out, str) else str(out),
+            ).with_inputs("seite", "position_sentence")
+
+        elif agent_name == "platzierer_anchor":
+            ex = dspy.Example(
+                teil_id=inp.get("teil_id", ""),
+                teil_type=inp.get("teil_type", "box"),
+                teil_params=_j(inp.get("teil_params", {})),
+                parent=inp.get("parent", ""),
+                position_sentence=inp.get("position_sentence", ""),
+                anchor=out if isinstance(out, str) else str(out),
+            ).with_inputs("teil_id", "teil_type", "teil_params",
+                          "parent", "position_sentence")
+
+        elif agent_name == "platzierer_offset":
+            ex = dspy.Example(
+                position_sentence=inp.get("position_sentence", ""),
+                offset=out if isinstance(out, str) else str(out),
+            ).with_inputs("position_sentence")
         else:
             continue
 
@@ -964,9 +1223,24 @@ AGENT_CONFIG = {
         "metric": position_extractor_metric,
         "default_model": "gemma4:26b",
     },
-    "platzierer": {
-        "module_cls": PositionNormalizerModule,
-        "metric": position_normalizer_metric,
+    "platzierer_frame": {
+        "module_cls": PlatziererFrameModule,
+        "metric": platzierer_frame_metric,
+        "default_model": "gemma4:26b",
+    },
+    "platzierer_alignment": {
+        "module_cls": PlatziererAlignmentModule,
+        "metric": platzierer_alignment_metric,
+        "default_model": "gemma4:26b",
+    },
+    "platzierer_anchor": {
+        "module_cls": PlatziererAnchorModule,
+        "metric": platzierer_anchor_metric,
+        "default_model": "gemma4:26b",
+    },
+    "platzierer_offset": {
+        "module_cls": PlatziererOffsetModule,
+        "metric": platzierer_offset_metric,
         "default_model": "gemma4:26b",
     },
     "normalizer": {
@@ -1039,6 +1313,12 @@ def train_agent(agent_name: str,
         return
 
     examples = to_dspy_examples(all_pairs, agent_name)
+    # Curated trace files are often grouped by category/difficulty. A plain
+    # tail split can put a whole failure mode (e.g. "nach aussen"/ueberstand)
+    # only into dev, so the optimizer never sees a demo for it. Keep the split
+    # deterministic, but shuffle before slicing.
+    rng = random.Random(42)
+    rng.shuffle(examples)
 
     # Split: 80% train, 20% dev (min 1 dev)
     split = max(1, int(len(examples) * 0.8))

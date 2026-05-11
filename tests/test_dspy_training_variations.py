@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from numbers import Number
 from pathlib import Path
 
 
@@ -24,10 +25,79 @@ def test_variation_traces_project_to_expected_agents():
 
 
 def test_aktions_klassifizierer_seed_is_trainable():
+    from klassifizierer_traces import TRACES as KLASS_TRACES
     from train_dspy import load_aktions_klassifizierer_seed, to_dspy_examples
 
     raw = load_aktions_klassifizierer_seed()
     assert raw
+    assert len(raw) >= 70
+    assert len(raw) == len(KLASS_TRACES)
+
+    valid_types = {"tasche", "bohrung", "nut", "fase", "rundung"}
+    valid_sides = {"oben", "unten", "rechts", "links", "vorne", "hinten"}
+    valid_hints = {
+        "durchmesser", "tiefe", "laenge", "breite", "hoehe", "radius",
+        "kantenlaenge", "groesse", "rotation_deg", "richtung",
+        "abstand_oben", "abstand_unten", "abstand_rechts", "abstand_links",
+        "abstand_vorne", "abstand_hinten",
+        "kante_oben", "kante_unten", "kante_rechts", "kante_links",
+        "kante_vorne", "kante_hinten",
+        "versatz_oben", "versatz_unten", "versatz_rechts", "versatz_links",
+        "versatz_vorne", "versatz_hinten",
+    }
+    ids = [entry["id"] for entry in KLASS_TRACES]
+    assert len(ids) == len(set(ids))
+
+    seen_types = set()
+    seen_sides = set()
+    hint_keys = set()
+    directions = set()
+    parent_cases = 0
+    pattern_cases = 0
+    adjective_face_cases = 0
+    rotations = []
+    for trace_entry, entry in zip(KLASS_TRACES, raw):
+        phrase = trace_entry["phrase"].lower()
+        expected = entry["output"]
+        seen_types.add(expected["typ"])
+        seen_sides.add(expected["seite"])
+        assert expected["typ"] in valid_types
+        assert expected["seite"] in valid_sides
+        assert isinstance(expected["parameter_hints"], dict)
+        hint_keys.update(expected["parameter_hints"])
+        for key, value in expected["parameter_hints"].items():
+            assert key in valid_hints, trace_entry["id"]
+            if key == "richtung":
+                assert value in {"x", "y", "z"}, trace_entry["id"]
+                directions.add(value)
+            else:
+                assert isinstance(value, Number) and not isinstance(value, bool)
+        if entry["input"]["parent_phrase"] != "(keine)":
+            parent_cases += 1
+        if any(word in phrase for word in (
+            "lochkreis", "eckbohr", "reihe", "loecher"
+        )):
+            pattern_cases += 1
+        if any(word in phrase for word in (
+            "rechten seite", "vorderen seite", "oberen flaeche",
+            "unterseite", "linken flaeche"
+        )):
+            adjective_face_cases += 1
+
+    assert seen_types == valid_types
+    assert seen_sides == valid_sides
+    assert {"abstand_unten", "kante_unten", "versatz_unten"} <= hint_keys
+    assert directions == {"x", "y", "z"}
+    assert parent_cases >= 10
+    assert pattern_cases >= 5
+    assert adjective_face_cases >= 5
+    rotations = [
+        entry["output"]["parameter_hints"]["rotation_deg"]
+        for entry in raw
+        if "rotation_deg" in entry["output"]["parameter_hints"]
+    ]
+    assert any(value < 0 for value in rotations)
+    assert any(value > 0 for value in rotations)
 
     examples = to_dspy_examples(raw, "aktions_klassifizierer")
     assert examples
@@ -88,3 +158,68 @@ def test_aktions_klassifizierer_run_trace_expands_per_phrase():
         },
         "feedback": "good",
     }]
+
+
+def test_platzierer_split_contracts_use_current_schema():
+    from agent_contracts import active_agents, project_traces
+    from labeler_platzierer_traces import ALL_TRACES
+
+    active = set(active_agents())
+    assert "platzierer" not in active
+    assert {
+        "platzierer_frame",
+        "platzierer_alignment",
+        "platzierer_anchor",
+        "platzierer_offset",
+    } <= active
+
+    frame = project_traces(ALL_TRACES, "platzierer_frame")
+    alignment = project_traces(ALL_TRACES, "platzierer_alignment")
+    anchor = project_traces(ALL_TRACES, "platzierer_anchor")
+    offset = project_traces(ALL_TRACES, "platzierer_offset")
+
+    assert len(frame) == len(alignment) == len(offset)
+    assert len(frame) >= 17
+    assert anchor
+
+    assert frame[0]["output"].splitlines() == [
+        "parent: wuerfel",
+        "seite: oben",
+        "orientierung: 100x20_liegt_auf",
+        "anliegende_flaeche: 100x20",
+    ]
+    assert all("centered" not in p["output"] for p in alignment)
+    assert any("kind_punkt: top_left" in p["output"] for p in anchor)
+    assert any("kind_punkt: bottom_left" in p["output"] for p in anchor)
+    assert any("kind_punkt: bottom_right" in p["output"] for p in anchor)
+    assert any(
+        "kind_punkt: top_left" in p["output"]
+        and "eltern_punkt: bottom_right" in p["output"]
+        for p in anchor
+    )
+    assert any(
+        "kind_punkt: bottom_right" in p["output"]
+        and "eltern_punkt: top_left" in p["output"]
+        for p in anchor
+    )
+    assert any("winkel:" in p["output"] for p in offset)
+    assert any("versatz:" in p["output"] for p in offset)
+
+
+def test_platzierer_split_examples_are_trainable():
+    from agent_contracts import project_traces
+    from labeler_platzierer_traces import ALL_TRACES
+    from train_dspy import to_dspy_examples
+
+    frame_pairs = project_traces(ALL_TRACES, "platzierer_frame")
+    frame_examples = to_dspy_examples(frame_pairs[:1], "platzierer_frame")
+
+    assert frame_examples
+    assert set(frame_examples[0].inputs().keys()) == {
+        "teil_id",
+        "teil_type",
+        "teil_params",
+        "alle_teile",
+        "position_sentence",
+    }
+    assert getattr(frame_examples[0], "frame").startswith("parent:")

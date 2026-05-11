@@ -268,6 +268,114 @@ U7 = _build_trace(
     basis_size=100, category="anchor_corner", difficulty="P5",
 )
 
+U8 = _build_trace(
+    tid="u8_anchor_bottom_left_same_corner",
+    spec=("wuerfel 100mm, oben drauf platte 60x60x10, "
+          "untere linke ecke der platte von der unteren linken ecke "
+          "jeweils 12mm entfernt"),
+    child_dims=(60, 60, 10),
+    child_text=("oben drauf platte 60x60x10, "
+                "untere linke ecke der platte von der unteren linken ecke "
+                "jeweils 12mm entfernt"),
+    placement_sents=[
+        "oben drauf platte 60x60x10",
+        "untere linke ecke der platte von der unteren linken ecke jeweils 12mm entfernt",
+    ],
+    normalized={
+        "parent": "wuerfel",
+        "seite": "oben",
+        "ausrichtung": "zentriert",
+        "orientierung": "standard",
+        "anliegende_flaeche": "keine",
+        "abstand": {"versatz_rechts": 12, "versatz_oben": 12},
+        "winkel": 0,
+        "anker": "bottom_left_auf_bottom_left",
+        "pre_rotation": {},
+        "notes": "untere linke ecke explizit als anchor",
+    },
+    basis_size=100, category="anchor_corner", difficulty="P5",
+)
+
+U9 = _build_trace(
+    tid="u9_anchor_bottom_right_same_corner",
+    spec=("wuerfel 100mm, oben drauf platte 60x60x10, "
+          "untere rechte ecke der platte von der unteren rechten ecke "
+          "jeweils 8mm entfernt"),
+    child_dims=(60, 60, 10),
+    child_text=("oben drauf platte 60x60x10, "
+                "untere rechte ecke der platte von der unteren rechten ecke "
+                "jeweils 8mm entfernt"),
+    placement_sents=[
+        "oben drauf platte 60x60x10",
+        "untere rechte ecke der platte von der unteren rechten ecke jeweils 8mm entfernt",
+    ],
+    normalized={
+        "parent": "wuerfel",
+        "seite": "oben",
+        "ausrichtung": "zentriert",
+        "orientierung": "standard",
+        "anliegende_flaeche": "keine",
+        "abstand": {"versatz_links": 8, "versatz_oben": 8},
+        "winkel": 0,
+        "anker": "bottom_right_auf_bottom_right",
+        "pre_rotation": {},
+        "notes": "untere rechte ecke explizit als anchor",
+    },
+    basis_size=100, category="anchor_corner", difficulty="P5",
+)
+
+U10 = _build_trace(
+    tid="u10_anchor_top_left_to_bottom_right",
+    spec=("wuerfel 100mm, oben drauf platte 40x40x10, "
+          "obere linke ecke der platte auf die untere rechte ecke des wuerfels"),
+    child_dims=(40, 40, 10),
+    child_text=("oben drauf platte 40x40x10, "
+                "obere linke ecke der platte auf die untere rechte ecke des wuerfels"),
+    placement_sents=[
+        "oben drauf platte 40x40x10",
+        "obere linke ecke der platte auf die untere rechte ecke des wuerfels",
+    ],
+    normalized={
+        "parent": "wuerfel",
+        "seite": "oben",
+        "ausrichtung": "zentriert",
+        "orientierung": "standard",
+        "anliegende_flaeche": "keine",
+        "abstand": {},
+        "winkel": 0,
+        "anker": "top_left_auf_bottom_right",
+        "pre_rotation": {},
+        "notes": "diagonaler corner-anchor ohne abstand",
+    },
+    basis_size=100, category="anchor_corner_cross", difficulty="P5",
+)
+
+U11 = _build_trace(
+    tid="u11_anchor_bottom_right_to_top_left",
+    spec=("wuerfel 100mm, oben drauf platte 40x40x10, "
+          "untere rechte ecke der platte auf die obere linke ecke des wuerfels"),
+    child_dims=(40, 40, 10),
+    child_text=("oben drauf platte 40x40x10, "
+                "untere rechte ecke der platte auf die obere linke ecke des wuerfels"),
+    placement_sents=[
+        "oben drauf platte 40x40x10",
+        "untere rechte ecke der platte auf die obere linke ecke des wuerfels",
+    ],
+    normalized={
+        "parent": "wuerfel",
+        "seite": "oben",
+        "ausrichtung": "zentriert",
+        "orientierung": "standard",
+        "anliegende_flaeche": "keine",
+        "abstand": {},
+        "winkel": 0,
+        "anker": "bottom_right_auf_top_left",
+        "pre_rotation": {},
+        "notes": "diagonaler corner-anchor ohne abstand",
+    },
+    basis_size=100, category="anchor_corner_cross", difficulty="P5",
+)
+
 U5 = _build_trace(
     tid="u5_versatz_center_ccw",
     spec=("wuerfel 50mm, oben drauf platte 60x80x20, "
@@ -647,10 +755,395 @@ P4 = _pocket_trace(
 )
 
 
-ALL_TRACES = [U1, U2, U3, U4, U5, U6, U7,
+# ─────────────────────────────────────────────────────────────────────
+# ZENTRAL-CASES (Z1-Z6) — pure centered, varying faces/sizes/wording
+# Reason: Heatmap 2026-05-11 zeigte Platzierer extrahierte Werte aus
+# Noise wenn Spec "oben platte X zentral" + lange Feature-Saetze hatte.
+# Vorhandene zentriert-Demos waren alle 2-Teile-Plus-Anker — zu komplex
+# fuer simples "zentral".
+# ─────────────────────────────────────────────────────────────────────
+
+Z1 = _build_trace(
+    tid="z1_zentral_oben_simple",
+    spec="100mm wuerfel, oben eine platte 60x40x10 zentral",
+    child_dims=(60, 40, 10),
+    child_text="oben eine platte 60x40x10 zentral",
+    placement_sents=["oben eine platte 60x40x10 zentral"],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    basis_size=100, category="trivial_zentral", difficulty="P1",
+)
+
+Z2 = _build_trace(
+    tid="z2_mittig_oben",
+    spec="80mm wuerfel, oben drauf platte 50x50x10 mittig",
+    child_dims=(50, 50, 10),
+    child_text="oben drauf platte 50x50x10 mittig",
+    placement_sents=["oben drauf platte 50x50x10 mittig"],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    basis_size=80, category="trivial_zentral", difficulty="P1",
+)
+
+Z3 = _build_trace(
+    tid="z3_zentriert_rechts",
+    spec="60mm wuerfel, rechts platte 40x40x10 zentriert",
+    child_dims=(40, 40, 10),
+    child_text="rechts platte 40x40x10 zentriert",
+    placement_sents=["rechts platte 40x40x10 zentriert"],
+    normalized={
+        "parent": "wuerfel", "seite": "rechts",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    basis_size=60, category="trivial_zentral", difficulty="P1",
+)
+
+Z4 = _build_trace(
+    tid="z4_zentral_vorne",
+    spec="50mm wuerfel, vorne platte 30x40x10 zentral",
+    child_dims=(30, 40, 10),
+    child_text="vorne platte 30x40x10 zentral",
+    placement_sents=["vorne platte 30x40x10 zentral"],
+    normalized={
+        "parent": "wuerfel", "seite": "vorne",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    basis_size=50, category="trivial_zentral", difficulty="P1",
+)
+
+Z5 = _build_trace(
+    tid="z5_zentriert_hinten",
+    spec="100mm wuerfel, hinten platte 80x80x10 zentriert",
+    child_dims=(80, 80, 10),
+    child_text="hinten platte 80x80x10 zentriert",
+    placement_sents=["hinten platte 80x80x10 zentriert"],
+    normalized={
+        "parent": "wuerfel", "seite": "hinten",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    basis_size=100, category="trivial_zentral", difficulty="P1",
+)
+
+Z6 = _build_trace(
+    tid="z6_mittig_unten",
+    spec="60mm wuerfel, unten platte 40x40x10 mittig",
+    child_dims=(40, 40, 10),
+    child_text="unten platte 40x40x10 mittig",
+    placement_sents=["unten platte 40x40x10 mittig"],
+    normalized={
+        "parent": "wuerfel", "seite": "unten",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    basis_size=60, category="trivial_zentral", difficulty="P1",
+)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# ZENTRAL + ROTATION (ZR1-ZR2) — zentriert + nur Drehung, keine Offsets
+# ─────────────────────────────────────────────────────────────────────
+
+ZR1 = _build_trace(
+    tid="zr1_zentral_cw",
+    spec="50mm wuerfel, oben platte 50x40x10 zentral 20 grad im uhrzeigersinn gedreht",
+    child_dims=(50, 40, 10),
+    child_text="oben platte 50x40x10 zentral 20 grad im uhrzeigersinn gedreht",
+    placement_sents=[
+        "oben platte 50x40x10 zentral",
+        "20 grad im uhrzeigersinn gedreht",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": -20.0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    category="zentral_rotation", difficulty="P2",
+)
+
+ZR2 = _build_trace(
+    tid="zr2_zentriert_ccw",
+    spec="100mm wuerfel, oben platte 60x60x15 zentriert 15 grad gegen uhrzeigersinn",
+    child_dims=(60, 60, 15),
+    child_text="oben platte 60x60x15 zentriert 15 grad gegen uhrzeigersinn",
+    placement_sents=[
+        "oben platte 60x60x15 zentriert",
+        "15 grad gegen uhrzeigersinn",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 15.0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    basis_size=100, category="zentral_rotation", difficulty="P2",
+)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# VERSATZ-ONLY (V1-V2) — von_mitte ohne Rotation, ohne edge_distance
+# ─────────────────────────────────────────────────────────────────────
+
+V1 = _build_trace(
+    tid="v1_versatz_rechts_only",
+    spec="50mm wuerfel, oben platte 30x30x10 5mm nach rechts versetzt",
+    child_dims=(30, 30, 10),
+    child_text="oben platte 30x30x10 5mm nach rechts versetzt",
+    placement_sents=["oben platte 30x30x10 5mm nach rechts versetzt"],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "von_mitte", "orientierung": "standard",
+        "anliegende_flaeche": "keine",
+        "abstand": {"versatz_rechts": 5},
+        "winkel": 0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    category="versatz_only", difficulty="P2",
+)
+
+V2 = _build_trace(
+    tid="v2_versatz_oben_only",
+    spec="80mm wuerfel, oben platte 50x40x10 zentriert 10mm nach oben versetzt",
+    child_dims=(50, 40, 10),
+    child_text="oben platte 50x40x10 zentriert 10mm nach oben versetzt",
+    placement_sents=[
+        "oben platte 50x40x10 zentriert",
+        "10mm nach oben versetzt",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "von_mitte", "orientierung": "standard",
+        "anliegende_flaeche": "keine",
+        "abstand": {"versatz_oben": 10},
+        "winkel": 0, "anker": "", "pre_rotation": {}, "notes": "",
+    },
+    basis_size=80, category="versatz_only", difficulty="P2",
+)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# EF-FALL (EF1-EF2) — placement_sents enthaelt nachgelagerten Feature-Noise
+# weil position_extractor zur Laufzeit "auf der platte..."-Saetze
+# faelschlich zu placement zaehlt. Output bleibt simpel zentral.
+# Lehrt Platzierer: erster Satz bestimmt das Placement, nachfolgende
+# Feature-Saetze ignorieren.
+# ─────────────────────────────────────────────────────────────────────
+
+EF1 = _build_trace(
+    tid="ef1_zentral_with_feature_noise",
+    spec=("100mm wuerfel, oben eine platte 60x40x10 zentral, "
+          "auf der platte oben eine 5mm bohrung 5 tief von der oberen kante 10mm "
+          "und von der linken kante 8mm entfernt"),
+    child_dims=(60, 40, 10),
+    child_text=("oben eine platte 60x40x10 zentral, "
+                "auf der platte oben eine 5mm bohrung 5 tief von der oberen kante 10mm "
+                "und von der linken kante 8mm entfernt"),
+    placement_sents=[
+        "oben eine platte 60x40x10 zentral",
+        "auf der platte oben eine 5mm bohrung 5 tief von der oberen kante 10mm und von der linken kante 8mm entfernt",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {},
+        "notes": "feature-saetze ignorieren — bestimmen nur die platte",
+    },
+    basis_size=100, category="zentral_feature_noise", difficulty="P3",
+)
+
+EF2 = _build_trace(
+    tid="ef2_zentriert_with_pocket_noise",
+    spec=("80mm wuerfel, oben drauf eine platte 50x50x10 zentriert, "
+          "auf der platte mittig eine tasche 20x10x3 zentral, "
+          "auf der platte oben eine 6mm bohrung 4 tief 5mm nach rechts versetzt"),
+    child_dims=(50, 50, 10),
+    child_text=("oben drauf eine platte 50x50x10 zentriert, "
+                "auf der platte mittig eine tasche 20x10x3 zentral, "
+                "auf der platte oben eine 6mm bohrung 4 tief 5mm nach rechts versetzt"),
+    placement_sents=[
+        "oben drauf eine platte 50x50x10 zentriert",
+        "auf der platte mittig eine tasche 20x10x3 zentral",
+        "auf der platte oben eine 6mm bohrung 4 tief 5mm nach rechts versetzt",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {},
+        "notes": "feature-saetze ignorieren — bestimmen nur die platte",
+    },
+    basis_size=80, category="zentral_feature_noise", difficulty="P3",
+)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# EF-FALL EXTENDED (EF3-EF8) — mehr Variationen damit Bootstrap garantiert
+# mindestens ein paar EF-Noise-Demos waehlt. Heatmap 2026-05-11 zeigte
+# dass Bootstrap nur einfache Demos genommen hat, EF1/EF2 wurden
+# uebersprungen weil das LLM auf langem Noise patzt.
+# ─────────────────────────────────────────────────────────────────────
+
+EF3 = _build_trace(
+    tid="ef3_zentral_with_single_hole_noise",
+    spec=("50mm wuerfel, oben drauf platte 40x40x10 zentral, "
+          "auf der platte oben eine 5mm bohrung 5 tief zentral"),
+    child_dims=(40, 40, 10),
+    child_text=("oben drauf platte 40x40x10 zentral, "
+                "auf der platte oben eine 5mm bohrung 5 tief zentral"),
+    placement_sents=[
+        "oben drauf platte 40x40x10 zentral",
+        "auf der platte oben eine 5mm bohrung 5 tief zentral",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {},
+        "notes": "feature-saetze ignorieren",
+    },
+    category="zentral_feature_noise", difficulty="P2",
+)
+
+EF4 = _build_trace(
+    tid="ef4_zentral_with_corner_anchor_noise",
+    spec=("80mm wuerfel, oben drauf eine platte 50x50x10 zentral, "
+          "auf der platte oben eine 6mm bohrung 5 tief obere rechte ecke 5mm "
+          "nach unten und 8mm nach links versetzt"),
+    child_dims=(50, 50, 10),
+    child_text=("oben drauf eine platte 50x50x10 zentral, "
+                "auf der platte oben eine 6mm bohrung 5 tief obere rechte ecke 5mm "
+                "nach unten und 8mm nach links versetzt"),
+    placement_sents=[
+        "oben drauf eine platte 50x50x10 zentral",
+        "auf der platte oben eine 6mm bohrung 5 tief obere rechte ecke 5mm nach unten und 8mm nach links versetzt",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {},
+        "notes": "feature-saetze ignorieren",
+    },
+    basis_size=80, category="zentral_feature_noise", difficulty="P3",
+)
+
+EF5 = _build_trace(
+    tid="ef5_zentral_with_pocket_rotation_noise",
+    spec=("60mm wuerfel, oben drauf platte 50x40x10 zentral, "
+          "auf der platte oben eine tasche 20x10x3 zentral 30 grad gegen uhrzeigersinn gedreht"),
+    child_dims=(50, 40, 10),
+    child_text=("oben drauf platte 50x40x10 zentral, "
+                "auf der platte oben eine tasche 20x10x3 zentral 30 grad gegen uhrzeigersinn gedreht"),
+    placement_sents=[
+        "oben drauf platte 50x40x10 zentral",
+        "auf der platte oben eine tasche 20x10x3 zentral 30 grad gegen uhrzeigersinn gedreht",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {},
+        "notes": "feature-saetze ignorieren",
+    },
+    basis_size=60, category="zentral_feature_noise", difficulty="P3",
+)
+
+EF6 = _build_trace(
+    tid="ef6_zentral_with_three_feature_noise",
+    spec=("100mm wuerfel, oben drauf platte 60x60x10 zentral, "
+          "auf der platte oben eine 5mm bohrung 5 tief zentral, "
+          "auf der platte oben eine 5mm bohrung 5 tief von der oberen kante 8mm und von der linken kante 6mm entfernt, "
+          "auf der platte oben eine nut 25x4 entlang x-achse 3 tief 5mm nach rechts versetzt"),
+    child_dims=(60, 60, 10),
+    child_text=("oben drauf platte 60x60x10 zentral, "
+                "auf der platte oben eine 5mm bohrung 5 tief zentral, "
+                "auf der platte oben eine 5mm bohrung 5 tief von der oberen kante 8mm und von der linken kante 6mm entfernt, "
+                "auf der platte oben eine nut 25x4 entlang x-achse 3 tief 5mm nach rechts versetzt"),
+    placement_sents=[
+        "oben drauf platte 60x60x10 zentral",
+        "auf der platte oben eine 5mm bohrung 5 tief zentral",
+        "auf der platte oben eine 5mm bohrung 5 tief von der oberen kante 8mm und von der linken kante 6mm entfernt",
+        "auf der platte oben eine nut 25x4 entlang x-achse 3 tief 5mm nach rechts versetzt",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {},
+        "notes": "feature-saetze ignorieren",
+    },
+    basis_size=100, category="zentral_feature_noise", difficulty="P4",
+)
+
+EF7 = _build_trace(
+    tid="ef7_mittig_with_feature_noise",
+    spec=("50mm wuerfel, oben platte 30x30x10 mittig, "
+          "auf der platte mittig eine 4mm bohrung 4 tief"),
+    child_dims=(30, 30, 10),
+    child_text=("oben platte 30x30x10 mittig, "
+                "auf der platte mittig eine 4mm bohrung 4 tief"),
+    placement_sents=[
+        "oben platte 30x30x10 mittig",
+        "auf der platte mittig eine 4mm bohrung 4 tief",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {},
+        "notes": "feature-saetze ignorieren",
+    },
+    category="zentral_feature_noise", difficulty="P2",
+)
+
+EF8 = _build_trace(
+    tid="ef8_zentriert_rechts_with_feature_noise",
+    spec=("60mm wuerfel, rechts eine platte 40x40x10 zentriert, "
+          "auf der platte mittig eine 5mm bohrung 5 tief, "
+          "auf der platte 5mm nach oben versetzt eine 4mm bohrung 4 tief"),
+    child_dims=(40, 40, 10),
+    child_text=("rechts eine platte 40x40x10 zentriert, "
+                "auf der platte mittig eine 5mm bohrung 5 tief, "
+                "auf der platte 5mm nach oben versetzt eine 4mm bohrung 4 tief"),
+    placement_sents=[
+        "rechts eine platte 40x40x10 zentriert",
+        "auf der platte mittig eine 5mm bohrung 5 tief",
+        "auf der platte 5mm nach oben versetzt eine 4mm bohrung 4 tief",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "rechts",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "keine", "abstand": {},
+        "winkel": 0, "anker": "", "pre_rotation": {},
+        "notes": "feature-saetze ignorieren",
+    },
+    basis_size=60, category="zentral_feature_noise", difficulty="P3",
+)
+
+
+ALL_TRACES = [U1, U2, U3, U4, U5, U6, U7, U8, U9, U10, U11,
               C1, C2, C3, C4, C5, C6, C7,
               N1, N2, N3,
-              P1, P2, P3, P4]
+              P1, P2, P3, P4,
+              Z1, Z2, Z3, Z4, Z5, Z6,
+              ZR1, ZR2,
+              V1, V2,
+              EF1, EF2, EF3, EF4, EF5, EF6, EF7, EF8]
 
 
 def build() -> list[dict]:

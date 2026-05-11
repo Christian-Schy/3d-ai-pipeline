@@ -15,7 +15,7 @@ on a top face "oben" is really "hinten" etc.
 
 import structlog
 
-from src.agents.base import BaseAgent
+from src.agents.base import BaseAgent, DSPY_DIR
 from src.config.loader import get_config
 from src.utils.prompt_loader import load_prompt
 
@@ -52,10 +52,30 @@ class PositionNormalizerAgent(BaseAgent):
     """
 
     name = "platzierer"
-    dspy_demo_fields = {
-        "input_fields": ["teil_id", "teil_type", "teil_params",
-                         "alle_teile", "specification", "position_sentence"],
-        "output_field": "normalized_position",
+    # The runtime agent is a 4-step chain. Do not load the legacy monolithic
+    # `platzierer_optimized.json` into every mini-call; each step needs demos
+    # in its own output format.
+    dspy_demo_fields = None
+
+    _STEP_DEMO_FIELDS = {
+        "platzierer_frame": {
+            "input_fields": ["teil_id", "teil_type", "teil_params",
+                             "alle_teile", "position_sentence"],
+            "output_field": "frame",
+        },
+        "platzierer_alignment": {
+            "input_fields": ["seite", "position_sentence"],
+            "output_field": "alignment",
+        },
+        "platzierer_anchor": {
+            "input_fields": ["teil_id", "teil_type", "teil_params",
+                             "parent", "position_sentence"],
+            "output_field": "anchor",
+        },
+        "platzierer_offset": {
+            "input_fields": ["position_sentence"],
+            "output_field": "offset",
+        },
     }
 
     def __init__(self):
@@ -64,6 +84,45 @@ class PositionNormalizerAgent(BaseAgent):
                              getattr(cfg.models, "normalizer",
                                      cfg.models.assembly))
         super().__init__()
+        self._step_demos = {
+            step: self._load_step_demos(step, fields)
+            for step, fields in self._STEP_DEMO_FIELDS.items()
+        }
+
+    def _load_step_demos(self, step_name: str, fields: dict) -> list[tuple[str, str]]:
+        """Load DSPy demos for one PositionNormalizer mini-call."""
+        path = DSPY_DIR / f"{step_name}_optimized.json"
+        if not path.exists():
+            self.log.info("dspy_step_demos_not_found",
+                          step=step_name, path=str(path))
+            return []
+
+        try:
+            import json
+            data = json.loads(path.read_text(encoding="utf-8"))
+            demos = data.get("predict", {}).get("demos", [])
+        except (OSError, json.JSONDecodeError, KeyError) as e:
+            self.log.warning("dspy_step_demos_load_error",
+                             step=step_name, error=str(e))
+            return []
+
+        pairs: list[tuple[str, str]] = []
+        input_fields = fields["input_fields"]
+        output_field = fields["output_field"]
+        for demo in demos:
+            parts = []
+            for key in input_fields:
+                val = demo.get(key, "")
+                if val:
+                    parts.append(f"{key}: {val}")
+            user_msg = "\n".join(parts)
+            assistant_msg = str(demo.get(output_field, "") or "").strip()
+            if user_msg and assistant_msg:
+                pairs.append((user_msg, assistant_msg))
+
+        self.log.info("dspy_step_demos_loaded",
+                      step=step_name, count=len(pairs))
+        return pairs
 
     def normalize(self, teil_id: str, teil_type: str, teil_params: dict,
                   alle_teile: list[dict], specification: str) -> dict:
@@ -95,7 +154,10 @@ class PositionNormalizerAgent(BaseAgent):
             teil_params=params_str,
             alle_teile=alle_teile_str,
         )
-        frame_raw = self.call(frame_prompt, system=FRAME_SYSTEM, json_mode=False)
+        frame_raw = self.call(
+            frame_prompt, system=FRAME_SYSTEM, json_mode=False,
+            demos=self._step_demos.get("platzierer_frame", []),
+        )
         raw_parts.append("=FRAME=\n" + frame_raw)
         frame = self._parse_kv(frame_raw)
 
@@ -105,7 +167,10 @@ class PositionNormalizerAgent(BaseAgent):
         alignment_prompt = _build_alignment_template(seite_for_alignment).format(
             specification=specification,
         )
-        alignment_raw = self.call(alignment_prompt, system=ALIGNMENT_SYSTEM, json_mode=False)
+        alignment_raw = self.call(
+            alignment_prompt, system=ALIGNMENT_SYSTEM, json_mode=False,
+            demos=self._step_demos.get("platzierer_alignment", []),
+        )
         raw_parts.append("=ALIGNMENT=\n" + alignment_raw)
         alignment = self._parse_kv(alignment_raw)
 
@@ -123,7 +188,10 @@ class PositionNormalizerAgent(BaseAgent):
                 kind_params=params_str,
                 eltern_id=parent_id,
             )
-            anchor_raw = self.call(anchor_prompt, system=ANCHOR_SYSTEM, json_mode=False)
+            anchor_raw = self.call(
+                anchor_prompt, system=ANCHOR_SYSTEM, json_mode=False,
+                demos=self._step_demos.get("platzierer_anchor", []),
+            )
             raw_parts.append("=ANCHOR=\n" + anchor_raw)
             anchor = self._parse_kv(anchor_raw)
         else:
@@ -131,7 +199,10 @@ class PositionNormalizerAgent(BaseAgent):
 
         # ── Step 4: Offset + Rotation ─────────────────────────────────
         offset_prompt = OFFSET_TEMPLATE.format(specification=specification)
-        offset_raw = self.call(offset_prompt, system=OFFSET_SYSTEM, json_mode=False)
+        offset_raw = self.call(
+            offset_prompt, system=OFFSET_SYSTEM, json_mode=False,
+            demos=self._step_demos.get("platzierer_offset", []),
+        )
         raw_parts.append("=OFFSET=\n" + offset_raw)
         offset = self._parse_kv(offset_raw)
 

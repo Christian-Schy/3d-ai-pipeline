@@ -230,6 +230,30 @@ def test_classifier_hint_overrides_normalizer_zero_value():
     assert feat["position"]["edge_distances"]["top"] == 10
 
 
+def test_classifier_direction_hint_promoted_before_slot_length_inference():
+    """`richtung` is the one non-numeric classifier hint.
+
+    It must become the normalizer's top-level direction before slot length
+    inference runs; otherwise "entlang y" on the top face would infer x-length.
+    """
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="nut",
+        seite="oben",
+        richtung="",
+        parameter={"breite": 5, "tiefe": 5},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="nut",
+               seite="oben",
+               beschreibung="oben eine nut 5x5 entlang y-achse",
+               parameter_hints={"breite": 5, "tiefe": 5, "richtung": "y"}),
+        _teil(raw_params={"x": 100, "y": 60, "z": 20}),
+    )
+    assert feat["params"]["length"] == 60
+    assert feat["position"]["angle_deg"] == 90.0
+
+
 def test_slot_y_axis_sets_angle_deg_90():
     """Slot 'entlang y-achse' → angle_deg=90 (deterministische Achsen→
     Winkel-Konvention aus N_kombo_basics notes.md). LLM erkennt richtung,

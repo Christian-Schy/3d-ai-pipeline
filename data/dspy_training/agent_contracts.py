@@ -89,7 +89,10 @@ CONTRACTS: dict[str, AgentContract] = {
         input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
         output_fields=["klassifikation"],
         default_model="gemma4:26b",
-        active=False,  # Aktivieren in Stufe 7 (DSPy-Re-Training).
+        active=False,  # Rollback 2026-05-11 — Aktivierung brachte +B1 v2 aber
+        # -EF (tasche pocket_edge) und -T_kombo (tasche params.y swap).
+        # Vor naechstem Versuch: Tasche-Traces auditieren. Siehe Memory
+        # project_klassifizierer_tasche_regress.md.
     ),
     "position_extractor": AgentContract(
         # Per-Teil Labeler (ab 2026-05-04): bekommt EIN Teil-Text und labelt
@@ -103,14 +106,41 @@ CONTRACTS: dict[str, AgentContract] = {
         default_model="gemma4:26b",
     ),
     "platzierer": AgentContract(
-        # intern 4 mini-calls (frame/alignment/anchor/offset); hier als EIN
-        # Contract, da Ground-Truth als zusammengesetztes Output annotiert wird.
-        # Split in 4 Sub-Contracts ist spaeter additiv moeglich.
+        # Legacy-Monolith. Der Runtime-Platzierer ist eine 4-Step-Kette; dieses
+        # zusammengesetzte Ziel produziert Demos im falschen Format fuer die
+        # Mini-Calls und wird deshalb nicht mehr aktiv trainiert.
         name="platzierer",
         input_fields=["teil_id", "teil_type", "teil_params", "alle_teile",
                       "specification", "position_sentence"],
         output_fields=["normalized_position"],
         default_model="qwen3.5:9b",
+        active=False,
+    ),
+    "platzierer_frame": AgentContract(
+        name="platzierer_frame",
+        input_fields=["teil_id", "teil_type", "teil_params", "alle_teile",
+                      "position_sentence"],
+        output_fields=["frame"],
+        default_model="gemma4:26b",
+    ),
+    "platzierer_alignment": AgentContract(
+        name="platzierer_alignment",
+        input_fields=["seite", "position_sentence"],
+        output_fields=["alignment"],
+        default_model="gemma4:26b",
+    ),
+    "platzierer_anchor": AgentContract(
+        name="platzierer_anchor",
+        input_fields=["teil_id", "teil_type", "teil_params", "parent",
+                      "position_sentence"],
+        output_fields=["anchor"],
+        default_model="gemma4:26b",
+    ),
+    "platzierer_offset": AgentContract(
+        name="platzierer_offset",
+        input_fields=["position_sentence"],
+        output_fields=["offset"],
+        default_model="gemma4:26b",
     ),
     "normalizer": AgentContract(
         # 1 Aktion → 1 Feature. Pipeline ruft NormalizerAgent pro Aktion auf
@@ -292,6 +322,289 @@ def _adapter_position_normalizer(trace: dict) -> list[dict]:
     return pairs
 
 
+_CURRENT_PLATZIERER_AUSRICHTUNGEN = {
+    "zentriert",
+    "buendig_oben",
+    "buendig_unten",
+    "buendig_rechts",
+    "buendig_links",
+    "buendig_oben_rechts",
+    "buendig_oben_links",
+    "buendig_unten_rechts",
+    "buendig_unten_links",
+    "von_kanten",
+    "von_mitte",
+}
+
+_DIRECTION_ORDER = ("oben", "unten", "rechts", "links", "vorne", "hinten")
+
+_DIRECTION_CANON = {
+    "oben": "oben", "top": "oben", "up": "oben",
+    "unten": "unten", "bottom": "unten", "down": "unten",
+    "rechts": "rechts", "right": "rechts",
+    "links": "links", "left": "links",
+    "vorne": "vorne", "front": "vorne", "forward": "vorne",
+    "hinten": "hinten", "back": "hinten", "backward": "hinten",
+}
+
+_POINT_CANON = {
+    "center": "center", "zentrum": "center", "mitte": "center",
+    "mittelpunkt": "center",
+    "top_left": "top_left", "oben_links": "top_left",
+    "top_right": "top_right", "oben_rechts": "top_right",
+    "bottom_left": "bottom_left", "unten_links": "bottom_left",
+    "bottom_right": "bottom_right", "unten_rechts": "bottom_right",
+    "top_edge": "top_edge", "obere_kante": "top_edge", "oberkante": "top_edge",
+    "bottom_edge": "bottom_edge", "untere_kante": "bottom_edge", "unterkante": "bottom_edge",
+    "left_edge": "left_edge", "linke_kante": "left_edge",
+    "right_edge": "right_edge", "rechte_kante": "right_edge",
+    "top_edge_left": "top_edge_left",
+    "top_edge_right": "top_edge_right",
+    "bottom_edge_left": "bottom_edge_left",
+    "bottom_edge_right": "bottom_edge_right",
+    "left_edge_top": "left_edge_top",
+    "left_edge_bottom": "left_edge_bottom",
+    "right_edge_top": "right_edge_top",
+    "right_edge_bottom": "right_edge_bottom",
+}
+
+
+def _fmt_num(value) -> str:
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return str(int(f)) if abs(f - int(f)) < 1e-6 else str(f)
+
+
+def _current_platzierer_pairs(trace: dict) -> list[dict]:
+    """Return only current-schema normalized-position pairs.
+
+    Older sonnet traces use runtime-incompatible labels such as "centered",
+    "flush_top", "anker" and dict-style anchors. Keep those out of the split
+    training targets until they are re-rendered into the current vocabulary.
+    """
+    pairs = []
+    for pair in _adapter_position_normalizer(trace):
+        out = pair.get("output") or {}
+        if not isinstance(out, dict):
+            continue
+        if out.get("ausrichtung") not in _CURRENT_PLATZIERER_AUSRICHTUNGEN:
+            continue
+        anker = out.get("anker", "")
+        if anker is not None and not isinstance(anker, str):
+            continue
+        pairs.append(pair)
+    return pairs
+
+
+def _format_kv_lines(values: dict[str, object]) -> str:
+    lines = []
+    for key, value in values.items():
+        if value is None:
+            continue
+        if isinstance(value, dict):
+            if not value:
+                continue
+            value = _format_assignments(value)
+        text = str(value).strip()
+        if text:
+            lines.append(f"{key}: {text}")
+    return "\n".join(lines)
+
+
+def _format_assignments(values: dict) -> str:
+    parts = []
+    for key, value in values.items():
+        parts.append(f"{key}={_fmt_num(value)}")
+    return ", ".join(parts)
+
+
+def _format_direction_assignments(values: dict[str, object]) -> str:
+    ordered = {
+        direction: values[direction]
+        for direction in _DIRECTION_ORDER
+        if direction in values
+    }
+    for key, value in values.items():
+        if key not in ordered:
+            ordered[key] = value
+    return _format_assignments(ordered)
+
+
+def _contact_orientation(output: dict) -> str:
+    face = str(output.get("anliegende_flaeche") or "keine").lower()
+    orientierung = str(output.get("orientierung") or "standard").lower()
+    if face and face != "keine":
+        return orientierung if orientierung.endswith("_liegt_auf") else f"{face}_liegt_auf"
+    return orientierung
+
+
+def _canonical_point(point: object) -> str:
+    raw = str(point or "").strip().lower().replace(" ", "_")
+    return _POINT_CANON.get(raw, raw)
+
+
+def _parse_anchor(output: dict) -> dict | None:
+    anker = output.get("anker")
+    if isinstance(anker, str) and "_auf_" in anker:
+        child, _, parent = anker.partition("_auf_")
+        return {
+            "kind_punkt": _canonical_point(child),
+            "eltern_punkt": _canonical_point(parent),
+        }
+    if isinstance(anker, dict):
+        child = anker.get("kind_punkt") or anker.get("child_point")
+        parent = anker.get("eltern_punkt") or anker.get("parent_point")
+        if child or parent:
+            result = {
+                "kind_punkt": _canonical_point(child),
+                "eltern_punkt": _canonical_point(parent),
+            }
+            eltern_abstand = anker.get("eltern_abstand")
+            if isinstance(eltern_abstand, dict) and eltern_abstand:
+                result["eltern_abstand"] = {
+                    _DIRECTION_CANON.get(str(k).lower(), str(k).lower()): v
+                    for k, v in eltern_abstand.items()
+                }
+            return result
+    return None
+
+
+def _canonical_offset_parts(output: dict) -> dict[str, dict[str, object]]:
+    result = {"versatz": {}, "kantenabstand": {}, "pre_rotation": {}}
+    abstand = output.get("abstand") or {}
+    if isinstance(abstand, dict):
+        for raw_key, value in abstand.items():
+            key = str(raw_key).lower()
+            if key.startswith("versatz_"):
+                direction = _DIRECTION_CANON.get(key.removeprefix("versatz_"))
+                if direction:
+                    result["versatz"][direction] = value
+            elif key.startswith("abstand_"):
+                direction = _DIRECTION_CANON.get(key.removeprefix("abstand_"))
+                if direction:
+                    result["kantenabstand"][direction] = value
+
+    pre_rotation = output.get("pre_rotation") or {}
+    if isinstance(pre_rotation, dict):
+        for axis in ("x", "y", "z"):
+            value = pre_rotation.get(axis)
+            if value not in (None, "", 0, 0.0):
+                result["pre_rotation"][axis] = value
+
+    return result
+
+
+def _adapter_platzierer_frame(trace: dict) -> list[dict]:
+    pairs = []
+    for pair in _current_platzierer_pairs(trace):
+        inp = pair["input"]
+        out = pair["output"]
+        pairs.append({
+            "input": {
+                "teil_id": inp.get("teil_id", ""),
+                "teil_type": inp.get("teil_type", "box"),
+                "teil_params": inp.get("teil_params", {}),
+                "alle_teile": inp.get("alle_teile", []),
+                "position_sentence": inp.get("position_sentence", ""),
+            },
+            "output": _format_kv_lines({
+                "parent": out.get("parent"),
+                "seite": out.get("seite"),
+                "orientierung": _contact_orientation(out),
+                "anliegende_flaeche": out.get("anliegende_flaeche", "keine"),
+            }),
+        })
+    return pairs
+
+
+def _adapter_platzierer_alignment(trace: dict) -> list[dict]:
+    pairs = []
+    for pair in _current_platzierer_pairs(trace):
+        inp = pair["input"]
+        out = pair["output"]
+        ausrichtung = out.get("ausrichtung", "zentriert")
+        # Runtime _merge normalizes `zentriert + anchor` to `von_kanten` so
+        # the resolver receives explicit anchor placement. Train the split
+        # target on that post-merge behavior, not on the legacy annotation.
+        if _parse_anchor(out) and ausrichtung == "zentriert":
+            ausrichtung = "von_kanten"
+        pairs.append({
+            "input": {
+                "seite": out.get("seite", "oben"),
+                "position_sentence": inp.get("position_sentence", ""),
+            },
+            "output": f"ausrichtung: {ausrichtung}",
+        })
+    return pairs
+
+
+def _adapter_platzierer_anchor(trace: dict) -> list[dict]:
+    pairs = []
+    for pair in _current_platzierer_pairs(trace):
+        inp = pair["input"]
+        out = pair["output"]
+        anchor = _parse_anchor(out)
+        if not anchor:
+            continue
+        pairs.append({
+            "input": {
+                "teil_id": inp.get("teil_id", ""),
+                "teil_type": inp.get("teil_type", "box"),
+                "teil_params": inp.get("teil_params", {}),
+                "parent": out.get("parent", ""),
+                "position_sentence": inp.get("position_sentence", ""),
+            },
+            "output": _format_kv_lines(anchor),
+        })
+    return pairs
+
+
+def _adapter_platzierer_offset(trace: dict) -> list[dict]:
+    pairs = []
+    for pair in _current_platzierer_pairs(trace):
+        inp = pair["input"]
+        out = pair["output"]
+        parts = _canonical_offset_parts(out)
+        sentence = inp.get("position_sentence", "")
+        sentence_l = sentence.lower()
+        if _parse_anchor(out) and (" von " in f" {sentence_l} " or "entfernt" in sentence_l):
+            # The final normalized_position often stores anchor-qualified
+            # distances as versatz_* because position_builder can consume both
+            # vocabularies in anchor mode. The Offset mini-call's own contract
+            # is text-local, though: "von links/von oben entfernt" is
+            # kantenabstand. Convert the derived labels back to that contract.
+            inverse = {
+                "oben": "unten",
+                "unten": "oben",
+                "rechts": "links",
+                "links": "rechts",
+                "vorne": "hinten",
+                "hinten": "vorne",
+            }
+            converted = {}
+            for direction, value in parts["versatz"].items():
+                converted[inverse.get(direction, direction)] = value
+            if converted:
+                parts["kantenabstand"].update(converted)
+                parts["versatz"] = {}
+        output = {
+            "winkel": _fmt_num(out.get("winkel"))
+            if float(out.get("winkel") or 0) != 0.0 else "",
+            "versatz": _format_direction_assignments(parts["versatz"]),
+            "kantenabstand": _format_direction_assignments(parts["kantenabstand"]),
+            "pre_rotation": _format_assignments(parts["pre_rotation"]),
+        }
+        pairs.append({
+            "input": {
+                "position_sentence": inp.get("position_sentence", ""),
+            },
+            "output": _format_kv_lines(output),
+        })
+    return pairs
+
+
 def _adapter_normalizer(trace: dict) -> list[dict]:
     """Eine Trainings-Probe pro AKTION (1 Aktion → 1 Feature).
 
@@ -372,6 +685,10 @@ ADAPTERS: dict[str, Callable[[dict], list[dict]]] = {
     "aktions_klassifizierer": _adapter_aktions_klassifizierer,
     "position_extractor": _adapter_position_extractor,
     "platzierer": _adapter_position_normalizer,
+    "platzierer_frame": _adapter_platzierer_frame,
+    "platzierer_alignment": _adapter_platzierer_alignment,
+    "platzierer_anchor": _adapter_platzierer_anchor,
+    "platzierer_offset": _adapter_platzierer_offset,
     "normalizer": _adapter_normalizer,
     "blueprint_architect": _adapter_blueprint_architect,
 }

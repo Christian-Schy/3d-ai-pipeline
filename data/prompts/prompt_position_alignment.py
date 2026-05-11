@@ -15,6 +15,18 @@ Erlaubte Keywords stehen unten in der Eingabe — nur diese sind gültig.
   wähle das passende Keyword. Sonst: zentriert.
 ★ EINE Zeile, kein Text drumherum.
 
+★★ AUFGABEN-GRENZE:
+   - "versetzt", "verschoben", "von der Mitte ... nach ..." → von_mitte
+   - "X mm von [Kante] entfernt", "Abstand zur Kante" → von_kanten
+   - Explizite Anker-Sprache ("Ecke/Kante der Platte von/auf Ecke/Kante des
+     Wuerfels", "liegt auf der Kante") NICHT als buendig/ecke klassifizieren.
+     Das macht der Anchor-Agent. Wenn sonst keine Ausrichtung gesagt ist:
+     zentriert.
+   - "nach aussen", "Ueberstand" an einer Kante ist eine buendige
+     Kantenlage plus Offset:
+       "rechte kante ... nach aussen" → buendig_rechts
+       "obere rechte ecke ... nach aussen" → buendig_oben_rechts
+
 ★★ ECKEN-REGEL: NUR wenn "ins Eck" / "in die Ecke" / "Ecke" explizit im Text steht!
    Dann beide Achsen kombinieren:
    "oben rechts ins eck"      → buendig_oben_rechts  (NICHT nur buendig_rechts!)
@@ -38,6 +50,8 @@ _SEITE_VOCAB = {
         "synonyme": "Bedeutung der Kanten auf dieser Fläche: 'hinten' bedeutet 'oben' (z.B. buendig_oben), 'vorne' bedeutet 'unten' (z.B. buendig_unten), rechts bleibt rechts, links bleibt links.",
         "keywords": [
             "zentriert",
+            "von_kanten",
+            "von_mitte",
             "buendig_oben",      # hinten bündig (hintere Kante)
             "buendig_unten",     # vorne bündig (vordere Kante)
             "buendig_rechts",
@@ -52,6 +66,7 @@ _SEITE_VOCAB = {
         "synonyme": "Bedeutung der Kanten auf dieser Fläche: 'hinten' bedeutet 'oben' (z.B. buendig_oben), 'vorne' bedeutet 'unten' (z.B. buendig_unten), rechts bleibt rechts, links bleibt links.",
         "keywords": [
             "zentriert",
+            "von_kanten", "von_mitte",
             "buendig_oben", "buendig_unten",
             "buendig_rechts", "buendig_links",
             "buendig_oben_rechts", "buendig_oben_links",
@@ -63,6 +78,7 @@ _SEITE_VOCAB = {
         "synonyme": "oben bleibt oben, unten bleibt unten, rechts bleibt rechts, links bleibt links.",
         "keywords": [
             "zentriert",
+            "von_kanten", "von_mitte",
             "buendig_oben", "buendig_unten",
             "buendig_rechts", "buendig_links",
             "buendig_oben_rechts", "buendig_oben_links",
@@ -73,6 +89,7 @@ _SEITE_VOCAB = {
         "synonyme": "oben bleibt oben, unten bleibt unten, rechts bleibt rechts, links bleibt links.",
         "keywords": [
             "zentriert",
+            "von_kanten", "von_mitte",
             "buendig_oben", "buendig_unten",
             "buendig_rechts", "buendig_links",
             "buendig_oben_rechts", "buendig_oben_links",
@@ -85,6 +102,7 @@ _SEITE_VOCAB = {
         "synonyme": "Bedeutung der Kanten auf dieser Fläche: 'vorne' bedeutet 'links' (z.B. buendig_links), 'hinten' bedeutet 'rechts' (z.B. buendig_rechts), oben bleibt oben, unten bleibt unten.",
         "keywords": [
             "zentriert",
+            "von_kanten", "von_mitte",
             "buendig_oben", "buendig_unten",
             "buendig_links",         # = vorne
             "buendig_rechts",        # = hinten
@@ -100,6 +118,7 @@ _SEITE_VOCAB = {
         "synonyme": "Bedeutung der Kanten auf dieser Fläche: 'vorne' bedeutet 'rechts' (z.B. buendig_rechts), 'hinten' bedeutet 'links' (z.B. buendig_links), oben bleibt oben, unten bleibt unten.",
         "keywords": [
             "zentriert",
+            "von_kanten", "von_mitte",
             "buendig_oben", "buendig_unten",
             "buendig_rechts",        # = vorne
             "buendig_links",         # = hinten

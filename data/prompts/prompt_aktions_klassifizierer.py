@@ -19,8 +19,11 @@ typ:
 seite:
   oben | unten | rechts | links | vorne | hinten
 parameter_hints (optional):
-  Nur Zahlen, die EXPLIZIT im Text stehen.
+  Nur Werte, die EXPLIZIT im Text stehen.
   Nicht raten, nicht rechnen, keine Defaults.
+  Fast alle Hints sind Zahlen. Einzige String-Ausnahme:
+    richtung: "x" | "y" | "z" fuer explizite Achsen in Nuten oder
+              Bohrungsreihen ("entlang x", "entlang der Y-Achse").
 
   Dimensionen:
     durchmesser, tiefe, laenge, breite, hoehe, radius,
@@ -78,6 +81,13 @@ parameter_hints (optional):
     "gegen Uhrzeigersinn" / "linksdrehend" / "CCW" → POSITIV
     "im Uhrzeigersinn"    / "rechtsdrehend" / "CW" → NEGATIV
     Keine Richtung genannt → positiv (Standard CCW).
+
+  richtung — Achse fuer lineare Features:
+    Nur wenn explizit im Text genannt:
+      "entlang x" / "entlang der X-Achse" → richtung: "x"
+      "entlang y" / "entlang der Y-Achse" → richtung: "y"
+      "entlang z" / "entlang der Z-Achse" → richtung: "z"
+    Nicht aus Seiten oder Bauteilmassen ableiten.
 
   Pro Achse genau EIN Hint: abstand_* ODER kante_* ODER versatz_*.
   Mischformen ueber zwei Achsen sind erlaubt (z.B. abstand_oben +
@@ -160,7 +170,8 @@ FEW_SHOT_EXAMPLES = [
         "output": {
             "typ": "nut",
             "seite": "vorne",
-            "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 80},
+            "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 80,
+                                "richtung": "x"},
         },
     },
     {

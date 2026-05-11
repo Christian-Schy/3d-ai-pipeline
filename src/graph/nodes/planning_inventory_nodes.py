@@ -80,6 +80,47 @@ def inventar_node(state: PipelineState) -> dict:
     }
 
 
+def _relabel_features_on_self(
+    teil_id: str,
+    placement: list[str],
+    feature: list[str],
+) -> tuple[list[str], list[str], list[str]]:
+    """Deterministischer Post-Filter fuer position_extractor.
+
+    Hintergrund: Der LLM-Labeler klassifiziert manchmal Saetze wie
+    "auf der platte oben eine 5mm bohrung 5 tief..." als placement statt
+    als feature, weil sie eine Ortsangabe enthalten. Diese landen dann im
+    joined pos_spec, den der Platzierer (offset-Step) bekommt — und das
+    LLM extrahiert Werte aus dem Noise (run f93ae272, EF_kombo_basics).
+
+    Regel — konservativ, nur bei eindeutigen Marker-Phrasen:
+      * Satz beginnt mit "auf der/dem <teil_id>" oder "in der/dem <teil_id>"
+        → das ist per Definition ein Feature AUF diesem Teil, gehoert in
+        feature_sentences, nicht in placement_sentences.
+      * Vergleich case-insensitive, nur am Satzanfang nach lstrip.
+      * Nur gegen den eigenen `teil_id` gematcht — Parent-Verweise
+        ("auf dem wuerfel" wenn man eine Platte platziert) bleiben in
+        placement, weil sie das Anliegen-Verhaeltnis beschreiben.
+
+    Returns: (neue_placement, neue_feature, verschobene_saetze).
+    """
+    prefixes = (
+        f"auf der {teil_id}",
+        f"auf dem {teil_id}",
+        f"in der {teil_id}",
+        f"in dem {teil_id}",
+    )
+    prefixes_lower = tuple(p.lower() for p in prefixes)
+    new_placement: list[str] = []
+    moved: list[str] = []
+    for sent in placement:
+        if any(sent.lower().lstrip().startswith(p) for p in prefixes_lower):
+            moved.append(sent)
+        else:
+            new_placement.append(sent)
+    return new_placement, list(feature) + moved, moved
+
+
 def position_extractor_node(state: PipelineState) -> dict:
     """Step 1b: Per-teil Labeler — split each teil's text into placement vs.
     feature sentences.
@@ -92,6 +133,11 @@ def position_extractor_node(state: PipelineState) -> dict:
 
     Downstream feature_definierer reads feature_sentences[teil_id] only,
     platzierer reads placement_sentences[teil_id] only — no cross-teil noise.
+
+    Nach dem Labeler laeuft ein deterministischer Post-Filter
+    (`_relabel_features_on_self`), der "auf der/dem <teil_id>"-Saetze in
+    feature_sentences verschiebt. Faengt Mis-Splits des LLM-Labelers ab,
+    die sonst zu Noise im Platzierer-Offset-Step fuehren.
 
     Skipped for single-part models (no placement, only features).
     """
@@ -136,18 +182,30 @@ def position_extractor_node(state: PipelineState) -> dict:
 
         # Root has no parent — strip placement sentences if any leaked through
         placement = labels["placement_sentences"] if teil_id != root_id else []
+        feature_sents = labels["feature_sentences"]
+
+        # Post-Filter: "auf der/dem <teil_id>"-Saetze sind per Definition
+        # Features AUF dem Teil, gehoeren nicht in placement_sentences.
+        # Faengt LLM-Mis-Splits ab (siehe Docstring von _relabel_features_on_self).
+        placement, feature_sents, moved = _relabel_features_on_self(
+            teil_id, placement, feature_sents
+        )
+        if moved:
+            log.info("position_extractor_relabel_features_on_self",
+                     teil=teil_id, moved_count=len(moved),
+                     sample=moved[0][:80] if moved else "")
 
         positionen.append({
             "teil_id": teil_id,
             "is_root": teil_id == root_id,
             "placement_sentences": placement,
-            "feature_sentences": labels["feature_sentences"],
+            "feature_sentences": feature_sents,
         })
 
         log.info("position_extractor_teil_done",
                  teil=teil_id,
                  placement_count=len(placement),
-                 feature_count=len(labels["feature_sentences"]))
+                 feature_count=len(feature_sents))
 
     result = {"positionen": positionen}
 

@@ -226,6 +226,19 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | Non
     pocket_edge_distances = _extract_pocket_edge_distances(params)
     center_offset = _extract_center_offset(params)
 
+    # Edge-to-edge (kante_*) ist nur fuer rechteckige Subtraktiv-Features
+    # semantisch sinnvoll. Wenn die LLM-Kette `kante_*`-Keys auf Bohrungen
+    # oder Kantenfeatures leakt, meint sie tatsaechlich edge-to-center —
+    # umroutet in edge_distances, damit der Resolver nicht child_half
+    # subtrahiert. Run bc28acc5: hole_single mit pocket_edge_distances
+    # {top:10} ergab offset_y 81 statt 90 (90 = erwartet, 81 = 90-9 radius).
+    _POCKET_EDGE_TYPES = {"pocket_rect", "slot"}
+    if pocket_edge_distances and feature_type not in _POCKET_EDGE_TYPES:
+        merged = dict(edge_distances) if edge_distances else {}
+        merged.update(pocket_edge_distances)
+        edge_distances = merged
+        pocket_edge_distances = None
+
     # Build notes (direction info for slots/linear patterns)
     position_notes = _build_notes(feature_type, richtung, position, notes)
 

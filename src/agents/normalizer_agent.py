@@ -46,7 +46,8 @@ _NORMALIZER_FAMILY: dict[str, set[str]] = {
 
 # Classifier param-hint keys → normalizer param keys.
 # Most keys match (durchmesser, tiefe, laenge, breite, groesse, ...).
-# Only `rotation_deg` needs translation: build_feature reads `drehung`.
+# `rotation_deg` needs translation: build_feature reads `drehung`.
+# `richtung` is handled as top-level normalized field, not as parameter.
 _HINT_KEY_RENAME: dict[str, str] = {"rotation_deg": "drehung"}
 
 _SIDE_FACE_AXES: dict[str, tuple[str, str]] = {
@@ -121,8 +122,20 @@ def _merge_param_hints(params: dict, hints: dict) -> None:
     for key, val in hints.items():
         if val is None:
             continue
+        if key == "richtung":
+            continue
         target = _HINT_KEY_RENAME.get(key, key)
         params[target] = val
+
+
+def _merge_direction_hint(normalized: dict, hints: dict) -> None:
+    """Promote classifier axis hints to the normalizer's top-level field."""
+    if not isinstance(normalized, dict) or not isinstance(hints, dict):
+        return
+    raw = hints.get("richtung")
+    direction = _axis_from_richtung(str(raw or ""))
+    if direction in {"x", "y", "z"}:
+        normalized["richtung"] = direction
 
 
 def _reconcile_typ(classifier_typ: str, normalizer_typ: str) -> str:
@@ -373,6 +386,7 @@ class NormalizerAgent(BaseAgent):
 
         # Fold classifier hints into normalizer params (gaps only).
         params = normalized.setdefault("parameter", {})
+        _merge_direction_hint(normalized, klass_hints)
         _merge_param_hints(params, klass_hints)
         if normalized.get("typ") == "nut":
             _fill_missing_slot_length(normalized, teil)

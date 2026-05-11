@@ -110,6 +110,7 @@ class BaseAgent:
         prompt: str,
         system: str = "",
         json_mode: bool = False,
+        demos: Optional[list[tuple[str, str]]] = None,
     ) -> str:
         """Send a prompt to Ollama and return the raw response text.
 
@@ -119,6 +120,8 @@ class BaseAgent:
             json_mode: If True, Ollama is instructed to return valid JSON only.
                        Use this when you need structured output from the model.
                        No regex parsing needed — the model is forced into JSON.
+            demos:     Optional call-local few-shot demos. When omitted, the
+                       agent-wide DSPy demos are used.
 
         Returns:
             The model's response as a plain string.
@@ -128,7 +131,8 @@ class BaseAgent:
         if system:
             messages.append({"role": "system", "content": system})
         # Inject DSPy few-shot demos as user/assistant pairs
-        for user_msg, assistant_msg in self._dspy_demos:
+        active_demos = self._dspy_demos if demos is None else demos
+        for user_msg, assistant_msg in active_demos:
             messages.append({"role": "user", "content": user_msg})
             messages.append({"role": "assistant", "content": assistant_msg})
         messages.append({"role": "user", "content": prompt})
