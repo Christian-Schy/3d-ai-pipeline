@@ -1,0 +1,77 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "seite": "oben",
+        "position_sentence": "oben drauf platte 50x50x10 mittig",
+        "alignment": "ausrichtung: zentriert"
+      },
+      {
+        "augmented": true,
+        "seite": "oben",
+        "position_sentence": "oben drauf platte 60x60x10 an der rechten kante 10mm nach aussen versetzt",
+        "alignment": "ausrichtung: buendig_rechts"
+      },
+      {
+        "augmented": true,
+        "seite": "unten",
+        "position_sentence": "unten platte 40x40x10 mittig",
+        "alignment": "ausrichtung: zentriert"
+      },
+      {
+        "augmented": true,
+        "seite": "hinten",
+        "position_sentence": "hinten platte 80x80x10 zentriert",
+        "alignment": "ausrichtung: zentriert"
+      },
+      {
+        "seite": "rechts",
+        "position_sentence": "rechts platte 100x100x20 hochkant die 100x20 seite liegt an untere kante buendig",
+        "alignment": "ausrichtung: buendig_unten"
+      },
+      {
+        "seite": "oben",
+        "position_sentence": "oben platte 60x60x15 zentriert 15 grad gegen uhrzeigersinn",
+        "alignment": "ausrichtung: zentriert"
+      },
+      {
+        "seite": "oben",
+        "position_sentence": "oben platte 50x40x10 zentriert 10mm nach oben versetzt",
+        "alignment": "ausrichtung: von_mitte"
+      },
+      {
+        "seite": "oben",
+        "position_sentence": "oben drauf platte 100x40x20 um 45 grad gedreht",
+        "alignment": "ausrichtung: zentriert"
+      }
+    ],
+    "signature": {
+      "instructions": "Bestimme NUR die 2D-Ausrichtung auf der bereits gewaehlten Parent-Flaeche.\nAntworte mit genau einer Zeile: ausrichtung: <keyword>.\n\nGrenzen:\n- versetzt/verschoben/von der Mitte -> von_mitte\n- X mm von Kante/Abstand zur Kante -> von_kanten\n- Anker-Sprache wie Ecke/Kante der Platte auf/von Ecke/Kante des Parents\n  nicht als buendig klassifizieren; wenn keine weitere Ausrichtung da ist:\n  zentriert. Anchor-Punkte macht ein anderer Agent.\n- nach aussen/Ueberstand an Kante -> buendig_rechts/links/oben/unten,\n  an Ecke -> kombiniertes buendig_*.",
+      "fields": [
+        {
+          "prefix": "Seite:",
+          "description": "Bereits gewaehlte Parent-Flaeche."
+        },
+        {
+          "prefix": "Position Sentence:",
+          "description": "Platzierungsbeschreibung."
+        },
+        {
+          "prefix": "Alignment:",
+          "description": "Eine Zeile: ausrichtung: zentriert|buendig_*|von_kanten|von_mitte."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

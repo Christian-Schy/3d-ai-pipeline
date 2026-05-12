@@ -1,0 +1,101 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "phrase": "vorne alle kanten 2mm abrunden",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"vorne\", \"parameter_hints\": {\"radius\": 2}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "hinten eine fase mit kantenlaenge 4mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"fase\", \"seite\": \"hinten\", \"parameter_hints\": {\"kantenlaenge\": 4}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "vorne alle kanten mit fase 1.5mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"fase\", \"seite\": \"vorne\", \"parameter_hints\": {\"groesse\": 1.5}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "darin eine fase 1mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 200, \"y\": 120, \"z\": 40}",
+        "parent_phrase": "links eine tasche 30x20x8",
+        "klassifikation": "{\"typ\": \"fase\", \"seite\": \"tasche\", \"parameter_hints\": {\"groesse\": 1}}"
+      },
+      {
+        "phrase": "unten eine rundung radius 4mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"unten\", \"parameter_hints\": {\"radius\": 4}}"
+      },
+      {
+        "phrase": "links eine rundung 2mm radius",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"links\", \"parameter_hints\": {\"radius\": 2}}"
+      },
+      {
+        "phrase": "darin eine rundung radius 1.5mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 200, \"y\": 120, \"z\": 40}",
+        "parent_phrase": "unten eine tasche 30x20x8",
+        "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"unten\", \"parameter_hints\": {\"radius\": 1.5}}"
+      },
+      {
+        "phrase": "hinten kantenradius 3mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"hinten\", \"parameter_hints\": {\"radius\": 3}}"
+      }
+    ],
+    "signature": {
+      "instructions": "Klassifiziere EINE Fase- oder Rundungs-Phrase.",
+      "fields": [
+        {
+          "prefix": "Phrase:",
+          "description": "Eine einzelne Fase/Rundung-Phrase."
+        },
+        {
+          "prefix": "Teil Type:",
+          "description": "Form des Host-Teils."
+        },
+        {
+          "prefix": "Teil Params:",
+          "description": "JSON der Host-Teil-Parameter."
+        },
+        {
+          "prefix": "Parent Phrase:",
+          "description": "Parent-Phrase, sonst '(keine)'."
+        },
+        {
+          "prefix": "Klassifikation:",
+          "description": "JSON {typ:'fase'|'rundung', seite, parameter_hints}; erlaubte Hints: groesse, radius, kantenlaenge."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

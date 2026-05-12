@@ -1,0 +1,113 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 50, \"y\": 50, \"z\": 10}",
+        "alle_teile": "[{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"80mm Wuerfel\", \"raw_params\": {\"x\": 80, \"y\": 80, \"z\": 80}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"50x50x10 Platte\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 10}}]",
+        "position_sentence": "oben drauf platte 50x50x10 mittig",
+        "frame": "parent: wuerfel\nseite: oben\norientierung: standard\nanliegende_flaeche: keine"
+      },
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 10}",
+        "alle_teile": "[{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"50mm Wuerfel\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 50}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"60x60x10 Platte\", \"raw_params\": {\"x\": 60, \"y\": 60, \"z\": 10}}]",
+        "position_sentence": "oben drauf platte 60x60x10 an der rechten kante 10mm nach aussen versetzt",
+        "frame": "parent: wuerfel\nseite: oben\norientierung: standard\nanliegende_flaeche: keine"
+      },
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 15}",
+        "alle_teile": "[{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"50mm Wuerfel\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 50}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"80x60x15 Platte\", \"raw_params\": {\"x\": 80, \"y\": 60, \"z\": 15}}]",
+        "position_sentence": "vorne platte 80x60x15 30x80 seite liegt an von oben 10mm versetzt",
+        "frame": "parent: wuerfel\nseite: vorne\norientierung: 30x80_liegt_an\nanliegende_flaeche: 30x80"
+      },
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 40, \"y\": 40, \"z\": 10}",
+        "alle_teile": "[{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"60mm Wuerfel\", \"raw_params\": {\"x\": 60, \"y\": 60, \"z\": 60}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"40x40x10 Platte\", \"raw_params\": {\"x\": 40, \"y\": 40, \"z\": 10}}]",
+        "position_sentence": "unten platte 40x40x10 mittig",
+        "frame": "parent: wuerfel\nseite: unten\norientierung: standard\nanliegende_flaeche: keine"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "alle_teile": "[{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"50mm Wuerfel\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 50}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"100x100x20 Platte\", \"raw_params\": {\"x\": 100, \"y\": 100, \"z\": 20}}]",
+        "position_sentence": "rechts platte 100x100x20 hochkant die 100x20 seite liegt an untere kante buendig",
+        "frame": "parent: wuerfel\nseite: rechts\norientierung: 100x20_liegt_auf\nanliegende_flaeche: 100x20"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 15}",
+        "alle_teile": "[{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"100mm Wuerfel\", \"raw_params\": {\"x\": 100, \"y\": 100, \"z\": 100}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"60x60x15 Platte\", \"raw_params\": {\"x\": 60, \"y\": 60, \"z\": 15}}]",
+        "position_sentence": "oben platte 60x60x15 zentriert 15 grad gegen uhrzeigersinn",
+        "frame": "parent: wuerfel\nseite: oben\norientierung: standard\nanliegende_flaeche: keine"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 50, \"y\": 40, \"z\": 10}",
+        "alle_teile": "[{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"80mm Wuerfel\", \"raw_params\": {\"x\": 80, \"y\": 80, \"z\": 80}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"50x40x10 Platte\", \"raw_params\": {\"x\": 50, \"y\": 40, \"z\": 10}}]",
+        "position_sentence": "oben platte 50x40x10 zentriert 10mm nach oben versetzt",
+        "frame": "parent: wuerfel\nseite: oben\norientierung: standard\nanliegende_flaeche: keine"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 40, \"z\": 20}",
+        "alle_teile": "[{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"50mm Wuerfel\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 50}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"100x40x20 Platte\", \"raw_params\": {\"x\": 100, \"y\": 40, \"z\": 20}}]",
+        "position_sentence": "oben drauf platte 100x40x20 um 45 grad gedreht",
+        "frame": "parent: wuerfel\nseite: oben\norientierung: standard\nanliegende_flaeche: keine"
+      }
+    ],
+    "signature": {
+      "instructions": "Bestimme NUR Parent, Parent-Flaeche, Kind-Orientierung und Kontaktflaeche.\nAntworte als key:value Zeilen: parent, seite, orientierung, anliegende_flaeche.",
+      "fields": [
+        {
+          "prefix": "Teil Id:",
+          "description": "ID des zu platzierenden Kind-Teils."
+        },
+        {
+          "prefix": "Teil Type:",
+          "description": "Typ des Kind-Teils."
+        },
+        {
+          "prefix": "Teil Params:",
+          "description": "JSON der Roh-Parameter des Kind-Teils."
+        },
+        {
+          "prefix": "Alle Teile:",
+          "description": "JSON-Liste aller Teile."
+        },
+        {
+          "prefix": "Position Sentence:",
+          "description": "Platzierungsbeschreibung."
+        },
+        {
+          "prefix": "Frame:",
+          "description": "Vier Zeilen: parent: ..., seite: ..., orientierung: ..., anliegende_flaeche: ..."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

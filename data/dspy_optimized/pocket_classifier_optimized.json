@@ -1,0 +1,143 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "phrase": "oben eine ausnehmung 40x30 mit 8mm tiefe zentral",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 40, \"breite\": 30, \"tiefe\": 8}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "vorne unten rechts eine tasche 20x10x5 von den kanten 8mm entfernt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 100, \"z\": 60}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"vorne\", \"parameter_hints\": {\"laenge\": 20, \"breite\": 10, \"tiefe\": 5, \"abstand_unten\": 8, \"abstand_rechts\": 8}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "oben eine tasche 30x20x10 die rechte kante von rechts 25mm entfernt die untere kante von unten 10mm entfernt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 160, \"y\": 100, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 30, \"breite\": 20, \"tiefe\": 10, \"kante_rechts\": 25, \"kante_unten\": 10}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "oben eine tasche 30x20x10 deren rechte kante 25mm von rechter wuerfelkante und 10mm aus mitte nach oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 50}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 30, \"breite\": 20, \"tiefe\": 10, \"kante_rechts\": 25, \"versatz_oben\": 10}}"
+      },
+      {
+        "phrase": "oben eine tasche 50x30x10 obere seite von oben 15mm entfernt linke seite von links 20mm entfernt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 180, \"y\": 120, \"z\": 50}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 50, \"breite\": 30, \"tiefe\": 10, \"kante_oben\": 15, \"kante_links\": 20}}"
+      },
+      {
+        "phrase": "vorne eine tasche 30x20x8 15 grad im uhrzeigersinn gedreht",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 200, \"y\": 120, \"z\": 80}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"vorne\", \"parameter_hints\": {\"laenge\": 30, \"breite\": 20, \"tiefe\": 8, \"rotation_deg\": -15}}"
+      },
+      {
+        "phrase": "oben eine tasche 40x30x5 deren obere kante 15mm von oberer wuerfelkante",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 50}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 40, \"breite\": 30, \"tiefe\": 5, \"kante_oben\": 15}}"
+      },
+      {
+        "phrase": "oben eine tasche 30x20x10 von rechter seite 30mm entfernt und 5mm nach unten versetzt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 160, \"y\": 100, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 30, \"breite\": 20, \"tiefe\": 10, \"abstand_rechts\": 30, \"versatz_unten\": 5}}"
+      },
+      {
+        "phrase": "oben eine tasche 60x40x10",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 200, \"y\": 120, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 60, \"breite\": 40, \"tiefe\": 10}}"
+      },
+      {
+        "phrase": "oben eine tasche 30x20x10 deren rechte kante 25mm von rechter wuerfelkante",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 50}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 30, \"breite\": 20, \"tiefe\": 10, \"kante_rechts\": 25}}"
+      },
+      {
+        "phrase": "oben eine Tasche 28x18x6, die obere Kante der Tasche 11mm von oben und die linke Seite der Tasche 17mm von links entfernt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 90, \"y\": 70, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 28, \"breite\": 18, \"tiefe\": 6, \"kante_oben\": 11, \"kante_links\": 17}}"
+      },
+      {
+        "phrase": "auf der platte oben eine tasche 30x20x5 deren rechte kante 5mm und untere kante 3mm von der plattenkante entfernt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 60, \"y\": 40, \"z\": 10}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"oben\", \"parameter_hints\": {\"laenge\": 30, \"breite\": 20, \"tiefe\": 5, \"kante_rechts\": 5, \"kante_unten\": 3}}"
+      },
+      {
+        "phrase": "rechts eine tasche 20x30x5 gegen uhrzeigersinn 25 grad rotiert",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 200, \"y\": 120, \"z\": 80}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"rechts\", \"parameter_hints\": {\"laenge\": 20, \"breite\": 30, \"tiefe\": 5, \"rotation_deg\": 25}}"
+      },
+      {
+        "phrase": "links eine ausfraesung 50x20 4mm tief von oben 10mm entfernt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 60}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"tasche\", \"seite\": \"links\", \"parameter_hints\": {\"laenge\": 50, \"breite\": 20, \"tiefe\": 4, \"abstand_oben\": 10}}"
+      }
+    ],
+    "signature": {
+      "instructions": "Klassifiziere EINE Taschen-/Ausnehmungs-Phrase.",
+      "fields": [
+        {
+          "prefix": "Phrase:",
+          "description": "Eine einzelne Tasche/Ausnehmung-Phrase."
+        },
+        {
+          "prefix": "Teil Type:",
+          "description": "Form des Host-Teils."
+        },
+        {
+          "prefix": "Teil Params:",
+          "description": "JSON der Host-Teil-Parameter."
+        },
+        {
+          "prefix": "Parent Phrase:",
+          "description": "Parent-Phrase, sonst '(keine)'."
+        },
+        {
+          "prefix": "Klassifikation:",
+          "description": "JSON {typ:'tasche', seite, parameter_hints}; erlaubte Hints: laenge, breite, tiefe, hoehe, rotation_deg, abstand_*, kante_*, versatz_*."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "phrase": "oben eine nut 5x3 entlang x-achse laenge 30mm 8mm nach rechts versetzt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 60, \"y\": 40, \"z\": 10}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"laenge\": 30, \"richtung\": \"x\", \"versatz_rechts\": 8}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "rechts eine nut 6x4 die untere kante von unten 12mm entfernt 40mm lang",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"rechts\", \"parameter_hints\": {\"breite\": 6, \"tiefe\": 4, \"abstand_unten\": 12, \"laenge\": 40}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "oben eine nut 5x5 entlang y-achse laenge 40mm von oberer kante 30mm und von linker kante 20mm entfernt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 40, \"richtung\": \"y\", \"abstand_oben\": 30, \"abstand_links\": 20}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "hinten unten eine nut 5x5 von unterer kante 9mm entfernt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"hinten_unten\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"kante_unten\": 9}}"
+      },
+      {
+        "phrase": "oben eine nut 5x5 entlang y-achse laenge 40mm 20 grad im uhrzeigersinn gedreht",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 40, \"richtung\": \"y\", \"rotation_deg\": -20}}"
+      },
+      {
+        "phrase": "oben eine nut 5x5 entlang x-achse laenge 50mm 15 grad gegen uhrzeigersinn gedreht zentral",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 50, \"richtung\": \"x\", \"rotation_deg\": 15}}"
+      },
+      {
+        "phrase": "auf der linken flaeche eine nut 5mm breit 3mm tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 60}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"links\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3}}"
+      },
+      {
+        "phrase": "links eine nut 5x3 nach oben 10mm versetzt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"links\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"versatz_oben\": 10}}"
+      },
+      {
+        "phrase": "rechts eine nut 4mm breit 3mm tief entlang z von mitte 10mm nach oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 120}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"rechts\", \"parameter_hints\": {\"breite\": 4, \"tiefe\": 3, \"versatz_oben\": 10, \"richtung\": \"z\"}}"
+      },
+      {
+        "phrase": "oben eine nut 5mm breit 3mm tief entlang y 15 grad gedreht",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"richtung\": \"y\", \"rotation_deg\": 15}}"
+      },
+      {
+        "phrase": "rechts eine nut 6mm breit 4mm tief 50mm lang",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"rechts\", \"parameter_hints\": {\"breite\": 6, \"tiefe\": 4, \"laenge\": 50}}"
+      },
+      {
+        "phrase": "oben eine nut 5x5 entlang y-achse laenge 40mm liegt auf rechter kante an 10mm nach oben versetzt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 40, \"richtung\": \"y\", \"kante_rechts\": 0, \"versatz_oben\": 10}}"
+      },
+      {
+        "phrase": "oben eine nut 5x5 entlang x-achse laenge 50mm von rechter kante 30mm und 10mm aus mitte nach unten",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 50, \"richtung\": \"x\", \"kante_rechts\": 30, \"versatz_unten\": 10}}"
+      },
+      {
+        "phrase": "vorne eine nut 5x5 10mm nach unten versetzt 60mm lang",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"nut\", \"seite\": \"vorne\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 60, \"versatz_unten\": 10}}"
+      }
+    ],
+    "signature": {
+      "instructions": "Klassifiziere EINE Nut-/Slot-Phrase.",
+      "fields": [
+        {
+          "prefix": "Phrase:",
+          "description": "Eine einzelne Nut/Slot-Phrase."
+        },
+        {
+          "prefix": "Teil Type:",
+          "description": "Form des Host-Teils."
+        },
+        {
+          "prefix": "Teil Params:",
+          "description": "JSON der Host-Teil-Parameter."
+        },
+        {
+          "prefix": "Parent Phrase:",
+          "description": "Parent-Phrase, sonst '(keine)'."
+        },
+        {
+          "prefix": "Klassifikation:",
+          "description": "JSON {typ:'nut', seite, parameter_hints}; erlaubte Hints: laenge, breite, tiefe, rotation_deg, richtung=x|y|z, abstand_*, kante_*, versatz_*."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

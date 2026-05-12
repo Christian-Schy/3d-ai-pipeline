@@ -1,0 +1,81 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "parent": "wuerfel",
+        "position_sentence": "rechts platte 100x100x20 100x20 seite liegt auf linke obere ecke der platte von der linken seite 10mm und von der oberen seite 20mm entfernt um 20 grad gedreht",
+        "anchor": "kind_punkt: top_left\neltern_punkt: top_left"
+      },
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 100, \"z\": 20}",
+        "parent": "wuerfel",
+        "position_sentence": "oben drauf platte 120x100x20 20x100 seite liegt auf die linke seite der platte von links 20mm und von oben 40mm entfernt",
+        "anchor": "kind_punkt: top_left\neltern_punkt: top_left"
+      },
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 80, \"z\": 20}",
+        "parent": "wuerfel",
+        "position_sentence": "oben drauf platte 80x80x20 80x20 seite liegt auf obere rechte ecke der platte von der oberen rechten ecke jeweils 10mm entfernt um 10 grad im uhrzeigersinn rotiert",
+        "anchor": "kind_punkt: top_right\neltern_punkt: top_right\neltern_abstand: x=-10, y=-10"
+      },
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 50, \"y\": 50, \"z\": 15}",
+        "parent": "wuerfel",
+        "position_sentence": "oben drauf platte 50x50x15 obere rechte ecke 5mm nach aussen versetzt",
+        "anchor": "kind_punkt: top_right\neltern_punkt: top_right\neltern_abstand: nach_aussen=5mm"
+      }
+    ],
+    "signature": {
+      "instructions": "Bestimme NUR Ankerpunkte, wenn ein Kind-Punkt auf einem Parent-Punkt liegt.\nAntworte als key:value Zeilen: kind_punkt, eltern_punkt, optional eltern_abstand.",
+      "fields": [
+        {
+          "prefix": "Teil Id:",
+          "description": "ID des Kind-Teils."
+        },
+        {
+          "prefix": "Teil Type:",
+          "description": "Typ des Kind-Teils."
+        },
+        {
+          "prefix": "Teil Params:",
+          "description": "JSON der Roh-Parameter des Kind-Teils."
+        },
+        {
+          "prefix": "Parent:",
+          "description": "Parent-Teil-ID."
+        },
+        {
+          "prefix": "Position Sentence:",
+          "description": "Platzierungsbeschreibung."
+        },
+        {
+          "prefix": "Anchor:",
+          "description": "Zeilen: kind_punkt: ..., eltern_punkt: ..., optional eltern_abstand: richtung=wert."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

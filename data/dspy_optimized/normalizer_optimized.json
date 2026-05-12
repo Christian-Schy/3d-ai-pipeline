@@ -1,0 +1,161 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "beschreibung": "5 Bohrungen Ø8 linear, Abstand 25mm, 15mm von vorne, X-zentriert, durchgehend",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 150, \"y\": 80, \"z\": 20}",
+        "specification": "Platte 150x80x20, oben 5 Bohrungen Ø8 im Abstand 25mm, 15mm von vorne, zentriert in X",
+        "normalisierung": "typ: bohrreihe\nseite: oben\nposition: x_zentriert\nparameter: anzahl=5, durchmesser=8, abstand=25, abstand_vorne=15, tiefe=durch"
+      },
+      {
+        "augmented": true,
+        "beschreibung": "Nut 8x6 durchgehend in Z-Richtung, 20mm von links",
+        "seite": "vorne",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 60}",
+        "specification": "Wuerfel 60mm, vorne vertikale Nut 8x6 durchgehend, 20mm von links",
+        "normalisierung": "typ: nut\nseite: vorne\nposition: von_kanten\nrichtung: z\nparameter: breite=8, tiefe=6, abstand_links=20\nnotes: durchgehend in Z-Richtung"
+      },
+      {
+        "augmented": true,
+        "beschreibung": "nut 5x3 entlang y-achse laenge 30mm 15 grad gegen uhrzeigersinn",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "specification": "100mm wuerfel, oben eine nut 5x3 entlang y-achse laenge 30mm 15 grad gegen uhrzeigersinn gedreht",
+        "normalisierung": "typ: nut\nseite: oben\nposition: zentriert\nrichtung: y\nparameter: breite=5, tiefe=3, laenge=30, winkel=15\nnotes: 15 grad gegen uhrzeigersinn gedreht"
+      },
+      {
+        "augmented": true,
+        "beschreibung": "bohrung 10mm durchmesser durchgaengig mittig",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 30}",
+        "specification": "60mm wuerfel, oben eine bohrung 10mm durchmesser durchgaengig mittig",
+        "normalisierung": "typ: bohrung\nseite: oben\nposition: zentriert\nparameter: durchmesser=10, tiefe=durch"
+      },
+      {
+        "beschreibung": "rechts eine tasche 34x22x7 deren vordere kante 9mm von vorne und hintere kante 12mm von hinten entfernt",
+        "seite": "rechts",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 160, \"y\": 80, \"z\": 35}",
+        "specification": "quader, rechts eine tasche mit front/back kanten",
+        "normalisierung": "typ: tasche\nseite: rechts\nposition: von_kanten\nparameter: laenge=34, breite=22, tiefe=7, kante_vorne=9, kante_hinten=12"
+      },
+      {
+        "beschreibung": "Bohrung Ø10, 12mm von links und 8mm von vorne, durchgehend",
+        "seite": "oben",
+        "teil_type": "cylinder",
+        "teil_params": "{\"diameter\": 60, \"height\": 50}",
+        "specification": "Zylinder Ø60 H50, oben 'ne Bohrung Ø10, 12mm von links und 8mm von vorne",
+        "normalisierung": "typ: bohrung\nseite: oben\nposition: von_kanten\nparameter: durchmesser=10, tiefe=durch, abstand_links=12, abstand_vorne=8"
+      },
+      {
+        "beschreibung": "lochkreis mit 4 bohrungen 6mm durchmesser 4 tief auf einem teilkreis von 40mm, 15mm nach rechts und 10mm nach oben versetzt",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "specification": "100mm wuerfel, oben ein lochkreis mit 4 bohrungen 6mm durchmesser 4 tief auf einem teilkreis von 40mm 15mm nach rechts und 10mm nach oben versetzt",
+        "normalisierung": "typ: lochkreis\nseite: oben\nposition: von_mitte\nparameter: anzahl=4, durchmesser=6, tiefe=4, kreis_durchmesser=40, versatz_rechts=15, versatz_oben=10"
+      },
+      {
+        "beschreibung": "Tasche 30x20x8 tief, 15mm von oben, mittig",
+        "seite": "rechts",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 50}",
+        "specification": "Quader 100x80x50. Oben Bohrung Ø12, 25mm von links und 20mm von vorne. Oben Bohrung Ø8, 30mm von rechts, zentriert in Y. Rechts Tasche 30x20x8, 15mm von oben, mittig. Vorne Fase 1.5mm.",
+        "normalisierung": "typ: tasche\nseite: rechts\nposition: von_kanten\nparameter: laenge=30, breite=20, tiefe=8, abstand_oben=15"
+      },
+      {
+        "beschreibung": "Nut 8x8 durchgehend in X-Richtung, 20mm von der oberen Kante",
+        "seite": "vorne",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 40}",
+        "specification": "Quader 100x80x40, vorne eine Nut 8x8 durchgehend, 20mm von oben",
+        "normalisierung": "typ: nut\nseite: vorne\nposition: von_kanten\nparameter: breite=8, tiefe=8, laenge=100, abstand_oben=20"
+      },
+      {
+        "beschreibung": "Tasche 20x10x6 tief mittig",
+        "seite": "vorne",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 60}",
+        "specification": "60mm Wuerfel. Oben Bohrung Ø12 zentral. Unten Bohrung Ø8, 15mm von links. Vorne Tasche 20x10x6 mittig. Rechts Nut 8x6 durchgehend, 20mm von oben.",
+        "normalisierung": "typ: tasche\nseite: vorne\nposition: zentriert\nparameter: laenge=20, breite=10, tiefe=6"
+      },
+      {
+        "beschreibung": "Bohrung Ø8 zentral durchgehend",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 50, \"y\": 40, \"z\": 10}",
+        "specification": "Quader 80x60x30. Oben Platte 50x40x10, obere linke Ecke auf oberer linker Ecke des Quaders, 5mm nach innen. Auf der Platte oben zentral Bohrung Ø8 durchgehend.",
+        "normalisierung": "typ: bohrung\nseite: oben\nposition: zentriert\nparameter: durchmesser=8, tiefe=durch"
+      },
+      {
+        "beschreibung": "lochkreis 70mm mit 8 bohrungen 12mm durchmesser durchgaengig",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 120, \"z\": 20}",
+        "specification": "120mm wuerfel, oben ein lochkreis 70mm mit 8 bohrungen 12mm durchmesser durchgaengig",
+        "normalisierung": "typ: lochkreis\nseite: oben\nposition: zentriert\nparameter: anzahl=8, durchmesser=12, kreis_durchmesser=70"
+      },
+      {
+        "beschreibung": "ein 2x2 lochmuster mit 8mm bohrungen 5 tief, randabstand 10mm zur kante",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "specification": "100mm wuerfel, oben ein 2x2 lochmuster mit 8mm bohrungen 5 tief randabstand 10mm zur kante",
+        "normalisierung": "typ: eckbohrungen\nseite: oben\nposition: von_kanten\nparameter: anzahl=4, durchmesser=8, tiefe=5, abstand_kante=10"
+      },
+      {
+        "beschreibung": "Tasche 40x30x8, diagonal = 45° gedreht, zentral",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 15}",
+        "specification": "Platte 100x80x15, oben diagonal Tasche 40x30x8 zentral",
+        "normalisierung": "typ: tasche\nseite: oben\nposition: zentriert\nparameter: laenge=40, breite=8, tiefe=30, drehung=45\nnotes: 'diagonal' = 45° CW (Konvention)"
+      }
+    ],
+    "signature": {
+      "instructions": "Normalisiere EINE einzelne Aktion auf einem Teil zu EINER Kurzform.\n\nKontext: Die Pipeline ruft den Normalizer pro Aktion auf (1 Aktion → 1 Feature).\nDie deterministische Aggregation aller Features zu einer teil_definition\nmacht ein Code-Schritt (build_teil_definition), nicht das LLM.\n\nAufgabe: Aus einem Beschreibungstext + Seite + Teil-Kontext einen sauberen\nfixed-vocabulary Kurztext erzeugen:\ntyp, seite, position, optional richtung, parameter, notes.\nKEIN Feature-JSON bauen — build_feature macht das deterministisch.",
+      "fields": [
+        {
+          "prefix": "Beschreibung:",
+          "description": "Aktions-Beschreibung in natuerlicher Sprache (z.B. 'Bohrung Ø10, 20mm von links, durchgehend')."
+        },
+        {
+          "prefix": "Seite:",
+          "description": "Seite des Teils ('oben', 'unten', 'rechts', 'links', 'vorne', 'hinten')."
+        },
+        {
+          "prefix": "Teil Type:",
+          "description": "Form des Teils ('box', 'cylinder', ...)."
+        },
+        {
+          "prefix": "Teil Params:",
+          "description": "JSON der Roh-Parameter des Teils (z.B. {x:100, y:80, z:20})."
+        },
+        {
+          "prefix": "Specification:",
+          "description": "Original-Spezifikation als Kontext."
+        },
+        {
+          "prefix": "Normalisierung:",
+          "description": "Kurzform-Zeilen im Runtime-Format: typ, seite, position, optional richtung, parameter (key=wert, ...), notes. Kein JSON."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

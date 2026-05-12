@@ -1,0 +1,65 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "specification": "50mm Wuerfel mit einer Bohrung Ø10 oben zentral, durchgehend",
+        "inventar": "{\"teil_count\": 1, \"teile\": [{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"50mm Wuerfel\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 50}}], \"aktionen\": [{\"teil_id\": \"wuerfel\", \"seite\": \"oben\", \"beschreibung\": \"Bohrung Ø10 zentral, durchgehend\"}]}"
+      },
+      {
+        "augmented": true,
+        "specification": "100x100x20 Platte. Oben eine zentrale Bohrung Ø20 durchgehend. Zusaetzlich 4 Bohrungen Ø8 durchgehend, je 15mm von den Eck-Kanten entfernt.",
+        "inventar": "{\"teil_count\": 1, \"teile\": [{\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"Platte 100x100x20\", \"raw_params\": {\"x\": 100, \"y\": 100, \"z\": 20}}], \"aktionen\": [{\"teil_id\": \"platte\", \"seite\": \"oben\", \"beschreibung\": \"Bohrung Ø20 zentral\"}, {\"teil_id\": \"platte\", \"seite\": \"oben\", \"beschreibung\": \"Bohrung Ø8 15mm von Eck-Kante (4 Stück)\"}]}"
+      },
+      {
+        "augmented": true,
+        "specification": "Wuerfel 50mm. Rechts daneben eine Platte 40x40x20 zentriert.",
+        "inventar": "{\"teil_count\": 2, \"teile\": [{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"Wuerfel 50mm\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 50}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"Platte 40x40x20\", \"raw_params\": {\"x\": 40, \"y\": 40, \"z\": 20}}], \"aktionen\": []}"
+      },
+      {
+        "augmented": true,
+        "specification": "50mm Wuerfel, oben 'ne Bohrung 12er, vom linken Rand 15mm rein, durchgehend",
+        "inventar": "{\"teil_count\": 1, \"teile\": [{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"50mm Wuerfel\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 50}}], \"aktionen\": [{\"teil_id\": \"wuerfel\", \"seite\": \"oben\", \"beschreibung\": \"Bohrung Ø12, 15mm vom linken Rand, durchgehend\"}]}"
+      },
+      {
+        "specification": "Wuerfel 50mm. Rechts anliegend eine Platte 40x40x15, vertikal zentriert.",
+        "inventar": "{\"teil_count\": 2, \"teile\": [{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"50mm Wuerfel\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 50}}, {\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"Platte 40x40x15\", \"raw_params\": {\"x\": 40, \"y\": 40, \"z\": 15}}], \"aktionen\": []}"
+      },
+      {
+        "specification": "50mm Wuerfel, unten Tasche 20x20, 8mm tief, zentral",
+        "inventar": "{\"teil_count\": 1, \"teile\": [{\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"50mm Wuerfel\", \"raw_params\": {\"x\": 50, \"y\": 50, \"z\": 50}}], \"aktionen\": [{\"teil_id\": \"wuerfel\", \"seite\": \"unten\", \"beschreibung\": \"Tasche 20x20, 8mm tief, zentral\"}]}"
+      },
+      {
+        "specification": "80x60x30 Quader, oben zentrale Senkbohrung M6: Bohrung Ø6.5 durch, Senkung Ø11 8mm tief",
+        "inventar": "{\"teil_count\": 1, \"teile\": [{\"id\": \"quader\", \"type\": \"box\", \"beschreibung\": \"Quader 80x60x30\", \"raw_params\": {\"x\": 80, \"y\": 60, \"z\": 30}}], \"aktionen\": [{\"teil_id\": \"quader\", \"seite\": \"oben\", \"beschreibung\": \"Senkbohrung M6: Ø6.5 durchgehend, Senkung Ø11 8mm tief, zentral\"}]}"
+      },
+      {
+        "specification": "Platte 80x60x20. Links anliegend ein Wuerfel 40mm.",
+        "inventar": "{\"teil_count\": 2, \"teile\": [{\"id\": \"platte\", \"type\": \"box\", \"beschreibung\": \"Platte 80x60x20\", \"raw_params\": {\"x\": 80, \"y\": 60, \"z\": 20}}, {\"id\": \"wuerfel\", \"type\": \"box\", \"beschreibung\": \"40mm Wuerfel\", \"raw_params\": {\"x\": 40, \"y\": 40, \"z\": 40}}], \"aktionen\": []}"
+      }
+    ],
+    "signature": {
+      "instructions": "Extrahiere eine Stückliste (Inventar) aus einer CAD-Bauteilbeschreibung.\nZähle die Körper (Bodies), liste ihre Namen, Typen und Rohdimensionen auf,\nund sammle alle Aktionen (Features) mit der zugehörigen Seite.",
+      "fields": [
+        {
+          "prefix": "Specification:",
+          "description": "Die vollständige, eindeutige Bauteil-Spezifikation in natürlicher Sprache."
+        },
+        {
+          "prefix": "Inventar:",
+          "description": "JSON-Objekt mit teil_count, teile[{id, type, beschreibung, raw_params}], aktionen[{teil_id, seite, beschreibung}]"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.1.3",
+      "cloudpickle": "3.1"
+    }
+  }
+}

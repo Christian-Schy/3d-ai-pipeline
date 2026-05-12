@@ -32,9 +32,24 @@ config/bambu.json
 .env
 .env.local
 
-# DSPy outputs (mostly regenerable; adopted artifacts are explicitly versioned)
+# DSPy outputs: experimental runs + .bak files stay local; adopted/stable
+# artifacts (heatmap-verified) are versioned so a fresh checkout has them active.
 data/dspy_optimized/*
 !data/dspy_optimized/hole_classifier_optimized.json
+!data/dspy_optimized/pocket_classifier_optimized.json
+!data/dspy_optimized/slot_classifier_optimized.json
+!data/dspy_optimized/pattern_classifier_optimized.json
+!data/dspy_optimized/edge_feature_classifier_optimized.json
+!data/dspy_optimized/inventar_optimized.json
+!data/dspy_optimized/normalizer_optimized.json
+!data/dspy_optimized/platzierer_frame_optimized.json
+!data/dspy_optimized/platzierer_alignment_optimized.json
+!data/dspy_optimized/platzierer_anchor_optimized.json
+!data/dspy_optimized/platzierer_offset_optimized.json
+# NOT versioned: aktions_klassifizierer_optimized.json (Monolith, disabled wegen
+# Tasche-Cross-Contamination), position_extractor_optimized.json (rolled back),
+# platzierer_optimized.json (Legacy-Monolith), blueprint_architect/assembly/
+# feature_definierer/teil_definierer (Legacy oder unbenutzt), *.bak* (Backups).
 
 # Internal cleanup planning files
 CLEANUP_PLAN.md
