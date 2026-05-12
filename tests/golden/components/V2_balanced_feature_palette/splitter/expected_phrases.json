@@ -1,0 +1,82 @@
+{
+  "phrases": [
+    {
+      "phrase": "oben eine 8mm bohrung zentral 10 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 0,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "unten vorne rechts eine 6mm bohrung jeweils 12mm von den kanten entfernt 8 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 1,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "rechts eine 7mm bohrung von rechter kante 20mm entfernt und 8mm nach oben versetzt 9 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 2,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben eine tasche 30x20x6 deren rechte kante 25mm von rechter wuerfelkante und untere kante 10mm von unterer wuerfelkante entfernt",
+      "teil_id": "wuerfel",
+      "phrase_idx": 3,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "vorne eine tasche 28x18 mit 5mm hoehe 15mm nach rechts und 5mm nach oben versetzt 20 grad im uhrzeigersinn gedreht",
+      "teil_id": "wuerfel",
+      "phrase_idx": 4,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben eine nut 5x3 entlang y-achse laenge 40mm von linker kante 12mm und von oberer kante 18mm entfernt",
+      "teil_id": "wuerfel",
+      "phrase_idx": 5,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "rechts eine nut 4x3 entlang z-achse 10mm nach oben versetzt",
+      "teil_id": "wuerfel",
+      "phrase_idx": 6,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben lochkreis mit 6 bohrungen 5mm durchmesser 4 tief auf teilkreis 50mm 10mm nach links und 5mm nach unten versetzt",
+      "teil_id": "wuerfel",
+      "phrase_idx": 7,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "rechts ein 2x2 lochmuster mit 6mm bohrungen 4 tief randabstand 8mm zur kante",
+      "teil_id": "wuerfel",
+      "phrase_idx": 8,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "vorne eine bohrungsreihe entlang z mit 4 bohrungen 5mm durchmesser 4 tief abstand 12mm",
+      "teil_id": "wuerfel",
+      "phrase_idx": 9,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben eine 5mm bohrung 5 tief von der oberen kante 10mm und von linker kante 8mm entfernt",
+      "teil_id": "platte",
+      "phrase_idx": 0,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben eine tasche 24x16x4 zentral 30 grad gegen uhrzeigersinn gedreht",
+      "teil_id": "platte",
+      "phrase_idx": 1,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben eine nut 4x2 entlang x-achse laenge 30mm 6mm nach rechts versetzt.",
+      "teil_id": "platte",
+      "phrase_idx": 2,
+      "parent_phrase_idx": null
+    }
+  ]
+}

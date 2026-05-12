@@ -109,6 +109,11 @@ _EDGE_ANCHOR_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?untere[ern]?\s+kante\b"), "bottom_edge"),
 )
 
+_DIRECTION_PHRASE_RE = re.compile(
+    r"\bentlang(?:\s+(?:der|die|den))?\s+"
+    r"(?P<axis>[xyz])(?:\s*[- ]?\s*(?:achse|axis))?\b"
+)
+
 
 def _merge_param_hints(params: dict, hints: dict) -> None:
     """In-place: classifier hints win over normalizer parses.
@@ -226,6 +231,24 @@ def _normalize_phrase(text: str) -> str:
         .replace("ü", "ue")
         .replace("ß", "ss")
     )
+
+
+def _infer_direction_from_phrase(phrase: str) -> str | None:
+    text = _normalize_phrase(phrase)
+    match = _DIRECTION_PHRASE_RE.search(text)
+    if not match:
+        return None
+    return _axis_from_richtung(match.group("axis"))
+
+
+def _fill_direction_from_phrase(normalized: dict, phrase: str) -> None:
+    if normalized.get("richtung"):
+        return
+    if normalized.get("typ") not in {"nut", "bohrungsreihe"}:
+        return
+    direction = _infer_direction_from_phrase(phrase)
+    if direction:
+        normalized["richtung"] = direction
 
 
 def _corner_point_from_text(text: str) -> str | None:
@@ -392,6 +415,7 @@ class NormalizerAgent(BaseAgent):
         # Fold classifier hints into normalizer params (gaps only).
         params = normalized.setdefault("parameter", {})
         _merge_direction_hint(normalized, klass_hints)
+        _fill_direction_from_phrase(normalized, beschreibung)
         _merge_param_hints(params, klass_hints)
         if normalized.get("typ") == "nut":
             _fill_missing_slot_length(normalized, teil)

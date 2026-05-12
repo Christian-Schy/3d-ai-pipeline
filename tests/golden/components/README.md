@@ -94,6 +94,46 @@ Pipeline-Specs aus `pipeline/specs.txt`. Das ist das bevorzugte Gate fuer
 komplexe Standard-Teile, weil jeder rote Fall direkt einem Layer
 zugeschrieben wird.
 
+## Gruene Basis vs. Ziel-Goldens
+
+Nicht jeder Real-Run-Golden muss heute gruen sein. Es gibt zwei legitime
+Kategorien:
+
+- **Baseline-Goldens**: aktuell unterstuetzte Faelle. Diese sollen gruen
+  bleiben und Regressionen sofort sichtbar machen.
+- **Ziel-/Gap-Goldens**: Faelle, die das Produkt koennen soll, aber die
+  aktuelle Pipeline noch nicht stabil schafft. Diese duerfen in
+  `run_real_goldens.py` rot sein, damit die Heatmap den naechsten Layer-Fix
+  sichtbar macht.
+
+Wichtig: Auch Ziel-Goldens muessen fachlich korrekt sein. Das heisst:
+
+- `resolver/input_semantic.json` beschreibt den gewuenschten Semantic-Stand.
+- `resolver/expected_resolved.json` beschreibt die korrekte Ziel-Geometrie.
+- `pipeline/specs.txt` enthaelt realistische User-Sprache fuer genau diesen
+  Zielzustand.
+- `notes.md` nennt den Status: `baseline_green`, `target_should_work`,
+  `known_gap` oder `blocked_feature`.
+
+Rot ist bei Ziel-Goldens also kein Problem, solange der Fall sauber markiert
+ist und die Heatmap persistiert wird. Fuer Gap-Tracking `run_real_goldens.py`
+ohne `--no-persist` laufen lassen; `--no-persist` ist nur fuer schnelle lokale
+Smokes gedacht.
+
+Trainingsdaten sind strenger als Ziel-Goldens: positive DSPy-Seeds duerfen nur
+den Output eines Agenten trainieren, dessen lokaler Vertrag bereits stimmt.
+Ein End-to-End-roter Fall darf also z.B. einen korrekten Classifier-Seed
+liefern, aber nicht als erfolgreicher Normalizer-/Resolver-Expected
+missbraucht werden, wenn dieser Layer noch gar nicht unterstuetzt ist.
+
+Vor neuen Seeds immer gegenpruefen:
+
+- Passt die Phrase exakt zum erwarteten Agent-Output?
+- Ist `abstand_*` vs. `versatz_*` vs. `kante_*` eindeutig?
+- Stimmen Seite und lokale Richtungen auf Side-Faces?
+- Entspricht der Normalizer-Kurztext der aktuellen Runtime-Kurzform?
+- Gibt es keinen Widerspruch zwischen Golden-Expected und Trainings-Expected?
+
 ```bash
 # Discovery ohne LLM-Run
 uv run python -m scripts.run_real_goldens --list

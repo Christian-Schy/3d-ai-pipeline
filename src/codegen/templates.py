@@ -31,6 +31,9 @@ Modifier-Templates:
   fillet                          — Kantenverrundung
   chamfer                         — Kantenfase
   shell                           — Wandstaerke/Aushoehlen
+                                    (alle Modifier akzeptieren optional
+                                     `_ref` fuer den einheitlichen
+                                     Assembly-Aufruf)
 
 Helper:
   _face_selection(face, use_ntp, ntp_point)
@@ -443,7 +446,7 @@ def pocket_rect(
 def fillet(func_name: str, radius: float, edge_selector: str = "|Z") -> str:
     """Fillet on edges."""
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane | None = None) -> cq.Workplane:\n"
         f"    return body.edges(\"{edge_selector}\").fillet({radius}).clean()\n"
     )
 
@@ -451,7 +454,7 @@ def fillet(func_name: str, radius: float, edge_selector: str = "|Z") -> str:
 def chamfer(func_name: str, size: float, edge_selector: str = "|Z") -> str:
     """Chamfer on edges."""
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane | None = None) -> cq.Workplane:\n"
         f"    return body.edges(\"{edge_selector}\").chamfer({size}).clean()\n"
     )
 
@@ -459,7 +462,7 @@ def chamfer(func_name: str, size: float, edge_selector: str = "|Z") -> str:
 def shell(func_name: str, thickness: float, faces_to_remove: str = ">Z") -> str:
     """Shell (hollow out) a body."""
     return (
-        f"def {func_name}(body: cq.Workplane) -> cq.Workplane:\n"
+        f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane | None = None) -> cq.Workplane:\n"
         f"    return body.faces(\"{faces_to_remove}\").shell({thickness}).clean()\n"
     )
 

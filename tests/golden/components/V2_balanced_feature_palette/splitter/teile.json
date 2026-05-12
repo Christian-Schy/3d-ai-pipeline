@@ -1,0 +1,4 @@
+[
+  {"id": "wuerfel", "type": "box", "raw_params": {"x": 120, "y": 90, "z": 50}},
+  {"id": "platte", "type": "box", "raw_params": {"x": 70, "y": 50, "z": 8}}
+]

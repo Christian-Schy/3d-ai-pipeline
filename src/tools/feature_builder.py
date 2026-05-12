@@ -219,6 +219,9 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | Non
 
     # Build params based on type
     feature_params = _build_params(feature_type, params)
+    axis = _axis_from_richtung(richtung)
+    if feature_type == "hole_pattern_linear" and axis:
+        feature_params["direction"] = axis
 
     # Build position
     alignment = _POSITION_TO_ALIGNMENT.get(position, "centered")
@@ -271,7 +274,6 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | Non
     # Deterministische Achsen→Winkel-Konvention; das LLM erkennt nur die Achse,
     # die Mappierung ist Code-Aufgabe.
     if feature_type == "slot":
-        axis = _axis_from_richtung(richtung)
         angle_deg += _SLOT_AXIS_TO_ANGLE.get(seite, {}).get(axis, 0.0)
 
     position_dict = {

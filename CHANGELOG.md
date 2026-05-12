@@ -10,6 +10,31 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-12
 
+- **Golden-/Trainingsdaten-Coverage auditiert und V2-Palette angelegt.**
+  Neuer Audit:
+  `docs/golden_coverage_audit_2026-05-12.md`. Neues Component-Set
+  `tests/golden/components/V2_balanced_feature_palette/` mit Resolver-,
+  Splitter- und Pipeline-Spec fuer eine dichte, aber unterstuetzte
+  Standardfeature-Palette: Bohrungen, Taschen, Nuten, Pattern und Features
+  auf einer additiven Platte. Dazu 13 passende
+  Klassifizierer-Seeds und 13 Normalizer-Kurzform-Seeds. Bewusst nicht als
+  expected trainiert: Counterbore/Countersink, Linear-Pattern `start_offset`
+  und Kantenfeatures, solange die Codegen-/Executor-Geometrie dort noch
+  nicht sauber verdrahtet ist. Gefilterter V2-Real-Smoke ist gruen
+  (`1 PASS / 0 FAIL`).
+
+- **Bohrungsreihe-Achsen deterministisch konserviert.** Normalizer/Builder
+  uebernehmen `richtung` jetzt fuer `bohrungsreihe` entweder aus
+  Klassifizierer-Hints oder direkt aus `entlang x/y/z(-achse)` im Text und
+  schreiben sie als `params.direction`. Damit bleibt die Achse im Blueprint
+  golden-faehig, ohne sie nur in freien Notes zu verstecken.
+
+- **Modifier-Templates an Assembly-Aufruf angepasst.** V2-Real-Smoke deckte
+  auf, dass `chamfer`/`fillet`/`shell` im Assembly-Pfad wie andere
+  Child-Operationen mit `(body, _ref)` aufgerufen werden, die Templates aber
+  nur `body` akzeptierten. Modifier-Template-Signaturen akzeptieren nun
+  optional `_ref`; neuer Test `tests/tools/test_assembler_modifiers.py`.
+
 - **Heatmap-Rekord 15/2.** Bericht:
   `data/sessions/heatmap_20260512_204022.md`. Nur noch zwei Fails,
   beide `aktions_splitter` (E_kombo Plate-Segmentierung in Inventar

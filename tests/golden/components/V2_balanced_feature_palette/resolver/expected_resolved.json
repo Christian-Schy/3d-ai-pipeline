@@ -1,0 +1,188 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 120, "y": 90, "z": 50},
+      "parent": null
+    },
+    "platte": {
+      "type": "box",
+      "params": {"x": 70, "y": 50, "z": 8},
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_top_center": {
+      "type": "hole_single",
+      "params": {"diameter": 8, "depth": 10},
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_bottom_front_right": {
+      "type": "hole_single",
+      "params": {"diameter": 6, "depth": 8},
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 48.0,
+        "offset_y": -33.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_right_edge_plus_up": {
+      "type": "hole_single",
+      "params": {"diameter": 7, "depth": 9},
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 25.0,
+        "offset_y": 8.0,
+        "angle_deg": 0.0
+      }
+    },
+    "pocket_top_edge_to_edge": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 6},
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 20.0,
+        "offset_y": -25.0,
+        "angle_deg": 0.0
+      }
+    },
+    "pocket_front_offset_rot": {
+      "type": "pocket_rect",
+      "params": {"x": 28, "y": 18, "depth": 5},
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 15.0,
+        "offset_y": 5.0,
+        "angle_deg": -20.0
+      }
+    },
+    "slot_top_y_edge": {
+      "type": "slot",
+      "params": {"width": 5, "depth": 3, "length": 40},
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -48.0,
+        "offset_y": 27.0,
+        "angle_deg": 90.0
+      }
+    },
+    "slot_right_z_full": {
+      "type": "slot",
+      "params": {"width": 4, "depth": 3},
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 10.0,
+        "angle_deg": 90.0
+      }
+    },
+    "m_circular_top_offset": {
+      "type": "hole_pattern_circular",
+      "params": {
+        "hole_diameter": 5,
+        "depth": 4,
+        "count": 6,
+        "bolt_circle_diameter": 50
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -10.0,
+        "offset_y": -5.0,
+        "angle_deg": 0.0
+      }
+    },
+    "m_grid_right_2x2": {
+      "type": "hole_pattern_grid",
+      "params": {"hole_diameter": 6, "depth": 4, "count": 4, "inset": 8},
+      "parent": "wuerfel",
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "m_linear_front_z": {
+      "type": "hole_pattern_linear",
+      "params": {
+        "hole_diameter": 5,
+        "depth": 4,
+        "count": 4,
+        "spacing": 12,
+        "direction": "z"
+      },
+      "parent": "wuerfel",
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "plate_hole_edge": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -27.0,
+        "offset_y": 15.0,
+        "angle_deg": 0.0
+      }
+    },
+    "plate_pocket_rot": {
+      "type": "pocket_rect",
+      "params": {"x": 24, "y": 16, "depth": 4},
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 30.0
+      }
+    },
+    "plate_slot_x_offset": {
+      "type": "slot",
+      "params": {"width": 4, "depth": 2, "length": 30},
+      "parent": "platte",
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 6.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    }
+  }
+}

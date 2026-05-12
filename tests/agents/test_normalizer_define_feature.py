@@ -254,6 +254,48 @@ def test_classifier_direction_hint_promoted_before_slot_length_inference():
     assert feat["position"]["angle_deg"] == 90.0
 
 
+def test_hole_pattern_linear_direction_hint_becomes_param():
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="bohrungsreihe",
+        seite="vorne",
+        richtung="",
+        parameter={"anzahl": 4, "durchmesser": 5, "tiefe": 4, "abstand": 12},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="bohrung",
+               seite="vorne",
+               beschreibung="vorne eine bohrungsreihe entlang z mit 4 bohrungen",
+               parameter_hints={"anzahl": 4, "durchmesser": 5, "tiefe": 4,
+                                "abstand": 12, "richtung": "z"}),
+        _teil(raw_params={"x": 120, "y": 90, "z": 50}),
+    )
+    assert feat["type"] == "hole_pattern_linear"
+    assert feat["params"]["direction"] == "z"
+    assert feat["position"]["notes"] == "entlang Z"
+
+
+def test_hole_pattern_linear_direction_inferred_from_phrase():
+    agent = _make_agent()
+    agent.normalize = MagicMock(return_value=_norm(
+        typ="bohrungsreihe",
+        seite="vorne",
+        richtung="",
+        parameter={"anzahl": 4, "durchmesser": 5, "tiefe": 4, "abstand": 12},
+    ))
+    feat = agent.define_feature(
+        _klass(typ="bohrung",
+               seite="vorne",
+               beschreibung="vorne eine bohrungsreihe entlang z-achse mit 4 bohrungen",
+               parameter_hints={"anzahl": 4, "durchmesser": 5, "tiefe": 4,
+                                "abstand": 12}),
+        _teil(raw_params={"x": 120, "y": 90, "z": 50}),
+    )
+    assert feat["type"] == "hole_pattern_linear"
+    assert feat["params"]["direction"] == "z"
+    assert feat["position"]["notes"] == "entlang Z"
+
+
 def test_slot_y_axis_sets_angle_deg_90():
     """Slot 'entlang y-achse' → angle_deg=90 (deterministische Achsen→
     Winkel-Konvention aus N_kombo_basics notes.md). LLM erkennt richtung,

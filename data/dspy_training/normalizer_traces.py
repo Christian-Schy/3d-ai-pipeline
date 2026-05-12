@@ -927,4 +927,251 @@ TRACES = [
             "parameter: durchmesser=8, tiefe=5, abstand_kante=12"
         ),
     },
+    {
+        "id": "norm_v2_hole_top_center",
+        "input": {
+            "beschreibung": "oben eine 8mm bohrung zentral 10 tief",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette top centered hole",
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "parameter: durchmesser=8, tiefe=10"
+        ),
+    },
+    {
+        "id": "norm_v2_hole_bottom_front_right_edges",
+        "input": {
+            "beschreibung": (
+                "unten vorne rechts eine 6mm bohrung jeweils 12mm von den "
+                "kanten entfernt 8 tief"
+            ),
+            "seite": "unten",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette bottom face corner hole",
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: unten\n"
+            "position: von_kanten\n"
+            "parameter: durchmesser=6, tiefe=8, "
+            "abstand_vorne=12, abstand_rechts=12"
+        ),
+    },
+    {
+        "id": "norm_v2_hole_right_edge_plus_up",
+        "input": {
+            "beschreibung": (
+                "rechts eine 7mm bohrung von rechter kante 20mm entfernt "
+                "und 8mm nach oben versetzt 9 tief"
+            ),
+            "seite": "rechts",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette right face mixed positioning",
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: rechts\n"
+            "position: von_kanten\n"
+            "parameter: durchmesser=7, tiefe=9, "
+            "abstand_rechts=20, versatz_oben=8"
+        ),
+    },
+    {
+        "id": "norm_v2_pocket_top_edge_to_edge",
+        "input": {
+            "beschreibung": (
+                "oben eine tasche 30x20x6 deren rechte kante 25mm von "
+                "rechter wuerfelkante und untere kante 10mm von unterer "
+                "wuerfelkante entfernt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette pocket edge-to-edge",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: laenge=30, breite=20, tiefe=6, "
+            "kante_rechts=25, kante_unten=10"
+        ),
+    },
+    {
+        "id": "norm_v2_pocket_front_height_rotation_cw",
+        "input": {
+            "beschreibung": (
+                "vorne eine tasche 28x18 mit 5mm hoehe 15mm nach rechts "
+                "und 5mm nach oben versetzt 20 grad im uhrzeigersinn gedreht"
+            ),
+            "seite": "vorne",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette pocket height wording and rotation",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: vorne\n"
+            "position: von_mitte\n"
+            "parameter: laenge=28, breite=18, tiefe=5, "
+            "versatz_rechts=15, versatz_oben=5, drehung=-20"
+        ),
+    },
+    {
+        "id": "norm_v2_slot_top_y_edge_distances",
+        "input": {
+            "beschreibung": (
+                "oben eine nut 5x3 entlang y-achse laenge 40mm von linker "
+                "kante 12mm und von oberer kante 18mm entfernt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette slot y axis with edge distances",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "richtung: y\n"
+            "parameter: breite=5, tiefe=3, laenge=40, "
+            "abstand_links=12, abstand_oben=18"
+        ),
+    },
+    {
+        "id": "norm_v2_slot_right_z_full_offset",
+        "input": {
+            "beschreibung": "rechts eine nut 4x3 entlang z-achse 10mm nach oben versetzt",
+            "seite": "rechts",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette side-face slot without explicit length",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: rechts\n"
+            "position: von_mitte\n"
+            "richtung: z\n"
+            "parameter: breite=4, tiefe=3, versatz_oben=10"
+        ),
+    },
+    {
+        "id": "norm_v2_pattern_lochkreis_offset",
+        "input": {
+            "beschreibung": (
+                "oben lochkreis mit 6 bohrungen 5mm durchmesser 4 tief "
+                "auf teilkreis 50mm 10mm nach links und 5mm nach unten versetzt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette lochkreis with center offset",
+        },
+        "expected": (
+            "typ: lochkreis\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "parameter: anzahl=6, durchmesser=5, tiefe=4, "
+            "kreis_durchmesser=50, versatz_links=10, versatz_unten=5"
+        ),
+    },
+    {
+        "id": "norm_v2_pattern_grid_right_2x2",
+        "input": {
+            "beschreibung": (
+                "rechts ein 2x2 lochmuster mit 6mm bohrungen 4 tief "
+                "randabstand 8mm zur kante"
+            ),
+            "seite": "rechts",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette side-face 2x2 lochmuster",
+        },
+        "expected": (
+            "typ: eckbohrungen\n"
+            "seite: rechts\n"
+            "position: von_kanten\n"
+            "parameter: anzahl=4, durchmesser=6, tiefe=4, abstand_kante=8"
+        ),
+    },
+    {
+        "id": "norm_v2_pattern_linear_front_z",
+        "input": {
+            "beschreibung": (
+                "vorne eine bohrungsreihe entlang z mit 4 bohrungen 5mm "
+                "durchmesser 4 tief abstand 12mm"
+            ),
+            "seite": "vorne",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "V2 palette front-face linear pattern",
+        },
+        "expected": (
+            "typ: bohrungsreihe\n"
+            "seite: vorne\n"
+            "position: zentriert\n"
+            "richtung: z\n"
+            "parameter: anzahl=4, durchmesser=5, tiefe=4, abstand=12"
+        ),
+    },
+    {
+        "id": "norm_v2_plate_hole_edge",
+        "input": {
+            "beschreibung": (
+                "oben eine 5mm bohrung 5 tief von der oberen kante 10mm "
+                "und von linker kante 8mm entfernt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 70, "y": 50, "z": 8},
+            "specification": "V2 palette feature on plate",
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: durchmesser=5, tiefe=5, "
+            "abstand_oben=10, abstand_links=8"
+        ),
+    },
+    {
+        "id": "norm_v2_plate_pocket_rotation_ccw",
+        "input": {
+            "beschreibung": "oben eine tasche 24x16x4 zentral 30 grad gegen uhrzeigersinn gedreht",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 70, "y": 50, "z": 8},
+            "specification": "V2 palette rotated pocket on plate",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "parameter: laenge=24, breite=16, tiefe=4, drehung=30"
+        ),
+    },
+    {
+        "id": "norm_v2_plate_slot_x_offset",
+        "input": {
+            "beschreibung": "oben eine nut 4x2 entlang x-achse laenge 30mm 6mm nach rechts versetzt",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 70, "y": 50, "z": 8},
+            "specification": "V2 palette slot on plate",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "richtung: x\n"
+            "parameter: breite=4, tiefe=2, laenge=30, versatz_rechts=6"
+        ),
+    },
 ]
