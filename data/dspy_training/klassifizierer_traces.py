@@ -217,6 +217,55 @@ TRACES.extend([
         "source_run": None,
         "bug_pattern": "curated: center offset is not face",
     },
+    # "aus mitte nach <side>" = versatz, NICHT abstand. Heatmap 2026-05-12
+    # (run f75a99d4, B3 v1): hole_classifier extrahierte "90mm aus mitte
+    # nach links" als abstand_links=90 statt versatz_links=90 → Resolver
+    # bekam widerspruechliche edge+center auf gleicher Achse → offset_x falsch.
+    {
+        "id": "klass_curated_bohrung_aus_mitte_nach_links_plus_kante",
+        "phrase": "oben eine 18mm bohrung 10mm von oberer kante, 90mm aus mitte nach links, 10 tief",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 200, "z": 200},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 18, "tiefe": 10,
+                                "abstand_oben": 10, "versatz_links": 90},
+        },
+        "source_run": "f75a99d4",
+        "bug_pattern": "'aus mitte nach <side>' = versatz_*, kombiniert mit 'von <kante>' = abstand_* auf anderer Achse",
+    },
+    {
+        "id": "klass_curated_bohrung_aus_mitte_nach_rechts_simpel",
+        "phrase": "oben eine 10mm bohrung 20mm aus mitte nach rechts 5 tief",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 30},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 10, "tiefe": 5,
+                                "versatz_rechts": 20},
+        },
+        "source_run": None,
+        "bug_pattern": "'aus mitte nach <side>' minimal — Versatz ohne weitere Hints",
+    },
+    {
+        "id": "klass_curated_bohrung_aus_mitte_zwei_achsen",
+        "phrase": "oben eine 12mm bohrung 15mm aus mitte nach rechts und 8mm aus mitte nach unten 6 tief",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 120, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 12, "tiefe": 6,
+                                "versatz_rechts": 15, "versatz_unten": 8},
+        },
+        "source_run": None,
+        "bug_pattern": "'aus mitte' auf beiden Achsen — beide versatz_*",
+    },
     {
         "id": "klass_curated_bohrung_rechts_zentral",
         "phrase": "rechts eine bohrung zentral",
@@ -1410,36 +1459,40 @@ TRACES.extend([
         "bug_pattern": "Slot CW Rotation Vorzeichen-Konvention: 'im uhrzeigersinn' = -winkel (Gegenstueck zur CCW-Probe)",
     },
 
-    # ── Slot: "30x5 entlang ... C tief" parst als laenge x breite, nicht breite x tiefe
+    # ── Slot: N_kombo-Konvention "AxB entlang <achse> laenge X" ──────────
+    # Standard: AxB = breite x tiefe (immer), laenge wird EXPLIZIT als
+    # "laenge Xmm" oder "X lang" angegeben. Frueher hatten wir Traces mit
+    # "30x5 entlang ... 3 tief" — das brach die Konvention und das Modell
+    # patzte zurecht. Entfernt 2026-05-12 zugunsten konsistenter Demos.
     {
-        "id": "klass_curated_nut_30x5_entlang_3tief",
-        "phrase": "oben eine nut 30x5 entlang x-achse 3 tief 8mm nach rechts versetzt",
+        "id": "klass_curated_nut_5x3_entlang_x_laenge30",
+        "phrase": "oben eine nut 5x3 entlang x-achse laenge 30mm 8mm nach rechts versetzt",
         "teil_type": "box",
         "teil_params": {"x": 60, "y": 40, "z": 10},
         "parent_phrase": "(keine)",
         "expected": {
             "typ": "nut",
             "seite": "oben",
-            "parameter_hints": {"laenge": 30, "breite": 5, "tiefe": 3,
+            "parameter_hints": {"breite": 5, "tiefe": 3, "laenge": 30,
                                 "richtung": "x", "versatz_rechts": 8},
         },
         "source_run": "daf26055",
-        "bug_pattern": "Slot Notations-Konvention: bei 'AxB entlang ... C tief' ist A=laenge, B=breite, C=tiefe (nicht AxB=breitextiefe)",
+        "bug_pattern": "Slot Konvention: AxB = breite x tiefe (5x3), Laenge explizit ('laenge 30mm')",
     },
     {
-        "id": "klass_curated_nut_40x6_entlang_4tief_y_achse",
-        "phrase": "rechts eine nut 40x6 entlang y-achse 4 tief zentriert",
+        "id": "klass_curated_nut_6x4_entlang_y_laenge40_zentriert",
+        "phrase": "rechts eine nut 6x4 entlang y-achse laenge 40mm zentriert",
         "teil_type": "box",
         "teil_params": {"x": 100, "y": 100, "z": 100},
         "parent_phrase": "(keine)",
         "expected": {
             "typ": "nut",
             "seite": "rechts",
-            "parameter_hints": {"laenge": 40, "breite": 6, "tiefe": 4,
+            "parameter_hints": {"breite": 6, "tiefe": 4, "laenge": 40,
                                 "richtung": "y"},
         },
         "source_run": None,
-        "bug_pattern": "Slot AxB+explizite Tiefe: nochmal verstaerkt um Konvention abzusichern",
+        "bug_pattern": "Slot Konvention auf Seitenflaeche, gleiche AxB+laenge-Form",
     },
 
     # ── Pocket: mehr "deren X kante Y mm von <parent>kante" Varianten ────

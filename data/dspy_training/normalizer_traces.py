@@ -391,4 +391,540 @@ TRACES = [
             "parameter: dicke=2"
         ),
     },
+
+    # ── Slot Gap-Filler 2026-05-12: N_kombo-Konvention "AxB entlang ... laenge X"
+    # AxB = breite × tiefe (immer), Laenge wird EXPLIZIT als
+    # "laenge Xmm" oder "X lang" angegeben — niemals "X tief" nach
+    # einem AxB-Pair, das waere doppelt belegt. Frueher hatten wir
+    # Traces wie "nut 30x5 entlang x 3 tief" — gleiche Phrasierung,
+    # andere Bedeutung. Das brach die Konvention; Modell patzte zurecht.
+    {
+        "id": "norm_slot_axb_entlang_laenge_versatz",
+        "input": {
+            "beschreibung": (
+                "auf der platte oben eine nut 5x3 entlang x-achse laenge 30mm "
+                "8mm nach rechts versetzt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 60, "y": 40, "z": 10},
+            "specification": (
+                "100mm wuerfel, oben eine platte 60x40x10 zentral, "
+                "auf der platte oben eine nut 5x3 entlang x-achse laenge 30mm "
+                "8mm nach rechts versetzt"
+            ),
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "richtung: x\n"
+            "parameter: breite=5, tiefe=3, laenge=30, versatz_rechts=8"
+        ),
+    },
+    {
+        "id": "norm_slot_axb_entlang_laenge_zentral",
+        "input": {
+            "beschreibung": "nut 6x4 entlang y-achse laenge 40mm zentral",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 20},
+            "specification": "100mm wuerfel, oben eine nut 6x4 entlang y-achse laenge 40mm zentral",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "richtung: y\n"
+            "parameter: breite=6, tiefe=4, laenge=40"
+        ),
+    },
+    {
+        "id": "norm_slot_axb_entlang_laenge_rotation_ccw",
+        "input": {
+            "beschreibung": (
+                "nut 5x3 entlang y-achse laenge 30mm 15 grad gegen uhrzeigersinn"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 20},
+            "specification": "100mm wuerfel, oben eine nut 5x3 entlang y-achse laenge 30mm 15 grad gegen uhrzeigersinn gedreht",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "richtung: y\n"
+            "parameter: breite=5, tiefe=3, laenge=30, rotation_deg=15"
+        ),
+    },
+    {
+        "id": "norm_slot_axb_entlang_laenge_kante",
+        "input": {
+            "beschreibung": (
+                "nut 4x2 entlang x-achse laenge 25mm von oberer kante 10mm entfernt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 80, "y": 80, "z": 20},
+            "specification": "80mm wuerfel, oben eine nut 4x2 entlang x-achse laenge 25mm von oberer kante 10mm entfernt",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "richtung: x\n"
+            "parameter: breite=4, tiefe=2, laenge=25, abstand_oben=10"
+        ),
+    },
+
+    # ── Slot: weitere Rotation-Konvention + Side-Face Variationen ────────
+    {
+        "id": "norm_slot_axb_entlang_laenge_rotation_cw",
+        "input": {
+            "beschreibung": (
+                "nut 5x3 entlang x-achse laenge 30mm 20 grad im uhrzeigersinn"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 20},
+            "specification": "100mm wuerfel, oben eine nut 5x3 entlang x-achse laenge 30mm 20 grad im uhrzeigersinn gedreht",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "richtung: x\n"
+            "parameter: breite=5, tiefe=3, laenge=30, rotation_deg=-20"
+        ),
+    },
+    {
+        "id": "norm_slot_on_side_face_vertical",
+        "input": {
+            "beschreibung": "nut 5x4 entlang z-achse laenge 40mm mittig",
+            "seite": "rechts",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 100},
+            "specification": "100mm wuerfel, rechts eine nut 5x4 entlang z-achse laenge 40mm mittig",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: rechts\n"
+            "position: zentriert\n"
+            "richtung: z\n"
+            "parameter: breite=5, tiefe=4, laenge=40"
+        ),
+    },
+
+    # ── Lochkreis: weitere Varianten (heutige Coverage: 1) ───────────────
+    {
+        "id": "norm_pattern_lochkreis_with_offset",
+        "input": {
+            "beschreibung": (
+                "lochkreis mit 4 bohrungen 6mm durchmesser 4 tief auf einem "
+                "teilkreis von 40mm, 15mm nach rechts und 10mm nach oben versetzt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 20},
+            "specification": "100mm wuerfel, oben ein lochkreis mit 4 bohrungen 6mm durchmesser 4 tief auf einem teilkreis von 40mm 15mm nach rechts und 10mm nach oben versetzt",
+        },
+        "expected": (
+            "typ: lochkreis\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "parameter: anzahl=4, durchmesser=6, tiefe=4, "
+            "kreis_durchmesser=40, versatz_rechts=15, versatz_oben=10"
+        ),
+    },
+    {
+        "id": "norm_pattern_lochkreis_durchgaengig",
+        "input": {
+            "beschreibung": (
+                "lochkreis 70mm mit 8 bohrungen 12mm durchmesser durchgaengig"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 120, "z": 20},
+            "specification": "120mm wuerfel, oben ein lochkreis 70mm mit 8 bohrungen 12mm durchmesser durchgaengig",
+        },
+        "expected": (
+            "typ: lochkreis\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "parameter: anzahl=8, durchmesser=12, kreis_durchmesser=70"
+        ),
+    },
+
+    # ── Eckbohrungen: weitere Varianten (heutige Coverage: 1) ────────────
+    {
+        "id": "norm_pattern_eckbohrungen_an_jeder_ecke",
+        "input": {
+            "beschreibung": (
+                "an jeder ecke eine bohrung je 20mm von den kanten entfernt "
+                "6mm durchmesser"
+            ),
+            "seite": "vorne",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 80, "z": 60},
+            "specification": "100x80x60 wuerfel, vorne an jeder ecke eine bohrung je 20mm von den kanten entfernt 6mm durchmesser",
+        },
+        "expected": (
+            "typ: eckbohrungen\n"
+            "seite: vorne\n"
+            "position: von_kanten\n"
+            "parameter: durchmesser=6, abstand_kante=20"
+        ),
+    },
+    {
+        "id": "norm_pattern_eckbohrungen_grid_2x2_randabstand",
+        "input": {
+            "beschreibung": (
+                "ein 2x2 lochmuster mit 8mm bohrungen 5 tief, "
+                "randabstand 10mm zur kante"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 20},
+            "specification": "100mm wuerfel, oben ein 2x2 lochmuster mit 8mm bohrungen 5 tief randabstand 10mm zur kante",
+        },
+        "expected": (
+            "typ: eckbohrungen\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: anzahl=4, durchmesser=8, tiefe=5, abstand_kante=10"
+        ),
+    },
+
+    # ── Bohrungsreihe: weitere Varianten ─────────────────────────────────
+    {
+        "id": "norm_pattern_bohrungsreihe_mit_anker",
+        "input": {
+            "beschreibung": (
+                "lochreihe entlang x mit 5 bohrungen 8mm durchmesser 5 tief, "
+                "abstand 15mm, startversatz 10mm, ankerpunkt obere rechte "
+                "ecke 10mm nach unten versetzt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 20},
+            "specification": "100mm wuerfel, oben eine lochreihe entlang x mit 5 bohrungen 8mm durchmesser 5 tief, abstand 15mm, startversatz 10mm, ankerpunkt obere rechte ecke 10mm nach unten versetzt",
+        },
+        "expected": (
+            "typ: bohrungsreihe\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "richtung: x\n"
+            "parameter: anzahl=5, durchmesser=8, tiefe=5, abstand=15, "
+            "start_offset=10, versatz_unten=10"
+        ),
+    },
+    {
+        "id": "norm_pattern_bohrungsreihe_z_axis_rechts",
+        "input": {
+            "beschreibung": (
+                "4 loecher der reihe nach entlang z mit 15mm abstand "
+                "6mm durchmesser"
+            ),
+            "seite": "rechts",
+            "teil_type": "box",
+            "teil_params": {"x": 80, "y": 60, "z": 120},
+            "specification": "rechts 4 loecher der reihe nach entlang z mit 15mm abstand 6mm durchmesser",
+        },
+        "expected": (
+            "typ: bohrungsreihe\n"
+            "seite: rechts\n"
+            "position: zentriert\n"
+            "richtung: z\n"
+            "parameter: anzahl=4, durchmesser=6, abstand=15"
+        ),
+    },
+
+    # ── Fase: weitere Varianten (heutige Coverage: 1) ────────────────────
+    {
+        "id": "norm_chamfer_single_edge_size",
+        "input": {
+            "beschreibung": "rechts eine fase 3mm",
+            "seite": "rechts",
+            "teil_type": "box",
+            "teil_params": {"x": 50, "y": 50, "z": 50},
+            "specification": "50mm wuerfel, rechts eine fase 3mm",
+        },
+        "expected": (
+            "typ: fase\n"
+            "seite: rechts\n"
+            "position: zentriert\n"
+            "parameter: groesse=3"
+        ),
+    },
+    {
+        "id": "norm_chamfer_alle_kanten",
+        "input": {
+            "beschreibung": "alle kanten mit fase 1.5mm",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 50, "y": 50, "z": 50},
+            "specification": "50mm wuerfel, vorne alle kanten mit fase 1.5mm",
+        },
+        "expected": (
+            "typ: fase\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "parameter: groesse=1.5"
+        ),
+    },
+    {
+        "id": "norm_chamfer_kantenlaenge_wording",
+        "input": {
+            "beschreibung": "eine fase mit kantenlaenge 4mm",
+            "seite": "hinten",
+            "teil_type": "box",
+            "teil_params": {"x": 80, "y": 50, "z": 40},
+            "specification": "80x50x40 wuerfel, hinten eine fase mit kantenlaenge 4mm",
+        },
+        "expected": (
+            "typ: fase\n"
+            "seite: hinten\n"
+            "position: zentriert\n"
+            "parameter: kantenlaenge=4"
+        ),
+    },
+
+    # ── Rundung: weitere Varianten (heutige Coverage: 1) ─────────────────
+    {
+        "id": "norm_fillet_radius_simple",
+        "input": {
+            "beschreibung": "unten eine rundung radius 4mm",
+            "seite": "unten",
+            "teil_type": "box",
+            "teil_params": {"x": 50, "y": 50, "z": 50},
+            "specification": "50mm wuerfel, unten eine rundung radius 4mm",
+        },
+        "expected": (
+            "typ: rundung\n"
+            "seite: unten\n"
+            "position: zentriert\n"
+            "parameter: radius=4"
+        ),
+    },
+    {
+        "id": "norm_fillet_abrunden_wording",
+        "input": {
+            "beschreibung": "alle kanten 2mm abrunden",
+            "seite": "vorne",
+            "teil_type": "box",
+            "teil_params": {"x": 50, "y": 50, "z": 50},
+            "specification": "50mm wuerfel, vorne alle kanten 2mm abrunden",
+        },
+        "expected": (
+            "typ: rundung\n"
+            "seite: vorne\n"
+            "position: zentriert\n"
+            "parameter: radius=2"
+        ),
+    },
+    {
+        "id": "norm_fillet_kantenradius_wording",
+        "input": {
+            "beschreibung": "kantenradius 3mm",
+            "seite": "hinten",
+            "teil_type": "box",
+            "teil_params": {"x": 50, "y": 50, "z": 50},
+            "specification": "50mm wuerfel, hinten kantenradius 3mm",
+        },
+        "expected": (
+            "typ: rundung\n"
+            "seite: hinten\n"
+            "position: zentriert\n"
+            "parameter: radius=3"
+        ),
+    },
+
+    # ── Bohrung: durchgehend + simple-mittig + AxB-Notation ──────────────
+    {
+        "id": "norm_hole_through_simple",
+        "input": {
+            "beschreibung": "bohrung 10mm durchmesser durchgaengig mittig",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 60, "y": 60, "z": 30},
+            "specification": "60mm wuerfel, oben eine bohrung 10mm durchmesser durchgaengig mittig",
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "parameter: durchmesser=10, tiefe=durch"
+        ),
+    },
+    {
+        "id": "norm_hole_with_depth_and_edge_distance",
+        "input": {
+            "beschreibung": (
+                "bohrung 18mm 10mm von oberer kante, 90mm aus mitte nach "
+                "links, 10 tief"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 200, "y": 200, "z": 200},
+            "specification": "200mm wuerfel, oben eine 18mm bohrung 10mm von oberer kante, 90mm aus mitte nach links, 10 tief",
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "parameter: durchmesser=18, tiefe=10, abstand_oben=10, "
+            "versatz_links=90"
+        ),
+    },
+
+    # ── Tasche: bottom-face + plate-on-cube + diagonal-anker ─────────────
+    {
+        "id": "norm_pocket_bottom_face_simple",
+        "input": {
+            "beschreibung": "tasche 40x30x6 zentral",
+            "seite": "unten",
+            "teil_type": "box",
+            "teil_params": {"x": 80, "y": 80, "z": 30},
+            "specification": "80mm wuerfel, unten eine tasche 40x30x6 zentral",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: unten\n"
+            "position: zentriert\n"
+            "parameter: laenge=40, breite=30, tiefe=6"
+        ),
+    },
+    {
+        "id": "norm_pocket_corner_anchor_diagonal",
+        "input": {
+            "beschreibung": (
+                "tasche 30x20x10 obere rechte ecke der tasche auf obere "
+                "rechte ecke des wuerfels"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 50},
+            "specification": "100mm wuerfel, oben eine tasche 30x20x10 obere rechte ecke der tasche auf obere rechte ecke des wuerfels",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: anker\n"
+            "parameter: laenge=30, breite=20, tiefe=10, "
+            "anker=top_right_auf_top_right"
+        ),
+    },
+
+    # ── Aushoelung: zusaetzliche Wording-Variante ────────────────────────
+    {
+        "id": "norm_shell_thickness_explicit",
+        "input": {
+            "beschreibung": "bauteil mit 3mm wandstaerke aushoehlen",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 60, "y": 60, "z": 60},
+            "specification": "60mm wuerfel, oben bauteil mit 3mm wandstaerke aushoehlen",
+        },
+        "expected": (
+            "typ: aushoelung\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "parameter: dicke=3"
+        ),
+    },
+
+    # ── "jeweils von den kanten X" Bedeutungs-Disambiguierung ────────────
+    # Regel: bei SINGLE-Bohrung an Eck-Position ("unten rechts ... jeweils
+    # X von den kanten") sind nur die ZWEI impliziten Kanten gemeint, nicht
+    # alle vier. "Alle vier" gilt nur explizit bei "eckbohrungen", "an jeder
+    # ecke" oder "an allen kanten". Heatmap 2026-05-12 zeigte Normalizer
+    # generalisierte "jeweils" hier ueber — fuegte abstand_oben=10 zu einer
+    # unten-rechts-Bohrung hinzu (run bef297ca).
+    {
+        "id": "norm_hole_corner_unten_rechts_jeweils_two_edges",
+        "input": {
+            "beschreibung": (
+                "oben soll unten rechts eine 18mm bohrung jeweils von den "
+                "kanten 10mm entfernt mit 10mm tiefe hin"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 200, "y": 200, "z": 200},
+            "specification": (
+                "200mm wuerfel, oben soll unten rechts eine 18mm bohrung "
+                "jeweils von den kanten 10mm entfernt mit 10mm tiefe hin"
+            ),
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: durchmesser=18, tiefe=10, "
+            "abstand_unten=10, abstand_rechts=10"
+        ),
+    },
+    {
+        "id": "norm_hole_corner_oben_links_jeweils_two_edges",
+        "input": {
+            "beschreibung": (
+                "oben links eine 12mm bohrung jeweils 15mm von den kanten entfernt 8 tief"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 150, "y": 150, "z": 50},
+            "specification": "150mm wuerfel, oben links eine 12mm bohrung jeweils 15mm von den kanten entfernt 8 tief",
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: durchmesser=12, tiefe=8, "
+            "abstand_oben=15, abstand_links=15"
+        ),
+    },
+    {
+        "id": "norm_hole_corner_oben_rechts_jeweils_two_edges",
+        "input": {
+            "beschreibung": (
+                "oben soll oben rechts jeweils von den kanten 10mm entfernt "
+                "eine 18mm bohrung 10 tief hin"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 200, "y": 200, "z": 200},
+            "specification": (
+                "200mm wuerfel, oben soll oben rechts jeweils von den "
+                "kanten 10mm entfernt eine 18mm bohrung 10 tief hin"
+            ),
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: durchmesser=18, tiefe=10, "
+            "abstand_oben=10, abstand_rechts=10"
+        ),
+    },
+    # Gegenstueck: "an jeder ecke" / eckbohrungen sind die EINZIGEN Faelle
+    # die "alle 4 kanten" rechtfertigen.
+    {
+        "id": "norm_pattern_an_jeder_ecke_four_edges_via_abstand_kante",
+        "input": {
+            "beschreibung": (
+                "an jeder ecke eine 8mm bohrung jeweils 12mm von den kanten "
+                "entfernt 5 tief"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 20},
+            "specification": "100mm wuerfel, oben an jeder ecke eine 8mm bohrung jeweils 12mm von den kanten entfernt 5 tief",
+        },
+        "expected": (
+            "typ: eckbohrungen\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: durchmesser=8, tiefe=5, abstand_kante=12"
+        ),
+    },
 ]

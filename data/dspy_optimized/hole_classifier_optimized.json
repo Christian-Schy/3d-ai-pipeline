@@ -5,14 +5,58 @@
     "demos": [
       {
         "augmented": true,
-        "phrase": "oben eine 8mm bohrung 10mm nach rechts und 5mm nach oben versetzt",
+        "phrase": "oben eine 12mm bohrung 15mm aus mitte nach rechts und 8mm aus mitte nach unten 6 tief",
         "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 30}",
+        "teil_params": "{\"x\": 120, \"y\": 120, \"z\": 40}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"versatz_rechts\": 10, \"versatz_oben\": 5}}"
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 12, \"tiefe\": 6, \"versatz_rechts\": 15, \"versatz_unten\": 8}}"
       },
       {
         "augmented": true,
+        "phrase": "hinten oben rechts eine 6mm bohrung jeweils 12mm von den kanten entfernt 5 tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 60, \"z\": 80}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"hinten\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 5, \"abstand_oben\": 12, \"abstand_rechts\": 12}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "unten eine 6mm bohrung durchgaengig",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"unten\", \"parameter_hints\": {\"durchmesser\": 6}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "auf der rechten seite eine bohrung von der linken kante 20mm entfernt von der oberen 30mm entfernt mit 20mm durchmesser 10 tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 60}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 20, \"tiefe\": 10, \"abstand_links\": 20, \"abstand_oben\": 30}}"
+      },
+      {
+        "phrase": "rechts eine bohrung 12mm durchmesser 8 tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 12, \"tiefe\": 8}}"
+      },
+      {
+        "phrase": "in der tasche eine bohrung oben links jeweils von den kanten 5mm entfernt 6mm durchmesser 5 tief",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 200, \"y\": 200, \"z\": 40}",
+        "parent_phrase": "oben eine tasche 50x40x10",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 5, \"abstand_oben\": 5, \"abstand_links\": 5}}"
+      },
+      {
+        "phrase": "oben eine 9mm Bohrung mit einem Versatz von 16mm nach rechts und 24mm nach oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 110, \"y\": 110, \"z\": 110}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 9, \"versatz_rechts\": 16, \"versatz_oben\": 24}}"
+      },
+      {
         "phrase": "links eine 5mm bohrung 12mm tief",
         "teil_type": "box",
         "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 40}",
@@ -20,20 +64,18 @@
         "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"links\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 12}}"
       },
       {
-        "augmented": true,
-        "phrase": "oben eine 10mm bohrung 20mm tief",
+        "phrase": "oben eine 6er Bohrung 21mm von links",
         "teil_type": "box",
-        "teil_params": "{\"x\": 120, \"y\": 80, \"z\": 40}",
+        "teil_params": "{\"x\": 200, \"y\": 120, \"z\": 14}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 10, \"tiefe\": 20}}"
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"abstand_links\": 21}}"
       },
       {
-        "augmented": true,
-        "phrase": "oben soll rechts unten eine 12mm bohrung jeweils von den kanten 14mm entfernt 9 tief",
+        "phrase": "an der vorderen seite eine bohrung 8mm durchmesser 15mm tief",
         "teil_type": "box",
-        "teil_params": "{\"x\": 120, \"y\": 100, \"z\": 50}",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 60}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 12, \"tiefe\": 9, \"abstand_rechts\": 14, \"abstand_unten\": 14}}"
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 15}}"
       },
       {
         "phrase": "auf der Oberseite ein Loch mit 9mm Durchmesser mittig",
@@ -43,25 +85,11 @@
         "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 9}}"
       },
       {
-        "phrase": "oben links unten eine 10mm bohrung jeweils 12.5mm von den kanten entfernt 6 tief",
+        "phrase": "darin eine bohrung 8mm von links 10mm und von unten 12mm entfernt",
         "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 30}",
-        "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 10, \"tiefe\": 6, \"abstand_links\": 12.5, \"abstand_unten\": 12.5}}"
-      },
-      {
-        "phrase": "oben ein 7er Loch 19 nach links und 26 nach unten verschoben",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 85, \"y\": 85, \"z\": 85}",
-        "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 7, \"versatz_links\": 19, \"versatz_unten\": 26}}"
-      },
-      {
-        "phrase": "an der vorderen seite eine bohrung 8mm durchmesser 15mm tief",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 60}",
-        "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 15}}"
+        "teil_params": "{\"x\": 200, \"y\": 120, \"z\": 40}",
+        "parent_phrase": "rechts eine tasche 60x40x10",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 8, \"abstand_links\": 10, \"abstand_unten\": 12}}"
       }
     ],
     "signature": {

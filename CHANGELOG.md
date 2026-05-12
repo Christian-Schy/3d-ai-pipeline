@@ -10,7 +10,33 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-12
 
-- **Heatmap-Rekord 14/3.** Bericht:
+- **Heatmap-Rekord 15/2.** Bericht:
+  `data/sessions/heatmap_20260512_204022.md`. Nur noch zwei Fails,
+  beide `aktions_splitter` (E_kombo Plate-Segmentierung in Inventar
+  Step A, M_kombo fehlende Pattern-Phrase). Alle anderen Layer
+  (feature_definierer, blueprint_resolver, function_decomposer,
+  executor, coordinate_validator, geometry_precheck) komplett sauber.
+  Drei Fixes seit 14/3:
+  - **EF Component-Golden Nut-Notation auf N_kombo-Konvention.**
+    `"nut 30x5 entlang x-achse 3 tief"` war mehrdeutig (AxB = breite×tiefe
+    ODER laenge×breite, plus widerspruechliches "3 tief"). Umgeschrieben zu
+    `"nut 5x3 entlang x-achse laenge 30mm"` — breite=5, tiefe=3, laenge
+    explizit. klassifizierer_traces.py + normalizer_traces.py entsprechend
+    auf konsistente "AxB = breite×tiefe, laenge explizit"-Demos umgestellt
+    (kaputte "AxB + X tief"-Traces entfernt). EF jetzt PASS.
+  - **Normalizer "jeweils von den kanten X"-Disambiguierung.** Bei einer
+    SINGLE-Bohrung an Eck-Position ("unten rechts ... jeweils 10mm von
+    den kanten") sind nur die ZWEI impliziten Kanten gemeint — "alle vier"
+    gilt nur bei "an jeder ecke"/eckbohrungen. 4 neue Demos in
+    normalizer_traces.py. B_kombo_bohrungen_oben jetzt PASS.
+  - **hole_classifier "aus mitte nach <side>" = versatz_*, nicht abstand_*.**
+    Run f75a99d4 (B3 v1): "90mm aus mitte nach links" wurde als
+    abstand_links=90 (Kantenabstand) statt versatz_links=90 (Mitten-Versatz)
+    extrahiert → Resolver bekam widerspruechliche edge+center auf gleicher
+    Achse → offset_x falsch. 3 neue hole-Demos fuer "aus mitte"-Wording.
+    B3 v1 jetzt PASS.
+
+- **Heatmap-Rekord 14/3 (Zwischenstand).** Bericht:
   `data/sessions/heatmap_20260512_182510.md`. Drei vorher hartnaeckige
   Fail-Layer komplett eliminiert: `function_decomposer`,
   `blueprint_resolver`, `executor`. Verbleibend: zwei `aktions_splitter`
