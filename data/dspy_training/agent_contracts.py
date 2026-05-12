@@ -105,32 +105,37 @@ CONTRACTS: dict[str, AgentContract] = {
         default_model="gemma4:26b",
     ),
     "pocket_classifier": AgentContract(
+        # ADR 0006 Phase D: aktiviert 2026-05-12 mit erweitertem Trace-Set
+        # (deren-X-kante Edge-to-Edge Demos zur Stabilisierung des T_kombo
+        # Coin-Flip-Bugs).
         name="pocket_classifier",
         input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
         output_fields=["klassifikation"],
         default_model="gemma4:26b",
-        active=False,
     ),
     "slot_classifier": AgentContract(
+        # ADR 0006 Phase D: aktiviert 2026-05-12 mit kante_oben/rechts/links
+        # Demos (vorher nur kante_unten).
         name="slot_classifier",
         input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
         output_fields=["klassifikation"],
         default_model="gemma4:26b",
-        active=False,
     ),
     "pattern_classifier": AgentContract(
+        # ADR 0006 Phase D: aktiviert 2026-05-12 mit Grid-Lochmuster und
+        # Lochreihe-mit-ankerpunkt Demos (M_kombo Faelle).
         name="pattern_classifier",
         input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
         output_fields=["klassifikation"],
         default_model="gemma4:26b",
-        active=False,
     ),
     "edge_feature_classifier": AgentContract(
+        # ADR 0006 Phase D: aktiviert 2026-05-12. 10 Demos genug fuer
+        # einfache Fase/Rundung-Vokabular; nicht heatmap-kritisch.
         name="edge_feature_classifier",
         input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
         output_fields=["klassifikation"],
         default_model="gemma4:26b",
-        active=False,
     ),
     "position_extractor": AgentContract(
         # Per-Teil Labeler (ab 2026-05-04): bekommt EIN Teil-Text und labelt
@@ -181,14 +186,15 @@ CONTRACTS: dict[str, AgentContract] = {
         default_model="gemma4:26b",
     ),
     "normalizer": AgentContract(
-        # 1 Aktion → 1 Feature. Pipeline ruft NormalizerAgent pro Aktion auf
-        # (siehe feature_definierer_node: for aktion in teil_aktionen: normalizer.normalize(...))
-        # Die deterministische Aggregation zu einer teil_definition macht build_teil_definition,
-        # nicht das LLM. Daher trainieren wir hier den fein-granularen Schritt.
+        # 1 Aktion → 1 normalisierte Kurzform. Pipeline ruft
+        # NormalizerAgent.normalize() pro Aktion auf; build_feature baut
+        # daraus deterministisch das SemanticFeature. DSPy-Demos muessen
+        # daher das Runtime-Format `typ:/seite:/parameter:` trainieren,
+        # nicht das nachgelagerte Feature-JSON.
         name="normalizer",
         input_fields=["beschreibung", "seite", "teil_type", "teil_params",
                       "specification"],
-        output_fields=["feature"],
+        output_fields=["normalisierung"],
         default_model="qwen3.5:9b",
     ),
     # assembly_node ist deterministisch (kein LLM-Call). Kein Training-Target.
@@ -727,6 +733,234 @@ def _adapter_platzierer_offset(trace: dict) -> list[dict]:
     return pairs
 
 
+_NORMALIZER_FEATURE_TYPE_TO_TYP = {
+    "hole_single": "bohrung",
+    "hole": "bohrung",
+    "hole_pattern_circular": "lochkreis",
+    "hole_circle": "lochkreis",
+    "hole_pattern_grid": "eckbohrungen",
+    "hole_pattern": "eckbohrungen",
+    "hole_pattern_linear": "bohrungsreihe",
+    "slot": "nut",
+    "pocket_rect": "tasche",
+    "pocket": "tasche",
+    "chamfer": "fase",
+    "fillet": "rundung",
+    "shell": "aushoelung",
+}
+
+_NORMALIZER_UNSUPPORTED_FEATURE_TYPES = {
+    # Current prompt/feature_builder vocabulary has no deterministic template
+    # for these yet. Keep them out of normalizer training until the standard
+    # path supports them end-to-end.
+    "hole_counterbore",
+    "hole_countersink",
+}
+
+_EN_TO_DE_DIRECTION = {
+    "top": "oben",
+    "bottom": "unten",
+    "right": "rechts",
+    "left": "links",
+    "front": "vorne",
+    "back": "hinten",
+}
+
+_ALIGNMENT_TO_POSITION = {
+    "centered": "zentriert",
+    "custom": "von_kanten",
+    "top_right": "oben-rechts",
+    "top_left": "oben-links",
+    "bottom_right": "unten-rechts",
+    "bottom_left": "unten-links",
+    "flush_right": "rechts",
+    "flush_left": "links",
+    "flush_top": "oben",
+    "flush_bottom": "unten",
+    "all_edges": "zentriert",
+    "corner_4": "von_kanten",
+    "von_kanten": "von_kanten",
+}
+
+
+def _normalizer_has_through_word(text: str) -> bool:
+    return bool(re.search(r"\bdurch(?:gehend|gaengig)?\b", text.lower()))
+
+
+def _normalizer_depth(params: dict, description: str) -> object | None:
+    value = params.get("depth")
+    if isinstance(value, str) and value.lower() in {"through", "durch"}:
+        return "durch"
+    if _normalizer_has_through_word(description):
+        return "durch"
+    return value
+
+
+def _normalizer_position(position: dict) -> str:
+    if position.get("center_offset"):
+        return "von_mitte"
+    if position.get("edge_distances") or position.get("pocket_edge_distances"):
+        return "von_kanten"
+    alignment = str(position.get("alignment") or "centered").lower()
+    return _ALIGNMENT_TO_POSITION.get(alignment, "zentriert")
+
+
+def _normalizer_add_distance_params(
+    params: dict[str, object],
+    position: dict,
+) -> None:
+    for source_key, prefix in (
+        ("edge_distances", "abstand"),
+        ("center_offset", "versatz"),
+        ("pocket_edge_distances", "kante"),
+    ):
+        values = position.get(source_key)
+        if not isinstance(values, dict):
+            continue
+        for direction, value in values.items():
+            de = _EN_TO_DE_DIRECTION.get(str(direction).lower())
+            if de:
+                params[f"{prefix}_{de}"] = value
+
+
+def _normalizer_direction(feature: dict) -> str:
+    params = feature.get("params") or {}
+    raw = params.get("direction")
+    if str(raw).lower() in {"x", "y", "z"}:
+        return str(raw).lower()
+    notes = ((feature.get("position") or {}).get("notes") or "")
+    match = re.search(r"entlang\s+([xyz])\b", str(notes), re.IGNORECASE)
+    return match.group(1).lower() if match else ""
+
+
+def _feature_to_normalizer_shortform(pair_input: dict, feature: dict) -> str | None:
+    """Project current SemanticFeature labels back to Normalizer runtime text.
+
+    Historical traces store the post-build feature JSON, but the actual
+    Normalizer LLM only emits fixed-vocabulary key/value lines. This adapter
+    keeps the training contract aligned with runtime while still reusing the
+    curated trace corpus.
+    """
+    if isinstance(feature, str):
+        return feature
+    if not isinstance(feature, dict):
+        return None
+
+    feature_type = str(feature.get("type") or "")
+    if feature_type in _NORMALIZER_UNSUPPORTED_FEATURE_TYPES:
+        return None
+    typ = _NORMALIZER_FEATURE_TYPE_TO_TYP.get(feature_type)
+    if not typ:
+        return None
+
+    params_in = feature.get("params") or {}
+    position = feature.get("position") or {}
+    description = str(pair_input.get("beschreibung") or "")
+    params: dict[str, object] = {}
+
+    if typ == "bohrung":
+        diameter = params_in.get("diameter", params_in.get("d"))
+        if diameter is not None:
+            params["durchmesser"] = diameter
+        depth = _normalizer_depth(params_in, description)
+        if depth is not None:
+            params["tiefe"] = depth
+    elif typ == "lochkreis":
+        diameter = params_in.get("bolt_circle_diameter")
+        if diameter is None and params_in.get("bolt_circle_radius") is not None:
+            diameter = params_in["bolt_circle_radius"] * 2
+        if diameter is not None:
+            params["kreis_durchmesser"] = diameter
+        if params_in.get("count") is not None:
+            params["anzahl"] = params_in["count"]
+        hole_diameter = params_in.get("hole_diameter", params_in.get("diameter"))
+        if hole_diameter is not None:
+            params["bohr_durchmesser"] = hole_diameter
+        depth = _normalizer_depth(params_in, description)
+        if depth is not None:
+            params["tiefe"] = depth
+    elif typ == "eckbohrungen":
+        count = params_in.get("count")
+        if count is None and params_in.get("count_x") and params_in.get("count_y"):
+            count = params_in["count_x"] * params_in["count_y"]
+        if count is None and params_in.get("rows") and params_in.get("cols"):
+            count = params_in["rows"] * params_in["cols"]
+        if count is not None:
+            params["anzahl"] = count
+        inset = params_in.get("inset", params_in.get("edge_distance"))
+        if inset is not None:
+            params["abstand_kante"] = inset
+        hole_diameter = params_in.get("hole_diameter", params_in.get("diameter"))
+        if hole_diameter is not None:
+            params["bohr_durchmesser"] = hole_diameter
+        depth = _normalizer_depth(params_in, description)
+        if depth is not None:
+            params["tiefe"] = depth
+    elif typ == "bohrungsreihe":
+        if params_in.get("count") is not None:
+            params["anzahl"] = params_in["count"]
+        if params_in.get("spacing") is not None:
+            params["abstand"] = params_in["spacing"]
+        hole_diameter = params_in.get("hole_diameter", params_in.get("diameter"))
+        if hole_diameter is not None:
+            params["bohr_durchmesser"] = hole_diameter
+        depth = _normalizer_depth(params_in, description)
+        if depth is not None:
+            params["tiefe"] = depth
+    elif typ == "nut":
+        if params_in.get("width") is not None:
+            params["breite"] = params_in["width"]
+        if params_in.get("depth") is not None:
+            params["tiefe"] = params_in["depth"]
+        if params_in.get("length") is not None:
+            params["laenge"] = params_in["length"]
+    elif typ == "tasche":
+        laenge = params_in.get("x", params_in.get("length", params_in.get("width")))
+        breite = params_in.get("y", params_in.get("height"))
+        if laenge is not None:
+            params["laenge"] = laenge
+        if breite is not None:
+            params["breite"] = breite
+        if params_in.get("depth") is not None:
+            params["tiefe"] = params_in["depth"]
+    elif typ == "fase":
+        if params_in.get("size") is not None:
+            params["groesse"] = params_in["size"]
+        if params_in.get("edge_selector") is not None:
+            params["kanten"] = params_in["edge_selector"]
+    elif typ == "rundung":
+        radius = params_in.get("radius", params_in.get("size"))
+        if radius is not None:
+            params["radius"] = radius
+        if params_in.get("edge_selector") is not None:
+            params["kanten"] = params_in["edge_selector"]
+    elif typ == "aushoelung":
+        thickness = params_in.get("thickness")
+        if thickness is not None:
+            params["dicke"] = thickness
+
+    _normalizer_add_distance_params(params, position)
+
+    angle = position.get("angle_deg")
+    if isinstance(angle, (int, float)) and float(angle) != 0.0 and typ != "nut":
+        params["drehung"] = angle
+
+    lines = [
+        f"typ: {typ}",
+        f"seite: {position.get('side') or pair_input.get('seite', 'oben')}",
+        f"position: {_normalizer_position(position)}",
+    ]
+    direction = _normalizer_direction(feature)
+    if direction:
+        lines.append(f"richtung: {direction}")
+    if params:
+        lines.append(f"parameter: {_format_assignments(params)}")
+    notes = position.get("notes")
+    if notes:
+        lines.append(f"notes: {notes}")
+    return "\n".join(lines)
+
+
 def _adapter_normalizer(trace: dict) -> list[dict]:
     """Eine Trainings-Probe pro AKTION (1 Aktion → 1 Feature).
 
@@ -746,16 +980,23 @@ def _adapter_normalizer(trace: dict) -> list[dict]:
         out = []
         for p in explicit:
             inp = p.get("input") or {}
+            pair_input = {
+                "beschreibung": inp.get("beschreibung", ""),
+                "seite": inp.get("seite", "oben"),
+                "teil_type": inp.get("teil_type", "box"),
+                "teil_params": inp.get("teil_params", {}),
+                "specification": inp.get("specification",
+                                         trace.get("specification", "")),
+            }
+            normalisierung = _feature_to_normalizer_shortform(
+                pair_input,
+                p.get("output", {}),
+            )
+            if not normalisierung:
+                continue
             out.append({
-                "input": {
-                    "beschreibung": inp.get("beschreibung", ""),
-                    "seite": inp.get("seite", "oben"),
-                    "teil_type": inp.get("teil_type", "box"),
-                    "teil_params": inp.get("teil_params", {}),
-                    "specification": inp.get("specification",
-                                             trace.get("specification", "")),
-                },
-                "output": p.get("output", {}),
+                "input": pair_input,
+                "output": normalisierung,
             })
         return out
 
@@ -779,15 +1020,19 @@ def _adapter_normalizer(trace: dict) -> list[dict]:
         td_features = td.get("features", [])
         # Index-pair action with feature; skip if either side is empty
         for aktion, feature in zip(td_aktionen, td_features):
+            pair_input = {
+                "beschreibung": aktion.get("beschreibung", ""),
+                "seite": aktion.get("seite", "oben"),
+                "teil_type": teil.get("type", "box"),
+                "teil_params": teil.get("raw_params", {}),
+                "specification": spec,
+            }
+            normalisierung = _feature_to_normalizer_shortform(pair_input, feature)
+            if not normalisierung:
+                continue
             pairs.append({
-                "input": {
-                    "beschreibung": aktion.get("beschreibung", ""),
-                    "seite": aktion.get("seite", "oben"),
-                    "teil_type": teil.get("type", "box"),
-                    "teil_params": teil.get("raw_params", {}),
-                    "specification": spec,
-                },
-                "output": feature,
+                "input": pair_input,
+                "output": normalisierung,
             })
     return pairs
 

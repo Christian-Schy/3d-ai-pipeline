@@ -153,7 +153,7 @@ plan_validator:
 # use the monolithic fallback until their own Phase-D cycle is green.
 classifier_subagents:
   hole_enabled: true
-  pocket_enabled: false
-  slot_enabled: false
-  pattern_enabled: false
-  edge_feature_enabled: false
+  pocket_enabled: true
+  slot_enabled: true
+  pattern_enabled: true
+  edge_feature_enabled: true

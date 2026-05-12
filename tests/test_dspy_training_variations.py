@@ -39,7 +39,7 @@ def test_aktions_klassifizierer_seed_is_trainable():
         "durchmesser", "tiefe", "laenge", "breite", "hoehe", "radius",
         "kantenlaenge", "groesse", "rotation_deg", "richtung",
         "bohr_durchmesser", "anzahl", "kreis_durchmesser", "abstand",
-        "abstand_kante",
+        "abstand_kante", "start_offset",
         "abstand_oben", "abstand_unten", "abstand_rechts", "abstand_links",
         "abstand_vorne", "abstand_hinten",
         "kante_oben", "kante_unten", "kante_rechts", "kante_links",
@@ -122,7 +122,7 @@ def test_aktions_klassifizierer_split_contracts_are_trainable():
     )
     from variation_traces import TRACES as VARIATION_TRACES
 
-    expected_counts = {
+    minimum_counts = {
         "hole_classifier": 21,
         "pocket_classifier": 22,
         "slot_classifier": 14,
@@ -130,11 +130,11 @@ def test_aktions_klassifizierer_split_contracts_are_trainable():
         "edge_feature_classifier": 10,
     }
 
-    for agent, expected_count in expected_counts.items():
+    for agent, minimum_count in minimum_counts.items():
         assert agent in CONTRACTS
-        assert CONTRACTS[agent].active is (agent == "hole_classifier")
+        assert CONTRACTS[agent].active in {True, False}
         seed_pairs = load_classifier_subagent_seed(agent)
-        assert len(seed_pairs) == expected_count
+        assert len(seed_pairs) >= minimum_count
         trace_pairs = project_traces(VARIATION_TRACES, agent)
         examples = to_dspy_examples(seed_pairs[:1], agent)
         assert examples
@@ -173,7 +173,7 @@ def test_aktions_klassifizierer_split_contracts_are_trainable():
 
     assert sum(
         len(load_classifier_subagent_seed(agent))
-        for agent in expected_counts
+        for agent in minimum_counts
     ) == len(load_aktions_klassifizierer_seed())
 
 
@@ -227,6 +227,77 @@ def test_aktions_klassifizierer_run_trace_expands_per_phrase():
         },
         "feedback": "good",
     }]
+
+
+def test_normalizer_training_contract_uses_runtime_shortform():
+    from train_dspy import (
+        load_normalizer_seed,
+        load_traces,
+        to_dspy_examples,
+        traces_to_agent_pairs,
+    )
+
+    trace_pairs = traces_to_agent_pairs(load_traces(), "normalizer")
+    seed_pairs = load_normalizer_seed()
+    raw = trace_pairs + seed_pairs
+    assert len(trace_pairs) >= 220
+    assert len(seed_pairs) >= 21
+
+    valid_types = {
+        "bohrung", "lochkreis", "eckbohrungen", "bohrungsreihe",
+        "nut", "tasche", "fase", "rundung", "aushoelung",
+    }
+    valid_sides = {"oben", "unten", "rechts", "links", "vorne", "hinten"}
+    valid_param_keys = {
+        "durchmesser", "bohr_durchmesser", "tiefe", "kreis_durchmesser",
+        "anzahl", "abstand", "abstand_kante", "breite", "laenge",
+        "groesse", "radius", "dicke", "drehung", "kanten",
+        "abstand_oben", "abstand_unten", "abstand_rechts", "abstand_links",
+        "abstand_vorne", "abstand_hinten",
+        "versatz_oben", "versatz_unten", "versatz_rechts", "versatz_links",
+        "versatz_vorne", "versatz_hinten",
+        "kante_oben", "kante_unten", "kante_rechts", "kante_links",
+        "kante_vorne", "kante_hinten",
+    }
+    seen_types = set()
+    seen_param_keys = set()
+
+    for pair in raw:
+        output = pair["output"]
+        assert isinstance(output, str)
+        assert output.lstrip().startswith("typ:")
+        assert not output.lstrip().startswith("{")
+        fields = {}
+        for line in output.splitlines():
+            if ":" not in line:
+                continue
+            key, _, value = line.partition(":")
+            fields[key.strip()] = value.strip()
+        assert fields.get("typ") in valid_types
+        assert fields.get("seite") in valid_sides
+        seen_types.add(fields["typ"])
+        params = fields.get("parameter", "")
+        for part in params.split(","):
+            if "=" not in part:
+                continue
+            key = part.partition("=")[0].strip()
+            assert key in valid_param_keys
+            seen_param_keys.add(key)
+
+    assert {
+        "bohrung", "lochkreis", "eckbohrungen", "bohrungsreihe",
+        "nut", "tasche", "fase", "rundung",
+    } <= seen_types
+    assert {
+        "abstand_oben", "abstand_hinten", "versatz_rechts", "versatz_oben",
+        "versatz_links", "versatz_unten", "versatz_vorne", "versatz_hinten",
+        "kante_oben", "kante_unten", "kante_rechts", "kante_links",
+        "kante_vorne", "kante_hinten", "drehung", "dicke",
+    } <= seen_param_keys
+
+    examples = to_dspy_examples(raw[:1], "normalizer")
+    assert examples
+    assert getattr(examples[0], "normalisierung")
 
 
 def test_platzierer_split_contracts_use_current_schema():

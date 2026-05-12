@@ -190,6 +190,24 @@ def load_classifier_subagent_seed(agent_name: str) -> list[dict]:
     )
 
 
+def load_normalizer_seed() -> list[dict]:
+    """Direct seed examples for the Normalizer runtime short-form contract."""
+    try:
+        sys.path.insert(0, str(PROJECT_ROOT / "data" / "dspy_training"))
+        from normalizer_traces import TRACES as NORMALIZER_TRACES
+    except Exception as e:
+        print(f"WARN: normalizer seed nicht ladbar: {e}")
+        return []
+    return [
+        {
+            "input": ex.get("input", {}),
+            "output": ex.get("expected", ""),
+            "feedback": "good",
+        }
+        for ex in NORMALIZER_TRACES
+    ]
+
+
 def manual_to_agent_pairs(examples: list[dict], agent_name: str) -> list[dict]:
     """Konvertiere kuratierte Legacy-Beispiele (examples.json) in Agent-Pairs.
 
@@ -339,6 +357,8 @@ def print_stats():
             s = load_aktions_klassifizierer_seed()
         elif agent in CLASSIFIER_SUB_AGENTS:
             s = load_classifier_subagent_seed(agent)
+        elif agent == "normalizer":
+            s = load_normalizer_seed()
         else:
             s = []
         active = (
@@ -480,16 +500,16 @@ class EdgeFeatureClassifierSignature(dspy.Signature):
 
 
 class NormalizerSignature(dspy.Signature):
-    """Normalisiere EINE einzelne Aktion auf einem Teil zu EINEM Feature-JSON.
+    """Normalisiere EINE einzelne Aktion auf einem Teil zu EINER Kurzform.
 
     Kontext: Die Pipeline ruft den Normalizer pro Aktion auf (1 Aktion → 1 Feature).
     Die deterministische Aggregation aller Features zu einer teil_definition
     macht ein Code-Schritt (build_teil_definition), nicht das LLM.
 
     Aufgabe: Aus einem Beschreibungstext + Seite + Teil-Kontext einen sauberen
-    Feature-Eintrag erzeugen mit type, params (Maße), position (semantisch:
-    side/alignment/edge_distances/angle_deg) und operation (add/subtract).
-    KEINE Offsets berechnen — Positionen in Worten beschreiben.
+    fixed-vocabulary Kurztext erzeugen:
+    typ, seite, position, optional richtung, parameter, notes.
+    KEIN Feature-JSON bauen — build_feature macht das deterministisch.
     """
 
     beschreibung: str = dspy.InputField(
@@ -507,9 +527,9 @@ class NormalizerSignature(dspy.Signature):
     specification: str = dspy.InputField(
         desc="Original-Spezifikation als Kontext."
     )
-    feature: str = dspy.OutputField(
-        desc="JSON-Objekt mit id, type (hole_single, pocket, slot, chamfer, ...), "
-             "params, position {side, alignment, edge_distances, angle_deg}, operation."
+    normalisierung: str = dspy.OutputField(
+        desc="Kurzform-Zeilen im Runtime-Format: typ, seite, position, "
+             "optional richtung, parameter (key=wert, ...), notes. Kein JSON."
     )
 
 
@@ -970,53 +990,96 @@ def aktions_klassifizierer_metric(example, prediction, trace=None) -> float:
         return 0.0
 
 
-def normalizer_metric(example, prediction, trace=None) -> float:
-    """Bewerte Normalizer: 1 Aktion → 1 Feature.
+def _parse_normalizer_shortform(text: str) -> dict:
+    """Parse `typ:/seite:/parameter:` lines used by NormalizerAgent."""
+    result = {
+        "typ": "",
+        "seite": "",
+        "position": "",
+        "richtung": "",
+        "parameter": {},
+        "notes": "",
+    }
+    for raw_line in str(text or "").strip().splitlines():
+        line = raw_line.strip()
+        if not line or ":" not in line:
+            continue
+        key, _, value = line.partition(":")
+        key = key.strip().lower()
+        value = value.strip()
+        if key == "parameter":
+            params = {}
+            for part in value.split(","):
+                part = part.strip()
+                if "=" not in part:
+                    continue
+                p_key, _, p_value = part.partition("=")
+                p_key = p_key.strip().lower()
+                p_value = p_value.strip()
+                if p_value.lower() in {"durch", "durchgaengig"}:
+                    params[p_key] = "durch"
+                else:
+                    try:
+                        params[p_key] = (
+                            float(p_value) if "." in p_value else int(p_value)
+                        )
+                    except ValueError:
+                        params[p_key] = p_value
+            result["parameter"] = params
+        elif key in result:
+            result[key] = value.lower()
+    return result
 
-    Felder mit Gewichten:
-      type           0.30 — bohrung/pocket/slot/chamfer korrekt
-      operation      0.10 — add/subtract korrekt
-      position.side  0.20 — Seite stimmt
-      position.alignment 0.15 — centered/custom/corner_4/...
-      params keys    0.15 — wichtige Param-Keys vorhanden (diameter, depth, ...)
-      params values  0.10 — exakte Werte
+
+def _normalizer_value_equal(left, right) -> bool:
+    if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+        return abs(float(left) - float(right)) < 1e-6
+    return str(left).strip().lower() == str(right).strip().lower()
+
+
+def normalizer_metric(example, prediction, trace=None) -> float:
+    """Bewerte Normalizer: 1 Aktion → 1 Runtime-Kurzform.
+
+    Der Normalizer soll nur Sprachbedeutung in das feste Kurzform-Vokabular
+    bringen. Feature-JSON, Operationen und Geometrie-Math gehoeren dem
+    deterministischen `build_feature`-Pfad.
     """
     try:
-        expected = _parse_json_safe(getattr(example, "feature", None))
-        predicted = _parse_json_safe(getattr(prediction, "feature", None))
-        if not isinstance(predicted, dict) or not isinstance(expected, dict):
+        expected = _parse_normalizer_shortform(
+            getattr(example, "normalisierung", "")
+        )
+        predicted = _parse_normalizer_shortform(
+            getattr(prediction, "normalisierung", "")
+        )
+        if not expected.get("typ") or not predicted.get("typ"):
             return 0.0
 
         score = 0.0
-        # type
-        if predicted.get("type") == expected.get("type"):
-            score += 0.30
-        # operation
-        if predicted.get("operation") == expected.get("operation"):
+        if predicted.get("typ") == expected.get("typ"):
+            score += 0.25
+        if predicted.get("seite") == expected.get("seite"):
+            score += 0.15
+        if predicted.get("position") == expected.get("position"):
             score += 0.10
-        # position fields
-        exp_pos = expected.get("position") or {}
-        pred_pos = predicted.get("position") or {}
-        if isinstance(exp_pos, dict) and isinstance(pred_pos, dict):
-            if pred_pos.get("side") == exp_pos.get("side"):
-                score += 0.20
-            if pred_pos.get("alignment") == exp_pos.get("alignment"):
-                score += 0.15
-        # params keys
-        exp_params = expected.get("params") or {}
-        pred_params = predicted.get("params") or {}
+        if predicted.get("richtung") == expected.get("richtung"):
+            score += 0.10
+
+        exp_params = expected.get("parameter") or {}
+        pred_params = predicted.get("parameter") or {}
         if isinstance(exp_params, dict) and isinstance(pred_params, dict):
             exp_keys = set(exp_params.keys())
             pred_keys = set(pred_params.keys())
-            if exp_keys and exp_keys == pred_keys:
-                score += 0.15
-            # exact value match (only for numeric params)
+            if exp_keys == pred_keys:
+                score += 0.20
             value_matches = sum(
                 1 for k in exp_keys
-                if k in pred_params and pred_params[k] == exp_params[k]
+                if k in pred_params
+                and _normalizer_value_equal(pred_params[k], exp_params[k])
             )
             if exp_keys:
-                score += 0.10 * (value_matches / len(exp_keys))
+                score += 0.20 * (value_matches / len(exp_keys))
+            else:
+                score += 0.20
 
         return score
     except Exception:
@@ -1263,13 +1326,14 @@ def to_dspy_examples(raw: list[dict], agent_name: str) -> list[dspy.Example]:
                           "parent_phrase")
 
         elif agent_name == "normalizer":
+            out_text = out if isinstance(out, str) else out.get("normalisierung", "")
             ex = dspy.Example(
                 beschreibung=inp.get("beschreibung", ""),
                 seite=inp.get("seite", "oben"),
                 teil_type=inp.get("teil_type", "box"),
                 teil_params=_j(inp.get("teil_params", {})),
                 specification=inp.get("specification", ""),
-                feature=_j(out),
+                normalisierung=out_text,
             ).with_inputs("beschreibung", "seite", "teil_type",
                           "teil_params", "specification")
 
@@ -1474,6 +1538,8 @@ def train_agent(agent_name: str,
         seed_pairs = load_aktions_klassifizierer_seed()
     elif agent_name in CLASSIFIER_SUB_AGENTS:
         seed_pairs = load_classifier_subagent_seed(agent_name)
+    elif agent_name == "normalizer":
+        seed_pairs = load_normalizer_seed()
 
     all_pairs = trace_pairs + manual_pairs + run_pairs + seed_pairs
 

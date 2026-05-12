@@ -303,7 +303,7 @@ class NormalizerAgent(BaseAgent):
     dspy_demo_fields = {
         "input_fields": ["beschreibung", "seite", "teil_type",
                          "teil_params", "specification"],
-        "output_field": "feature",
+        "output_field": "normalisierung",
     }
 
     def __init__(self):

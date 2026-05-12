@@ -94,6 +94,12 @@ def _patch_klassifizierer(monkeypatch, side_effect=None, return_value=None):
     """Replace AktionsKlassifizierer instance used by the node with a stub."""
     from src.graph.nodes import _registry
     from src.agents.aktions_klassifizierer import AktionsKlassifizierer
+    import src.graph.nodes.planning_action_nodes as action_nodes
+
+    # These wiring tests target the monolithic fallback path. Pin the route
+    # config locally so global classifier-subagent flags cannot make them call
+    # real subagents.
+    monkeypatch.setattr(action_nodes, "get_config", lambda: _fake_classifier_config())
 
     stub = MagicMock(spec=AktionsKlassifizierer)
     if side_effect is not None:

@@ -1194,6 +1194,304 @@ TRACES.extend([
 ])
 
 
+# ── Sub-Classifier Gap-Filler (2026-05-12, ADR 0006 Phase D follow-up) ────
+# Heatmap-Befunde nach Klassifizierer-Split: pocket_classifier kippt bei
+# "deren X kante Y mm von Z" Edge-to-Edge (T_kombo t07 + EF tasche),
+# slot_classifier hat kante_unten aber nicht kante_oben/rechts/links
+# (N_kombo Faelle), pattern_classifier fehlen 2x2-Lochmuster-Grids und
+# Lochreihe mit Anker+Startversatz (M_kombo M1, M5). Diese Traces
+# schliessen genau diese Luecken — Wording aus den Component-Goldens.
+TRACES.extend([
+    # ── Pocket: explizite "deren X kante Y mm von Z" Edge-to-Edge ────────
+    {
+        "id": "klass_curated_tasche_deren_rechte_kante_wuerfelkante",
+        "phrase": "oben eine tasche 30x20x10 deren rechte kante 25mm von rechter wuerfelkante und 10mm aus mitte nach oben",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 10,
+                                "kante_rechts": 25, "versatz_oben": 10},
+        },
+        "source_run": "eaa28ff1",
+        "bug_pattern": "edge-to-edge: 'deren X kante Y mm von <parent>kante' soll kante_*, nicht abstand_* (LLM-Coin-Flip)",
+    },
+    {
+        "id": "klass_curated_tasche_deren_obere_und_linke_kante",
+        "phrase": "oben eine tasche 30x20x10 deren obere kante 15mm von oberer wuerfelkante und linke kante 20mm von linker wuerfelkante entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 10,
+                                "kante_oben": 15, "kante_links": 20},
+        },
+        "source_run": None,
+        "bug_pattern": "edge-to-edge: zwei kante_* gleichzeitig, gemischte Richtungen",
+    },
+    {
+        "id": "klass_curated_tasche_deren_rechte_und_5mm_aus_mitte_nach_oben",
+        "phrase": "oben eine tasche 30x20x10 deren rechte kante 25mm von rechter wuerfelkante und 10mm aus mitte nach oben",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 100, "z": 60},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 10,
+                                "kante_rechts": 25, "versatz_oben": 10},
+        },
+        "source_run": None,
+        "bug_pattern": "edge-to-edge: kombiniert kante_* mit versatz_* auf anderer Achse",
+    },
+    {
+        "id": "klass_curated_tasche_kanten_von_plattenkante",
+        "phrase": "auf der platte oben eine tasche 30x20x5 deren rechte kante 5mm und untere kante 3mm von der plattenkante entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 60, "y": 40, "z": 10},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 5,
+                                "kante_rechts": 5, "kante_unten": 3},
+        },
+        "source_run": "fdcc08c5",
+        "bug_pattern": "edge-to-edge auf Platte als Parent: 'von der plattenkante' Wording",
+    },
+
+    # ── Slot: kante_oben/rechts/links + Achse+Laenge in Spec-Form ────────
+    {
+        "id": "klass_curated_nut_oben_y_kante_oben_kante_links",
+        "phrase": "oben eine nut 5x5 entlang y-achse laenge 40mm von oberer kante 30mm und von linker kante 20mm entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "y",
+                                "kante_oben": 30, "kante_links": 20},
+        },
+        "source_run": None,
+        "bug_pattern": "slot kante_oben/kante_links bislang nicht in Demos",
+    },
+    {
+        "id": "klass_curated_nut_oben_x_kante_rechts_und_versatz",
+        "phrase": "oben eine nut 5x5 entlang x-achse laenge 50mm von rechter kante 30mm und 10mm aus mitte nach unten",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 50,
+                                "richtung": "x",
+                                "kante_rechts": 30, "versatz_unten": 10},
+        },
+        "source_run": None,
+        "bug_pattern": "slot kante_rechts + versatz auf anderer Achse",
+    },
+    {
+        "id": "klass_curated_nut_oben_y_kante_rechts_anliegend",
+        "phrase": "oben eine nut 5x5 entlang y-achse laenge 40mm liegt auf rechter kante an 10mm nach oben versetzt",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "y",
+                                "kante_rechts": 0, "versatz_oben": 10},
+        },
+        "source_run": None,
+        "bug_pattern": "slot 'liegt auf X kante an' = kante_X: 0 (buendig)",
+    },
+
+    # ── Pattern: 2x2 Grid Lochmuster + Lochreihe mit Anker ───────────────
+    {
+        "id": "klass_curated_pattern_grid_2x2_lochmuster_randabstand",
+        "phrase": "oben ein 2x2 lochmuster mit 8mm bohrungen 5 tief, randabstand 10mm zur kante",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 8, "tiefe": 5,
+                                "anzahl": 4, "abstand_kante": 10},
+        },
+        "source_run": "8a52e655",
+        "bug_pattern": "grid pattern 2x2 mit randabstand: heute droppt der Splitter es ganz",
+    },
+    {
+        "id": "klass_curated_pattern_grid_2x2_rechts_face",
+        "phrase": "rechts ein 2x2 lochmuster mit 8mm bohrungen 5 tief, randabstand 10mm zur kante",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 100},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "rechts",
+            "parameter_hints": {"durchmesser": 8, "tiefe": 5,
+                                "anzahl": 4, "abstand_kante": 10},
+        },
+        "source_run": None,
+        "bug_pattern": "grid pattern auf seitlicher Face — Face-Erbung muss bei Pattern auch klappen",
+    },
+    {
+        "id": "klass_curated_pattern_lochkreis_teilkreis_wording",
+        "phrase": "oben ein lochkreis mit 6 bohrungen 8mm durchmesser 5 tief auf einem teilkreis von 60mm",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 8, "tiefe": 5,
+                                "anzahl": 6, "kreis_durchmesser": 60},
+        },
+        "source_run": None,
+        "bug_pattern": "lochkreis 'auf einem teilkreis von X' alternative zur Standard-'lochkreis Xmm'-Form",
+    },
+    {
+        "id": "klass_curated_pattern_lochreihe_mit_ankerpunkt_startversatz",
+        "phrase": "oben eine lochreihe entlang x mit 5 bohrungen 8mm durchmesser 5 tief, abstand 15mm, startversatz 10mm, ankerpunkt obere rechte ecke 10mm nach unten versetzt",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 8, "tiefe": 5,
+                                "anzahl": 5, "abstand": 15,
+                                "richtung": "x", "start_offset": 10,
+                                "versatz_unten": 10},
+        },
+        "source_run": "8a52e655",
+        "bug_pattern": "lochreihe mit ankerpunkt+startversatz: heute fallen start_offset/direction durch (None)",
+    },
+
+    # ── Slot: Rotations-Vorzeichen-Konvention CCW=positiv, CW=negativ ────
+    {
+        "id": "klass_curated_nut_rotation_gegen_uhrzeigersinn_positive",
+        "phrase": "oben eine nut 5x5 entlang x-achse laenge 50mm 15 grad gegen uhrzeigersinn gedreht zentral",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 50,
+                                "richtung": "x", "rotation_deg": 15},
+        },
+        "source_run": "8da3e6fd",
+        "bug_pattern": "Slot CCW Rotation Vorzeichen-Konvention: 'gegen uhrzeigersinn' = +winkel",
+    },
+    {
+        "id": "klass_curated_nut_rotation_im_uhrzeigersinn_negative",
+        "phrase": "oben eine nut 5x5 entlang y-achse laenge 40mm 20 grad im uhrzeigersinn gedreht",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "y", "rotation_deg": -20},
+        },
+        "source_run": None,
+        "bug_pattern": "Slot CW Rotation Vorzeichen-Konvention: 'im uhrzeigersinn' = -winkel (Gegenstueck zur CCW-Probe)",
+    },
+
+    # ── Slot: "30x5 entlang ... C tief" parst als laenge x breite, nicht breite x tiefe
+    {
+        "id": "klass_curated_nut_30x5_entlang_3tief",
+        "phrase": "oben eine nut 30x5 entlang x-achse 3 tief 8mm nach rechts versetzt",
+        "teil_type": "box",
+        "teil_params": {"x": 60, "y": 40, "z": 10},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 5, "tiefe": 3,
+                                "richtung": "x", "versatz_rechts": 8},
+        },
+        "source_run": "daf26055",
+        "bug_pattern": "Slot Notations-Konvention: bei 'AxB entlang ... C tief' ist A=laenge, B=breite, C=tiefe (nicht AxB=breitextiefe)",
+    },
+    {
+        "id": "klass_curated_nut_40x6_entlang_4tief_y_achse",
+        "phrase": "rechts eine nut 40x6 entlang y-achse 4 tief zentriert",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 100},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "rechts",
+            "parameter_hints": {"laenge": 40, "breite": 6, "tiefe": 4,
+                                "richtung": "y"},
+        },
+        "source_run": None,
+        "bug_pattern": "Slot AxB+explizite Tiefe: nochmal verstaerkt um Konvention abzusichern",
+    },
+
+    # ── Pocket: mehr "deren X kante Y mm von <parent>kante" Varianten ────
+    # damit Bootstrap das Wording haeufiger picked.
+    {
+        "id": "klass_curated_tasche_deren_rechte_kante_simpel",
+        "phrase": "oben eine tasche 30x20x10 deren rechte kante 25mm von rechter wuerfelkante",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 10,
+                                "kante_rechts": 25},
+        },
+        "source_run": None,
+        "bug_pattern": "'deren X kante Y mm von <parent>kante' minimal — keine zusaetzlichen Versatz-Hints",
+    },
+    {
+        "id": "klass_curated_tasche_deren_obere_kante_simpel",
+        "phrase": "oben eine tasche 40x30x5 deren obere kante 15mm von oberer wuerfelkante",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 40, "breite": 30, "tiefe": 5,
+                                "kante_oben": 15},
+        },
+        "source_run": None,
+        "bug_pattern": "'deren obere kante' Variante zum Abdecken aller 4 Richtungen",
+    },
+    {
+        "id": "klass_curated_tasche_deren_linke_und_untere_kante",
+        "phrase": "oben eine tasche 30x20x5 deren linke kante 12mm von linker wuerfelkante und untere kante 8mm von unterer wuerfelkante entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 5,
+                                "kante_links": 12, "kante_unten": 8},
+        },
+        "source_run": None,
+        "bug_pattern": "'deren X kante' zwei Achsen — andere Richtungen als die T_kombo Vorlage",
+    },
+])
+
+
 def main() -> None:
     json.dump(TRACES, sys.stdout, indent=2, ensure_ascii=False)
     sys.stdout.write("\n")

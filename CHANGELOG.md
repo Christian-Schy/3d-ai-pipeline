@@ -10,6 +10,37 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-12
 
+- **Klassifizierer-Split Phase D abgeschlossen — alle 5 Sub-Classifier
+  adoptiert.** `pocket_classifier`, `slot_classifier`, `pattern_classifier`
+  und `edge_feature_classifier` aktiviert (active=True in
+  `data/dspy_training/agent_contracts.py`, Runtime-Flags in
+  `config/config.yaml` auf `true`). Trainiert mit erweiterten Trace-Sets
+  (insgesamt +11 hand-kuratierte Gap-Filler in `klassifizierer_traces.py`
+  fuer pocket "deren X kante", slot CCW/CW Rotations-Vorzeichen und
+  "AxB entlang ... C tief"-Notation, pattern 2x2-Grid und Lochreihe
+  mit Anker+Startversatz). Final-Dev-Scores: hole 0.79, pocket 0.93,
+  slot 0.91, pattern 0.79, edge_feature 1.00.
+
+- **Heatmap 13/4 stabil mit Sub-Classifier-Split.** Bericht:
+  `data/sessions/heatmap_20260512_175745.md`. Verglichen mit dem
+  Monolith-Stand 13/4 (Commit fd90252) sind drei vorher hartnaeckige
+  LLM-Bugs strukturell geloest (B1 v2 Wert-Swap, B_kombo_additive_anchor
+  Anker, T_kombo Pocket-Edge-Coin-Flip) — im Tausch verlagern sich zwei
+  Fails auf vorgelagerte Layer (B3 v1 Normalizer-LLM-Noise,
+  EF slot-Length-Parse). E_kombo und M_kombo bleiben Splitter-Themen.
+  Alle 4 verbleibenden Fails liegen jetzt VOR oder NEBEN den
+  Klassifizierern — der Klassifizierungs-Layer ist effektiv geklaert.
+
+- **Normalizer-DSPy-Contract auf Runtime-Kurzform korrigiert.**
+  `normalizer` trainiert jetzt auf `typ:/seite:/position:/parameter:` statt
+  auf nachgelagertem SemanticFeature-JSON. Die bestehenden Feature-Traces
+  werden per Adapter in dieses Kurzformat projiziert; noch nicht
+  deterministisch unterstuetzte Alt-Typen wie Counterbore/Countersink werden
+  aus dem Normalizer-Training gefiltert. Zusaetzlich gibt es direkte
+  Gap-Filler-Seeds fuer `kante_*`, `versatz_*`, Pattern, Slot-Achsen,
+  Rotation, Fase/Rundung und `aushoelung`. Aktuelle Stats: `normalizer`
+  `245` Trace-Pairs + `21` Seed-Pairs = `266` Gesamt.
+
 - **Klassifizierer-Subagent-Coverage nachgezogen.**
   Pattern-Seeds trainieren jetzt nicht mehr nur grob `durchmesser`, sondern
   auch explizite Pattern-Hints (`anzahl`, `kreis_durchmesser`, `abstand`,

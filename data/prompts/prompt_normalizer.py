@@ -42,9 +42,21 @@ ABSTAND vs VERSATZ — wichtiger Unterschied:
     (z.B. abstand_rechts=20 → 20mm von der rechten Kante entfernt)
   versatz_<richtung>=N: von der MITTE N mm in diese Richtung
     (z.B. versatz_links=10 → von Mitte 10mm nach links gewandert)
+  kante_<richtung>=N: Kante des rechteckigen Features zur Parent-Kante
+    (nur wenn der Text explizit die Kante der Tasche/Nut nennt,
+     z.B. "rechte Kante der Tasche 25mm von rechter Kante")
 
 Beide Felder nutzen dasselbe Richtungs-Vokabular:
   oben | unten | rechts | links | vorne | hinten
+
+ROTATION:
+  drehung=N in parameter, wenn das Feature selbst gedreht ist
+  (z.B. "Tasche 30 Grad gedreht" → drehung=30).
+  Placement-only Rotation ohne Feature → typ: ignorieren.
+
+TASCHE HOEHE/TIEFE:
+  Bei Taschen/Ausfraesungen bedeutet "Hoehe" im Usertext die Schnitttiefe:
+  "Tasche mit 8mm Hoehe" → tiefe=8.
 
 RICHTUNG (nur bei Nuten und Bohrungsreihen):
   x | y | z
@@ -86,6 +98,14 @@ typ: tasche
 seite: oben
 position: zentriert
 parameter: laenge=40, breite=30, tiefe=8
+
+Input: "Tasche 28x18x6, obere Kante der Tasche 11mm von oben"
+Seite aus Inventar: oben
+Output:
+typ: tasche
+seite: oben
+position: von_kanten
+parameter: laenge=28, breite=18, tiefe=6, kante_oben=11
 
 Input: "5 Bohrungen entlang X-Achse mit 10mm Abstand zentral 5mm Durchmesser durchgaengig"
 Seite aus Inventar: oben
