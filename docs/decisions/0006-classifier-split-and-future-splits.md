@@ -48,9 +48,9 @@ Mirror der `_TYP_MAP` aus `src/tools/feature_builder.py`:
 | Sub-Agent | Zustaendig fuer (typ) | Output-Schema |
 |---|---|---|
 | `hole_classifier` | `bohrung` | `{seite, durchmesser, tiefe, abstand_*, versatz_*, kante_*}` |
-| `pocket_classifier` | `tasche` | `{seite, laenge, breite, tiefe, drehung, abstand_*, versatz_*, kante_*}` |
-| `slot_classifier` | `nut` | `{seite, laenge, breite, tiefe, achse, abstand_*, versatz_*}` |
-| `pattern_classifier` | `lochkreis`, `eckbohrungen`, `bohrungsreihe` | `{seite, durchmesser, tiefe, anzahl, teilkreis_durchmesser, abstand_*, ...}` |
+| `pocket_classifier` | `tasche` | `{seite, laenge, breite, tiefe/hoehe, rotation_deg, abstand_*, versatz_*, kante_*}` |
+| `slot_classifier` | `nut` | `{seite, laenge, breite, tiefe, richtung, rotation_deg, abstand_*, versatz_*, kante_*}` |
+| `pattern_classifier` | `lochkreis`, `eckbohrungen`, `bohrungsreihe` | `{seite, durchmesser, tiefe, anzahl, kreis_durchmesser, abstand, abstand_kante, richtung, ...}` |
 | `edge_feature_classifier` | `fase`, `rundung` | `{seite, kante, groesse}` |
 
 `shell` (`aushoelung`) ist bisher selten — bleibt im Fallback bis es
@@ -127,7 +127,7 @@ typ-spezifischen Sub-Klassifizierer.
 **Phase A — Kontrakte + Adapter (keine Runtime-Aenderung)**
 
 Status 2026-05-11: **implementiert**. `train_dspy.py --stats` zeigt:
-`hole_classifier` 27 Pairs, `pocket_classifier` 23, `slot_classifier` 13,
+`hole_classifier` 27 Pairs, `pocket_classifier` 24, `slot_classifier` 14,
 `pattern_classifier` 10, `edge_feature_classifier` 10. Im ersten Schritt
 blieben alle fuenf `active=False`; nach Phase D ist `hole_classifier` der
 erste aktive Sub-Contract. `aktions_klassifizierer` bleibt der Runtime-
@@ -142,6 +142,10 @@ Fallback.
    Adapter. Drei Pattern-Seeds wurden ergaenzt, damit `pattern_classifier`
    die Mindestbasis von 10 Pairs erreicht.
 4. `train_dspy.py --stats` zeigt fuenf neue Zeilen mit Pair-Counts pro Typ.
+   Nach dem Coverage-Audit am 2026-05-12 decken Pattern-Seeds explizit
+   `anzahl`, `kreis_durchmesser`, `abstand` und `abstand_kante`; Slot-Seeds
+   decken `rotation_deg`; Pocket-`hoehe` wird downstream als `tiefe`
+   normalisiert.
 
 **Phase B — Sub-Agent-Implementierung**
 

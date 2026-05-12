@@ -742,9 +742,10 @@ TRACES.extend([
 
 
 # Combo-oriented phrase coverage. The classifier still has one job:
-# classify ONE splitter phrase. Pattern details stay with the normalizer,
-# so pattern phrases are coarse-labelled as bohrung and only safe hole-level
-# hints are emitted.
+# classify ONE splitter phrase. Pattern phrases keep typ="bohrung" because
+# the Normalizer refines the feature family, but explicit pattern-level
+# hints (anzahl, kreis_durchmesser, abstand, abstand_kante, richtung) are
+# valid classifier outputs for the PatternClassifier sub-contract.
 TRACES.extend([
     {
         "id": "klass_combo_lochkreis_oben_coarse_bohrung",
@@ -755,7 +756,8 @@ TRACES.extend([
         "expected": {
             "typ": "bohrung",
             "seite": "oben",
-            "parameter_hints": {"durchmesser": 10},
+            "parameter_hints": {"durchmesser": 10, "anzahl": 6,
+                                "kreis_durchmesser": 60},
         },
         "source_run": None,
         "bug_pattern": "combo: lochkreis is coarse classifier family bohrung",
@@ -769,7 +771,8 @@ TRACES.extend([
         "expected": {
             "typ": "bohrung",
             "seite": "rechts",
-            "parameter_hints": {"durchmesser": 12},
+            "parameter_hints": {"durchmesser": 12, "anzahl": 8,
+                                "kreis_durchmesser": 70},
         },
         "source_run": None,
         "bug_pattern": "combo: side plus circular pattern coarse label",
@@ -783,7 +786,8 @@ TRACES.extend([
         "expected": {
             "typ": "bohrung",
             "seite": "oben",
-            "parameter_hints": {"durchmesser": 8},
+            "parameter_hints": {"durchmesser": 8, "anzahl": 4,
+                                "abstand_kante": 15},
         },
         "source_run": None,
         "bug_pattern": "combo: eckbohrungen stay coarse bohrung in classifier",
@@ -797,7 +801,7 @@ TRACES.extend([
         "expected": {
             "typ": "bohrung",
             "seite": "vorne",
-            "parameter_hints": {"durchmesser": 6},
+            "parameter_hints": {"durchmesser": 6, "abstand_kante": 20},
         },
         "source_run": None,
         "bug_pattern": "combo: corner-hole pattern wording",
@@ -812,6 +816,7 @@ TRACES.extend([
             "typ": "bohrung",
             "seite": "oben",
             "parameter_hints": {"durchmesser": 5, "tiefe": 10,
+                                "anzahl": 5, "abstand": 10,
                                 "richtung": "x"},
         },
         "source_run": None,
@@ -826,7 +831,8 @@ TRACES.extend([
         "expected": {
             "typ": "bohrung",
             "seite": "rechts",
-            "parameter_hints": {"durchmesser": 6, "richtung": "z"},
+            "parameter_hints": {"durchmesser": 6, "anzahl": 4,
+                                "abstand": 15, "richtung": "z"},
         },
         "source_run": None,
         "bug_pattern": "combo: loecher/reihe wording coarse label",
@@ -840,7 +846,8 @@ TRACES.extend([
         "expected": {
             "typ": "bohrung",
             "seite": "oben",
-            "parameter_hints": {"durchmesser": 4, "richtung": "y"},
+            "parameter_hints": {"durchmesser": 4, "anzahl": 5,
+                                "abstand": 12, "richtung": "y"},
         },
         "source_run": None,
         "bug_pattern": "combo: y-axis linear pattern coarse label",
@@ -854,7 +861,8 @@ TRACES.extend([
         "expected": {
             "typ": "bohrung",
             "seite": "oben",
-            "parameter_hints": {"durchmesser": 6, "tiefe": 8},
+            "parameter_hints": {"durchmesser": 6, "tiefe": 8,
+                                "anzahl": 4},
         },
         "source_run": None,
         "bug_pattern": "combo: lochmuster pattern coarse label",
@@ -868,7 +876,8 @@ TRACES.extend([
         "expected": {
             "typ": "bohrung",
             "seite": "unten",
-            "parameter_hints": {"durchmesser": 5, "richtung": "y"},
+            "parameter_hints": {"durchmesser": 5, "abstand": 20,
+                                "richtung": "y"},
         },
         "source_run": None,
         "bug_pattern": "combo: bottom linear pattern coarse label",
@@ -882,7 +891,8 @@ TRACES.extend([
         "expected": {
             "typ": "bohrung",
             "seite": "links",
-            "parameter_hints": {"durchmesser": 4, "richtung": "z"},
+            "parameter_hints": {"durchmesser": 4, "anzahl": 3,
+                                "abstand": 10, "richtung": "z"},
         },
         "source_run": None,
         "bug_pattern": "combo: side-face lochbild coarse label",
@@ -1023,6 +1033,21 @@ TRACES.extend([
         "bug_pattern": "combo: y-axis slot direction hint",
     },
     {
+        "id": "klass_combo_nut_oben_axis_y_rotation",
+        "phrase": "oben eine nut 5mm breit 3mm tief entlang y 15 grad gedreht",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 5, "tiefe": 3,
+                                "richtung": "y", "rotation_deg": 15},
+        },
+        "source_run": None,
+        "bug_pattern": "combo: slot axis plus explicit rotation",
+    },
+    {
         "id": "klass_combo_ausnehmung_oben_as_tasche",
         "phrase": "oben eine ausnehmung 40x30 mit 8mm tiefe zentral",
         "teil_type": "box",
@@ -1035,6 +1060,20 @@ TRACES.extend([
         },
         "source_run": None,
         "bug_pattern": "combo: ausnehmung is coarse tasche in classifier",
+    },
+    {
+        "id": "klass_combo_tasche_oben_hoehe_as_depth_hint",
+        "phrase": "oben eine tasche 40x20 mit 8mm hoehe zentral",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 80, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 40, "breite": 20, "hoehe": 8},
+        },
+        "source_run": None,
+        "bug_pattern": "combo: pocket height wording maps downstream to depth",
     },
     {
         "id": "klass_combo_ausfraesung_links_as_tasche",

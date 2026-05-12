@@ -38,6 +38,8 @@ def test_aktions_klassifizierer_seed_is_trainable():
     valid_hints = {
         "durchmesser", "tiefe", "laenge", "breite", "hoehe", "radius",
         "kantenlaenge", "groesse", "rotation_deg", "richtung",
+        "bohr_durchmesser", "anzahl", "kreis_durchmesser", "abstand",
+        "abstand_kante",
         "abstand_oben", "abstand_unten", "abstand_rechts", "abstand_links",
         "abstand_vorne", "abstand_hinten",
         "kante_oben", "kante_unten", "kante_rechts", "kante_links",
@@ -87,6 +89,9 @@ def test_aktions_klassifizierer_seed_is_trainable():
     assert seen_types == valid_types
     assert seen_sides == valid_sides
     assert {"abstand_unten", "kante_unten", "versatz_unten"} <= hint_keys
+    assert {
+        "anzahl", "kreis_durchmesser", "abstand", "abstand_kante",
+    } <= hint_keys
     assert directions == {"x", "y", "z"}
     assert parent_cases >= 10
     assert pattern_cases >= 5
@@ -119,8 +124,8 @@ def test_aktions_klassifizierer_split_contracts_are_trainable():
 
     expected_counts = {
         "hole_classifier": 21,
-        "pocket_classifier": 21,
-        "slot_classifier": 13,
+        "pocket_classifier": 22,
+        "slot_classifier": 14,
         "pattern_classifier": 10,
         "edge_feature_classifier": 10,
     }
@@ -140,6 +145,29 @@ def test_aktions_klassifizierer_split_contracts_are_trainable():
 
         if agent == "pattern_classifier":
             assert len(seed_pairs) >= 10
+            pattern_keys = {
+                key
+                for pair in seed_pairs
+                for key in pair["output"].get("parameter_hints", {})
+            }
+            assert {
+                "durchmesser", "anzahl", "kreis_durchmesser",
+                "abstand", "abstand_kante", "richtung",
+            } <= pattern_keys
+        if agent == "slot_classifier":
+            slot_keys = {
+                key
+                for pair in seed_pairs
+                for key in pair["output"].get("parameter_hints", {})
+            }
+            assert {"richtung", "rotation_deg"} <= slot_keys
+        if agent == "pocket_classifier":
+            pocket_keys = {
+                key
+                for pair in seed_pairs
+                for key in pair["output"].get("parameter_hints", {})
+            }
+            assert {"hoehe", "rotation_deg", "kante_rechts"} <= pocket_keys
         if agent in {"hole_classifier", "pocket_classifier"}:
             assert trace_pairs
 

@@ -47,8 +47,13 @@ _NORMALIZER_FAMILY: dict[str, set[str]] = {
 # Classifier param-hint keys → normalizer param keys.
 # Most keys match (durchmesser, tiefe, laenge, breite, groesse, ...).
 # `rotation_deg` needs translation: build_feature reads `drehung`.
+# Pocket classifiers may receive user wording "Hoehe"; for subtractive
+# features this is the cut depth and build_feature reads `tiefe`.
 # `richtung` is handled as top-level normalized field, not as parameter.
-_HINT_KEY_RENAME: dict[str, str] = {"rotation_deg": "drehung"}
+_HINT_KEY_RENAME: dict[str, str] = {
+    "rotation_deg": "drehung",
+    "hoehe": "tiefe",
+}
 
 _SIDE_FACE_AXES: dict[str, tuple[str, str]] = {
     "oben": ("x", "y"),

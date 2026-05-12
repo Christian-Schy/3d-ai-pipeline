@@ -8,6 +8,18 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-12
+
+- **Klassifizierer-Subagent-Coverage nachgezogen.**
+  Pattern-Seeds trainieren jetzt nicht mehr nur grob `durchmesser`, sondern
+  auch explizite Pattern-Hints (`anzahl`, `kreis_durchmesser`, `abstand`,
+  `abstand_kante`, `richtung`). Slot-Seeds decken `rotation_deg`, und
+  Pocket-Hint `hoehe` wird im Normalizer deterministisch zu `tiefe`
+  gemappt. Aktuelle Stats: monolithischer Klassifizierer `85` Seed/Trace-
+  Gesamt, `hole_classifier` `27`, `pocket_classifier` `24`,
+  `slot_classifier` `14`, `pattern_classifier` `10`,
+  `edge_feature_classifier` `10`.
+
 ## 2026-05-11
 
 - **ADR 0006 Phase D gestartet: `hole_classifier` adoptiert.**
@@ -64,7 +76,8 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
   `edge_feature_classifier`. Die Adapter filtern aus derselben
   Klassifizierer-Seedquelle, damit keine Doppelpflege entsteht.
   `train_dspy.py --stats` weist die Sub-Spalten separat aus:
-  hole `27`, pocket `23`, slot `13`, pattern `10`, edge `10` Gesamtpairs.
+  initial hole `27`, pocket `23`, slot `13`, pattern `10`, edge `10`
+  Gesamtpairs.
   Drei Pattern-Seeds wurden ergaenzt, damit auch `pattern_classifier` die
   ADR-Mindestbasis von 10 Pairs erreicht. Runtime-Routing bleibt bewusst
   unveraendert und faellt weiter auf den Monolithen zurueck. Tests:

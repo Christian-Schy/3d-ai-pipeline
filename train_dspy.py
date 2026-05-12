@@ -433,7 +433,8 @@ class PocketClassifierSignature(dspy.Signature):
     parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
     klassifikation: str = dspy.OutputField(
         desc="JSON {typ:'tasche', seite, parameter_hints}; erlaubte Hints: "
-             "laenge, breite, tiefe, rotation_deg, abstand_*, kante_*, versatz_*."
+             "laenge, breite, tiefe, hoehe, rotation_deg, abstand_*, "
+             "kante_*, versatz_*."
     )
 
 
@@ -446,7 +447,8 @@ class SlotClassifierSignature(dspy.Signature):
     parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
     klassifikation: str = dspy.OutputField(
         desc="JSON {typ:'nut', seite, parameter_hints}; erlaubte Hints: "
-             "laenge, breite, tiefe, richtung=x|y|z, abstand_*, versatz_*."
+             "laenge, breite, tiefe, rotation_deg, richtung=x|y|z, "
+             "abstand_*, kante_*, versatz_*."
     )
 
 

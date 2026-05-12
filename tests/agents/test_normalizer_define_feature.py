@@ -530,6 +530,13 @@ def test_merge_param_hints_renames_rotation_deg():
     assert params == {"drehung": 15}
 
 
+def test_merge_param_hints_maps_pocket_hoehe_to_tiefe():
+    from src.agents.normalizer_agent import _merge_param_hints
+    params: dict = {}
+    _merge_param_hints(params, {"hoehe": 8})
+    assert params == {"tiefe": 8}
+
+
 def test_reconcile_typ_same_family_keeps_normalizer():
     from src.agents.normalizer_agent import _reconcile_typ
     assert _reconcile_typ("bohrung", "lochkreis") == "lochkreis"

@@ -27,6 +27,10 @@ Abstand-Regel:
   Edge-to-edge nur wenn die Phrase BEIDE Kanten nennt:
     "rechte Kante der Tasche von rechter Kante 20mm" -> kante_rechts.
 
+Hoehe/Tiefe:
+  Wenn der Text bei einer Tasche "Hoehe" sagt, darfst du hoehe verwenden.
+  Der deterministische Normalizer behandelt hoehe spaeter als Taschentiefe.
+
 Rotation:
   gegen Uhrzeigersinn / CCW -> positive rotation_deg.
   im Uhrzeigersinn / CW -> negative rotation_deg.
