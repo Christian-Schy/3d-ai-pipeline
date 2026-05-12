@@ -116,6 +116,32 @@ _PLACEMENT_CONTINUATION_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Parameter-Continuation: comma-Fragments ohne Feature-Wort die nur
+# Parameter ergaenzen (Tiefe, Laenge, Drehung, Achse, Versatz, Kantenabstand).
+# Werden an die letzte Aktion desselben teil_id angehaengt statt zu droppen.
+# Adressiert run f1744b99 (B3 v1): "10 tief" und "90mm aus mitte nach links"
+# wurden bisher beide weggeworfen, weil sie keinen Feature-Trigger haben.
+_PARAM_CONTINUATION_RE = re.compile(
+    r"^\s*(?:und\s+)?(?:"
+    # "10 tief", "10mm tief", "5 lang", "8mm hoch", "20mm breit"
+    r"\d+(?:[.,]\d+)?\s*(?:mm\s+)?(?:tief|tiefe|lang|l[aä]nge|hoch|h[oö]he|breit|breite|durchmesser|radius)\b"
+    # "von oberer kante 10mm entfernt" / "10mm von rechter kante"
+    r"|(?:\d+(?:[.,]\d+)?\s*(?:mm\s+)?)?von\s+"
+        r"(?:oberer|unterer|linker|rechter|vorderer|hinterer)\s+(?:kante|seite)"
+    r"|\d+(?:[.,]\d+)?\s*(?:mm\s+)?von\s+(?:oben|unten|links|rechts|vorne|hinten)\b"
+    # "aus mitte 10mm nach rechts" / "10mm aus mitte nach unten"
+    r"|(?:\d+(?:[.,]\d+)?\s*(?:mm\s+)?)?aus\s+mitte\b"
+    # "um 15 grad gedreht" / "15 grad gegen uhrzeigersinn"
+    r"|(?:um\s+)?\d+(?:[.,]\d+)?\s*grad\b"
+    r"|(?:im|gegen)\s+uhrzeigersinn"
+    # "entlang x-achse" / "entlang y"
+    r"|entlang\s+(?:der?\s+)?[xyz](?:-achse)?\b"
+    # "in x-achse" / "in der y-achse"
+    r"|in\s+(?:der?\s+)?[xyz]-achse\b"
+    r")",
+    re.IGNORECASE,
+)
+
 _CORNER_PREFIX_RE = re.compile(
     r"\b(?:obere|untere|rechte|linke)\s+"
     r"(?:rechte|linke|obere|untere)\s+ecke\b",
@@ -145,6 +171,19 @@ def _insert_missing_commas(spec: str) -> str:
 def _is_placement_continuation(segment: str) -> bool:
     """True for comma fragments that only refine the previous feature."""
     return bool(_PLACEMENT_CONTINUATION_RE.search(segment or ""))
+
+
+def _is_param_continuation(segment: str) -> bool:
+    """True for comma fragments without feature trigger that nur Parameter
+    (Tiefe, Laenge, Drehung, Achse, Versatz von Kante, aus Mitte) ergaenzen.
+
+    Diese Fragmente werden vom feature-keyword-Filter sonst weggeworfen.
+    Beispiel B3 v1: '...oberer kante, 90mm aus mitte nach links, 10 tief'
+    wurde nach 'oberer kante' abgeschnitten — Tiefe und Versatz verschwanden.
+    """
+    if not segment or _FEATURE_RE.search(segment):
+        return False
+    return bool(_PARAM_CONTINUATION_RE.search(segment))
 
 
 def _is_pre_feature_anchor_prefix(segment: str) -> bool:
@@ -205,6 +244,19 @@ def split_spec_into_aktionen(
                 and last_action_idx is not None
                 and _is_placement_continuation(current_segment)
             ):
+                aktionen[last_action_idx]["phrase"] = (
+                    f"{aktionen[last_action_idx]['phrase']}, {current_segment.strip()}"
+                )
+            elif (
+                last_segment_was_action
+                and last_action_idx is not None
+                and aktionen[last_action_idx]["teil_id"] == seg_teil
+                and _is_param_continuation(current_segment)
+            ):
+                # Parameter-only Fragment (Tiefe / Versatz / Drehung / Achse)
+                # ohne eigenen Feature-Trigger an die letzte Aktion desselben
+                # teil_id anhaengen, damit Klassifizierer + Normalizer den
+                # Kontext sehen. Siehe _is_param_continuation Docstring.
                 aktionen[last_action_idx]["phrase"] = (
                     f"{aktionen[last_action_idx]['phrase']}, {current_segment.strip()}"
                 )

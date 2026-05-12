@@ -10,6 +10,26 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-12
 
+- **Heatmap-Rekord 14/3.** Bericht:
+  `data/sessions/heatmap_20260512_182510.md`. Drei vorher hartnaeckige
+  Fail-Layer komplett eliminiert: `function_decomposer`,
+  `blueprint_resolver`, `executor`. Verbleibend: zwei `aktions_splitter`
+  (E_kombo Plate-Segmentierung, M_kombo 2x2-Grid) und ein
+  `feature_definierer` (EF slot_classifier nut-Laenge bei AxB-Notation).
+
+- **Splitter Post-Hoc Param-Continuation-Merge — deterministischer
+  Fix fuer dropped Comma-Tails.** Neuer Helper `_is_param_continuation`
+  in `src/tools/aktions_splitter.py`: Comma-Fragments ohne Feature-Trigger
+  die nur Parameter ergaenzen (`X tief`, `aus mitte X nach Y`,
+  `entlang X-achse`, `X grad gegen uhrzeigersinn`, `von <kante> X`,
+  `im uhrzeigersinn` etc.) werden an die letzte Aktion desselben
+  `teil_id` angehaengt statt zu droppen. Adressiert B3 v1 (run f1744b99)
+  wo "10 tief" und "90mm aus mitte nach links" weggeworfen wurden, weil
+  sie keine Feature-Trigger enthielten. 10 Unit-Tests in
+  `tests/tools/test_aktions_splitter_param_continuation.py` decken
+  Kanonisches, Cross-Teil-Schutz, Orphan-Drop, und Regressions-
+  Sicherheit fuer den bestehenden pre-feature anchor prefix.
+
 - **Klassifizierer-Split Phase D abgeschlossen — alle 5 Sub-Classifier
   adoptiert.** `pocket_classifier`, `slot_classifier`, `pattern_classifier`
   und `edge_feature_classifier` aktiviert (active=True in
