@@ -10,6 +10,34 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-13
 
+- **Schema-Cleanup: `start_offset` aus `hole_pattern_linear` entfernt.**
+  Phantom-Feld: war in Template-Signatur und Assembler-Aufruf, aber das
+  Template hat es nie geometrisch verwendet — die Reihe wird immer um
+  `placement.offset_x/y` zentriert (`first_pos = -total_span / 2`). Daraus
+  resultierte ein User-fremdes Vokabular ("Startversatz vom Ankerpunkt"),
+  das den Pattern-Classifier zu Halluzinationen verleitete. Entfernt aus
+  `templates.hole_pattern_linear`, `assembler._generate_subtract` und
+  M_kombo m05 (Spec + Resolver-Goldens). Vier Klassifizierer-Demos, die
+  das Feld referenzierten, aus den Traces entfernt; Pattern-Classifier
+  ohne sie neu trainiert (Dev 1.00).
+
+- **Splitter: Param-Tails verschmelzen mit Vorgaenger-Aktion.**
+  `_PARAM_CONTINUATION_RE` in `aktions_splitter` erkennt Fragmente wie
+  "5 tief", "von <kante>", "aus mitte", "X grad", "randabstand",
+  "auf teilkreis", "ankerpunkt" als Fortsetzung — sie haengen sich an
+  die vorige Aktion an, statt eigene (oft sinnlose) Aktionen zu werden.
+
+- **Default-Orientation fuer Seiten-Flaechen: `<a>x<b>_liegt_auf`.**
+  `position_builder._orientation_largest_face_default` setzt fuer
+  Seitenflaechen (vorne/hinten/rechts/links) den Liegt-auf-Hint mit
+  groesserer Kante zuerst, wenn das Teil 3 distinkte Dimensionen hat.
+  Fixt E_kombo e01 (Plattendreh-Default ohne expliziten User-Hint)
+  ohne `>Z`/`<Z`-Faelle zu beruehren.
+
+- **N_kombo Slot-Resolver-Erwartung an `pocket_edge_distances` angepasst.**
+  Konsistent mit Slot-Footprint-Konvention: `edge_distances` →
+  `pocket_edge_distances`, `offset_x` 20 → -5 fuer die V2-Slot-Seite.
+
 - **Inventar Step A: Pro-Teil-Chunking ([ADR 0007](docs/decisions/0007-inventar-step-a-pro-teil-chunking.md)).**
   Deterministischer `teil_splitter` schneidet Specs an Teil-Deklarationen
   (`<typ> mit ...`), `inventar_agent.extract_teile_chunked` ruft pro Chunk

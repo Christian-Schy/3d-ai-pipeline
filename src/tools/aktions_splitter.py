@@ -131,6 +131,14 @@ _PARAM_CONTINUATION_RE = re.compile(
     r"|\d+(?:[.,]\d+)?\s*(?:mm\s+)?von\s+(?:oben|unten|links|rechts|vorne|hinten)\b"
     # "aus mitte 10mm nach rechts" / "10mm aus mitte nach unten"
     r"|(?:\d+(?:[.,]\d+)?\s*(?:mm\s+)?)?aus\s+mitte\b"
+    # "randabstand 10mm zur kante" (Lochmuster-Inset) / "rand 10mm" / "abstand 15mm" / "startversatz 10mm"
+    r"|(?:rand)?abstand\s+\d"
+    r"|randabstand\b"
+    r"|startversatz\s+\d"
+    # "auf einem teilkreis von 60mm" (Lochkreis-Durchmesser)
+    r"|auf\s+(?:einem\s+)?teilkreis\b"
+    # "ankerpunkt obere rechte ecke ..." (Bohrungsreihe-Anker)
+    r"|ankerpunkt\b"
     # "um 15 grad gedreht" / "15 grad gegen uhrzeigersinn"
     r"|(?:um\s+)?\d+(?:[.,]\d+)?\s*grad\b"
     r"|(?:im|gegen)\s+uhrzeigersinn"
@@ -153,6 +161,16 @@ _SECTION_ANCHOR_PREFIX_RE = re.compile(
     re.IGNORECASE,
 )
 
+# "erste bohrung X vom ankerpunkt entfernt" / "erstes loch X mm vom ankerpunkt"
+# is a refinement of the previous lochreihe/bohrungsreihe — NOT a new feature
+# even though it carries the word 'bohrung'/'loch'. Without this guard the
+# splitter would emit it as a stand-alone action (Phrase [5] in M_kombo m05),
+# losing the start_offset hint that belongs to the row above.
+_FIRST_HOLE_CONTINUATION_RE = re.compile(
+    r"^\s*erste(?:s|n)?\s+(?:bohrung|loch)\b.*\b(?:ankerpunkt|anker)\b",
+    re.IGNORECASE,
+)
+
 
 def _insert_missing_commas(spec: str) -> str:
     """Insert a comma before '<side> soll' when the preceding word is a
@@ -171,6 +189,16 @@ def _insert_missing_commas(spec: str) -> str:
 def _is_placement_continuation(segment: str) -> bool:
     """True for comma fragments that only refine the previous feature."""
     return bool(_PLACEMENT_CONTINUATION_RE.search(segment or ""))
+
+
+def _is_first_hole_continuation(segment: str) -> bool:
+    """True for 'erste bohrung X vom ankerpunkt'-style refinements of a row.
+
+    The segment LOOKS like a new bohrung action (has 'bohrung' / 'loch'
+    keyword) but is actually a continuation of the preceding lochreihe /
+    bohrungsreihe: it pins where the FIRST hole sits relative to the row's
+    anchor (start_offset semantics)."""
+    return bool(_FIRST_HOLE_CONTINUATION_RE.search(segment or ""))
 
 
 def _is_param_continuation(segment: str) -> bool:
@@ -237,6 +265,23 @@ def split_spec_into_aktionen(
             pending_anchor_prefix = ""
 
         seg_teil = _assign_teil_id(current_segment, teil_ids, last_teil)
+
+        # "erste bohrung X vom ankerpunkt" carries the feature word 'bohrung'
+        # but is actually a continuation of a preceding row (start_offset
+        # semantic). Catch it BEFORE _strip_part_declaration so it doesn't
+        # spawn a phantom new action.
+        if (
+            last_segment_was_action
+            and last_action_idx is not None
+            and aktionen[last_action_idx]["teil_id"] == seg_teil
+            and _is_first_hole_continuation(current_segment)
+        ):
+            aktionen[last_action_idx]["phrase"] = (
+                f"{aktionen[last_action_idx]['phrase']}, {current_segment.strip()}"
+            )
+            last_teil = seg_teil
+            continue
+
         seg = _strip_part_declaration(current_segment)
         if not seg:
             if (

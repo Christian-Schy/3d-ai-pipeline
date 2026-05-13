@@ -299,7 +299,6 @@ def hole_pattern_linear(
     depth: float | None,
     count: int,
     spacing: float,
-    start_offset: float,
     direction: str,
     face: str,
     offset_x: float,
@@ -312,8 +311,8 @@ def hole_pattern_linear(
 ) -> str:
     """Linear pattern of holes (row with equal spacing).
 
-    Generates individual positioned holes using .center() offsets.
-    start_offset = distance of first hole from the face edge.
+    Generates individual positioned holes using .center() offsets, centered
+    around (offset_x, offset_y) — the row's geometric center on the face.
     direction = "x" or "y" — which face axis the row runs along.
     """
     face_sel = _face_selection(face, use_ntp, ntp_point)

@@ -130,7 +130,41 @@ def build_orientation(normalized: dict, teil_params: dict) -> str:
     elif orientierung in ("liegend", "flach", "horizontal"):
         return "liegend"
 
+    # Default for flat placement on a SIDE face (vorne/hinten/rechts/links)
+    # without explicit orientation: the LARGEST face of the part rests on
+    # the parent. On top/bottom (oben/unten) "standard" already aligns the
+    # part naturally — no swap needed — so the default only kicks in for
+    # side faces where the contact-face direction is ambiguous otherwise.
+    # Adresses E_kombo e01 ("vorne soll eine platte 80x40x20 zentral hin" —
+    # default-expected `80x40_liegt_auf`). Does NOT change EF, NEST or
+    # other top/bottom plates that expected `standard`.
+    seite = (normalized.get("seite") or "").lower().strip()
+    if seite in {"vorne", "hinten", "rechts", "links"}:
+        default = _orientation_largest_face_default(teil_params)
+        if default:
+            return default
+
     return "standard"
+
+
+def _orientation_largest_face_default(params: dict) -> str | None:
+    """Return '<a>x<b>_liegt_auf' for the largest face when the part has
+    three distinct positive dimensions; otherwise None (keep 'standard')."""
+    x = float(params.get("x") or 0)
+    y = float(params.get("y") or 0)
+    z = float(params.get("z") or 0)
+    if not (x > 0 and y > 0 and z > 0):
+        return None
+    dims = sorted({x, y, z})
+    if len(dims) < 3:
+        return None  # cube or two equal dims — no unique 'largest face'
+    # Largest face = product of the two largest dims. Larger-first
+    # convention (matches expected_resolved.json across goldens: "80x40_liegt_auf").
+    a, b = sorted([dims[1], dims[2]], reverse=True)
+
+    def _fmt(v: float) -> str:
+        return str(int(v)) if abs(v - int(v)) < 1e-6 else str(v)
+    return f"{_fmt(a)}x{_fmt(b)}_liegt_auf"
 
 
 def _orientation_from_contact_face(face_desc: str, params: dict) -> str | None:

@@ -1409,24 +1409,6 @@ TRACES.extend([
         "source_run": None,
         "bug_pattern": "lochkreis 'auf einem teilkreis von X' alternative zur Standard-'lochkreis Xmm'-Form",
     },
-    {
-        "id": "klass_curated_pattern_lochreihe_mit_ankerpunkt_startversatz",
-        "phrase": "oben eine lochreihe entlang x mit 5 bohrungen 8mm durchmesser 5 tief, abstand 15mm, startversatz 10mm, ankerpunkt obere rechte ecke 10mm nach unten versetzt",
-        "teil_type": "box",
-        "teil_params": {"x": 100, "y": 100, "z": 20},
-        "parent_phrase": "(keine)",
-        "expected": {
-            "typ": "bohrung",
-            "seite": "oben",
-            "parameter_hints": {"durchmesser": 8, "tiefe": 5,
-                                "anzahl": 5, "abstand": 15,
-                                "richtung": "x", "start_offset": 10,
-                                "versatz_unten": 10},
-        },
-        "source_run": "8a52e655",
-        "bug_pattern": "lochreihe mit ankerpunkt+startversatz: heute fallen start_offset/direction durch (None)",
-    },
-
     # ── Slot: Rotations-Vorzeichen-Konvention CCW=positiv, CW=negativ ────
     {
         "id": "klass_curated_nut_rotation_gegen_uhrzeigersinn_positive",

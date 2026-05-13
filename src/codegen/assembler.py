@@ -347,7 +347,6 @@ def _generate_subtract(
         depth = _safe_depth(params.get("depth"))
         count = int(params.get("count") or 4)
         spacing = float(params.get("spacing") or 20)
-        start_offset = float(params.get("start_offset") or 20)
 
         # Determine direction from notes first, then params, then default
         notes = placement.get("notes", "")
@@ -382,7 +381,7 @@ def _generate_subtract(
         py = float(pp.get("y") or 100)
         pz = float(pp.get("z") or 10)
         return T.hole_pattern_linear(
-            func_name, hd, depth, count, spacing, start_offset, direction,
+            func_name, hd, depth, count, spacing, direction,
             face, ox, oy, px, py, pz, use_ntp, ntp_point
         )
 

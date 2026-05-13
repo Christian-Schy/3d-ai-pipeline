@@ -5,22 +5,6 @@
     "demos": [
       {
         "augmented": true,
-        "phrase": "unten bohrungen in einer reihe entlang y mit 20mm abstand 5mm durchmesser",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 20}",
-        "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"unten\", \"parameter_hints\": {\"abstand\": 20, \"durchmesser\": 5, \"richtung\": \"y\"}}"
-      },
-      {
-        "augmented": true,
-        "phrase": "oben ein lochkreis mit 6 bohrungen 8mm durchmesser 5 tief auf einem teilkreis von 60mm",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
-        "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"lochkreis\", \"seite\": \"oben\", \"parameter_hints\": {\"anzahl\": 6, \"durchmesser\": 8, \"tiefe\": 5, \"kreis_durchmesser\": 60}}"
-      },
-      {
-        "augmented": true,
         "phrase": "oben lochmuster mit 4 bohrungen je 6mm durchmesser 8 tief",
         "teil_type": "box",
         "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 20}",
@@ -29,25 +13,55 @@
       },
       {
         "augmented": true,
+        "phrase": "links lochbild 3 bohrungen entlang z mit 10mm abstand 4mm durchmesser",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 60}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"links\", \"parameter_hints\": {\"durchmesser\": 4, \"anzahl\": 3, \"abstand\": 10, \"richtung\": \"z\"}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "rechts 4 loecher der reihe nach entlang z mit 15mm abstand 6mm durchmesser",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 120}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 6, \"anzahl\": 4, \"abstand\": 15, \"richtung\": \"z\"}}"
+      },
+      {
+        "augmented": true,
         "phrase": "oben 5 bohrungen entlang der y-achse mit 12mm abstand 4mm durchmesser",
         "teil_type": "box",
         "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"anzahl\": 5, \"abstand\": 12, \"durchmesser\": 4, \"richtung\": \"y\"}}"
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"anzahl\": 5, \"richtung\": \"y\", \"abstand\": 12, \"durchmesser\": 4}}"
       },
       {
-        "phrase": "oben 5 bohrungen in einer reihe entlang x mit 10mm abstand 5mm durchmesser 10 tief",
+        "phrase": "vorne eine bohrungsreihe entlang z mit 4 bohrungen 5mm durchmesser 4 tief abstand 12mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 90, \"z\": 50}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 4, \"anzahl\": 4, \"abstand\": 12, \"richtung\": \"z\"}}"
+      },
+      {
+        "phrase": "oben lochkreis mit 6 bohrungen 5mm durchmesser 4 tief auf teilkreis 50mm 10mm nach links und 5mm nach unten versetzt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 90, \"z\": 50}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 4, \"anzahl\": 6, \"kreis_durchmesser\": 50, \"versatz_links\": 10, \"versatz_unten\": 5}}"
+      },
+      {
+        "phrase": "oben ein lochkreis mit 6 bohrungen 8mm durchmesser 5 tief auf einem teilkreis von 60mm",
         "teil_type": "box",
         "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 10, \"anzahl\": 5, \"abstand\": 10, \"richtung\": \"x\"}}"
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5, \"anzahl\": 6, \"kreis_durchmesser\": 60}}"
       },
       {
-        "phrase": "oben eine lochreihe entlang x mit 5 bohrungen 8mm durchmesser 5 tief, abstand 15mm, startversatz 10mm, ankerpunkt obere rechte ecke 10mm nach unten versetzt",
+        "phrase": "rechts ein lochkreis 70mm mit 8 bohrungen je 12mm durchmesser",
         "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "teil_params": "{\"x\": 120, \"y\": 120, \"z\": 40}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5, \"anzahl\": 5, \"abstand\": 15, \"richtung\": \"x\", \"start_offset\": 10, \"versatz_unten\": 10}}"
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 12, \"anzahl\": 8, \"kreis_durchmesser\": 70}}"
       },
       {
         "phrase": "oben 4 eckbohrungen jeweils 15mm von den kanten entfernt 8mm durchmesser durchgaengig",
@@ -57,11 +71,25 @@
         "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"anzahl\": 4, \"abstand_kante\": 15}}"
       },
       {
-        "phrase": "links lochbild 3 bohrungen entlang z mit 10mm abstand 4mm durchmesser",
+        "phrase": "unten bohrungen in einer reihe entlang y mit 20mm abstand 5mm durchmesser",
         "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 60}",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 20}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"links\", \"parameter_hints\": {\"durchmesser\": 4, \"anzahl\": 3, \"abstand\": 10, \"richtung\": \"z\"}}"
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"unten\", \"parameter_hints\": {\"durchmesser\": 5, \"abstand\": 20, \"richtung\": \"y\"}}"
+      },
+      {
+        "phrase": "oben ein 2x2 lochmuster mit 8mm bohrungen 5 tief, randabstand 10mm zur kante",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5, \"anzahl\": 4, \"abstand_kante\": 10}}"
+      },
+      {
+        "phrase": "rechts ein 2x2 lochmuster mit 6mm bohrungen 4 tief randabstand 8mm zur kante",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 90, \"z\": 50}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 4, \"anzahl\": 4, \"abstand_kante\": 8}}"
       }
     ],
     "signature": {

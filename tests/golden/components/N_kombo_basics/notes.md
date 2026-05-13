@@ -25,7 +25,9 @@ User-Spec (Phase N.1 — Combo aus 9 Variationen):
 
 - params: {length, width, depth} — length = entlang Slot-Achse,
   width = senkrecht dazu, depth = in die Face hinein.
-- Slot ist hole-like → child_half=0 in Resolver-Mathe.
+- `edge_distances` bei Slots ist edge-to-center wie bei Bohrungen.
+- `pocket_edge_distances` bei Slots ist explizit edge-to-edge:
+  Nut-Kante zu Parent-Kante, mit Slot-Footprint aus length/width.
 - placement.angle_deg encoded:
   - 0 = Slot entlang horizontaler Face-Achse (face WX)
   - 90 = Slot entlang vertikaler Face-Achse (face WY)
@@ -39,7 +41,8 @@ User-Spec (Phase N.1 — Combo aus 9 Variationen):
 
 100mm Wuerfel → face >Z: parent_w=parent_h=100, half=50,50.
 Face >X: parent_w=100 (y), parent_h=100 (z), half=50,50.
-Slot ist hole-like → child_half=0.
+Slot mit `edge_distances` ist hole-like → child_half=0.
+Slot mit `pocket_edge_distances` ist edge-to-edge → child_half aus Slot-Footprint.
 
 ### Variationen
 
@@ -49,7 +52,7 @@ Slot ist hole-like → child_half=0.
 | nut_versatz_rechts_y_l40 | Versatz + Achse | center_offset{right:10}, entlang y | +10, 0 | 10 | 0 | 90 | l40 w5 d5 |
 | nut_versatz_rechts_x_durchg | Versatz auf Achsen-Achse, durchgaengig | center_offset{right:10}, length=100 | +10, 0 | 10 | 0 | 0 | l100 w5 d5 |
 | nut_kanten_top30_left20_y_l40 | edge_distances zwei Achsen | edge{top:30, left:20}, entlang y | +(50-20), -? | -30 | +20 | 90 | l40 w5 d5 |
-| nut_mix_axes_x_l50 | Mischung B3 | edge{right:30} + center{bottom:10}, entlang x | +(50-30), -10 | +20 | -10 | 0 | l50 w5 d5 |
+| nut_mix_axes_x_l50 | Mischung B3 | pocket_edge{right:30} + center{bottom:10}, entlang x | +(50-30-25), -10 | -5 | -10 | 0 | l50 w5 d5 |
 | nut_rechts_face_y_l40 | Andere Face | side=rechts, alignment centered | 0, 0 (auf >X) | 0 | 0 | 0 | l40 w5 d5 |
 | nut_anchor_right_edge_y_l40 | Anchor Kante + Offset | anchor{right_edge, offset{top:10}}, entlang y | (+50, 0) + (0, +10) | 50 | 10 | 90 | l40 w5 d5 |
 | nut_anchor_top_right_corner_y_l30 | Anchor Ecke + Offset | anchor{top_right, offset{down:10, left:20}}, entlang y | (+50, +50) + (-20, -10) | 30 | 40 | 90 | l30 w5 d5 |
@@ -61,10 +64,11 @@ Slot ist hole-like → child_half=0.
 - top:30 → wy +1, oy = +(50-30) = +20
 - left:20 → wx -1, ox = -(50-20) = -30
 
-**nut_mix_axes_x_l50** (Mischung Achsen, edge auf X + center auf Y):
-- right:30 → wx +1, ox_edge_set, ox_from_edges = +(50-30) = +20
+**nut_mix_axes_x_l50** (Mischung Achsen, edge-to-edge auf X + center auf Y):
+- right:30 → wx +1, Slot entlang X hat child_half=length/2=25
+- ox_from_pocket_edges = +(50-30-25) = -5
 - bottom:10 → wy -1, oy_center_set, oy_from_center = -10
-- ox = ox_from_edges = +20 (edge promoviert)
+- ox = ox_from_pocket_edges = -5 (pocket_edge promoviert)
 - oy = oy_from_center = -10 (center promoviert da kein edge)
 
 **nut_anchor_right_edge_y_l40:**
@@ -86,7 +90,7 @@ Slot ist hole-like → child_half=0.
 
 - center_offset (Versatz): nut_versatz_rechts_y_l40, nut_versatz_rechts_x_durchg
 - edge_distances zwei Achsen: nut_kanten_top30_left20_y_l40
-- Mischung Achsen B3: nut_mix_axes_x_l50
+- Mischung Achsen B3: nut_mix_axes_x_l50 (`pocket_edge_distances` + `center_offset`)
 - anchor parent_point=edge: nut_anchor_right_edge_y_l40
 - anchor parent_point=corner: nut_anchor_top_right_corner_y_l30
 - echte Rotation: nut_rotated_x_l50

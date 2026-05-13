@@ -60,7 +60,7 @@
       "placement": {
         "face": ">Z",
         "alignment": "centered",
-        "offset_x": 20.0,
+        "offset_x": -5.0,
         "offset_y": -10.0,
         "angle_deg": 0.0
       }

@@ -2,13 +2,22 @@
   "features": {
     "wuerfel": {
       "type": "box",
-      "params": {"x": 100, "y": 100, "z": 100},
+      "params": {
+        "x": 100,
+        "y": 100,
+        "z": 100
+      },
       "parent": null
     },
     "m01_grid_4_corners_centered": {
       "type": "hole_pattern_grid",
       "parent": "wuerfel",
-      "params": {"hole_diameter": 8, "depth": 5, "count": 4, "inset": 10},
+      "params": {
+        "hole_diameter": 8,
+        "depth": 5,
+        "count": 4,
+        "inset": 10
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -20,7 +29,12 @@
     "m02_grid_4_with_edge_distances_dropped": {
       "type": "hole_pattern_grid",
       "parent": "wuerfel",
-      "params": {"hole_diameter": 8, "depth": 5, "count": 4, "inset": 10},
+      "params": {
+        "hole_diameter": 8,
+        "depth": 5,
+        "count": 4,
+        "inset": 10
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -32,7 +46,12 @@
     "m03_circular_centered": {
       "type": "hole_pattern_circular",
       "parent": "wuerfel",
-      "params": {"hole_diameter": 8, "depth": 5, "count": 6, "bolt_circle_diameter": 60},
+      "params": {
+        "hole_diameter": 8,
+        "depth": 5,
+        "count": 6,
+        "bolt_circle_diameter": 60
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -44,7 +63,12 @@
     "m04_circular_with_offset": {
       "type": "hole_pattern_circular",
       "parent": "wuerfel",
-      "params": {"hole_diameter": 6, "depth": 4, "count": 4, "bolt_circle_diameter": 40},
+      "params": {
+        "hole_diameter": 6,
+        "depth": 4,
+        "count": 4,
+        "bolt_circle_diameter": 40
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -56,7 +80,13 @@
     "m05_linear_with_anchor": {
       "type": "hole_pattern_linear",
       "parent": "wuerfel",
-      "params": {"hole_diameter": 8, "depth": 5, "count": 5, "spacing": 15, "start_offset": 10, "direction": "x"},
+      "params": {
+        "hole_diameter": 8,
+        "depth": 5,
+        "count": 5,
+        "spacing": 15,
+        "direction": "x"
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -68,7 +98,12 @@
     "m06_grid_on_rechts_face": {
       "type": "hole_pattern_grid",
       "parent": "wuerfel",
-      "params": {"hole_diameter": 8, "depth": 5, "count": 4, "inset": 10},
+      "params": {
+        "hole_diameter": 8,
+        "depth": 5,
+        "count": 4,
+        "inset": 10
+      },
       "placement": {
         "face": ">X",
         "alignment": "centered",

@@ -455,7 +455,7 @@ TRACES = [
             "seite: oben\n"
             "position: zentriert\n"
             "richtung: y\n"
-            "parameter: breite=5, tiefe=3, laenge=30, rotation_deg=15"
+            "parameter: breite=5, tiefe=3, laenge=30, drehung=15"
         ),
     },
     {
@@ -495,7 +495,7 @@ TRACES = [
             "seite: oben\n"
             "position: zentriert\n"
             "richtung: x\n"
-            "parameter: breite=5, tiefe=3, laenge=30, rotation_deg=-20"
+            "parameter: breite=5, tiefe=3, laenge=30, drehung=-20"
         ),
     },
     {
@@ -616,7 +616,7 @@ TRACES = [
             "position: von_kanten\n"
             "richtung: x\n"
             "parameter: anzahl=5, durchmesser=8, tiefe=5, abstand=15, "
-            "start_offset=10, versatz_unten=10"
+            "versatz_unten=10"
         ),
     },
     {
@@ -686,7 +686,8 @@ TRACES = [
             "typ: fase\n"
             "seite: hinten\n"
             "position: zentriert\n"
-            "parameter: kantenlaenge=4"
+            # "kantenlaenge" der Fase = die Schenkellaenge = groesse
+            "parameter: groesse=4"
         ),
     },
 
@@ -795,26 +796,10 @@ TRACES = [
             "parameter: laenge=40, breite=30, tiefe=6"
         ),
     },
-    {
-        "id": "norm_pocket_corner_anchor_diagonal",
-        "input": {
-            "beschreibung": (
-                "tasche 30x20x10 obere rechte ecke der tasche auf obere "
-                "rechte ecke des wuerfels"
-            ),
-            "seite": "oben",
-            "teil_type": "box",
-            "teil_params": {"x": 100, "y": 100, "z": 50},
-            "specification": "100mm wuerfel, oben eine tasche 30x20x10 obere rechte ecke der tasche auf obere rechte ecke des wuerfels",
-        },
-        "expected": (
-            "typ: tasche\n"
-            "seite: oben\n"
-            "position: anker\n"
-            "parameter: laenge=30, breite=20, tiefe=10, "
-            "anker=top_right_auf_top_right"
-        ),
-    },
+    # (Anker-Faelle gehoeren NICHT in den Normalizer-`parameter`-Bereich —
+    # `_apply_phrase_anchor` liest den Anker aus der beschreibung. Daher
+    # hier kein anker-Demo; der Normalizer liefert nur typ/seite/position/
+    # parameter mit dem Standard-Vokabular.)
 
     # ── Aushoelung: zusaetzliche Wording-Variante ────────────────────────
     {
