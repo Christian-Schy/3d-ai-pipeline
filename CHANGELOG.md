@@ -10,6 +10,17 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-13
 
+- **Inventar Step A: Pro-Teil-Chunking ([ADR 0007](docs/decisions/0007-inventar-step-a-pro-teil-chunking.md)).**
+  Deterministischer `teil_splitter` schneidet Specs an Teil-Deklarationen
+  (`<typ> mit ...`), `inventar_agent.extract_teile_chunked` ruft pro Chunk
+  einen 1-Teil-Micro-Call. Aktiviert erst ab >4 Deklarationen (komplexe
+  Multi-Part-Specs). VALID_PARAM_KEYS-Whitelist filtert halluzinierte
+  Keys, `decl.split(",", 1)[0]` strippt Platzierungs-Noise vor dem Call.
+  Post-Filter `_relabel_features_on_self` in `planning_inventory_nodes`
+  verschiebt "auf der/dem <teil_id> ..."-Saetze von Placement zu
+  Feature-Saetzen, damit Bohrungen/Taschen auf Sub-Teilen nicht als
+  Platzierung des Sub-Teils gelesen werden.
+
 - **V2-Nut-Kantenabstand aus Run `adbf823d` korrigiert.** Der Slot-Resolver
   verwendet bei `slot`-Features nun `width` + `length` als face-lokalen
   Footprint fuer Kantenplatzierung. `5x3` bleibt dabei Breite/Tiefe;

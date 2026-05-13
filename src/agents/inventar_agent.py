@@ -173,6 +173,115 @@ class InventarAgent(BaseAgent):
         result = self.call_json(prompt, system=system)
         return self._validate(result)
 
+    # Whitelist of dimension param keys (ADR 0007): the chunked Step A
+    # filters anything else so hallucinated keys like
+    # 'do_not_use_this_id_if_not_needed' can never reach downstream.
+    _VALID_PARAM_KEYS = frozenset({
+        "x", "y", "z", "r", "h", "d",
+        "radius", "hoehe", "höhe", "height",
+        "durchmesser", "diameter",
+        "laenge", "länge", "length", "breite", "width", "tiefe", "depth",
+        "wandstaerke", "wandstärke", "thickness",
+    })
+
+    def extract_teile_chunked(self, specification: str) -> dict:
+        """Step A via per-declaration micro-calls (ADR 0007).
+
+        For long multi-part specs the one-shot `extract_teile_only` loses
+        parts and hallucinates param keys (E_kombo: 11/13 plates + a bogus
+        key). This splits the spec into one phrase per part declaration via
+        the deterministic `teil_splitter`, runs a focused Step-A micro-call
+        per phrase, and merges deterministically (param-key whitelist,
+        ID renumbering for uniqueness).
+
+        Falls back to `extract_teile_only` when the splitter finds <= 1
+        declaration or all micro-calls fail.
+        """
+        from src.tools.teil_splitter import split_spec_into_teil_declarations
+
+        # Chunk only when there are genuinely many part declarations — a
+        # 2-3 part spec is fine one-shot. The E_kombo bug (13 plates) is the
+        # target; EF (1 cube + 1 plate + 11 features) must NOT chunk.
+        _CHUNK_THRESHOLD = 4
+        decls = split_spec_into_teil_declarations(specification)
+        if len(decls) <= _CHUNK_THRESHOLD:
+            return self.extract_teile_only(specification)
+
+        raw_parts: list[str] = []
+        collected: list[dict] = []
+        for i, decl in enumerate(decls):
+            # Use only the head (part before the first comma) for the micro-
+            # call. The tail carries orientation/anchor/placement noise that
+            # references OTHER parts ("...ecke des wuerfels") — feeding the
+            # full declaration makes the LLM extract phantom referenced parts
+            # (E_kombo crash: 5 phantom 'wuerfel' -> parent-graph cycle).
+            decl_head = decl.split(",", 1)[0].strip() or decl.strip()
+            prompt = TEILE_LISTE_TEMPLATE.format(specification=decl_head)
+            try:
+                raw = self.call_json(prompt, system=TEILE_LISTE_SYSTEM)
+            except Exception as e:  # noqa: BLE001
+                self.log.warning("inventar_chunk_call_failed",
+                                 idx=i, decl=decl_head[:60], error=str(e)[:120])
+                continue
+            raw_parts.append(f"=CHUNK_{i}=\n" + getattr(self, "_last_raw_response", ""))
+            teile_raw = raw if isinstance(raw, list) else (raw or {}).get("teile", [])
+            # At most ONE part per declaration head — the first valid body.
+            for t in teile_raw:
+                if not isinstance(t, dict):
+                    continue
+                rp_in = t.get("raw_params") or {}
+                rp = {k: v for k, v in rp_in.items()
+                      if k in self._VALID_PARAM_KEYS and isinstance(v, (int, float))}
+                if not rp:
+                    self.log.warning("inventar_chunk_no_valid_params",
+                                     idx=i, teil=t)
+                    continue
+                collected.append({
+                    "_llm_id": str(t.get("id", "") or "").strip(),
+                    "type": t.get("type", "box") or "box",
+                    "raw_params": rp,
+                    "beschreibung": t.get("beschreibung", "") or "",
+                })
+                break  # one part per chunk
+
+        self._last_raw_response = "=STEP_A_CHUNKED=\n" + "\n".join(raw_parts)
+
+        if not collected:
+            self.log.warning("inventar_chunked_all_failed",
+                             decl_count=len(decls), spec_len=len(specification))
+            return self.extract_teile_only(specification)
+
+        # Deterministic ID renumbering: stem = LLM-id minus trailing _<n>,
+        # fall back to type. Singletons keep the stem; >1 of a stem get
+        # numbered (<stem>_1, <stem>_2, ...).
+        def _stem(c: dict) -> str:
+            base = re.sub(r"_\d+$", "", c["_llm_id"]) if c["_llm_id"] else ""
+            return base or c["type"] or "teil"
+
+        stem_total: dict[str, int] = {}
+        for c in collected:
+            s = _stem(c)
+            stem_total[s] = stem_total.get(s, 0) + 1
+
+        teile: list[dict] = []
+        stem_seen: dict[str, int] = {}
+        for c in collected:
+            s = _stem(c)
+            if stem_total[s] == 1:
+                new_id = s
+            else:
+                stem_seen[s] = stem_seen.get(s, 0) + 1
+                new_id = f"{s}_{stem_seen[s]}"
+            teil = {"id": new_id, "type": c["type"], "raw_params": c["raw_params"]}
+            if c["beschreibung"]:
+                teil["beschreibung"] = c["beschreibung"]
+            teile.append(teil)
+
+        self.log.info("inventar_teile_chunked_done",
+                      decl_count=len(decls), teil_count=len(teile))
+        result = {"teil_count": len(teile), "teile": teile, "aktionen": []}
+        return self._validate(result)
+
     def extract_teile_only(self, specification: str) -> dict:
         """Step A only: parts list, no actions.
 

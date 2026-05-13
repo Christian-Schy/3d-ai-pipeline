@@ -45,6 +45,10 @@ def inventar_node(state: PipelineState) -> dict:
                 retry_feedback=retry_feedback,
                 previous_inventar=previous_inventar,
             )
+        elif agent._is_complex(spec):
+            # ADR 0007: long multi-part specs -> per-declaration micro-calls
+            # so Step A never tracks 13 plates in one prompt (E_kombo bug).
+            inventar = agent.extract_teile_chunked(spec)
         else:
             inventar = agent.extract_teile_only(spec)
     except Exception as e:
