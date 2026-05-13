@@ -193,6 +193,60 @@ class TestCallbacks:
         chat_display, question_row, submit_btn, new_model_btn, desc_input = on_unified_submit("", None)
         assert submit_btn["interactive"] is True
 
+    def test_on_select_golden_loads_spec_into_prompt(self, monkeypatch):
+        from types import SimpleNamespace
+        from app import on_select_golden
+
+        monkeypatch.setattr(
+            "app.load_golden_case",
+            lambda choice, **kwargs: (
+                SimpleNamespace(spec="Ein Golden Spec") if choice == "cube" else None
+            ),
+        )
+
+        desc_input, run_btn = on_select_golden("cube")
+
+        assert desc_input["value"] == "Ein Golden Spec"
+        assert run_btn["interactive"] is True
+
+    def test_on_run_golden_starts_fresh_pipeline_run(self, monkeypatch):
+        from types import SimpleNamespace
+        from app import on_run_golden, _session
+
+        _session.is_running = False
+        _session.pending_question = None
+        _session.runner = MagicMock()
+        _session.history = []
+        _session.chat_messages = []
+        _session._seen_chat_keys = set()
+        _session.last_run_id = "old-run"
+        _session.last_result = {
+            "stl_path": "/tmp/old.stl",
+            "description": "Altes Modell",
+            "blueprint": {},
+            "code": "",
+        }
+        monkeypatch.setattr("app.save_history", lambda history: None)
+        monkeypatch.setattr(
+            "app.load_golden_case",
+            lambda choice, **kwargs: SimpleNamespace(
+                slug="cube",
+                key="cube",
+                spec="Ein Golden Spec",
+            ),
+        )
+
+        with patch("threading.Thread") as mock_thread:
+            mock_thread.return_value.start = MagicMock()
+            chat_display, question_row, submit_btn, new_model_btn, desc_input = on_run_golden("cube")
+
+        mock_thread.assert_called_once()
+        assert _session.task_id == "golden:cube"
+        assert _session.last_result is None
+        assert _session.last_run_id == ""
+        assert len(_session.history) == 1
+        assert submit_btn["interactive"] is False
+
     def test_on_restore_history_invalid_choice_returns_no_ops(self):
         from app import on_restore_history, _session
         _session.history = []

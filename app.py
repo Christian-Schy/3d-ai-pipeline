@@ -8,7 +8,7 @@ Architecture rule: this file contains ONLY UI logic.
   ✗ No file I/O except showing results
 
 Tabs:
-  Generate — progress bar, chat dialog, input field, feedback buttons
+  Generate — progress bar, golden selector, chat dialog, input field, feedback buttons
   Result   — 3D preview + STL download
   Dev      — live logs, blueprint JSON, generated code, timing
 
@@ -34,6 +34,12 @@ from src.tools.session_store import save_history, load_history
 from src.ui.stl_viewer_html import stl_to_iframe_html
 from src.ui.system_gauges import build_gauges_html
 from src.ui.progress_bar import build_progress_html, LOG_TO_STAGE
+from src.ui.golden_cases import (
+    SOURCE_COMPONENTS,
+    SOURCE_PIPELINE,
+    golden_choices,
+    load_golden_case,
+)
 
 _session_logger = SessionLogger()
 
@@ -626,6 +632,15 @@ _PLACEHOLDER_GENERATE = "A 30mm cube with a centered M3 hole on top…\n(Enter =
 _PLACEHOLDER_MODIFY   = "Make the hole 2mm bigger / Add a chamfer…\n(Enter = Modify  ·  Shift+Enter = new line)"
 _PLACEHOLDER_ANSWER   = "Type your answer here… (Enter to confirm)"
 
+_GOLDEN_SOURCE_LABELS = {
+    "Pipeline": SOURCE_PIPELINE,
+    "Components": SOURCE_COMPONENTS,
+}
+
+
+def _golden_source_from_label(label: str | None) -> str:
+    return _GOLDEN_SOURCE_LABELS.get(label or "", SOURCE_PIPELINE)
+
 
 def on_unified_submit(text: str, image_path=None, task_id: str = ""):
     """Single handler for Generate, Modify, and Answer."""
@@ -733,6 +748,62 @@ def on_unified_submit(text: str, image_path=None, task_id: str = ""):
     )
 
 
+def on_select_golden(choice: str, source_label: str = "Pipeline"):
+    """Load a golden spec into the prompt box for inspection or editing."""
+    case = load_golden_case(choice, source=_golden_source_from_label(source_label))
+    if case is None:
+        return gr.update(), gr.update(interactive=False)
+    return gr.update(value=case.spec), gr.update(interactive=True)
+
+
+def on_refresh_golden_choices(source_label: str = "Pipeline"):
+    """Refresh available golden runs from disk."""
+    source = _golden_source_from_label(source_label)
+    return (
+        gr.update(choices=golden_choices(source=source), value=None),
+        gr.update(interactive=False),
+    )
+
+
+def on_run_golden(choice: str, source_label: str = "Pipeline"):
+    """Start the selected golden case as a fresh normal pipeline run."""
+    if _session.is_running or _session.pending_question:
+        _session.chat_messages.append({
+            "role": "system",
+            "content": "Bitte erst den laufenden Run abschliessen.",
+            "success": False,
+        })
+        return (
+            gr.update(value=build_chat_html(_session.chat_messages)),
+            gr.update(visible=False),
+            gr.update(interactive=not _session.is_running),
+            gr.update(visible=bool(_session.last_result)),
+            gr.update(),
+        )
+
+    source = _golden_source_from_label(source_label)
+    case = load_golden_case(choice, source=source)
+    if case is None:
+        _session.chat_messages.append({
+            "role": "system",
+            "content": "Golden Run nicht gefunden.",
+            "success": False,
+        })
+        return (
+            gr.update(value=build_chat_html(_session.chat_messages)),
+            gr.update(visible=False),
+            gr.update(interactive=True),
+            gr.update(visible=bool(_session.last_result)),
+            gr.update(),
+        )
+
+    _session.push_to_history()
+    _session.last_result = None
+    _session.last_run_id = ""
+    task_key = case.key.replace(" #", "_v")
+    return on_unified_submit(case.spec, None, f"golden:{task_key}")
+
+
 def on_new_model():
     """Reset session so next submit starts a fresh model."""
     _session.last_result = None
@@ -784,6 +855,7 @@ def stream_logs():
                     gr.update(value=build_chat_html(_session.chat_messages)),  # chat
                     _nc, _nc, _nc, _nc,          # result_viewer, result_stats, blueprint, code
                     gr.update(interactive=True, value="↩ Answer"),
+                    gr.update(interactive=False),  # golden_run_btn
                     gr.update(visible=False),    # new_model_btn
                     _nc,                         # history_dropdown
                     gr.update(placeholder=_PLACEHOLDER_ANSWER),
@@ -818,6 +890,7 @@ def stream_logs():
             gr.update(value=build_chat_html(_session.chat_messages)),  # chat
             _nc, _nc, _nc, _nc,              # result_viewer, result_stats, blueprint, code
             gr.update(interactive=False),    # submit_btn
+            gr.update(interactive=False),    # golden_run_btn
             gr.update(visible=False),        # new_model_btn
             _nc,                             # history_dropdown
             _nc,                             # description_input
@@ -882,6 +955,7 @@ def stream_logs():
         gr.update(value=blueprint_text),               # blueprint_output
         gr.update(value=code_text),                    # code_output
         gr.update(interactive=True, value=submit_label),  # submit_btn
+        gr.update(interactive=True),                   # golden_run_btn
         gr.update(visible=success),                    # new_model_btn
         gr.update(choices=history_choices, value=history_value),  # history_dropdown
         gr.update(value="", placeholder=input_placeholder),  # description_input
@@ -1049,6 +1123,11 @@ _UI_CSS = """
     #chat-col::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.3); border-radius: 2px; }
     /* Progress bar: no extra margin at top */
     .pipeline-bar { margin: 0 !important; padding: 6px 4px !important; }
+    /* Golden selector: compact first-page control bar */
+    #golden-row { align-items: end; gap: 6px; margin-bottom: 6px; }
+    #golden-row label { font-size: 11px !important; margin-bottom: 2px !important; }
+    #golden-row button { min-height: 32px !important; padding: 4px 10px !important; }
+    #golden-row input { min-height: 32px !important; }
 """
 
 _UI_JS = """
@@ -1100,6 +1179,33 @@ def build_ui() -> gr.Blocks:
 
                 # ── Progress bar — very top, full width ──────────────
                 progress_bar = gr.HTML(value=build_progress_html(0))
+
+                with gr.Row(equal_height=True, elem_id="golden-row"):
+                    golden_source = gr.Dropdown(
+                        label="Ordner",
+                        choices=list(_GOLDEN_SOURCE_LABELS.keys()),
+                        value="Pipeline",
+                        interactive=True,
+                        scale=1,
+                    )
+                    golden_dropdown = gr.Dropdown(
+                        label="Golden Run",
+                        choices=golden_choices(source=SOURCE_PIPELINE),
+                        value=None,
+                        interactive=True,
+                        scale=5,
+                    )
+                    golden_run_btn = gr.Button(
+                        "Golden starten",
+                        variant="secondary",
+                        interactive=False,
+                        scale=1,
+                    )
+                    golden_refresh_btn = gr.Button(
+                        "Liste neu laden",
+                        variant="secondary",
+                        scale=1,
+                    )
 
                 with gr.Row(equal_height=False):
                     # ── Main content ──────────────────────────────────
@@ -1262,12 +1368,12 @@ def build_ui() -> gr.Blocks:
                         label="Generated CadQuery Code", language="python", lines=15,
                     )
 
-        # stream_logs outputs — 21 values
+        # stream_logs outputs
         _stream_outputs = [
             log_output, question_row, question_label,
             chat_display,
             result_viewer, result_stats, blueprint_output,
-            code_output, submit_btn, new_model_btn, history_dropdown,
+            code_output, submit_btn, golden_run_btn, new_model_btn, history_dropdown,
             description_input, image_input,
             image_group, preview_group, inline_viewer,
             progress_bar,
@@ -1326,6 +1432,28 @@ def build_ui() -> gr.Blocks:
         description_input.submit(**_submit_chain).then(
             fn=stream_logs, inputs=[], outputs=_stream_outputs,
         )
+        golden_dropdown.change(
+            fn=on_select_golden,
+            inputs=[golden_dropdown, golden_source],
+            outputs=[description_input, golden_run_btn],
+        )
+        golden_source.change(
+            fn=on_refresh_golden_choices,
+            inputs=[golden_source],
+            outputs=[golden_dropdown, golden_run_btn],
+        )
+        golden_run_btn.click(
+            fn=on_run_golden,
+            inputs=[golden_dropdown, golden_source],
+            outputs=[chat_display, question_row, submit_btn, new_model_btn, description_input],
+        ).then(
+            fn=stream_logs, inputs=[], outputs=_stream_outputs,
+        )
+        golden_refresh_btn.click(
+            fn=on_refresh_golden_choices,
+            inputs=[golden_source],
+            outputs=[golden_dropdown, golden_run_btn],
+        )
 
         # Populate history dropdown from disk on startup
         demo.load(
@@ -1334,6 +1462,10 @@ def build_ui() -> gr.Blocks:
                 value=_session.get_history_choices()[0] if _session.history else None,
             ),
             outputs=[history_dropdown],
+        )
+        demo.load(
+            fn=lambda: on_refresh_golden_choices("Pipeline"),
+            outputs=[golden_dropdown, golden_run_btn],
         )
 
         new_model_btn.click(

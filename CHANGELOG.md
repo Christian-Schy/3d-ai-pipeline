@@ -82,6 +82,14 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
   Feature-Saetzen, damit Bohrungen/Taschen auf Sub-Teilen nicht als
   Platzierung des Sub-Teils gelesen werden.
 
+- **Generate-UI kann Goldens direkt starten.** Der erste App-Tab listet
+  jetzt wahlweise Pipeline-Goldens aus `tests/golden/<slug>/spec.txt` oder
+  runnable Component-Golden-Varianten aus
+  `tests/golden/components/<slug>/pipeline/specs.txt`, laedt den Spec in das
+  Prompt-Feld und kann den ausgewaehlten Golden als frischen normalen
+  Pipeline-Run ausfuehren. Die Ergebnisse laufen dadurch durch dieselbe
+  Preview-, Blueprint-, Code-, Trace- und Feedback-Anzeige wie manuelle Runs.
+
 - **V2-Nut-Kantenabstand aus Run `adbf823d` korrigiert.** Der Slot-Resolver
   verwendet bei `slot`-Features nun `width` + `length` als face-lokalen
   Footprint fuer Kantenplatzierung. `5x3` bleibt dabei Breite/Tiefe;
