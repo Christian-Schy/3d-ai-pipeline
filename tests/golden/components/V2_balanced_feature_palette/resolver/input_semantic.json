@@ -100,6 +100,7 @@
         "side": "oben",
         "alignment": "centered",
         "edge_distances": {"left": 12, "top": 18},
+        "pocket_edge_distances": {"left": 12, "top": 18},
         "angle_deg": 90,
         "notes": "entlang Y"
       },

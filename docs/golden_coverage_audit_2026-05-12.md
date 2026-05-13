@@ -96,6 +96,9 @@ Added `tests/golden/components/V2_balanced_feature_palette/`:
 - Filtered real smoke: 1 PASS / 0 FAIL. The spec exports an STL and reaches
   validator success; mesh validation reports only a minimal tessellation
   warning.
+- 2026-05-13 correction from run `adbf823d`: the upper Y-slot keeps
+  `5x3` as width/depth and `laenge=40`, but resolver edge placement now uses
+  the slot footprint so `kante_oben=18` resolves to a real 18mm edge gap.
 
 Added matching direct seeds:
 

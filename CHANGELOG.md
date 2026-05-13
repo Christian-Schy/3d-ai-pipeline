@@ -8,6 +8,15 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-13
+
+- **V2-Nut-Kantenabstand aus Run `adbf823d` korrigiert.** Der Slot-Resolver
+  verwendet bei `slot`-Features nun `width` + `length` als face-lokalen
+  Footprint fuer Kantenplatzierung. `5x3` bleibt dabei Breite/Tiefe;
+  `laenge=40` bleibt die separate Nut-Laenge. Das V2-Resolver-Golden erwartet
+  fuer die obere Y-Nut jetzt `offset_x=-45.5`, `offset_y=7.0`, sodass die
+  Nut 18mm Abstand zur oberen Kante haelt statt an der Kante zu starten.
+
 ## 2026-05-12
 
 - **Golden-/Trainingsdaten-Coverage auditiert und V2-Palette angelegt.**

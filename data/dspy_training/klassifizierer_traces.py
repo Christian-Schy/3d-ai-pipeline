@@ -1633,10 +1633,10 @@ TRACES.extend([
             "seite": "oben",
             "parameter_hints": {"breite": 5, "tiefe": 3, "laenge": 40,
                                 "richtung": "y",
-                                "abstand_links": 12, "abstand_oben": 18},
+                                "kante_links": 12, "kante_oben": 18},
         },
         "source_run": None,
-        "bug_pattern": "v2 palette: slot y-axis with two center edge distances",
+        "bug_pattern": "v2 palette: slot y-axis with two feature-edge distances",
     },
     {
         "id": "klass_v2_slot_right_z_full_offset",

@@ -440,25 +440,56 @@ def _get_face_dimensions(parent_params: dict, face: str) -> tuple[float, float]:
     return (px, py)
 
 
-def _get_child_face_size(child_params: dict, face: str) -> tuple[float, float]:
+def _get_child_face_size(
+    child_params: dict,
+    face: str,
+    angle_deg: float = 0.0,
+    feat_type: str = "",
+) -> tuple[float, float]:
     """Get the (width, height) of a child part on the given face.
 
     Two kinds of children to distinguish:
 
-    1. **Subtractive face-local features** (pocket, slot, ...) — `params`
-       carry `{x, y, depth}` where `x` / `y` are already the face-local
-       horizontal / vertical extents and `depth` is perpendicular into the
-       face. Side-face axis-remapping must NOT be applied here, otherwise
-       the side-face would read child_h from a non-existent `z` field
-       (returns 0) and pocket_edge_distances would silently fall back to
-       edge-to-CENTER on the vertical axis (Run e3ddd2d0: tasche_vorne_5
-       landed at oy=90 instead of 75 — 15mm too high).
+    1. **Subtractive face-local features** (pocket, slot, ...) — pocket
+       params carry `{x, y, depth}` where `x` / `y` are already the
+       face-local horizontal / vertical extents and `depth` is perpendicular
+       into the face. Slots carry `{width, length, depth}` and need the
+       same face-local footprint for edge-to-edge placement:
+       angle=0 => length x width, angle=90 => width x length. Side-face
+       axis-remapping must NOT be applied here, otherwise the side-face
+       would read child_h from a non-existent `z` field (returns 0) and
+       pocket_edge_distances would silently fall back to edge-to-CENTER on
+       the vertical axis (Run e3ddd2d0: tasche_vorne_5 landed at oy=90
+       instead of 75 — 15mm too high).
        Detection: presence of `depth` and absence of `z`.
 
     2. **3D additive parts** (boxes) — `params` carry `{x, y, z}` which
        are world-aligned. Side faces remap (cy, cz) etc. — same logic
        as `_get_face_dimensions`.
     """
+    ftype_lower = (feat_type or "").lower()
+    is_slot = ftype_lower == "slot" or (
+        "width" in child_params and "length" in child_params
+    )
+
+    if is_slot:
+        width = float(child_params.get("width") or child_params.get("breite") or 0)
+        length = float(child_params.get("length") or child_params.get("laenge") or 0)
+        if width > 0 and length > 0:
+            # Slot template convention: angle=0 cuts along face-X,
+            # angle=90 cuts along face-Y. For non-right angles use the
+            # axis-aligned footprint so edge placement remains conservative.
+            a = abs(float(angle_deg or 0.0)) % 180.0
+            if math.isclose(a, 0.0, abs_tol=1e-6) or math.isclose(a, 180.0, abs_tol=1e-6):
+                return (length, width)
+            if math.isclose(a, 90.0, abs_tol=1e-6):
+                return (width, length)
+            rad = math.radians(a)
+            return (
+                abs(length * math.cos(rad)) + abs(width * math.sin(rad)),
+                abs(length * math.sin(rad)) + abs(width * math.cos(rad)),
+            )
+
     cx = float(child_params.get("x") or child_params.get("diameter") or 0)
     cy = float(child_params.get("y") or child_params.get("diameter") or 0)
     cz = float(child_params.get("z") or child_params.get("height") or 0)
@@ -901,7 +932,9 @@ def _compute_offsets(
     after the assembler's face-rotation step.
     """
     parent_w, parent_h = _get_face_dimensions(parent_params, face)
-    child_w, child_h = _get_child_face_size(child_params, face)
+    child_w, child_h = _get_child_face_size(
+        child_params, face, angle_deg=angle_deg, feat_type=feat_type
+    )
 
     ox, oy = 0.0, 0.0
 

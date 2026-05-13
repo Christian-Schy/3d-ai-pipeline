@@ -84,8 +84,8 @@
       "placement": {
         "face": ">Z",
         "alignment": "centered",
-        "offset_x": -48.0,
-        "offset_y": 27.0,
+        "offset_x": -45.5,
+        "offset_y": 7.0,
         "angle_deg": 90.0
       }
     },

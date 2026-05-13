@@ -49,6 +49,34 @@ def _bp_pocket(position_extras: dict, pocket_size=(40, 40, 10)) -> dict:
     }
 
 
+def _bp_slot(position_extras: dict, slot_size=(5, 3, 40), angle_deg=90.0) -> dict:
+    """120x90x50 Wuerfel mit Nut oben — Breite/Tiefe/Laenge bleiben getrennt."""
+    width, depth, length = slot_size
+    position = {
+        "side": "oben", "alignment": "centered",
+        "edge_distances": None, "angle_deg": angle_deg, "notes": "entlang Y",
+    }
+    position.update(position_extras)
+    return {
+        "build_order": ["wuerfel", "nut"],
+        "features": {
+            "wuerfel": {
+                "id": "wuerfel", "type": "box",
+                "params": {"x": 120, "y": 90, "z": 50},
+                "orientation": "standard",
+                "parent": None, "operation": "add",
+            },
+            "nut": {
+                "id": "nut", "type": "slot",
+                "params": {"width": width, "depth": depth, "length": length},
+                "orientation": "standard",
+                "parent": "wuerfel", "operation": "subtract",
+                "position": position,
+            },
+        },
+    }
+
+
 # ── DEFAULT abstand_* (edge-to-CENTER) ─────────────────────────────
 
 
@@ -96,6 +124,20 @@ def test_kante_corner_top_left():
     p = res["features"]["tasche"]["placement"]
     assert p["offset_x"] == -80.0
     assert p["offset_y"] == 75.0
+
+
+def test_kante_top_left_on_y_slot_uses_width_and_length():
+    """Run adbf823d: Nut 5x3, laenge=40 entlang Y, kante_oben=18 +
+    kante_links=12. Die Nut darf nicht bei der oberen Kante starten:
+    X-Span -48..-43, Y-Span -13..27."""
+    bp = _bp_slot({
+        "edge_distances": {"top": 18, "left": 12},
+        "pocket_edge_distances": {"top": 18, "left": 12},
+    })
+    res = resolve_blueprint(bp)
+    p = res["features"]["nut"]["placement"]
+    assert p["offset_x"] == -45.5
+    assert p["offset_y"] == 7.0
 
 
 # ── Mischformen: pro Achse die richtige Konvention ─────────────────
