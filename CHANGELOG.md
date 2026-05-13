@@ -8,6 +8,39 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-14
+
+- **Platzierer-Stabilitaet: Anchor-Recognition + Merge-Logik-Fix.**
+  Vier zusammengehoerige Aenderungen, die E_kombo_basics (Multi-Part mit
+  Anker-Vokabular) von FAIL auf PASS bringen und keine anderen Goldens
+  regressen (Full Heatmap 17/1):
+  1. Anchor-Mini-Call feuert jetzt IMMER (Gate entfernt). Der Prompt
+     erlaubt leere Ausgabe wenn kein echter Anker da ist, der LLM
+     entscheidet via Demos. Loest das Labeler-Child-ID-Pattern
+     ("obere kante der platte_7 auf obere kante des wuerfels"), bei dem
+     der frueher gebrauchte Trigger-String-Match scheiterte.
+  2. `prompt_position_alignment` mit explizitem ANKER-MUSTER-Block:
+     "Wenn ein Kanten-/Ecken-Wort zweimal mit 'auf' dazwischen steht,
+     ist es ANKER-Sprache — Alignment ist immer zentriert, nie buendig_*."
+     Verhindert dass die LLM-Bias-Bindung "untere kante" -> "buendig_unten"
+     ueber das spezifische Demo gewinnt.
+  3. `prompt_position_anchor` mit explizitem Edge-on-Edge-Beispiel
+     ("KIND-Kante auf PARENT-Kante ist ECHTER Anker, auch wenn es wie
+     buendig klingt").
+  4. `prompt_position_offset` mit "Pro Achse hoechstens eine Richtung"-
+     Regel — verhindert geometrisch unmoegliche Doppelangaben
+     (versatz_rechts=5 UND versatz_links=10).
+  5. Merge-Logik in `position_normalizer_agent._merge` korrigiert:
+     `zentriert` bleibt `zentriert` wenn ein reiner Point-on-Point Anker
+     ohne Offset vorliegt. Vorher: jeder Anker mit `zentriert` wurde
+     zwangsweise auf `von_kanten` geflippt, auch wenn `abstand={}` leer
+     war. Konsequenz: Adapter `_adapter_platzierer_alignment` muss nicht
+     mehr auf den Post-Merge-Zustand normalisieren — die 5-Zeilen-
+     Sondersmoothing-Logik im Adapter ist entfernt.
+
+  Alle 4 Platzierer-Sub-Agents neu trainiert (Bootstrap auf Traces inkl.
+  6 neuer EA1-EA6 E-Anchor-Cases in `labeler_platzierer_traces.py`).
+
 ## 2026-05-13
 
 - **Schema-Cleanup: `start_offset` aus `hole_pattern_linear` entfernt.**

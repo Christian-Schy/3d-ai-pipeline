@@ -5,34 +5,46 @@
     "demos": [
       {
         "augmented": true,
-        "position_sentence": "rechts platte 100x100x20 hochkant die 100x20 seite liegt an untere kante buendig",
+        "position_sentence": "oben drauf platte 60x60x10 an der rechten kante 10mm nach aussen versetzt",
+        "offset": "versatz: rechts=10"
+      },
+      {
+        "augmented": true,
+        "position_sentence": "oben eine platte 60x40x10 zentral",
         "offset": ""
       },
       {
         "augmented": true,
+        "position_sentence": "oben drauf platte 60x60x10 zentral auf der platte oben eine 5mm bohrung 5 tief zentral auf der platte oben eine 5mm bohrung 5 tief von der oberen kante 8mm und von der linken kante 6mm entfernt auf der platte oben eine nut 25x4 entlang x-achse 3 tief 5mm nach rechts versetzt",
+        "offset": "kantenabstand: oben=8, links=6\nversatz: rechts=5"
+      },
+      {
+        "augmented": true,
+        "position_sentence": "oben drauf platte 40x40x10 untere rechte ecke der platte auf die obere linke ecke des wuerfels",
+        "offset": ""
+      },
+      {
+        "position_sentence": "oben platte 30x30x10 5mm nach rechts versetzt",
+        "offset": "versatz: rechts=5"
+      },
+      {
         "position_sentence": "oben drauf platte 100x40x20 um 45 grad gedreht",
         "offset": "winkel: 45"
       },
       {
-        "augmented": true,
-        "position_sentence": "oben drauf platte 100x100x20 100x20 seite liegt auf obere kante 10mm von oberer kante des wuerfels entfernt rechte seite 10mm von rechter seite des wuerfels entfernt um 10 grad gedreht",
-        "offset": "kantenabstand: oben=10, rechts=10\nwinkel: 10"
-      },
-      {
-        "augmented": true,
-        "position_sentence": "vorne platte 30x40x10 zentral",
+        "position_sentence": "rechts eine platte 40x40x10 zentriert auf der platte mittig eine 5mm bohrung 5 tief auf der platte 5mm nach oben versetzt eine 4mm bohrung 4 tief",
         "offset": ""
       },
       {
-        "position_sentence": "oben drauf platte 80x80x10 rechte kante mit 15mm ueberstand",
-        "offset": "versatz: rechts=15"
+        "position_sentence": "oben drauf platte 50x50x15 obere rechte ecke 5mm nach aussen versetzt",
+        "offset": "versatz: oben=5, rechts=5"
       },
       {
-        "position_sentence": "oben drauf platte 40x80x20 40x20 seite liegt auf die obere seite der platte soll von unten 20mm entfernt sein die rechte seite der platte soll von rechts 10mm entfernt sein um 10 grad gegen uhrzeigersinn rotiert",
-        "offset": "winkel: 10\nkantenabstand: unten=20, rechts=10"
+        "position_sentence": "oben drauf platte 60x80x20 um 20mm nach oben versetzt und um 10mm nach links versetzt und um 15 grad gegen uhrzeigersinn rotiert",
+        "offset": "winkel: 15\nversatz: oben=20, links=10"
       },
       {
-        "position_sentence": "oben drauf platte 50x40x10 zentral auf der platte oben eine tasche 20x10x3 zentral 30 grad gegen uhrzeigersinn gedreht",
+        "position_sentence": "vorne soll eine platte 80x40x20 die 80x40 seite liegt auf obere rechte ecke der platte auf obere rechte ecke des wuerfels",
         "offset": ""
       },
       {
@@ -40,27 +52,15 @@
         "offset": ""
       },
       {
-        "position_sentence": "oben eine platte 60x40x10 zentral auf der platte oben eine 5mm bohrung 5 tief von der oberen kante 10mm und von der linken kante 8mm entfernt",
-        "offset": ""
-      },
-      {
-        "position_sentence": "oben drauf platte 50x50x10 mittig",
-        "offset": ""
-      },
-      {
-        "position_sentence": "oben drauf eine platte 50x50x10 zentral auf der platte oben eine 6mm bohrung 5 tief obere rechte ecke 5mm nach unten und 8mm nach links versetzt",
-        "offset": ""
-      },
-      {
-        "position_sentence": "oben platte 50x40x10 zentriert 10mm nach oben versetzt",
-        "offset": "versatz: oben=10"
-      },
-      {
         "position_sentence": "oben drauf platte 100x100x20 100x20 seite liegt auf obere linke ecke von links 10mm und von oben 20mm entfernt um 20 grad im uhrzeigersinn gedreht",
         "offset": "winkel: -20\nkantenabstand: oben=20, links=10"
       },
       {
-        "position_sentence": "rechts platte 40x40x10 zentriert",
+        "position_sentence": "oben drauf platte 50x40x10 zentral auf der platte oben eine tasche 20x10x3 zentral 30 grad gegen uhrzeigersinn gedreht",
+        "offset": ""
+      },
+      {
+        "position_sentence": "oben platte 30x30x10 mittig auf der platte mittig eine 4mm bohrung 4 tief",
         "offset": ""
       }
     ],

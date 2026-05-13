@@ -57,6 +57,14 @@ PRE_ROTATION (3D-Drehung in Grad VOR dem Anlegen):
 
 ★ NICHTS erfinden! Bei nichts Passendem: alle Felder weglassen.
 
+★★★ PRO ACHSE NUR EINE RICHTUNG:
+  versatz/kantenabstand darf pro Achse nur EINE Richtung nennen.
+  X-Achse: entweder rechts ODER links — nie beide.
+  Y-Achse: entweder oben  ODER unten  — nie beide.
+  Z-Achse: entweder vorne ODER hinten — nie beide.
+  "10mm nach unten versetzt"  → versatz: unten=10   (NIE versatz: unten=10, oben=...)
+  "20mm von der linken Kante" → kantenabstand: links=20  (NIE auch rechts=...)
+
 BEISPIELE:
 
 Spec: "obere linke Ecke auf linker Kante, 10mm nach unten versetzt, um 10 Grad CCW"

@@ -7,37 +7,101 @@
         "augmented": true,
         "teil_id": "platte",
         "teil_type": "box",
+        "teil_params": "{\"x\": 50, \"y\": 50, \"z\": 15}",
+        "parent": "wuerfel",
+        "position_sentence": "oben drauf platte 50x50x15 obere rechte ecke 5mm nach aussen versetzt",
+        "anchor": "kind_punkt: top_right\neltern_punkt: top_right\neltern_abstand: nach_aussen=5mm"
+      },
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 40, \"z\": 20}",
+        "parent": "wuerfel",
+        "position_sentence": "vorne soll eine platte 80x40x20 die 80x40 seite liegt auf untere rechte ecke der platte auf untere kante des wuerfels 10mm nach oben versetzt",
+        "anchor": "kind_punkt: bottom_right\neltern_punkt: bottom_edge\neltern_abstand: oben=10mm"
+      },
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 40, \"y\": 40, \"z\": 10}",
+        "parent": "wuerfel",
+        "position_sentence": "oben drauf platte 40x40x10 untere rechte ecke der platte auf die obere linke ecke des wuerfels",
+        "anchor": "kind_punkt: bottom_right\neltern_punkt: top_left"
+      },
+      {
+        "augmented": true,
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 40, \"y\": 40, \"z\": 10}",
+        "parent": "wuerfel",
+        "position_sentence": "oben drauf platte 40x40x10 obere linke ecke der platte auf die untere rechte ecke des wuerfels",
+        "anchor": "kind_punkt: top_left\neltern_punkt: bottom_right"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 40, \"z\": 20}",
+        "parent": "wuerfel",
+        "position_sentence": "vorne soll eine platte 80x40x20 die 80x40 seite liegt auf obere kante der platte auf obere kante des wuerfels 5mm nach unten versetzt",
+        "anchor": "kind_punkt: top_edge\neltern_punkt: top_edge"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 10}",
+        "parent": "wuerfel",
+        "position_sentence": "oben drauf platte 60x60x10 untere linke ecke der platte von der unteren linken ecke jeweils 12mm entfernt",
+        "anchor": "kind_punkt: bottom_left\neltern_punkt: bottom_left"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 10}",
+        "parent": "wuerfel",
+        "position_sentence": "oben drauf platte 60x60x10 untere rechte ecke der platte von der unteren rechten ecke jeweils 8mm entfernt",
+        "anchor": "kind_punkt: bottom_right\neltern_punkt: bottom_right"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 40, \"z\": 20}",
+        "parent": "wuerfel",
+        "position_sentence": "vorne soll eine platte 80x40x20 die 80x40 seite liegt auf obere rechte ecke der platte auf obere rechte ecke des wuerfels",
+        "anchor": "kind_punkt: top_right\neltern_punkt: top_right"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
         "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
         "parent": "wuerfel",
         "position_sentence": "rechts platte 100x100x20 100x20 seite liegt auf linke obere ecke der platte von der linken seite 10mm und von der oberen seite 20mm entfernt um 20 grad gedreht",
         "anchor": "kind_punkt: top_left\neltern_punkt: top_left"
       },
       {
-        "augmented": true,
-        "teil_id": "platte",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 120, \"y\": 100, \"z\": 20}",
-        "parent": "wuerfel",
-        "position_sentence": "oben drauf platte 120x100x20 20x100 seite liegt auf die linke seite der platte von links 20mm und von oben 40mm entfernt",
-        "anchor": "kind_punkt: top_left\neltern_punkt: top_left"
-      },
-      {
-        "augmented": true,
         "teil_id": "platte",
         "teil_type": "box",
         "teil_params": "{\"x\": 80, \"y\": 80, \"z\": 20}",
         "parent": "wuerfel",
         "position_sentence": "oben drauf platte 80x80x20 80x20 seite liegt auf obere rechte ecke der platte von der oberen rechten ecke jeweils 10mm entfernt um 10 grad im uhrzeigersinn rotiert",
-        "anchor": "kind_punkt: top_right\neltern_punkt: top_right\neltern_abstand: x=-10, y=-10"
+        "anchor": "kind_punkt: top_right\neltern_punkt: top_right"
       },
       {
-        "augmented": true,
         "teil_id": "platte",
         "teil_type": "box",
-        "teil_params": "{\"x\": 50, \"y\": 50, \"z\": 15}",
+        "teil_params": "{\"x\": 80, \"y\": 40, \"z\": 20}",
         "parent": "wuerfel",
-        "position_sentence": "oben drauf platte 50x50x15 obere rechte ecke 5mm nach aussen versetzt",
-        "anchor": "kind_punkt: top_right\neltern_punkt: top_right\neltern_abstand: nach_aussen=5mm"
+        "position_sentence": "oben soll eine platte 80x40x20 die 80x40 seite liegt auf obere rechte ecke der platte auf obere rechte ecke des wuerfels",
+        "anchor": "kind_punkt: top_right\neltern_punkt: top_right"
+      },
+      {
+        "teil_id": "platte",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 40, \"z\": 20}",
+        "parent": "wuerfel",
+        "position_sentence": "vorne soll eine platte 80x40x20 die 80x40 seite liegt auf untere kante der platte auf untere kante des wuerfels",
+        "anchor": "kind_punkt: bottom_edge\neltern_punkt: bottom_edge"
       }
     ],
     "signature": {

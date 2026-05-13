@@ -6,45 +6,75 @@
       {
         "augmented": true,
         "seite": "oben",
-        "position_sentence": "oben drauf platte 50x50x10 mittig",
-        "alignment": "ausrichtung: zentriert"
-      },
-      {
-        "augmented": true,
-        "seite": "oben",
         "position_sentence": "oben drauf platte 60x60x10 an der rechten kante 10mm nach aussen versetzt",
         "alignment": "ausrichtung: buendig_rechts"
       },
       {
         "augmented": true,
-        "seite": "unten",
-        "position_sentence": "unten platte 40x40x10 mittig",
+        "seite": "oben",
+        "position_sentence": "oben eine platte 60x40x10 zentral",
         "alignment": "ausrichtung: zentriert"
       },
       {
         "augmented": true,
-        "seite": "hinten",
-        "position_sentence": "hinten platte 80x80x10 zentriert",
+        "seite": "oben",
+        "position_sentence": "oben drauf platte 40x40x10 untere rechte ecke der platte auf die obere linke ecke des wuerfels",
         "alignment": "ausrichtung: zentriert"
       },
       {
+        "augmented": true,
         "seite": "rechts",
-        "position_sentence": "rechts platte 100x100x20 hochkant die 100x20 seite liegt an untere kante buendig",
-        "alignment": "ausrichtung: buendig_unten"
-      },
-      {
-        "seite": "oben",
-        "position_sentence": "oben platte 60x60x15 zentriert 15 grad gegen uhrzeigersinn",
+        "position_sentence": "rechts platte 40x40x10 zentriert",
         "alignment": "ausrichtung: zentriert"
       },
       {
         "seite": "oben",
-        "position_sentence": "oben platte 50x40x10 zentriert 10mm nach oben versetzt",
+        "position_sentence": "oben platte 30x30x10 5mm nach rechts versetzt",
         "alignment": "ausrichtung: von_mitte"
       },
       {
         "seite": "oben",
         "position_sentence": "oben drauf platte 100x40x20 um 45 grad gedreht",
+        "alignment": "ausrichtung: zentriert"
+      },
+      {
+        "seite": "rechts",
+        "position_sentence": "rechts eine platte 40x40x10 zentriert auf der platte mittig eine 5mm bohrung 5 tief auf der platte 5mm nach oben versetzt eine 4mm bohrung 4 tief",
+        "alignment": "ausrichtung: zentriert"
+      },
+      {
+        "seite": "oben",
+        "position_sentence": "oben drauf platte 50x50x15 obere rechte ecke 5mm nach aussen versetzt",
+        "alignment": "ausrichtung: buendig_oben_rechts"
+      },
+      {
+        "seite": "oben",
+        "position_sentence": "oben drauf platte 60x80x20 um 20mm nach oben versetzt und um 10mm nach links versetzt und um 15 grad gegen uhrzeigersinn rotiert",
+        "alignment": "ausrichtung: von_mitte"
+      },
+      {
+        "seite": "vorne",
+        "position_sentence": "vorne soll eine platte 80x40x20 die 80x40 seite liegt auf obere rechte ecke der platte auf obere rechte ecke des wuerfels",
+        "alignment": "ausrichtung: zentriert"
+      },
+      {
+        "seite": "oben",
+        "position_sentence": "oben rechts buendig in die ecke platte 50x50x10",
+        "alignment": "ausrichtung: buendig_oben_rechts"
+      },
+      {
+        "seite": "oben",
+        "position_sentence": "oben drauf platte 100x100x20 100x20 seite liegt auf obere linke ecke von links 10mm und von oben 20mm entfernt um 20 grad im uhrzeigersinn gedreht",
+        "alignment": "ausrichtung: zentriert"
+      },
+      {
+        "seite": "oben",
+        "position_sentence": "oben drauf platte 50x40x10 zentral auf der platte oben eine tasche 20x10x3 zentral 30 grad gegen uhrzeigersinn gedreht",
+        "alignment": "ausrichtung: zentriert"
+      },
+      {
+        "seite": "oben",
+        "position_sentence": "oben platte 30x30x10 mittig auf der platte mittig eine 4mm bohrung 4 tief",
         "alignment": "ausrichtung: zentriert"
       }
     ],

@@ -174,28 +174,20 @@ class PositionNormalizerAgent(BaseAgent):
         raw_parts.append("=ALIGNMENT=\n" + alignment_raw)
         alignment = self._parse_kv(alignment_raw)
 
-        # ── Step 3: Anchor (only when input contains anchor language) ──
+        # ── Step 3: Anchor (LLM decides via demos; empty output = no anchor) ──
         parent_id = frame.get("parent", root_id) or root_id
-        anchor: dict = {}
-        spec_lower = specification.lower()
-        _ANCHOR_TRIGGERS = ("ecke", "kante auf", "punkt auf", "auf der kante",
-                            "auf die kante", "auf der ecke", "auf die ecke")
-        needs_anchor = any(t in spec_lower for t in _ANCHOR_TRIGGERS)
-        if needs_anchor:
-            anchor_prompt = ANCHOR_TEMPLATE.format(
-                specification=specification,
-                kind_id=teil_id,
-                kind_params=params_str,
-                eltern_id=parent_id,
-            )
-            anchor_raw = self.call(
-                anchor_prompt, system=ANCHOR_SYSTEM, json_mode=False,
-                demos=self._step_demos.get("platzierer_anchor", []),
-            )
-            raw_parts.append("=ANCHOR=\n" + anchor_raw)
-            anchor = self._parse_kv(anchor_raw)
-        else:
-            raw_parts.append("=ANCHOR=\n(skipped — no anchor keywords)")
+        anchor_prompt = ANCHOR_TEMPLATE.format(
+            specification=specification,
+            kind_id=teil_id,
+            kind_params=params_str,
+            eltern_id=parent_id,
+        )
+        anchor_raw = self.call(
+            anchor_prompt, system=ANCHOR_SYSTEM, json_mode=False,
+            demos=self._step_demos.get("platzierer_anchor", []),
+        )
+        raw_parts.append("=ANCHOR=\n" + anchor_raw)
+        anchor = self._parse_kv(anchor_raw)
 
         # ── Step 4: Offset + Rotation ─────────────────────────────────
         offset_prompt = OFFSET_TEMPLATE.format(specification=specification)
@@ -329,10 +321,11 @@ class PositionNormalizerAgent(BaseAgent):
 
         # ── ausrichtung: from Alignment step (separate mini-call) ──
         ausrichtung = alignment.get("ausrichtung", "zentriert").lower()
-        # Override if anchor/offset presence implies a different ausrichtung
-        if anker_str and ausrichtung == "zentriert":
+        # Anchor mit Abstand → von_kanten. Reiner Point-on-Point Anker ohne
+        # Abstand bleibt zentriert (Anker macht die Platzierung).
+        if anker_str and abstand and ausrichtung == "zentriert":
             ausrichtung = "von_kanten"
-        elif abstand and ausrichtung == "zentriert":
+        elif (not anker_str) and abstand and ausrichtung == "zentriert":
             ausrichtung = "von_mitte"
 
         return {

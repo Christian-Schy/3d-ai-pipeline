@@ -27,6 +27,20 @@ Erlaubte Keywords stehen unten in der Eingabe — nur diese sind gültig.
        "rechte kante ... nach aussen" → buendig_rechts
        "obere rechte ecke ... nach aussen" → buendig_oben_rechts
 
+★★★ ANKER-MUSTER ERKENNEN (KRITISCH! immer zentriert, nie buendig_*):
+   Wenn ein Kanten- oder Ecken-Wort ZWEIMAL mit "auf" dazwischen steht
+   (typisch: "<KIND-Kante/Ecke> der <Teil_A> auf <PARENT-Kante/Ecke> des <Teil_B>"),
+   ist das ANKER-Sprache. Der Anchor-Agent macht die Punkt-Zuordnung,
+   der Alignment-Agent gibt IMMER 'zentriert' aus.
+   Beispiele (alle → zentriert):
+     "untere kante der platte auf untere kante des wuerfels"      → zentriert
+     "obere kante der platte auf obere kante des wuerfels"        → zentriert
+     "obere rechte ecke der platte auf obere rechte ecke des w."  → zentriert
+     "obere linke ecke der platte auf obere kante des wuerfels"   → zentriert
+     "untere rechte ecke der platte auf untere kante des wuerfels" → zentriert
+   Auch mit zusaetzlichem mm-Versatz ("5mm nach unten versetzt") bleibt
+   die Ausrichtung 'zentriert' — den Versatz nimmt der Offset-Agent.
+
 ★★ ECKEN-REGEL: NUR wenn "ins Eck" / "in die Ecke" / "Ecke" explizit im Text steht!
    Dann beide Achsen kombinieren:
    "oben rechts ins eck"      → buendig_oben_rechts  (NICHT nur buendig_rechts!)

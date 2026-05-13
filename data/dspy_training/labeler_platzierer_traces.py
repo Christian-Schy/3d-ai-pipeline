@@ -1136,6 +1136,166 @@ EF8 = _build_trace(
 )
 
 
+# ─────────────────────────────────────────────────────────────────────
+# E-ANCHOR-CASES — aus E_kombo_basics: "Ecke/Kante auf Ecke/Kante" ist
+# echter Anchor, keine buendig-Ausrichtung. Diese Demos stabilisieren den
+# Platzierer-Split alignment/anchor/offset gegen flush_* Doppelcodierung.
+# ─────────────────────────────────────────────────────────────────────
+
+EA1 = _build_trace(
+    tid="ea1_front_top_right_corner_to_corner",
+    spec=("100mm wuerfel, vorne soll eine platte 80x40x20, "
+          "die 80x40 seite liegt auf, obere rechte ecke der platte "
+          "auf obere rechte ecke des wuerfels"),
+    child_dims=(80, 40, 20),
+    child_text=("vorne soll eine platte 80x40x20, die 80x40 seite liegt auf, "
+                "obere rechte ecke der platte auf obere rechte ecke des wuerfels"),
+    placement_sents=[
+        "vorne soll eine platte 80x40x20",
+        "die 80x40 seite liegt auf",
+        "obere rechte ecke der platte auf obere rechte ecke des wuerfels",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "vorne",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "80x40", "abstand": {},
+        "winkel": 0, "anker": "top_right_auf_top_right",
+        "pre_rotation": {},
+        "notes": "corner-to-corner anchor, nicht buendig_oben_rechts",
+    },
+    basis_size=100, category="e_anchor_corner", difficulty="P5",
+)
+
+EA2 = _build_trace(
+    tid="ea2_front_top_right_corner_with_left_offset",
+    spec=("100mm wuerfel, vorne soll eine platte 80x40x20, "
+          "die 80x40 seite liegt auf, obere rechte ecke der platte "
+          "auf obere rechte ecke des wuerfels, 10mm nach links versetzt"),
+    child_dims=(80, 40, 20),
+    child_text=("vorne soll eine platte 80x40x20, die 80x40 seite liegt auf, "
+                "obere rechte ecke der platte auf obere rechte ecke des wuerfels, "
+                "10mm nach links versetzt"),
+    placement_sents=[
+        "vorne soll eine platte 80x40x20",
+        "die 80x40 seite liegt auf",
+        "obere rechte ecke der platte auf obere rechte ecke des wuerfels",
+        "10mm nach links versetzt",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "vorne",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "80x40",
+        "abstand": {"versatz_links": 10},
+        "winkel": 0, "anker": "top_right_auf_top_right",
+        "pre_rotation": {},
+        "notes": "anchor plus offset, keine zweite Kantenbindung",
+    },
+    basis_size=100, category="e_anchor_corner", difficulty="P5",
+)
+
+EA3 = _build_trace(
+    tid="ea3_front_top_edge_with_down_offset",
+    spec=("100mm wuerfel, vorne soll eine platte 80x40x20, "
+          "die 80x40 seite liegt auf, obere kante der platte auf obere kante "
+          "des wuerfels, 5mm nach unten versetzt"),
+    child_dims=(80, 40, 20),
+    child_text=("vorne soll eine platte 80x40x20, die 80x40 seite liegt auf, "
+                "obere kante der platte auf obere kante des wuerfels, "
+                "5mm nach unten versetzt"),
+    placement_sents=[
+        "vorne soll eine platte 80x40x20",
+        "die 80x40 seite liegt auf",
+        "obere kante der platte auf obere kante des wuerfels",
+        "5mm nach unten versetzt",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "vorne",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "80x40",
+        "abstand": {"versatz_unten": 5},
+        "winkel": 0, "anker": "top_edge_auf_top_edge",
+        "pre_rotation": {},
+        "notes": "edge-to-edge anchor, offset wird vom Anchor verbraucht",
+    },
+    basis_size=100, category="e_anchor_edge", difficulty="P5",
+)
+
+EA4 = _build_trace(
+    tid="ea4_top_face_top_right_corner_to_corner",
+    spec=("100mm wuerfel, oben soll eine platte 80x40x20, "
+          "die 80x40 seite liegt auf, obere rechte ecke der platte "
+          "auf obere rechte ecke des wuerfels"),
+    child_dims=(80, 40, 20),
+    child_text=("oben soll eine platte 80x40x20, die 80x40 seite liegt auf, "
+                "obere rechte ecke der platte auf obere rechte ecke des wuerfels"),
+    placement_sents=[
+        "oben soll eine platte 80x40x20",
+        "die 80x40 seite liegt auf",
+        "obere rechte ecke der platte auf obere rechte ecke des wuerfels",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "oben",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "80x40", "abstand": {},
+        "winkel": 0, "anker": "top_right_auf_top_right",
+        "pre_rotation": {},
+        "notes": "top-face corner-to-corner anchor",
+    },
+    basis_size=100, category="e_anchor_corner", difficulty="P5",
+)
+
+EA5 = _build_trace(
+    tid="ea5_front_bottom_right_corner_to_bottom_edge",
+    spec=("100mm wuerfel, vorne soll eine platte 80x40x20, "
+          "die 80x40 seite liegt auf, untere rechte ecke der platte "
+          "auf untere kante des wuerfels, 10mm nach oben versetzt"),
+    child_dims=(80, 40, 20),
+    child_text=("vorne soll eine platte 80x40x20, die 80x40 seite liegt auf, "
+                "untere rechte ecke der platte auf untere kante des wuerfels, "
+                "10mm nach oben versetzt"),
+    placement_sents=[
+        "vorne soll eine platte 80x40x20",
+        "die 80x40 seite liegt auf",
+        "untere rechte ecke der platte auf untere kante des wuerfels",
+        "10mm nach oben versetzt",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "vorne",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "80x40",
+        "abstand": {"versatz_oben": 10},
+        "winkel": 0, "anker": "bottom_right_auf_bottom_edge",
+        "pre_rotation": {},
+        "notes": "corner-to-edge anchor plus offset",
+    },
+    basis_size=100, category="e_anchor_corner_edge", difficulty="P5",
+)
+
+EA6 = _build_trace(
+    tid="ea6_front_bottom_edge_to_bottom_edge",
+    spec=("100mm wuerfel, vorne soll eine platte 80x40x20, "
+          "die 80x40 seite liegt auf, untere kante der platte "
+          "auf untere kante des wuerfels"),
+    child_dims=(80, 40, 20),
+    child_text=("vorne soll eine platte 80x40x20, die 80x40 seite liegt auf, "
+                "untere kante der platte auf untere kante des wuerfels"),
+    placement_sents=[
+        "vorne soll eine platte 80x40x20",
+        "die 80x40 seite liegt auf",
+        "untere kante der platte auf untere kante des wuerfels",
+    ],
+    normalized={
+        "parent": "wuerfel", "seite": "vorne",
+        "ausrichtung": "zentriert", "orientierung": "standard",
+        "anliegende_flaeche": "80x40", "abstand": {},
+        "winkel": 0, "anker": "bottom_edge_auf_bottom_edge",
+        "pre_rotation": {},
+        "notes": "edge-to-edge anchor, nicht buendig_unten",
+    },
+    basis_size=100, category="e_anchor_edge", difficulty="P5",
+)
+
+
 ALL_TRACES = [U1, U2, U3, U4, U5, U6, U7, U8, U9, U10, U11,
               C1, C2, C3, C4, C5, C6, C7,
               N1, N2, N3,
@@ -1143,7 +1303,8 @@ ALL_TRACES = [U1, U2, U3, U4, U5, U6, U7, U8, U9, U10, U11,
               Z1, Z2, Z3, Z4, Z5, Z6,
               ZR1, ZR2,
               V1, V2,
-              EF1, EF2, EF3, EF4, EF5, EF6, EF7, EF8]
+              EF1, EF2, EF3, EF4, EF5, EF6, EF7, EF8,
+              EA1, EA2, EA3, EA4, EA5, EA6]
 
 
 def build() -> list[dict]:

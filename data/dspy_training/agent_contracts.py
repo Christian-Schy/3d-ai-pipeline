@@ -653,11 +653,6 @@ def _adapter_platzierer_alignment(trace: dict) -> list[dict]:
         inp = pair["input"]
         out = pair["output"]
         ausrichtung = out.get("ausrichtung", "zentriert")
-        # Runtime _merge normalizes `zentriert + anchor` to `von_kanten` so
-        # the resolver receives explicit anchor placement. Train the split
-        # target on that post-merge behavior, not on the legacy annotation.
-        if _parse_anchor(out) and ausrichtung == "zentriert":
-            ausrichtung = "von_kanten"
         pairs.append({
             "input": {
                 "seite": out.get("seite", "oben"),

@@ -64,6 +64,13 @@ STANDARD-REGELN:
       eltern_punkt = die MITTE der Kante am Parent (z.B. right_edge)
     Der User meint: Kind-Ecke trifft Mitte der Parent-Kante. Endpunkt
     nur waehlen wenn er explizit "am unteren/oberen Ende" sagt.
+  ★ KIND-Kante auf PARENT-Kante ist ebenfalls ein ECHTER Anker, auch wenn
+    es wie "buendig" klingt:
+      "untere Kante der Platte auf untere Kante des Wuerfels"
+        → kind_punkt: bottom_edge, eltern_punkt: bottom_edge
+      "obere Kante der Platte auf obere Kante des Wuerfels, 5mm nach unten"
+        → kind_punkt: top_edge, eltern_punkt: top_edge
+    Den mm-Versatz ("nach unten/oben/links/rechts") macht der Offset-Step.
 
 ELTERN_ABSTAND (nur ausfuellen wenn User "X mm von [Ende der Kante]" sagt):
   Format: richtung=mm
@@ -134,6 +141,12 @@ Kind: platte, Parent: wuerfel
 Output:
 kind_punkt: bottom_edge
 eltern_punkt: bottom_edge
+
+Spec: "obere Kante der Platte auf obere Kante des Wuerfels, 5mm nach unten versetzt"
+Kind: platte, Parent: wuerfel
+Output:
+kind_punkt: top_edge
+eltern_punkt: top_edge
 
 Spec: "linke obere ecke auf die linke kante des würfels, untere linke ecke von unterer kante nach oben um 10mm"
 Kind: platte_rechts, Parent: wuerfel

@@ -342,6 +342,12 @@ def test_platzierer_split_contracts_use_current_schema():
         and "eltern_punkt: top_left" in p["output"]
         for p in anchor
     )
+    assert any(
+        "obere rechte ecke der platte auf obere rechte ecke" in
+        p["input"]["position_sentence"].lower()
+        and p["output"] == "ausrichtung: zentriert"
+        for p in alignment
+    )
     assert any("winkel:" in p["output"] for p in offset)
     assert any("versatz:" in p["output"] for p in offset)
 
