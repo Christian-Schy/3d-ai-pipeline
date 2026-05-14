@@ -21,6 +21,14 @@ dependencies = [
     "trimesh>=4.11.3",
     "uvicorn>=0.41.0",
 ]
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "radon>=6.0.1",
+    "vulture>=2.13",
+]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
@@ -28,3 +36,66 @@ addopts = ["-m", "not slow"]
 markers = [
     "slow: integration tests that need Ollama and real models",
 ]
+
+# ─── Code-Quality Tools (siehe Makefile + ADR 0008 Done-Review) ──────────
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    ".venv",
+    "data/sessions",
+    "data/output",
+    "data/dspy_optimized",
+]
+
+[tool.ruff.lint]
+# Pragmatischer Start: Style + obvious bugs. Strenger ziehen wir pro
+# Capability nach (siehe ADR 0008 Reihenfolge).
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes (unused imports/vars, undefined names)
+    "I",    # isort (import order)
+    "B",    # bugbear (likely bugs)
+    "UP",   # pyupgrade (modernize syntax)
+    "SIM",  # simplify (redundant code patterns)
+]
+ignore = [
+    "E501",    # line too long (handled by formatter)
+    "B008",    # function call in argument default (FastAPI/Pydantic)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]  # assert-False in pytest erlaubt
+
+[tool.mypy]
+# Stand-bei-Aktivierung: lax fuer alles, strict fuer src/tools/ und
+# src/graph/blueprint_schema.py + state.py (deterministische Geometrie
+# und Schema — am ehrlichsten typed-faehig). Strenger ziehen pro
+# Capability (ADR 0008 Done-Review).
+python_version = "3.12"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+warn_redundant_casts = true
+warn_unused_ignores = true
+exclude = [
+    "data/",
+    "scripts/",
+    "tests/",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "src.tools.blueprint_resolver",
+    "src.tools.coordinate_validator",
+    "src.graph.blueprint_schema",
+    "src.graph.state",
+]
+disallow_untyped_defs = true
+warn_return_any = true
+
+[tool.vulture]
+exclude = ["tests/", "data/", "scripts/"]
+min_confidence = 80
+
+# Radon hat keine pyproject-Konfig — Schwellen kommen im Makefile-Target.

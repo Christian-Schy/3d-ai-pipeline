@@ -4,31 +4,71 @@ Text-zu-CAD Pipeline: Natuerliche Sprache → Semantisches Blueprint → CadQuer
 
 ## Projekt-Vision
 
-Komplexe 3D-Bauteile aus Textbeschreibungen generieren. Langfristig auch aus
-Bildern/Skizzen. System soll mit kleinen lokalen Modellen (9b-30b) funktionieren.
-Groessere Modelle nur als Fallback oder zum Training.
+Text-zu-CAD Pipeline fuer **B2B Maschinenbau-CNC-Konstrukteure**. Eingaben
+in Konstrukteur-Sprache nach DIN/ISO-Konvention, Ausgabe als korrekter
+CAD-Output (heute STL, perspektivisch STEP/IGES + 2D-Zeichnungs-PDF).
+System soll mit kleinen lokalen Modellen (9b-30b) funktionieren. Groessere
+Modelle nur als Fallback oder zum Training.
 
-**Stufenplan:**
-```
-Stufe 1: Primitive Assembly        ← AKTUELL
-         Boxen, Zylinder, Kugeln, Bohrungen, Nuten, Taschen
-         Mehrere Teile korrekt zusammenfuegen (2-5 Teile)
+**Verkaufsziel:** professionelles Konstrukteur-Tool, kein Maker-/Hobby-
+Tool. Daraus folgt: DIN/ISO-Konformitaet ist Pflicht (nicht Polish),
+Toleranzen + Norm-Bauteile + STEP-Export sind Top-Prio.
 
-Stufe 2: Verbindungen
-         Verschraubungen (Bohrung + Gewinde auf beiden Seiten)
-         Scharniere, Clips, Snap-Fits
-         "connection"-Feature das automatisch beide Seiten bohrt
+## Capability×Coverage Matrix (Single Source of Truth fuer Status)
 
-Stufe 3: Komplexe Formen
-         Loft, Sweep, Spline, Revolution
-         Halbkugel subtrahieren, Konus, Bogenausschnitte
-         Aerodynamische/geschwungene Konturen
+Projekt-Struktur seit ADR 0008. Ersetzt die alte lineare Phasen-Liste.
 
-Stufe 4: Organisch/Parametrisch
-         Bild → Masse schaetzen → Blueprint generieren
-         Mehrteilige bewegliche Teile (Armsleeve, Gelenke)
-         Verschlussmechanismen als eigene Feature-Bibliothek
-```
+**Achse 1 — Capabilities** (was die Pipeline kann):
+
+| Stufe | Capability |
+|---|---|
+| 1.0 | Primitive Assembly (Box/Zylinder + Bohrung/Nut/Tasche/Patterns) |
+| 1.5 | Extended Primitives (Polygon 3/4/6/8-eck, Trapez, Kontur-Extrude/Pocket, Auto-Closing-Contours) |
+| 2.0 | Modifications (Fasen/Rundungen alle Kanten-Auswahl-Varianten als Templates, Shell) |
+| 3.0 | Komplexe Formen (Loft, Sweep, Spline, Revolve) |
+| 4.0 | Connections (Senkbohrungen, Gewinde, Durchgangs-Bohrung durch zwei Teile) |
+| 5.0 | Assemblies (Bewegliche Teile, kinematische Constraints) |
+| 6.0 | Constraint-Bemassung (Origin/Datum, Absolut X/Y/Z, Symmetrie, Feature-Bezug, Auto-fill) |
+| 7.0 | Engineering Norms (Toleranzen ISO 286, GD&T ISO 1101, Norm-Bauteile DIN) |
+| 8.0 | Professional Output (STEP/IGES, DXF, 2D-Zeichnung-PDF, DFM-Checks) |
+| 9.0 | Vision/Drawing Input (Bild oder technische Zeichnung → Blueprint) |
+
+**Achse 2 — Coverage** (Test-Robustheit pro Capability):
+
+| Cov | Definition |
+|---|---|
+| 0 | Nichts implementiert oder nicht getestet |
+| 1 | Component-Goldens grün (Splitter + Resolver isoliert) |
+| 2 | Pipeline-Goldens Basics grün (einfacher Real-Run pro Variante) |
+| 3 | Coverage-Goldens grün (eine Capability komplett, alle Seiten + Wording-Varianten) |
+| 4 | Stress-Goldens grün (Multi-Capability-Kombo, ~20+ Features) |
+| 5 | Limit-Tests grün (50+ Features, 8+ Plates) |
+| 6 | Real-World Engineering-Validation (extern getestet) |
+
+**Definition of Done pro Capability:** Cov 4 grün + Done-Review-Checkliste
+abgehakt (siehe ADR 0008). Cov 5+6 sind Verkaufs-Polish.
+
+### Aktueller Stand (2026-05-14)
+
+| Capability | Stand | Coverage |
+|---|---|---|
+| 1.0 Primitive Assembly | gebaut | Cov 3 (18/18 Component-Goldens grün); fehlt L2-Coverage + Cov 4 STRESS |
+| 1.5 Extended Primitives | nicht gebaut | Cov 0 |
+| 2.0 Modifications | teilweise (Coder-Pfad) | Cov 0 als Golden |
+| 3.0-9.0 | nicht gebaut | Cov 0 |
+
+### Empfohlene Reihenfolge
+
+1. **1.0 → Cov 4** (STRESS-Goldens schreiben, Capability 1.0 verkaufsreif)
+2. **2.0 komplett** (Templates statt Coder-Pfad + Goldens)
+3. **6.0 Constraint-Bemassung** (DAS unterscheidet Konstrukteur- von Maker-Tool)
+4. **1.5 Extended Primitives + Auto-Close**
+5. **4.0 Connections** (Senkungen, Gewinde, Cross-Part)
+6. **7.0 Engineering Norms** (Toleranzen)
+7. **8.0 Professional Output** (STEP)
+8. **3.0 Komplexe Formen**
+9. **5.0 Assemblies**
+10. **9.0 Vision**
 
 ## Hardware & Modelle
 
@@ -39,7 +79,7 @@ Stufe 4: Organisch/Parametrisch
 
 ## Architektur
 
-### Pipeline Flow (Stand 2026-05-05, Phase 1 in Arbeit)
+### Pipeline Flow (Stand 2026-05-14, Capability 1.0 Cov 3 grün)
 ```
 entry_router → interpreter(9b) → punctuation(26b)
   → inventar(26b, 2-step)               — Teile + Aktions-Liste
@@ -137,120 +177,76 @@ data/sessions/runs.jsonl        — Alle Pipeline-Runs mit Traces
 - Ziel: ohne die ganze Datei zu lesen weiss man was wo liegt
 - Keine Zeilennummern im Block — die driften. Nur symbolische Namen.
 
-## Naechste Schritte (Roadmap)
+## Naechste Schritte (Capability-getrieben)
 
-### Phase A: 3-Step Chain — UMGESETZT, im Refactor
+Die naechsten konkreten Schritte ergeben sich aus der Capability-Matrix
+oben. Detail-Plan und Reihenfolge in
+[`memory/project_next_phase_plan.md`](file:///home/christian/.claude/projects/-home-christian-projects-3D-AI-Pipeline-V2/memory/project_next_phase_plan.md).
+Strukturierungs-Entscheidung: ADR 0008.
+
+### Aktueller Fokus: Capability 1.0 → Cov 4
+
+Capability 1.0 Primitive Assembly ist auf Cov 3 (18/18 Component-Goldens
+grün, einschliesslich V2_balanced_feature_palette mit DIN-konformer
+Slot-Konvention seit 2026-05-14). Naechste Aufgabe: L2-Coverage-Goldens
+und L3-STRESS-Goldens schreiben.
+
+L2-Coverage-Goldens (eine Capability komplett pro Test, alle Seiten,
+alle Wording-Varianten):
+- `B_coverage_all_sides_all_wordings` (Bohrungen)
+- `T_coverage_all_sides_all_wordings` (Pockets)
+- `N_coverage_all_sides_all_orientations` (Slots)
+- `M_coverage_patterns_all_kinds` (Lochmuster Grid/Kreis/Linear)
+
+L3-STRESS-Goldens (Multi-Capability):
+- `STRESS_all_in_one_part` (~20+ Features in einem Wuerfel)
+- `STRESS_multi_plate_with_features`
+- `STRESS_three_plates`
+- `STRESS_voice_long`
+- `STRESS_anchor_chain`
+
+Wenn alle grün UND Done-Review-Checkliste (ADR 0008) abgehakt:
+Capability 1.0 verkaufsreif. Dann Capability 2.0 (Modifications).
+
+### Vorgaengig: Architektur-Refactors die noch laufen
+
+Diese ADRs sind noch nicht vollstaendig umgesetzt und blockieren
+Capability-Vorbereitungen:
+
+#### Phase A: 3-Step Chain — UMGESETZT, im Refactor
 Der monolithische Blueprint Architect wurde in eine Kette aus
 Inventar → feature_definierer → platzierer → assembly aufgeteilt.
 Heute produktiv. Schwachstelle: feature_definierer ist trotzdem
 ein einziger LLM-Call pro Teil mit allen Aktionen darin — bei
 komplexen Specs 70-313s Latenz.
 
-### Phase A.5: Pro-Aktion-Mikro-Calls (LAUFENDE UMSETZUNG, ADR 0003)
-Der feature_definierer und Inventar Step B werden in Pro-Aktion-Calls
-zerlegt. Neuer deterministischer Aktions-Splitter trennt User-Spec in
-einzelne Phrasen, ein neuer Aktions-Klassifizierer ordnet Typ/Seite
-zu, der feature_definierer baut pro Phrase ein Feature. Aggregator
-fuegt deterministisch zusammen.
+#### Phase A.5: Pro-Aktion-Mikro-Calls (ADR 0003 — UMGESETZT)
+Inventar Step B + feature_definierer wurden in Pro-Aktion-Mikro-Calls
+zerlegt. Aktions-Splitter + Klassifizierer + per-Phrase Normalizer +
+deterministischer Aggregator. Motivation: Bottleneck-Aufloesung,
+Bug "Tasche mit Bohrung drin"-Verschachtelung, stabile Aktions-IDs.
+Details: ADR 0003.
+#### Phase B: Geometry Assertions (deterministisch, geplant)
+Aus dem resolved Blueprint automatisch Tests generieren — Volumen, BBox,
+Feature-Count. Nach Executor vergleichen: Delta > 5% → Fehler. Ersetzt
+langfristig den unzuverlaessigen LLM-Validator. Bezug zur
+Capability-Matrix: ist Cov-5/Cov-6 Infrastruktur, parallel zu allen
+Capabilities einsetzbar.
 
-Motivation:
-- Bottleneck-Aufloesung (lineare Skalierung statt monolithische
-  Mega-Calls)
-- Bug A behoben: Verschachtelung "Tasche mit Bohrung drin" geht
-  durch (heute: Bohrung verschwindet im notes-String)
-- Praezise Modifikations-Wiederauffindung: jede Aktion hat eigene
-  stabile ID
-- Zukunftsfest fuer Multi-Extrusion-Cases
+#### Phase B Teil 2: Validator-Reverse-Engineering (geplant)
+Spiegelbild der Bau-Kette als Validator: viele kleine Experten von HINTEN
+nach VORNE, anderes Modell als Bau-Pfad fuer unabhaengige Sicht. Jeder
+Validator prueft EIN Aspekt (Position, Drehung, Flaeche, Anker,
+Feature-Count). Deterministisch wo moeglich, LLM nur fuer
+Textverstaendnis-Pruefung. Bezug: ist Cov-5/Cov-6 Infrastruktur.
 
-Details: [`docs/decisions/0003-inventar-feature-definierer-pro-aktion.md`](docs/decisions/0003-inventar-feature-definierer-pro-aktion.md).
+## Architektur-Notizen fuer spaeter
 
-### Phase B: Geometry Assertions (deterministisch)
-Aus dem resolved Blueprint automatisch Tests generieren:
-- Erwartetes Volumen berechnen (Summe aller Teile minus Subtraktionen)
-- Erwartete BBox berechnen
-- Feature-Count verifizieren (Anzahl Bohrungen, Teile)
-- Nach Executor vergleichen: Delta > 5% → Fehler
-- Ersetzt langfristig den unzuverlaessigen LLM-Validator
+Diese Sektion haelt Konzepte fest, die zu spaeteren Capabilities
+(insbesondere 3.0 Komplexe Formen, 4.0 Connections, 5.0 Assemblies)
+gehoeren. Reihenfolge und Details koennen sich aendern.
 
-### Phase C: Verbindungs-Features
-- Neuer semantischer Typ "connection" (Verschraubung, Scharnier, etc.)
-- Resolver erzeugt automatisch Bohrungen auf beiden Seiten
-- Unterstuetzung fuer Winkel-Verbindungen
-- Gewinde als Feature-Typ
-
-### Phase D: Komplexe Formen
-- Templates fuer Loft, Sweep, Revolution, Spline
-- LLM-Codegen fuer nicht-template-faehige Formen
-- RAG mit Beispiel-Code fuer komplexe CadQuery-Operationen
-
-### Phase E: Vision → Blueprint
-- Bild/Skizze → VisionerAgent schaetzt Masse
-- Partielle Specification → Interpreter vervollstaendigt
-- Training auf gesammelten Blueprint-Daten
-
-## Phase-1-Abschluss (Scope-Grenze fuer die aktuelle Baseline)
-
-Phase 1 wird versiegelt wenn folgende Punkte stabil laufen:
-
-1. ✓ 3-Step Blueprint Chain (Inventar → Teil-Definition → Assembly) produktiv
-2. ✓ Anchoring-Vokabular: jede Ecke/Kante/Flaeche eines Teils kann auf jede
-   Ecke/Kante/Flaeche des Eltern-Teils gesetzt werden, inklusive Rotation
-   VOR dem Anchoring. Beispiel: "obere linke Ecke von Platte B liegt auf
-   linker Kante von Wuerfel A, 10mm versetzt, 10 Grad CCW gedreht"
-   Code-Pfad: SemanticAnchor → blueprint_resolver._apply_anchor →
-   assembler._emit_pre_rotation + _emit_face_rotation. Tests in
-   tests/tools/test_anchor_placement.py + test_position_builder_anchor.py
-   + test_assembler_rotation.py (45 tests gruen).
-3. ✓ Feature-Positions-Vokabular erweitert: "in der Ecke", "entlang Kante",
-   "diagonal", "versatz innen/aussen", "parallel zu Achse", "symmetrisch".
-   Empirisch erreicht 2026-05-04 mit Run 3755d81b (3-Teile-Spec mit anchor +
-   edge-distance + nach-aussen, vorher Failcase 91e9771c). 21 Trainings-
-   Cases in data/dspy_training/labeler_platzierer_traces.py, position_extractor
-   reshaped als per-Teil Labeler, _parse_kv akkumuliert Multi-Line-Keys.
-   Siehe Memory project_session_2026_05_04_labeler.md.
-4. Nuten in jeder Variation platzierbar: ueber Flaeche, an Kante, parallel
-   zu Achse, mit Anker-Vokabular. Pockets + Bohrungen + Quader-Extrusionen
-   funktionieren bereits — Nuten nutzen dasselbe Vokabular und sollten
-   durch dieselbe Trainings-Strategie greifen. Vor 4 noch sichern: Punkt 3
-   stabil ueber mehrere reale Runs (auch Pocket-Cases P1-P4 die noch nie
-   real getestet wurden).
-5. Fasen + Rundungen sauber ausbauen: alle Kanten-Auswahl-Varianten (eine
-   Kante, alle horizontalen, alle vertikalen, eine Flaeche umlaufend),
-   sowohl als Fase als auch als Rundung mit Radius/Schraegenmass. Heute
-   teilweise im Coder-Pfad — soll auf Templates wie der Rest umziehen.
-6. Validator-Kette als Reverse-Engineering (Phase B Teil 2):
-   - Spiegelbild der Bau-Kette: viele kleine Experten + deterministische
-     Schritte, aber von HINTEN nach VORNE
-   - Anderes Modell als der Bau-Pfad fuer unabhaengige Sicht
-   - Jeder Validator-Agent bekommt User-Text + Spec + Bau-Output und
-     prueft EIN Aspekt (Position, Drehung, Flaeche, Anker, Feature-Count)
-   - Deterministisch wo moeglich (Geometry Assertions: Volumen, BBox,
-     Feature-Count), LLM nur fuer Textverstaendnis-Pruefung
-   - Kontrolle muss schneller als Erstellung gehen
-   - Modular, wartbar, sauber — gleiche Prinzipien wie der Bau-Pfad
-7. DSPy-Training auf der stabilen Baseline (Prompts von Inventar,
-   Teil-Definierer, Assembly, PositionExtractor separat trainiert)
-
-★ NAECHSTER SCHRITT (2026-05-08, ADR 0005 setzt Phase 1 fort):
-  Regressions-Baseline aufbauen — Component-Goldens (Layer 1) und
-  Pipeline-Goldens mit Text-Variationen (Layer 2) — BEVOR weitere
-  Bug-Fixes, Architektur-Pivots oder DSPy-Training. Feature-Matrix
-  (B1-B4, M1-M3, N1-N2, T1-T4, E1-E5, EF1-EF3, NEST), Phase-Sequenz und
-  offene Bugs (E + Run-Befunde) in
-  `docs/decisions/0005-regressions-baseline-feature-matrix.md`.
-  Beispiele: `tests/golden/components/B1_bohrung_versatz_mitte/`,
-  `B2_bohrung_abstand_kanten/`.
-
-Nach Phase 1: alle weiteren Phasen (B Teil 2, C, D, E, F) bauen additiv
-darauf auf. Schema bleibt eingefroren, neue Feature-Typen nur als Erweiterung.
-
-## Future Architecture (Phase B2 bis F) — Notizen fuer spaeter
-
-Diese Sektion haelt Konzepte fest, die NACH Phase 1 implementiert werden.
-Reihenfolge und Details koennen sich aendern. Zweck: nichts geht verloren,
-und Phase 1 wird nicht durch Zukunftsdetails verwaessert.
-
-### Multi-Assembler (nach Phase 1)
+### Multi-Assembler (Capability 4.0+5.0)
 Heute gibt es genau einen Assembler (MergeAssembler via Union).
 Geplant sind parallele Assembler, gesteuert ueber `feature.type`:
 
@@ -269,7 +265,7 @@ Jeder Assembler liest denselben resolved Blueprint, liefert CadQuery-Code
 fuer seinen Typ-Bereich. Der function_decomposer routet nach `type` an den
 richtigen Assembler.
 
-### ContourSpecifier-Agent (Phase D)
+### ContourSpecifier-Agent (Capability 1.5/3.0)
 Neuer 9b-Agent, der nur eine Aufgabe hat: Freitext-Kontur → strukturierte
 Segmentliste (path).
 
@@ -283,13 +279,13 @@ Segmentliste (path).
 Beispiel-Segmente: `{move: "right", length: 100}`, `{arc: {radius, dir, end_offset}}`,
 `{turn: -40}`, `{close: true}`.
 
-### Spezialisten-Agents (bei Bedarf aufteilen, Phase D+)
+### Spezialisten-Agents (bei Bedarf aufteilen, Capability 1.5/3.0 (additiv splittbar))
 Wenn der ContourSpecifier zu viele Sub-Faelle abdecken muss, weiter splitten:
 Arc-Specifier, Sweep-Specifier, Revolve-Specifier. Jeder ein eigener 9b-Call.
 Erst aufteilen, wenn ein einzelner Agent empirisch ueberfordert ist — nicht
 vorsorglich.
 
-### UI-Assembler-Tab (Face-Picking, nach Phase 1, vor Konturen)
+### UI-Assembler-Tab (Face-Picking, vor Capability 1.5)
 Zweiter UI-Tab (ersetzt oder ergaenzt den heutigen "Result"-Bereich):
 
 - 3D-Viewer zeigt aktuelles Teil, Flaechen anklickbar
@@ -302,7 +298,7 @@ Zweiter UI-Tab (ersetzt oder ergaenzt den heutigen "Result"-Bereich):
 - Nuetzlich auch fuer simple Faelle (praezise Bohrung setzen), nicht nur
   fuer Konturen. Deshalb vor den Konturen einbauen.
 
-### Modify-vs-neu Decider (nach Phase 1)
+### Modify-vs-neu Decider (Capability 4.0+5.0)
 Heute muss der User die Datei abschliessen, bevor ein neues Teil
 generiert wird. Deterministische Loesung:
 
@@ -312,16 +308,16 @@ generiert wird. Deterministische Loesung:
 - Ein schmaler Pre-Schritt im entry_router, rein regelbasiert
 - LLM-Fallback nur, wenn empirisch zu oft falsch entschieden
 
-### Projekt-/Ordner-Agent (Phase F)
+### Projekt-/Ordner-Agent (Capability 8.0+)
 Autonome Struktur fuer mehrere Projekte:
 
 - Thin LLM-Classifier: "neues Projekt?" vs. "in Projekt X ablegen?"
 - Ordner-Erzeugung und Teile-Zuordnung
 - Historie pro Projekt
-- NICHT vor Phase 1 Abschluss bauen — organisatorisches Feature, kein
+- NICHT vor Capability 4.0+ bauen — organisatorisches Feature, kein
   Fortschritt am Kernproblem.
 
-### Modification-Kontext (nach Phase 1)
+### Modification-Kontext (Capability 4.0+5.0)
 Problem: Bei Modifikationen muessen die Agents wissen was schon da ist
 (welche Teile, wo liegen sie, welche Features hat welches Teil). Ohne
 diesen Kontext weiss der Teil-Definierer nicht ob er ein neues Teil
@@ -346,7 +342,7 @@ Offen: Ob das zerpflueckte Blueprint als strukturierter Zusatz (JSON)
 oder als Klartext-Digest besser funktioniert — empirisch testen sobald
 Frisch-Runs stabil laufen. Jetzt nicht implementieren.
 
-### Training-Pairing (Good/Bad-Runs, nach Phase 1)
+### Training-Pairing (Good/Bad-Runs, parallel zu Cov-3+ Goldens)
 Problem: Wenn ein Run fehlschlaegt (z.B. falscher Agent zugewiesen) und
 der naechste Versuch erfolgreich ist, sind beide Runs als Trainingsdaten
 interessant — aber nur, wenn sie als Paar erkennbar sind.
@@ -365,21 +361,15 @@ Geplanter Mechanismus:
 - Manueller Override moeglich: User kann auch Runs mit unterschiedlichem
   Wortlaut paaren (gleiches Ziel, andere Formulierung)
 
-Jetzt nicht implementieren. Sobald Phase 1 Baseline steht und DSPy-Training
+Jetzt nicht implementieren. Sobald Capability 1.0 Cov 4 grün ist und DSPy-Training
 startet, wird das zur relevanten Datenquelle.
 
 ### DSPy-Training-Strategie
-Am Ende Phase 1 einmaliges Baseline-Training:
-
-- Jeder Prompt der 3-Step Chain separat (Inventar, Teil-Definierer, Assembly)
-- PositionExtractor separat
-- Reward-Signal aus Phase B Geometry Assertions (Delta zu erwartetem
-  Volumen/BBox/Feature-Count)
-- Kleine Datenmengen sind OK, solange Reward-Signal sauber ist
-- Bei neuen Features/Modellen spaeter: Entscheidung pro Fall ob
-  Weitertraining oder Neutraining mehr lohnt
-- Vor Training: Schema muss eingefroren sein, sonst trainiert man auf
-  Moving Target
+Sobald Capability 1.0 Cov 4 grün ist: einmaliges Baseline-Training pro
+Sub-Agent (Klassifizierer-Sub-Agents, Normalizer, position_extractor,
+platzierer). Reward-Signal aus Geometry Assertions (Volumen/BBox/
+Feature-Count Delta). Kleine Datenmengen OK solange Reward-Signal sauber.
+Vor Training: Schema eingefroren — sonst Moving Target.
 
 ## Bekannte Limitierungen
 
@@ -387,7 +377,7 @@ Am Ende Phase 1 einmaliges Baseline-Training:
   → Workaround: 0.01mm Inset oder .clean() nach jeder Union
 - Kleine Modelle (9b): Versagen bei raeumlichem Reasoning ohne Think-Modus
 - Validator (LLM): Sagt oft "valid" bei offensichtlichen Fehlern
-  → Wird durch deterministische Geometry Assertions ersetzt (Phase B)
+  → Wird durch deterministische Geometry Assertions ersetzt (Cov-5+6 Infrastruktur)
   → Konkrete bekannte False-Positives haben deterministische Post-Filter
     (z.B. plan_validator pocket_floor — siehe ADR 0002)
 - Fix-Loop: KI gibt manchmal resolved statt semantic Format zurueck

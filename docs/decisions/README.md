@@ -36,3 +36,8 @@ Verweis auf die neue ADR ergaenzt.
 | [0001](0001-pocket-child-placer-mapping-only.md) | accepted | pocket_child_placer macht nur Containment-Mapping, nicht Position-Parsing |
 | [0002](0002-plan-validator-pocket-floor-filter.md) | accepted | plan_validator filtert pocket_floor depth-Errors deterministisch |
 | [0003](0003-inventar-feature-definierer-pro-aktion.md) | proposed | Inventar + feature_definierer auf Pro-Aktion-Mikro-Calls |
+| [0004](0004-bug7-bug8-anchor-edge-and-splitter-feed.md) | accepted | Bug7/Bug8 Anchor-Edge-Konvention + Splitter-Feed |
+| [0005](0005-regressions-baseline-feature-matrix.md) | accepted | Regressions-Baseline + Feature-Matrix vor weiterer Architektur-Arbeit |
+| [0006](0006-classifier-split-and-future-splits.md) | accepted | Klassifizierer-Split in Sub-Agents (hole/pocket/slot/pattern/edge) |
+| [0007](0007-inventar-step-a-pro-teil-chunking.md) | accepted | Inventar Step A Pro-Teil-Chunking fuer Multi-Part-Specs |
+| [0008](0008-capability-coverage-matrix-structure.md) | accepted | Capability×Coverage Matrix als Projekt-Struktur (ersetzt lineare Phasen) |
