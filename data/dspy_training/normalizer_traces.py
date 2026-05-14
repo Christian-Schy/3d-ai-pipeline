@@ -1159,4 +1159,65 @@ TRACES = [
             "parameter: breite=4, tiefe=2, laenge=30, versatz_rechts=6"
         ),
     },
+
+    # ── Anti-'ignorieren'-Demos: tasche/nut mit versatz UND zentral ──────
+    # Beobachtung Run 1c7d13b5 (T_kombo, 1/30 Coin-Flip): Phrase
+    # "oben eine tasche 60x40x10 10mm nach rechts versetzt zentral" wurde
+    # vom Normalizer-LLM als typ='ignorieren' verworfen, weil das Suffix
+    # "versetzt zentral" wie reine Platzierung wirkte. Trotz Klassifizierer
+    # typ='tasche' fiel die Phrase im feature_definierer-Reconcile durch,
+    # da `_NORMALIZER_FAMILY['tasche']` 'ignorieren' nicht enthaelt und
+    # build_feature im Edge-Case None liefert.
+    # Diese Demos verankern: bei klar erkennbarer Geometrie (LxBxT bei
+    # tasche, Achse+Laenge bei nut) ist 'versetzt + zentral' KEIN
+    # Ignorieren-Signal — typ bleibt tasche/nut.
+    {
+        "id": "norm_anti_ignore_tasche_versetzt_zentral",
+        "input": {
+            "beschreibung": "oben eine tasche 60x40x10 10mm nach rechts versetzt zentral",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 100},
+            "specification": "T_kombo basics: pocket center-offset only with explicit size",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "parameter: laenge=60, breite=40, tiefe=10, versatz_rechts=10"
+        ),
+    },
+    {
+        "id": "norm_anti_ignore_tasche_versetzt_zentral_zwei_achsen",
+        "input": {
+            "beschreibung": "oben eine tasche 30x20x6 zentral 5mm nach rechts und 3mm nach unten versetzt",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 50},
+            "specification": "Pocket with two-axis center offset, centered baseline",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "parameter: laenge=30, breite=20, tiefe=6, versatz_rechts=5, versatz_unten=3"
+        ),
+    },
+    {
+        "id": "norm_anti_ignore_nut_versetzt_zentral",
+        "input": {
+            "beschreibung": "oben eine nut 5x4 entlang y-achse laenge 30mm 8mm nach rechts versetzt zentral",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 50},
+            "specification": "Slot with center-offset and centered keyword",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "richtung: y\n"
+            "parameter: breite=5, tiefe=4, laenge=30, versatz_rechts=8"
+        ),
+    },
 ]
