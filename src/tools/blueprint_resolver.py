@@ -590,8 +590,21 @@ def _apply_edge_distances_axis(
     child_w: float = 0.0,
     child_h: float = 0.0,
     is_box: bool = False,
+    is_box_wx: bool | None = None,
+    is_box_wy: bool | None = None,
 ) -> tuple[float, float, bool, bool]:
-    """Same as _apply_edge_distances but also reports which axis was set."""
+    """Same as _apply_edge_distances but also reports which axis was set.
+
+    is_box_wx / is_box_wy override `is_box` per workplane axis. Used by slots
+    where the length axis follows DIN edge-to-EDGE (start/end of slot is the
+    fertigungsrelevante reference) but the width axis stays edge-to-CENTER
+    (the centerline is the natural reference for the milling tool path).
+    """
+    if is_box_wx is None:
+        is_box_wx = is_box
+    if is_box_wy is None:
+        is_box_wy = is_box
+
     mapping = _EDGE_AXIS_MAP.get(face, _EDGE_AXIS_MAP[">Z"])
     ox, oy = 0.0, 0.0
     ox_set, oy_set = False, False
@@ -608,14 +621,14 @@ def _apply_edge_distances_axis(
             continue
         axis, sign = axis_info
         half = parent_w / 2 if axis == "wx" else parent_h / 2
-        
-        # For boxes, edge distance means edge-to-edge. For holes, it's edge-to-center.
+
+        is_box_for_axis = is_box_wx if axis == "wx" else is_box_wy
         child_half = 0.0
-        if is_box:
+        if is_box_for_axis:
             child_half = child_w / 2 if axis == "wx" else child_h / 2
-            
+
         val_signed = sign * (half - val - child_half)
-        
+
         if axis == "wx" and not ox_set:
             ox, ox_set = val_signed, True
         elif axis == "wy" and not oy_set:
@@ -984,8 +997,25 @@ def _compute_offsets(
             is_hole_like = any(ftype_lower.startswith(p) or ftype_lower == p
                                for p in _HOLE_LIKE_PREFIXES)
             is_box = child_w > 0 and child_h > 0 and not is_hole_like
+
+            # DIN-Konvention fuer Slot/Groove: Length-Achse = edge-to-EDGE
+            # (Slot-Endpunkt ist fertigungsrelevant), Width-Achse =
+            # edge-to-CENTER (Centerline ist Werkzeug-Referenz). Nur fuer
+            # rechtwinklige Slot-Orientierung (angle 0/90/180); andere
+            # Winkel fallen auf das Default-Verhalten zurueck.
+            is_box_wx = is_box_wy = None
+            if ftype_lower in ("slot", "groove") and child_w > 0 and child_h > 0:
+                a = abs(float(angle_deg or 0.0)) % 180.0
+                if math.isclose(a, 0.0, abs_tol=1e-6) or math.isclose(a, 180.0, abs_tol=1e-6):
+                    # _get_child_face_size returned (length, width) → wx is length
+                    is_box_wx, is_box_wy = True, False
+                elif math.isclose(a, 90.0, abs_tol=1e-6):
+                    # _get_child_face_size returned (width, length) → wy is length
+                    is_box_wx, is_box_wy = False, True
+
             ox_e, oy_e, ox_edge_set, oy_edge_set = _apply_edge_distances_axis(
-                face, non_zero, parent_w, parent_h, child_w, child_h, is_box
+                face, non_zero, parent_w, parent_h, child_w, child_h, is_box,
+                is_box_wx=is_box_wx, is_box_wy=is_box_wy,
             )
             ox_from_edges, oy_from_edges = ox_e, oy_e
 

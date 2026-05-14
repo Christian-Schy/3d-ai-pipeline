@@ -51,7 +51,7 @@ Slot mit `pocket_edge_distances` ist edge-to-edge → child_half aus Slot-Footpr
 | nut_zentral_x_l30 | Standard mittig | alignment centered, kein offset | 0, 0 | 0 | 0 | 0 | l30 w5 d5 |
 | nut_versatz_rechts_y_l40 | Versatz + Achse | center_offset{right:10}, entlang y | +10, 0 | 10 | 0 | 90 | l40 w5 d5 |
 | nut_versatz_rechts_x_durchg | Versatz auf Achsen-Achse, durchgaengig | center_offset{right:10}, length=100 | +10, 0 | 10 | 0 | 0 | l100 w5 d5 |
-| nut_kanten_top30_left20_y_l40 | edge_distances zwei Achsen | edge{top:30, left:20}, entlang y | +(50-20), -? | -30 | +20 | 90 | l40 w5 d5 |
+| nut_kanten_top30_left20_y_l40 | edge_distances zwei Achsen (DIN-Slot) | edge{top:30, left:20}, entlang y | length-axis edge, width-axis center | -30 | 0 | 90 | l40 w5 d5 |
 | nut_mix_axes_x_l50 | Mischung B3 | pocket_edge{right:30} + center{bottom:10}, entlang x | +(50-30-25), -10 | -5 | -10 | 0 | l50 w5 d5 |
 | nut_rechts_face_y_l40 | Andere Face | side=rechts, alignment centered | 0, 0 (auf >X) | 0 | 0 | 0 | l40 w5 d5 |
 | nut_anchor_right_edge_y_l40 | Anchor Kante + Offset | anchor{right_edge, offset{top:10}}, entlang y | (+50, 0) + (0, +10) | 50 | 10 | 90 | l40 w5 d5 |
@@ -61,8 +61,10 @@ Slot mit `pocket_edge_distances` ist edge-to-edge → child_half aus Slot-Footpr
 ### Detail-Mathe pro Variation
 
 **nut_kanten_top30_left20_y_l40:**
-- top:30 → wy +1, oy = +(50-30) = +20
-- left:20 → wx -1, ox = -(50-20) = -30
+- DIN-Slot-Konvention per Achse: length-axis (entlang Y, hier wy) ist edge-to-EDGE,
+  width-axis (wx) ist edge-to-CENTER (Centerline = Werkzeugreferenz).
+- top:30 → wy (length-axis), oy = +(50 - 30 - 40/2) = 0
+- left:20 → wx (width-axis), ox = -(50 - 20 - 0) = -30
 
 **nut_mix_axes_x_l50** (Mischung Achsen, edge-to-edge auf X + center auf Y):
 - right:30 → wx +1, Slot entlang X hat child_half=length/2=25

@@ -49,7 +49,7 @@
         "face": ">Z",
         "alignment": "centered",
         "offset_x": -30.0,
-        "offset_y": 20.0,
+        "offset_y": 0.0,
         "angle_deg": 90.0
       }
     },

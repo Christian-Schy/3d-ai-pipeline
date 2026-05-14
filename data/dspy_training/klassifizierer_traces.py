@@ -1325,10 +1325,10 @@ TRACES.extend([
             "seite": "oben",
             "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 40,
                                 "richtung": "y",
-                                "kante_oben": 30, "kante_links": 20},
+                                "abstand_oben": 30, "abstand_links": 20},
         },
         "source_run": None,
-        "bug_pattern": "slot kante_oben/kante_links bislang nicht in Demos",
+        "bug_pattern": "slot 'von X-kante' (ohne 'deren') = abstand_* default; Resolver buegelt fuer slot DIN-konform per-Achse",
     },
     {
         "id": "klass_curated_nut_oben_x_kante_rechts_und_versatz",
@@ -1341,10 +1341,10 @@ TRACES.extend([
             "seite": "oben",
             "parameter_hints": {"breite": 5, "tiefe": 5, "laenge": 50,
                                 "richtung": "x",
-                                "kante_rechts": 30, "versatz_unten": 10},
+                                "abstand_rechts": 30, "versatz_unten": 10},
         },
         "source_run": None,
-        "bug_pattern": "slot kante_rechts + versatz auf anderer Achse",
+        "bug_pattern": "slot 'von X-kante' (ohne 'deren') = abstand_*; versatz_unten getrennt auf zweiter Achse",
     },
     {
         "id": "klass_curated_nut_oben_y_kante_rechts_anliegend",
@@ -1615,10 +1615,10 @@ TRACES.extend([
             "seite": "oben",
             "parameter_hints": {"breite": 5, "tiefe": 3, "laenge": 40,
                                 "richtung": "y",
-                                "kante_links": 12, "kante_oben": 18},
+                                "abstand_links": 12, "abstand_oben": 18},
         },
         "source_run": None,
-        "bug_pattern": "v2 palette: slot y-axis with two feature-edge distances",
+        "bug_pattern": "v2 palette: slot 'von X-kante Y mm' default abstand_*; Resolver per-Achse Slot-Konvention liefert DIN-konform (length-axis edge-to-edge, width-axis edge-to-center)",
     },
     {
         "id": "klass_v2_slot_right_z_full_offset",
@@ -1726,6 +1726,92 @@ TRACES.extend([
         },
         "source_run": None,
         "bug_pattern": "v2 palette: slot on additive plate",
+    },
+
+    # ── Grenzfall-Demos: 'deren X-kante' vs 'von X-kante' Unterscheidung ──
+    # Zweck: LLM zuverlaessig trainieren, wann kante_* (explizite Feature-
+    # Edge-Referenz) vs abstand_* (default, Feature-Center) emittiert wird.
+    # Slot-Achsen-Konvention DIN: Resolver fuegt per-Achse die korrekte
+    # Geometrie hinzu (length-axis edge-to-EDGE, width-axis edge-to-CENTER).
+    # Trotzdem: konsistente abstand_*/kante_* Emission verhindert Coin-Flip
+    # Verhalten beim Klassifizierer (Beobachtung V2 Real-Runs 2026-05-14).
+    {
+        "id": "klass_grenzfall_nut_deren_obere_kante",
+        "phrase": "oben eine nut 5x3 entlang y-achse laenge 40mm deren obere kante 18mm von oberer wuerfelkante entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 5, "tiefe": 3, "laenge": 40,
+                                "richtung": "y",
+                                "kante_oben": 18},
+        },
+        "source_run": None,
+        "bug_pattern": "grenzfall: 'deren X-kante' = expliziter Feature-Edge -> kante_*",
+    },
+    {
+        "id": "klass_grenzfall_nut_von_oberer_kante_default",
+        "phrase": "oben eine nut 5x3 entlang y-achse laenge 40mm von oberer kante 18mm entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 5, "tiefe": 3, "laenge": 40,
+                                "richtung": "y",
+                                "abstand_oben": 18},
+        },
+        "source_run": None,
+        "bug_pattern": "grenzfall: 'von X-kante' (kein deren) = default abstand_* (Resolver buegelt fuer slot DIN-konform)",
+    },
+    {
+        "id": "klass_grenzfall_tasche_von_kante_default",
+        "phrase": "oben eine tasche 30x20x6 von oberer kante 15mm und von linker kante 10mm entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 6,
+                                "abstand_oben": 15, "abstand_links": 10},
+        },
+        "source_run": None,
+        "bug_pattern": "grenzfall: pocket 'von X-kante' (kein deren) = default abstand_*",
+    },
+    {
+        "id": "klass_grenzfall_tasche_deren_kante",
+        "phrase": "oben eine tasche 30x20x6 deren obere kante 15mm und deren linke kante 10mm von wuerfelkante entfernt",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 6,
+                                "kante_oben": 15, "kante_links": 10},
+        },
+        "source_run": None,
+        "bug_pattern": "grenzfall: pocket 'deren X-kante' = expliziter Feature-Edge -> kante_*",
+    },
+    {
+        "id": "klass_grenzfall_nut_centerline_explicit",
+        "phrase": "oben eine nut 6x4 entlang x-achse laenge 50mm centerline 15mm von oberer kante",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 30},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 6, "tiefe": 4, "laenge": 50,
+                                "richtung": "x",
+                                "abstand_oben": 15},
+        },
+        "source_run": None,
+        "bug_pattern": "grenzfall: 'centerline' = expliziter Center-Bezug -> abstand_* (auch ohne 'kante' im Phrasing-Pattern)",
     },
 ])
 
