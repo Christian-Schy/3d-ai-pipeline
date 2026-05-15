@@ -80,6 +80,35 @@ Resolver kombiniert per-Achse via Prioritaets-Reihenfolge:
 der Position. "unten rechts jeweils 10mm" → abstand_unten=10 +
 abstand_rechts=10. Klassifizierer-Prompt enthaelt diese Regel.
 
+### Mass-Ketten (DIN-Anti-Pattern)
+
+DIN 406 raet **explizit ab von Mass-Ketten** ("von links 10, dann 20, dann
+15") weil sie Toleranzen aufsummieren. Konstrukteure setzen stattdessen
+alle Masse von einem **gemeinsamen Bezug** aus.
+
+Im Pipeline-Kontext heisst das: wenn der User "von linker Kante 10mm, dann
+weitere 20mm zur naechsten Bohrung" sagt, **muss** der Normalizer/
+Klassifizierer das in absolute Masse aufloesen:
+
+| User-Phrase | Aufloesung |
+|---|---|
+| "Bohrung A 10mm von links, Bohrung B 20mm weiter rechts" | A: `abstand_links: 10`, B: `abstand_links: 30` |
+| "von oben 5, dann 15 weiter, dann 10 weiter (3 Bohrungen)" | `abstand_oben: 5`, `abstand_oben: 20`, `abstand_oben: 30` |
+
+Der Klassifizierer erkennt Trigger-Woerter ("dann", "weiter", "danach",
+"jeweils zusaetzliche") und akkumuliert die Distanz auf den letzten
+gemeinsamen Bezug. Wenn kein gemeinsamer Bezug erkennbar ist (z.B. "10mm
+zwischen den Bohrungen"), ist das ein **Feature-zu-Feature-Bezug**
+(Capability 6.0 / Coverage-Matrix A7), nicht A1.
+
+Heute (Cap 1.0) ist Mass-Ketten-Aufloesung **noch nicht implementiert** —
+Klassifizierer-Prompt sollte zumindest mit "ungekettete" Mass-Eingabe
+korrekt umgehen und kettenartige Phrasen als Limitation kennen.
+
+**Anti-Empfehlung an den User:** wenn moeglich, beim Beschreiben pro
+Feature direkt den absoluten Abstand zur Bauteilkante nennen, nicht
+inkrementell.
+
 ## Code-Pfad
 
 - **Klassifizierer-Prompts:** [`data/prompts/prompt_classifier_pocket.py`](../../data/prompts/prompt_classifier_pocket.py),

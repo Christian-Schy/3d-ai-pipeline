@@ -63,9 +63,52 @@ hinaus ragen. Genau diese Fall-Klasse triggerte die Konvention.
 
 Wenn die Phrase "deren X-Kante" sagt, gewinnt `pocket_edge_distances`
 auf BEIDEN Achsen (auch Width). Das ist die explizite Konstrukteur-
-Forderung "die Slot-Kante exakt X mm vom Rand". Das LLM uebergibt
+Forderung "die Nut-Kante exakt X mm vom Rand". Das LLM uebergibt
 beide Felder; der Resolver `pocket_edge_distances`-Pfad ueberschreibt
 die Default-Slot-Per-Achse-Logik.
+
+### Bemassung bei rotierter Nut (≠ 90er)
+
+Bei rotierten Nuten (C2/C3, Rotation ungleich Vielfache von 90°) bemasst
+der Konstrukteur **immer zum Nut-CENTER**, nicht zu einer Length-Kante.
+Begruendung: Length-Kanten sind nach Rotation diagonal — keine sinnvolle
+DIN-Bezugskante mehr. Der Resolver faellt deshalb auf edge-to-CENTER fuer
+**beide** Achsen zurueck (siehe auch oben "Slot-Rotation ungleich 0°/90°/
+180°").
+
+Beispiel N09: "Vorne eine Nut 5x3, 30mm lang entlang X, um 30° gedreht,
+von linker Kante 30mm und von unterer Kante 15mm" → beide `abstand_*`-Werte
+sind zum Nut-CENTER, nicht zu Length-Endpunkten.
+
+### Anfangs-/Endpunkt-Phrasen sind self-contained
+
+Wenn Anfangs- und Endpunkt einer Nut beide angegeben werden, ergeben sich
+**Achse + Laenge + (bei diagonalen Punkten) Rotation implizit**. Die Phrase
+braucht **keine** zusaetzliche `entlang X`- / "verlaeuft nach"-Angabe.
+Klassifizierer/Normalizer leitet die Slot-Achse aus den Punkt-Koordinaten ab.
+
+Beispiel N04: "Anfangspunkt 20mm von linker Kante, Endpunkt 80mm von
+linker Kante" → beide Punkte teilen die Y-Position (impliziert durch
+"von vorderer Kante 30mm"), unterscheiden sich nur im X. Daraus folgt:
+Nut verlaeuft entlang X, Laenge = 60mm, Rotation = 0°.
+
+### `versatz_*` referenziert immer Nut-CENTER
+
+Anders als `abstand_*` (das per-Achse-DIN unterschiedlich behandelt:
+Length-Achse edge-to-edge, Width-Achse edge-to-center), referenziert
+`versatz_*` **immer den Nut-CENTER** — auch auf der Length-Achse. Das ist
+die Definition von Achse A3 (center-relativ).
+
+Beispiel N12: "Oben eine Nut 5x3, 40mm lang entlang X, von vorderer Kante
+20mm **und 15mm aus der Mitte nach links versetzt**":
+- `abstand_vorne: 20` → edge-to-CENTER auf Y (Width-Achse) → Nut-
+  Centerline 20mm vom vorderen Rand
+- `versatz_links: 15` → **Nut-CENTER** bei -15 auf X (Length-Achse),
+  **nicht** der Length-Endpunkt
+
+Wer wirklich den Length-Endpunkt referenzieren will, schreibt
+`abstand_links: 15` — dann greift die DIN-Slot-Konvention (Length=edge-to-
+edge) und der Nut-Endpunkt landet 15mm vom Bauteilrand.
 
 ## Code-Pfad
 
@@ -86,6 +129,8 @@ die Default-Slot-Per-Achse-Logik.
 
 ## Tests
 
+### Bestehende Tests (Stand pre-Coverage-Matrix)
+
 - Unit: [`tests/tools/test_kante_vs_abstand.py`](../../tests/tools/test_kante_vs_abstand.py)
   `test_kante_top_left_on_y_slot_uses_width_and_length` — explizite
   pocket_edge_distances bei Slot.
@@ -97,6 +142,55 @@ die Default-Slot-Per-Achse-Logik.
 - DSPy-Demos: 8 Slot-Demos in [`data/dspy_training/klassifizierer_traces.py`](../../data/dspy_training/klassifizierer_traces.py)
   (5 mit `abstand_*` fuer "von X-kante", 3 mit `kante_*` fuer "deren
   X-kante" / "die X-kante" / "liegt X-kante an").
+
+### Coverage-Matrix-Test-Liste (Cov-3-Ergaenzung, Matrix-abgeleitet)
+
+Relevante Matrix-Zellen (siehe [`11_coverage_matrix.md`](11_coverage_matrix.md)):
+**A1, A2, A3, A4, A6** × **B0, B1, B2, B3** × **C0, C1, C2, C3** × **D1, D2**.
+A5 (Bauteil-Face-Anker) ist fuer line-like Slots **nicht** relevant.
+
+Bauteil fuer alle Tests: **Wuerfel 120x90x50**.
+Pro Test pflegen wir **D1** + **D2**.
+
+| ID | Face | Matrix-Zellen | D1 (Feature → Position) | D2 (Position → Feature) |
+|---|---|---|---|---|
+| **N01** | oben | A1, B2, **C1** *(entlang Y, length-swap)* | "Wuerfel 120x90x50. Oben eine Nut 5 breit, 3 tief, 40mm lang entlang Y-Achse, von linker Kante 12mm und von oberer Kante 18mm." | "Wuerfel 120x90x50. Oben 12mm von linker Kante und 18mm von oberer Kante eine Nut 5x3, 40mm lang entlang Y-Achse." |
+| **N02** | oben | A1, B2, **C0** *(entlang X, default)* | "Wuerfel 120x90x50. Oben eine Nut 5x3, 40mm lang entlang X-Achse, von vorderer Kante 12mm und von linker Kante 18mm." | "Wuerfel 120x90x50. Oben 12mm von vorderer Kante und 18mm von linker Kante eine Nut 5x3, 40mm lang entlang X-Achse." |
+| **N03** | oben | A1, B2, C1 — Richtungs-Verb statt "entlang" | "Wuerfel 120x90x50. Oben eine Nut 5x3, 40mm lang, verlaeuft nach hinten, von linker Kante 12mm und von vorderer Kante 18mm." | "Wuerfel 120x90x50. Oben 12mm von linker Kante und 18mm von vorderer Kante eine Nut 5x3, 40mm lang die nach hinten verlaeuft." |
+| **N04** | oben | A1, B2, C0 — Anfangs-/Endpunkt statt `laenge` | "Wuerfel 120x90x50. Oben eine Nut 5x3, Anfangspunkt 20mm von linker Kante, Endpunkt 80mm von linker Kante, von vorderer Kante 30mm." | "Wuerfel 120x90x50. Oben, Anfangspunkt 20mm von linker Kante, Endpunkt 80mm von linker Kante, 30mm von vorderer Kante, eine Nut 5x3." |
+| **N05** | rechts | **A2**, B2, C1 *(entlang Z)* | "Wuerfel 120x90x50. Rechts eine Nut 4 breit, 2 tief, 30mm lang entlang Z-Achse, die obere Nut-Kante 15mm von der oberen Wuerfelkante." | "Wuerfel 120x90x50. Rechts mit der oberen Nut-Kante 15mm von der oberen Wuerfelkante eine Nut 4x2, 30mm lang entlang Z-Achse." |
+| **N06** | vorne | A3+A4, B1, C0 | "Wuerfel 120x90x50. Vorne eine zentrierte Nut 6x4, 50mm lang entlang X-Achse, 5mm aus der Mitte nach oben versetzt." | "Wuerfel 120x90x50. Vorne 5mm aus der Mitte nach oben versetzt eine zentrierte Nut 6x4, 50mm lang entlang X-Achse." |
+| **N07** | unten | A6, C1 *(entlang Y)* | "Wuerfel 120x90x50. Unten eine Nut 5x3, 25mm lang entlang Y-Achse, jeweils 10mm von linker und vorderer Kante." | "Wuerfel 120x90x50. Unten jeweils 10mm von linker und vorderer Kante eine Nut 5x3, 25mm lang entlang Y-Achse." |
+| **N08** | hinten | A4, B0, C0 | "Wuerfel 120x90x50. Hinten eine zentrierte Nut 6x3, 40mm lang entlang X-Achse." | "Wuerfel 120x90x50. Hinten zentriert eine Nut 6x3, 40mm lang entlang X-Achse." |
+| **N09** | vorne | A1, B2, **C2** *(CCW ≠ 90er)* | "Wuerfel 120x90x50. Vorne eine Nut 5x3, 30mm lang entlang X-Achse, um 30° gedreht, von linker Kante 30mm und von unterer Kante 15mm." | "Wuerfel 120x90x50. Vorne 30mm von linker Kante und 15mm von unterer Kante eine Nut 5x3, 30mm lang entlang X-Achse, um 30° gedreht." |
+| **N10** | hinten | A1, B2, **C3** *(CW ≠ 90er)* | "Wuerfel 120x90x50. Hinten eine Nut 5x3, 30mm lang entlang X-Achse, um 20° im Uhrzeigersinn gedreht, von rechter Kante 25mm und von unterer Kante 15mm." | "Wuerfel 120x90x50. Hinten 25mm von rechter Kante und 15mm von unterer Kante eine Nut 5x3, 30mm lang entlang X-Achse, um 20° im Uhrzeigersinn gedreht." |
+| **N11** | links | A1+A4, B1, **C1** *(parallel zur Kante)* | "Wuerfel 120x90x50. Links eine Nut 4x2, 30mm lang, parallel zur unteren Kante, mittig auf der Hoehe und 15mm von rechter Kante." | "Wuerfel 120x90x50. Links mittig auf der Hoehe und 15mm von rechten Kante eine Nut 4x2, 30mm lang parallel zur unteren Kante." |
+| **N12** | oben | A1+A3, **B3**, C0 *(entlang X)* | "Wuerfel 120x90x50. Oben eine Nut 5x3, 40mm lang entlang X-Achse, von vorderer Kante 20mm und 15mm aus der Mitte nach links versetzt." | "Wuerfel 120x90x50. Oben 20mm von vorderer Kante und 15mm aus der Mitte nach links versetzt eine Nut 5x3, 40mm lang entlang X-Achse." |
+
+**Coverage-Check:**
+- A1 ✓ (N01, N02, N03, N04, N09, N10, N11, N12)
+- A2 ✓ (N05) — forciert edge-to-EDGE auf beiden Achsen
+- A3 ✓ (N06, N12)
+- A4 ✓ (N06, N08, N11) — pur (N08) + single-axis (N06, N11)
+- A6 ✓ (N07)
+- B0 ✓ (N08)
+- B1 ✓ (N06, N11)
+- B2 ✓ (N01, N02, N03, N04, N05, N09, N10)
+- B3 ✓ (N12)
+- C0 ✓ (N02, N04, N06, N08, N12) — entlang X, kein Drehwinkel
+- C1 ✓ (N01, N03, N05, N07, N11) — 90°-Vielfaches (entlang Y/Z oder "parallel zu …")
+- C2 ✓ (N09) — CCW +30°
+- C3 ✓ (N10) — CW -20°
+- D1+D2 pro Test ✓
+- Richtungs-Wordings: "entlang Achse" (N01, N02, N04-N12), "verlaeuft nach" (N03), "Anfangs-/Endpunkt" (N04), "parallel zu Kante" (N11)
+- Per-Achse-DIN (Length=edge-to-edge, Width=edge-to-center): implizit in N01 (Y-Length: oy=+7), N02 (X-Length: ox=±..), N06, N07, N12
+
+**Seiten-Verteilung:** oben 5x, unten 1x, vorne 2x, hinten 2x, links 1x, rechts 1x → alle 6 Seiten min. 1x.
+
+**Rotation-Edge-Case (Konv. 21 ≠ 90er):** N09 (C2) und N10 (C3) triggern den
+Konvention-21-Sonderfall — Length-Achse ist keine reine wx/wy mehr, Resolver
+faellt auf konservatives edge-to-CENTER auf beiden Achsen zurueck. Test
+prueft, dass Slot innerhalb des Bauteils landet (kein Ueberragen).
 
 ## Referenzen
 

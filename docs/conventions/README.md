@@ -63,10 +63,14 @@ Pro Capability eine Datei. Jede Datei enthaelt:
 | Nr. | Capability | Status |
 |---|---|---|
 | [10](10_masseintragung_din406.md) | Masseintragung allgemein (DIN 406, ISO 129) | aktiv |
+| [11](11_coverage_matrix.md) | Coverage-Matrix (Test-Aufbau pro Feature) | aktiv |
+| [20](20_bohrung_din.md) | Bohrung (point-like, Matrix-abgeleitet) | aktiv (Pilot) |
 | [21](21_nut_slot_din.md) | Nut/Slot-Bemassung (Length-Achse vs Width-Achse) | aktiv |
-| 20 | Bohrung (Durchmesser, Toleranzen, Senkungen) | TBD |
-| 22 | Tasche/Pocket-Bemassung | TBD |
-| 23 | Polygon + Extended Primitives | TBD |
+| [22](22_tasche_din.md) | Tasche/Pocket-Bemassung | aktiv (Coverage-Matrix-abgeleitet) |
+| 23 | Polygon + Extended Primitives | TBD (Capability 1.5) |
+| [24](24_pattern_din.md) | Pattern (Grid/Kreis/Linear-Reihe) | aktiv (Coverage-Matrix-abgeleitet) |
+| [25](25_plate_din.md) | Plate-Assembly (Stack/Side/Auflage-Face) | aktiv (Coverage-Matrix-abgeleitet) |
+| [26](26_edge_features_din.md) | Edge Features (Fase / Rundung — DIN 6784 / ISO 13715) | aktiv (Coverage-Matrix-abgeleitet) |
 | 30 | Toleranzen ISO 286 (IT-Klassen, H7/g6) | TBD |
 | 31 | GD&T ISO 1101 (Form-/Lagetoleranzen) | TBD |
 | 40 | Norm-Bauteile DIN (Schrauben, Lager, Stifte) | TBD |
