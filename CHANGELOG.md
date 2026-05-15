@@ -8,6 +8,24 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-15
+
+- **Pattern-A1-Konvention encoded: `hole_pattern_linear` mit
+  `edge_distances` referenziert outermost-Hole.** Per Konvention
+  [`docs/conventions/24_pattern_din.md`](docs/conventions/24_pattern_din.md)
+  unterscheidet die Pattern-Bemassung jetzt nach Typ: Grid und Linear-Reihe
+  beziehen `abstand_*` auf die **outermost-Hole** (DIN-konstrukteurnah),
+  Kreis bleibt auf den Pattern-Center (Teilkreis-Bezugspunkt). Im Resolver
+  rechnet `_get_child_face_size` fuer `hole_pattern_linear` jetzt den
+  Pattern-Span `(count-1)*spacing` entlang der direction-Achse als
+  Footprint zurueck, und `_compute_offsets` setzt fuer Linear das
+  per-Achse `is_box_wx/wy`-Flag analog zu Slot — so subtrahiert die
+  edge-Distance-Math den Pattern-Half auf der Richtungs-Achse, waehrend
+  die perpendikulare Achse edge-to-center bleibt. Grid erbt die Konvention
+  bereits aus dem `count + inset`-Template (inset IST die
+  outermost-Hole-Distance). Kreis braucht keine Aenderung. Full Heatmap
+  18/0 — V2_balanced_feature_palette ebenfalls geheilt (vorher 17/1).
+
 ## 2026-05-14
 
 - **Platzierer-Stabilitaet: Anchor-Recognition + Merge-Logik-Fix.**

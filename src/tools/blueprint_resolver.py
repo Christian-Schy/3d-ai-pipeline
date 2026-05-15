@@ -468,6 +468,25 @@ def _get_child_face_size(
        as `_get_face_dimensions`.
     """
     ftype_lower = (feat_type or "").lower()
+
+    # Pattern-Footprint fuer Linear-Reihe (DIN-Konvention 24: A1-Bezug
+    # = outermost-Hole, nicht Pattern-Center). Footprint nur entlang der
+    # direction-Achse; perpendicular bleibt 0 = edge-to-center.
+    # Grid hat im aktuellen Schema (count+inset) keinen separaten
+    # edge_distance-Eingriff — inset deckt die A1-Konvention direkt ab.
+    # Kreis bleibt edge-to-center (Teilkreis-Center ist DIN-Bezugspunkt).
+    if ftype_lower == "hole_pattern_linear":
+        try:
+            count = int(child_params.get("count") or 0)
+            spacing = float(child_params.get("spacing") or 0)
+        except (TypeError, ValueError):
+            count, spacing = 0, 0.0
+        direction = str(child_params.get("direction") or "x").lower()
+        span = max(0.0, (count - 1) * spacing) if count > 1 else 0.0
+        if direction == "y":
+            return (0.0, span)
+        return (span, 0.0)
+
     is_slot = ftype_lower == "slot" or (
         "width" in child_params and "length" in child_params
     )
@@ -1012,6 +1031,17 @@ def _compute_offsets(
                 elif math.isclose(a, 90.0, abs_tol=1e-6):
                     # _get_child_face_size returned (width, length) → wy is length
                     is_box_wx, is_box_wy = False, True
+
+            # DIN-Konvention 24 fuer hole_pattern_linear: A1 (`abstand_*`)
+            # bezieht sich auf die outermost-Hole, nicht den Pattern-Center.
+            # Direction-Achse = edge-to-EDGE (Pattern-Span subtrahieren),
+            # perpendicular = edge-to-CENTER (Default).
+            if ftype_lower == "hole_pattern_linear" and (child_w > 0 or child_h > 0):
+                direction = str(child_params.get("direction") or "x").lower()
+                if direction == "y":
+                    is_box_wx, is_box_wy = False, True
+                else:
+                    is_box_wx, is_box_wy = True, False
 
             ox_e, oy_e, ox_edge_set, oy_edge_set = _apply_edge_distances_axis(
                 face, non_zero, parent_w, parent_h, child_w, child_h, is_box,
