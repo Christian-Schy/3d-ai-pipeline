@@ -10,6 +10,22 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-15
 
+- **L2-Coverage-Pilot: `B_coverage_all_sides_all_wordings` (Bohrung).**
+  Erstes von vier geplanten L2-Coverage-Goldens (CLAUDE.md "Capability 1.0
+  → Cov 4"). Deckt H01-H06 + H08-H10 aus `docs/conventions/20_bohrung_din.md`
+  ab — 9 Bohrungen auf einem Wuerfel 100x80x40 ueber alle 6 Seiten mit
+  A1/A3/A4/A6 × B0-B3 × C0. Pipeline-Test PASS in 78s, voller Heatmap
+  19/0 (B/T/N/M/E/EF/V2/NEST/M_kombo). Resolver-Math via einmaligem
+  `resolve_blueprint` aus semantischem Input erzeugt.
+
+- **Konventions-Korrektur 20 (Bohrung): A5 (Bauteil-Face-Anker) entfaellt
+  fuer point-like Bohrung.** "In der oberen rechten Ecke 8mm nach links
+  versetzt" ist mathematisch identisch zu A1 mit
+  `abstand_rechts: 8`; eine Bohrung hat keine eigene Ecke. A5 gilt
+  weiterhin fuer Plate (Konvention 25), Tasche (22) und Pattern (24) —
+  also Features mit eigener Bounding-Box. H07 entfaellt aus Test-Liste
+  (9 statt 10 Cases).
+
 - **Pattern-A1-Konvention encoded: `hole_pattern_linear` mit
   `edge_distances` referenziert outermost-Hole.** Per Konvention
   [`docs/conventions/24_pattern_din.md`](docs/conventions/24_pattern_din.md)

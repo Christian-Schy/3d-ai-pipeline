@@ -1,0 +1,157 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {
+        "x": 100,
+        "y": 80,
+        "z": 40
+      },
+      "operation": "add"
+    },
+    "h01_oben_a1_b2": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 8,
+        "depth": 20
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -25.0,
+        "offset_y": -20.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "h02_vorne_a3_b2": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 6,
+        "depth": 15
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 8.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "h03_unten_a1_a3_b3": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 10,
+        "depth": 12
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": -30.0,
+        "offset_y": 15.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "h04_hinten_a4_a1_b1": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 8,
+        "depth": 16
+      },
+      "placement": {
+        "face": ">Y",
+        "alignment": "centered",
+        "offset_x": 30.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "h05_links_a4_pur": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 12,
+        "depth": 20
+      },
+      "placement": {
+        "face": "<X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "h06_rechts_a6": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 10,
+        "depth": 12
+      },
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 25.0,
+        "offset_y": 5.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "h08_unten_a1_a4_b1": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 6,
+        "depth": 12
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": -10.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "h09_hinten_a3_a4_b1": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 8,
+        "depth": 12
+      },
+      "placement": {
+        "face": ">Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 12.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "h10_oben_a4_a3_b3": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 6,
+        "depth": 10
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 20.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    }
+  }
+}

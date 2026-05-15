@@ -1,0 +1,8 @@
+# Spec-Varianten fuer B_coverage (Bohrung-Capability L2 Cov-3).
+# Eine Spec pro Zeile. Jede Variante muss dasselbe expected_resolved.json produzieren.
+# Konstruiert aus H01-H10 in docs/conventions/20_bohrung_din.md, D1+D2 Varianten.
+
+# D1 — Feature-zuerst Wording-Variante (9 Bohrungen H01-H06 + H08-H10).
+# A5 (Bauteil-Face-Ecke + Versatz) entfaellt fuer point-like Bohrung —
+# siehe docs/conventions/20_bohrung_din.md A5-Sektion.
+wuerfel 100x80x40. oben eine bohrung 8mm 20 tief von linker kante 25mm und von vorderer kante 20mm, vorne eine bohrung 6mm 15 tief 10mm aus mitte nach rechts und 8mm aus mitte nach oben, unten eine bohrung 10mm 12 tief von linker kante 20mm und 15mm aus mitte nach hinten, hinten eine bohrung 8mm 16 tief mittig auf der hoehe und von rechter kante 20mm, links eine zentrierte bohrung 12mm 20 tief, rechts eine bohrung 10mm 12 tief jeweils 15mm von oberer und rechter kante, unten eine bohrung 6mm 12 tief mittig in der breite und 30mm von der vorderen kante, hinten eine bohrung 8mm 12 tief mittig in der breite und 12mm aus mitte nach oben, oben eine bohrung 6mm 10 tief mittig auf der y-achse und 20mm aus mitte nach rechts.

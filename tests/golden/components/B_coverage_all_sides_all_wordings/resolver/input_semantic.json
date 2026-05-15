@@ -1,0 +1,175 @@
+{
+  "description": "B_coverage_all_sides_all_wordings — Capability 1.0 Cov-3 (Bohrung). H01-H06, H08-H10 aus docs/conventions/20_bohrung_din.md auf Wuerfel 100x80x40. A5 entfaellt fuer point-like Bohrung (siehe Konvention).",
+  "build_order": [
+    "wuerfel",
+    "h01_oben_a1_b2",
+    "h02_vorne_a3_b2",
+    "h03_unten_a1_a3_b3",
+    "h04_hinten_a4_a1_b1",
+    "h05_links_a4_pur",
+    "h06_rechts_a6",
+    "h08_unten_a1_a4_b1",
+    "h09_hinten_a3_a4_b1",
+    "h10_oben_a4_a3_b3"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {
+        "x": 100,
+        "y": 80,
+        "z": 40
+      },
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "h01_oben_a1_b2": {
+      "type": "hole_single",
+      "params": {
+        "diameter": 8,
+        "depth": 20
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 25,
+          "vorne": 20
+        }
+      },
+      "operation": "subtract"
+    },
+    "h02_vorne_a3_b2": {
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 15
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "center_offset": {
+          "right": 10,
+          "top": 8
+        }
+      },
+      "operation": "subtract"
+    },
+    "h03_unten_a1_a3_b3": {
+      "type": "hole_single",
+      "params": {
+        "diameter": 10,
+        "depth": 12
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "unten",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 20
+        },
+        "center_offset": {
+          "hinten": 15
+        }
+      },
+      "operation": "subtract"
+    },
+    "h04_hinten_a4_a1_b1": {
+      "type": "hole_single",
+      "params": {
+        "diameter": 8,
+        "depth": 16
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "hinten",
+        "alignment": "centered",
+        "edge_distances": {
+          "right": 20
+        }
+      },
+      "operation": "subtract"
+    },
+    "h05_links_a4_pur": {
+      "type": "hole_single",
+      "params": {
+        "diameter": 12,
+        "depth": 20
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "links",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "h06_rechts_a6": {
+      "type": "hole_single",
+      "params": {
+        "diameter": 10,
+        "depth": 12
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered",
+        "edge_distances": {
+          "top": 15,
+          "right": 15
+        }
+      },
+      "operation": "subtract"
+    },
+    "h08_unten_a1_a4_b1": {
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 12
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "unten",
+        "alignment": "centered",
+        "edge_distances": {
+          "vorne": 30
+        }
+      },
+      "operation": "subtract"
+    },
+    "h09_hinten_a3_a4_b1": {
+      "type": "hole_single",
+      "params": {
+        "diameter": 8,
+        "depth": 12
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "hinten",
+        "alignment": "centered",
+        "center_offset": {
+          "top": 12
+        }
+      },
+      "operation": "subtract"
+    },
+    "h10_oben_a4_a3_b3": {
+      "type": "hole_single",
+      "params": {
+        "diameter": 6,
+        "depth": 10
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {
+          "right": 20
+        }
+      },
+      "operation": "subtract"
+    }
+  }
+}

@@ -41,12 +41,17 @@ Relevante Matrix-Zellen (siehe [`11_coverage_matrix.md`](11_coverage_matrix.md))
 | "mittig auf der Hoehe" | nur Hoehen-Achse zentriert |
 | "mittig in der Breite" | nur Breiten-Achse zentriert |
 
-### A5 — Anchor + Versatz
+### A5 — Anchor + Versatz: **nicht anwendbar fuer Bohrung**
 
-| Phrase | Interpretation |
-|---|---|
-| "in der oberen rechten Ecke" | anchor=top_right |
-| "obere rechte Ecke, 8mm nach links und 6mm nach unten versetzt" | anchor=top_right + offset {left:8, down:6} |
+Bohrungen sind **point-like** — sie haben keine eigene Ecke, die mit einer
+Bauteil-Face-Ecke korrespondieren koennte. Phrasen wie "in der oberen
+rechten Ecke 8mm nach links und 6mm nach unten" sind **mathematisch
+identisch** zu A1 mit den entsprechenden Edge-Distanzen (z.B.
+`abstand_rechts: 8` + `abstand_oben: 6`). Konstrukteur-Wording fuer
+Bohrungen folgt daher A1, nicht A5.
+
+A5 gilt fuer Features mit eigener Ecke/Bounding-Box: Plate (Konvention 25),
+Tasche (Konvention 22, T08), Pattern (Konvention 24, M09).
 
 ### A6 — "jeweils"
 
@@ -100,23 +105,22 @@ Resolved-Blueprint identisch fuer das D1/D2-Paar.
 | **H04** | hinten | A4+A1, B1 | "Wuerfel 100x80x40. Hinten eine Bohrung Ø8 Tiefe 16, mittig auf der Hoehe und von rechter Kante 20mm." | "Wuerfel 100x80x40. Hinten mittig auf der Hoehe und 20mm von der rechten Kante eine Bohrung Ø8 Tiefe 16." |
 | **H05** | links | A4 (pur) | "Wuerfel 100x80x40. Links eine zentrierte Bohrung Ø12 Tiefe 20." | "Wuerfel 100x80x40. Links zentriert eine Bohrung Ø12 Tiefe 20." |
 | **H06** | rechts | A6 | "Wuerfel 100x80x40. Rechts eine Bohrung Ø10 Tiefe 12, jeweils 15mm von oberer und rechter Kante." | "Wuerfel 100x80x40. Rechts jeweils 15mm von oberer und rechter Kante eine Bohrung Ø10 Tiefe 12." |
-| **H07** | oben | A5 | "Wuerfel 100x80x40. Oben in der oberen rechten Ecke eine Bohrung Ø5 Tiefe 10, 8mm nach links und 6mm nach unten versetzt." | "Wuerfel 100x80x40. Oben 8mm nach links und 6mm nach unten aus der oberen rechten Ecke eine Bohrung Ø5 Tiefe 10." |
 | **H08** | unten | A1+A4, B1 | "Wuerfel 100x80x40. Unten eine Bohrung Ø6 Tiefe 12, mittig in der Breite und 30mm von der vorderen Kante." | "Wuerfel 100x80x40. Unten mittig in der Breite und 30mm von der vorderen Kante eine Bohrung Ø6 Tiefe 12." |
 | **H09** | hinten | A3+A4, B1 | "Wuerfel 100x80x40. Hinten eine Bohrung Ø8 Tiefe 12, mittig in der Breite und 12mm aus Mitte nach oben." | "Wuerfel 100x80x40. Hinten mittig in der Breite und 12mm aus der Mitte nach oben eine Bohrung Ø8 Tiefe 12." |
 | **H10** | oben | A4+A3, B3 | "Wuerfel 100x80x40. Oben eine Bohrung Ø6 Tiefe 10, mittig auf der Y-Achse und 20mm aus Mitte nach rechts." | "Wuerfel 100x80x40. Oben mittig auf der Y-Achse und 20mm aus der Mitte nach rechts eine Bohrung Ø6 Tiefe 10." |
 
 **Coverage-Check:**
-- A1 ✓ (H01, H03, H04, H06, H08) — alle 6 Seiten abgedeckt: oben/unten/vorne/hinten/links/rechts via H01-H10
-- A3 ✓ (H02, H03, H07, H09, H10)
+- A1 ✓ (H01, H03, H04, H06, H08) — alle 6 Seiten abgedeckt via H01-H10
+- A3 ✓ (H02, H03, H09, H10)
 - A4 ✓ (H04, H05, H08, H09, H10) — sowohl pur als auch single-axis
-- A5 ✓ (H07)
+- A5 nicht anwendbar (point-like Feature — siehe A5-Sektion oben)
 - A6 ✓ (H06)
 - B1 ✓ (H04, H05, H08, H09)
 - B2 ✓ (H01, H02, H06)
 - B3 ✓ (H03, H10)
 - D1+D2 pro Test ✓
 
-**Seiten-Verteilung:** oben 3x, unten 2x, vorne 1x, hinten 2x, links 1x, rechts 1x → alle 6 Seiten min. 1x.
+**Seiten-Verteilung:** oben 2x, unten 2x, vorne 1x, hinten 2x, links 1x, rechts 1x → alle 6 Seiten min. 1x.
 
 ## Referenzen
 
@@ -128,6 +132,6 @@ Resolved-Blueprint identisch fuer das D1/D2-Paar.
 
 ## Stand
 
-Coverage-Matrix-abgeleitete Test-Liste (10 Spec-Paare = 20 Test-Cases) —
-Pilot fuer 22/21/24/25. Resolved-Blueprints werden pro Test ausgefuellt
+Coverage-Matrix-abgeleitete Test-Liste (9 Spec-Paare = 18 Test-Cases) —
+Pilot fuer 22/21/24/25. A5 entfaellt fuer point-like Bohrung. Resolved-Blueprints werden pro Test ausgefuellt
 sobald User-Review der Spec-Wordings abgeschlossen ist.
