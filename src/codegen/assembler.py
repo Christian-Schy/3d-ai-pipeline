@@ -27,6 +27,7 @@ Helpers:
   _make_func_name                 — fid → make_/drill_/cut_/apply_ Prefix
   _safe_depth                     — None/'through' → None, sonst float
   _find_parent                    — parent-id Lookup in features-dict
+  _grid_layout                    — Grid-Params → (rows, cols, spacing_x, spacing_y)
   _emit_pre_rotation              — placement.pre_rotation → .rotate(...) Lines
                                     (rotiert um Child-Centroid VOR translate;
                                      Keys x/y/z in Grad)
@@ -321,15 +322,14 @@ def _generate_subtract(
     elif ftype == "hole_pattern_grid":
         hd = float(params.get("hole_diameter") or params.get("diameter") or 10)
         depth = _safe_depth(params.get("depth"))
-        count = int(params.get("count") or 4)
-        inset = float(params.get("inset") or 20)
         parent_id = _find_parent(fid, all_features)
         pp = all_features.get(parent_id, {}).get("params", {}) if parent_id else {}
         px = float(pp.get("x") or 100)
         py = float(pp.get("y") or 100)
         pz = float(pp.get("z") or 10)
+        rows, cols, spacing_x, spacing_y = _grid_layout(params, face, px, py, pz)
         return T.hole_pattern_grid(
-            func_name, hd, depth, count, inset, px, py, pz,
+            func_name, hd, depth, rows, cols, spacing_x, spacing_y,
             face, ox, oy, use_ntp, ntp_point
         )
 
@@ -527,6 +527,51 @@ def _find_parent(fid: str, features: dict) -> str | None:
     """Find the immediate parent feature ID for a given feature."""
     feat = features.get(fid, {})
     return feat.get("parent")
+
+
+def _grid_layout(
+    params: dict, face: str, px: float, py: float, pz: float
+) -> tuple[int, int, float, float]:
+    """Derive (rows, cols, spacing_x, spacing_y) for a hole_pattern_grid.
+
+    Explizite Form: params traegt `rows`/`cols` + `spacing_x`/`spacing_y`
+    (oder `spacing` isotrop) — direkt uebernommen.
+    Legacy-Form: `count` + `inset` — Raster aus count abgeleitet
+    (4→2x2, 6→3x2, 9→3x3, sonst sqrt), Spacing aus den Face-Massen
+    (aeussere Loecher `inset` von der Kante).
+    """
+    rows = params.get("rows")
+    cols = params.get("cols")
+    if rows and cols:
+        rows, cols = int(rows), int(cols)
+        iso = params.get("spacing") or params.get("rasterabstand") or 0
+        sx = float(params.get("spacing_x") or iso or 0)
+        sy = float(params.get("spacing_y") or iso or sx)
+        if not sx:
+            sx = sy
+        return rows, cols, sx, sy
+
+    # Legacy count + inset.
+    count = int(params.get("count") or 4)
+    inset = float(params.get("inset") or 20)
+    if count == 4:
+        nx, ny = 2, 2
+    elif count == 6:
+        nx, ny = 3, 2
+    elif count == 9:
+        nx, ny = 3, 3
+    else:
+        nx = ny = max(1, int(count ** 0.5))
+    if face in (">Z", "<Z"):
+        fw, fh = px, py
+    elif face in (">X", "<X"):
+        fw, fh = py, pz
+    else:  # >Y, <Y
+        fw, fh = px, pz
+    sx = (fw - 2 * inset) / (nx - 1) if nx > 1 else 0.0
+    sy = (fh - 2 * inset) / (ny - 1) if ny > 1 else 0.0
+    # nx zaehlt entlang Face-X → cols, ny entlang Face-Y → rows.
+    return ny, nx, sx, sy
 
 
 def _resolve_part_root(fid: str, features: dict) -> str | None:

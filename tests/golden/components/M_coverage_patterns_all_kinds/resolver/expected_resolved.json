@@ -1,0 +1,149 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {
+        "x": 150,
+        "y": 100,
+        "z": 40
+      },
+      "operation": "add"
+    },
+    "m01_oben_grid_a4_b0": {
+      "type": "hole_pattern_grid",
+      "parent": "wuerfel",
+      "params": {
+        "hole_diameter": 6,
+        "depth": 12,
+        "rows": 4,
+        "cols": 3,
+        "spacing_x": 25,
+        "spacing_y": 25
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "m02_oben_grid_a1_b2": {
+      "type": "hole_pattern_grid",
+      "parent": "wuerfel",
+      "params": {
+        "hole_diameter": 5,
+        "depth": 10,
+        "rows": 4,
+        "cols": 2,
+        "spacing_x": 20,
+        "spacing_y": 20
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -50.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "m03_rechts_kreis_a4_b0": {
+      "type": "hole_pattern_circular",
+      "parent": "wuerfel",
+      "params": {
+        "hole_diameter": 4,
+        "depth": 8,
+        "count": 6,
+        "bolt_circle_diameter": 40
+      },
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "m04_vorne_linear_a1_a4_b1": {
+      "type": "hole_pattern_linear",
+      "parent": "wuerfel",
+      "params": {
+        "hole_diameter": 6,
+        "depth": 10,
+        "count": 5,
+        "spacing": 20,
+        "direction": "x"
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": -20.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "m05_unten_grid_a6": {
+      "type": "hole_pattern_grid",
+      "parent": "wuerfel",
+      "params": {
+        "hole_diameter": 5,
+        "depth": 12,
+        "rows": 3,
+        "cols": 3,
+        "spacing_x": 30,
+        "spacing_y": 30
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": -27.0,
+        "offset_y": -2.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "m08_oben_linear_a1_b2_verb": {
+      "type": "hole_pattern_linear",
+      "parent": "wuerfel",
+      "params": {
+        "hole_diameter": 5,
+        "depth": 10,
+        "count": 4,
+        "spacing": 20,
+        "direction": "y"
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -45.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "m10_oben_grid_a1_a3_b3": {
+      "type": "hole_pattern_grid",
+      "parent": "wuerfel",
+      "params": {
+        "hole_diameter": 5,
+        "depth": 10,
+        "rows": 3,
+        "cols": 2,
+        "spacing_x": 25,
+        "spacing_y": 20
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -32.5,
+        "offset_y": 10.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    }
+  }
+}

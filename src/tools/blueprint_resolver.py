@@ -469,12 +469,11 @@ def _get_child_face_size(
     """
     ftype_lower = (feat_type or "").lower()
 
-    # Pattern-Footprint fuer Linear-Reihe (DIN-Konvention 24: A1-Bezug
-    # = outermost-Hole, nicht Pattern-Center). Footprint nur entlang der
-    # direction-Achse; perpendicular bleibt 0 = edge-to-center.
-    # Grid hat im aktuellen Schema (count+inset) keinen separaten
-    # edge_distance-Eingriff — inset deckt die A1-Konvention direkt ab.
-    # Kreis bleibt edge-to-center (Teilkreis-Center ist DIN-Bezugspunkt).
+    # Pattern-Footprint (DIN-Konvention 24: A1-Bezug = outermost-Hole,
+    # nicht Pattern-Center). Linear: Footprint nur entlang direction-Achse.
+    # Grid (explizites Schema rows/cols/spacing): Footprint auf beiden
+    # Achsen. Grid-Legacy (count+inset) ohne rows/cols → (0,0): inset
+    # deckt die A1-Konvention direkt ab. Kreis bleibt edge-to-center.
     if ftype_lower == "hole_pattern_linear":
         try:
             count = int(child_params.get("count") or 0)
@@ -486,6 +485,19 @@ def _get_child_face_size(
         if direction == "y":
             return (0.0, span)
         return (span, 0.0)
+
+    if ftype_lower == "hole_pattern_grid":
+        try:
+            rows = int(child_params.get("rows") or 0)
+            cols = int(child_params.get("cols") or 0)
+            iso = child_params.get("spacing")
+            sx = float(child_params.get("spacing_x") or iso or 0)
+            sy = float(child_params.get("spacing_y") or iso or 0)
+        except (TypeError, ValueError):
+            rows, cols, sx, sy = 0, 0, 0.0, 0.0
+        span_x = max(0.0, (cols - 1) * sx) if cols > 1 else 0.0
+        span_y = max(0.0, (rows - 1) * sy) if rows > 1 else 0.0
+        return (span_x, span_y)
 
     is_slot = ftype_lower == "slot" or (
         "width" in child_params and "length" in child_params
@@ -1043,6 +1055,13 @@ def _compute_offsets(
                 else:
                     is_box_wx, is_box_wy = True, False
 
+            # DIN-Konvention 24 fuer hole_pattern_grid: A1 bezieht sich auf
+            # die outermost-Hole — beide Achsen edge-to-EDGE (Pattern-Span
+            # subtrahieren). Greift nur beim expliziten Schema, wo
+            # _get_child_face_size eine Footprint > 0 liefert.
+            if ftype_lower == "hole_pattern_grid" and (child_w > 0 or child_h > 0):
+                is_box_wx, is_box_wy = True, True
+
             ox_e, oy_e, ox_edge_set, oy_edge_set = _apply_edge_distances_axis(
                 face, non_zero, parent_w, parent_h, child_w, child_h, is_box,
                 is_box_wx=is_box_wx, is_box_wy=is_box_wy,
@@ -1299,14 +1318,21 @@ def _resolve_feature(
         alignment, notes_text,
         has_edge_distances=bool(edge_distances) or bool(pocket_edge_distances),
     )
-    # Grid patterns (rarray) are inherently centered — inset handles the
-    # edge distance, so edge_distances would shift the whole grid off-center.
-    # Explicit center_offset and anchor still work for deliberate shifting.
+    # Legacy-Grid (count + inset) ist inhaerent zentriert — inset deckt den
+    # Kantenabstand, edge_distances wuerden das Raster verschieben. Beim
+    # expliziten Grid (rows/cols/spacing) gilt dagegen DIN-Konvention 24
+    # A1: edge_distances platzieren die outermost-Hole — sie bleiben.
+    # center_offset und anchor wirken in beiden Faellen.
     if feat.get("type") in ("hole_pattern_grid",):
-        if edge_distances:
-            edge_distances = None
-        if pocket_edge_distances:
-            pocket_edge_distances = None
+        _grid_params = feat.get("params", {}) or {}
+        _is_explicit_grid = bool(
+            _grid_params.get("rows") and _grid_params.get("cols")
+        )
+        if not _is_explicit_grid:
+            if edge_distances:
+                edge_distances = None
+            if pocket_edge_distances:
+                pocket_edge_distances = None
     center_offset = position.get("center_offset")
     anchor = position.get("anchor")
     if anchor is not None and not isinstance(anchor, dict):
@@ -1415,10 +1441,15 @@ def _resolve_feature_in_feature(
         has_edge_distances=bool(edge_distances) or bool(pocket_edge_distances),
     )
     if feat.get("type") in ("hole_pattern_grid",):
-        if edge_distances:
-            edge_distances = None
-        if pocket_edge_distances:
-            pocket_edge_distances = None
+        _grid_params = feat.get("params", {}) or {}
+        _is_explicit_grid = bool(
+            _grid_params.get("rows") and _grid_params.get("cols")
+        )
+        if not _is_explicit_grid:
+            if edge_distances:
+                edge_distances = None
+            if pocket_edge_distances:
+                pocket_edge_distances = None
     center_offset = position.get("center_offset")
     anchor = position.get("anchor")
     if anchor is not None and not isinstance(anchor, dict):

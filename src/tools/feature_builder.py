@@ -317,6 +317,26 @@ def _build_params(feature_type: str, raw: dict) -> dict:
         }
 
     elif feature_type == "hole_pattern_grid":
+        rows = raw.get("rows")
+        cols = raw.get("cols")
+        if rows and cols:
+            # Explizites Raster: "Lochmuster 4x3, Rasterabstand 25mm".
+            iso = raw.get("rasterabstand") or raw.get("abstand")
+            grid = {
+                "rows": int(rows),
+                "cols": int(cols),
+                "hole_diameter": raw.get("bohr_durchmesser",
+                                         raw.get("durchmesser", 10)),
+                "depth": raw.get("tiefe"),
+            }
+            sx = raw.get("rasterabstand_x") or iso
+            sy = raw.get("rasterabstand_y") or iso
+            if sx is not None:
+                grid["spacing_x"] = sx
+            if sy is not None:
+                grid["spacing_y"] = sy
+            return grid
+        # Legacy: count + inset (4 Eckbohrungen etc.).
         return {
             "count": raw.get("anzahl", 4),
             "inset": raw.get("abstand_kante", raw.get("abstand", 20)),

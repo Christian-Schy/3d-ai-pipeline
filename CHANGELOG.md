@@ -8,6 +8,35 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-16
+
+- **Grid-Schema-Erweiterung: `hole_pattern_grid` mit explizitem
+  `rows/cols/spacing_x/spacing_y`.** Bisher konnte ein Grid nur ueber
+  `count` + `inset` beschrieben werden — das Template leitete das Raster
+  aus `count` ab (4→2x2, 6→3x2, 9→3x3) und das Spacing aus den
+  Face-Massen. Nicht-quadratische Raster (4x3, 4x2, 3x2) und expliziter
+  `Rasterabstand` (auch anisotrop X≠Y) waren nicht darstellbar. Jetzt
+  unterstuetzt `hole_pattern_grid` zusaetzlich das explizite Schema:
+  Template nimmt `rows/cols/spacing` direkt (`.rarray`), der Assembler-
+  Helper `_grid_layout` konvertiert die Legacy-`count`/`inset`-Form,
+  `feature_builder` baut beide Varianten, der Resolver liefert den
+  Pattern-Footprint `((cols-1)*spacing_x, (rows-1)*spacing_y)` fuer die
+  A1-outermost-Hole-Konvention und wendet `edge_distances` beim
+  expliziten Grid an (beim Legacy-Grid bleibt es bei `inset`-Zentrierung).
+  Rueckwaertskompatibel — M_kombo Legacy-Grid bleibt gruen, 161
+  Resolver/Tool-Tests gruen.
+
+- **L2-Coverage-Golden `M_coverage_patterns_all_kinds` (Pattern,
+  resolver-only).** Viertes L2-Coverage-Golden — 7 Patterns (M01-M05,
+  M08, M10 aus `docs/conventions/24_pattern_din.md`): Grid mit explizitem
+  Raster, Kreis, Linear. resolver-component-test verifiziert die
+  Pattern-Mathe deterministisch. Pipeline-Real-Run-Test noch nicht
+  beigelegt: der `pattern_classifier` ist ueberladen (Grid + Kreis +
+  Linear in einem Prompt) und kann "explizites Grid" nicht von
+  "Eckbohrungen" trennen — geplant ist ein dedizierter `grid_classifier`
+  Sub-Agent (ADR-0006-Mechanik). M06/M07 (Pattern-Rotation) + M09
+  (A5-Anker) deferred, Begruendung in `notes.md`.
+
 ## 2026-05-15
 
 - **Slot-Klassifizierer A1/A2-Disambiguierung + Normalizer Konventions-

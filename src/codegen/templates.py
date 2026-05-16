@@ -212,52 +212,38 @@ def hole_pattern_grid(
     func_name: str,
     hole_diameter: float,
     depth: float | None,
-    count: int,
-    inset: float,
-    parent_x: float,
-    parent_y: float,
-    parent_z: float,
+    rows: int,
+    cols: int,
+    spacing_x: float,
+    spacing_y: float,
     face: str,
     offset_x: float,
     offset_y: float,
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
 ) -> str:
-    """Grid pattern of holes (typically 4 corner holes)."""
+    """Grid pattern of holes — explicit rows x cols mit per-Schritt-Spacing.
+
+    rows = Anzahl entlang Face-Y (vertikal), cols = Anzahl entlang Face-X.
+    spacing_x / spacing_y = Rasterabstand (Abstand benachbarter Loecher).
+    Das Raster wird um (offset_x, offset_y) zentriert.
+    """
     face_sel = _face_selection(face, use_ntp, ntp_point)
     depth_call = _hole_depth(hole_diameter, depth)
 
-    # Compute face dimensions based on face selector
-    # >Z/<Z: face is X×Y, >X/<X: face is Y×Z, >Y/<Y: face is X×Z
-    if face in (">Z", "<Z"):
-        face_w, face_h = parent_x, parent_y
-    elif face in (">X", "<X"):
-        face_w, face_h = parent_y, parent_z
-    else:  # >Y, <Y
-        face_w, face_h = parent_x, parent_z
-
-    # Grid layout: count=4 → 2×2, count=6 → 3×2, count=9 → 3×3
-    if count == 4:
-        nx, ny = 2, 2
-    elif count == 6:
-        nx, ny = 3, 2
-    elif count == 9:
-        nx, ny = 3, 3
-    else:
-        nx = ny = max(1, int(count ** 0.5))
-
-    spacing_x = face_w - 2 * inset
-    spacing_y = face_h - 2 * inset
+    rows = max(1, int(rows))
+    cols = max(1, int(cols))
 
     # NOTE: rarray applied to body (not via _ref+cutter pattern).
     # Stable-origin would require manually building N cylinders from _ref.
+    # rarray(xSpacing, ySpacing, xCount, yCount) — cols→X, rows→Y.
     return (
         f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
         f"    return (\n"
         f"        body\n"
         f"        {face_sel}\n"
         f"        .center({offset_x}, {offset_y})\n"
-        f"        .rarray({spacing_x}, {spacing_y}, {nx}, {ny})\n"
+        f"        .rarray({spacing_x}, {spacing_y}, {cols}, {rows})\n"
         f"        {depth_call}\n"
         f"    ).clean()\n"
     )
