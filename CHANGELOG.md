@@ -10,6 +10,21 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-15
 
+- **N_coverage Resolver-Golden + `feature_builder` rotation_deg-Fix.**
+  Drittes L2-Coverage-Golden, vorerst **resolver-only**:
+  `N_coverage_all_sides_all_orientations` verifiziert die Slot-per-Achsen-
+  DIN-Mathe (Length edge-to-edge, Width edge-to-center) fuer 9 Nuten
+  (N01-N03, N05-N08, N11, N12 aus `docs/conventions/21_nut_slot_din.md`)
+  ueber alle 6 Seiten + Orientierungen entlang X/Y/Z. resolver-component-
+  test 16/16 gruen. Pipeline-Real-Run-Test ist noch nicht beigelegt: der
+  `slot_classifier` routet wording-sensibel zwischen A1 (`abstand_*`)
+  und A2 (`kante_*`) — kommt zurueck nach dem Normalizer-Architektur-Fix.
+  `feature_builder` liest jetzt `rotation_deg` zusaetzlich zu
+  `drehung/winkel/angle/rotation`, damit der Klassifizierer-Output-Key
+  fuer Slot-Rotation direkt durchgeht (vorher nur via Normalizer-
+  Umbenennung, die flaky war). N04/N09/N10 deferred (Anfangs-/Endpunkt-
+  Modell bzw. rotierte Slots), Begruendung in `notes.md`.
+
 - **L2-Coverage-Golden: `T_coverage_all_sides_all_wordings` (Tasche).**
   Zweites L2-Coverage-Golden. 9 stabile Taschen (T01-T05, T07, T09-T11
   aus `docs/conventions/22_tasche_din.md`) auf einem Wuerfel 120x90x50

@@ -256,7 +256,7 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | Non
     # user saying "Tasche um 20 Grad gedreht" propagates here without an
     # extra prompt round-trip.
     angle_deg = 0.0
-    for key in ("drehung", "winkel", "angle", "rotation"):
+    for key in ("drehung", "winkel", "angle", "rotation", "rotation_deg"):
         val = params.get(key)
         if val is not None:
             try:

@@ -1,0 +1,194 @@
+{
+  "description": "N_coverage_all_sides_all_orientations — Capability 1.0 Cov-3 (Nut/Slot). 9 stabile Nuten (N01-N03, N05-N08, N11, N12) aus docs/conventions/21_nut_slot_din.md auf Wuerfel 120x90x50. N04/N09/N10 deferred — siehe notes.md.",
+  "build_order": [
+    "wuerfel",
+    "n01_oben_a1_b2_c1_y",
+    "n02_oben_a1_b2_c0_x",
+    "n03_oben_a1_b2_c1_verb",
+    "n05_rechts_a2_b2_c1_z",
+    "n06_vorne_a3_a4_b1_c0",
+    "n07_unten_a6_c1_y",
+    "n08_hinten_a4_b0_c0",
+    "n11_links_a1_a4_b1_c1",
+    "n12_oben_a1_a3_b3_c0"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {
+        "x": 120,
+        "y": 90,
+        "z": 50
+      },
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "n01_oben_a1_b2_c1_y": {
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "length": 40,
+        "depth": 3
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 12,
+          "top": 18
+        },
+        "angle_deg": 90
+      },
+      "operation": "subtract"
+    },
+    "n02_oben_a1_b2_c0_x": {
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "length": 40,
+        "depth": 3
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "vorne": 12,
+          "left": 18
+        },
+        "angle_deg": 0
+      },
+      "operation": "subtract"
+    },
+    "n03_oben_a1_b2_c1_verb": {
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "length": 40,
+        "depth": 3
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 12,
+          "vorne": 18
+        },
+        "angle_deg": 90
+      },
+      "operation": "subtract"
+    },
+    "n05_rechts_a2_b2_c1_z": {
+      "type": "slot",
+      "params": {
+        "width": 4,
+        "length": 30,
+        "depth": 2
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered",
+        "pocket_edge_distances": {
+          "top": 15
+        },
+        "angle_deg": 90
+      },
+      "operation": "subtract"
+    },
+    "n06_vorne_a3_a4_b1_c0": {
+      "type": "slot",
+      "params": {
+        "width": 6,
+        "length": 50,
+        "depth": 4
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "center_offset": {
+          "top": 5
+        },
+        "angle_deg": 0
+      },
+      "operation": "subtract"
+    },
+    "n07_unten_a6_c1_y": {
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "length": 25,
+        "depth": 3
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "unten",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 10,
+          "vorne": 10
+        },
+        "angle_deg": 90
+      },
+      "operation": "subtract"
+    },
+    "n08_hinten_a4_b0_c0": {
+      "type": "slot",
+      "params": {
+        "width": 6,
+        "length": 40,
+        "depth": 3
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "hinten",
+        "alignment": "centered",
+        "angle_deg": 0
+      },
+      "operation": "subtract"
+    },
+    "n11_links_a1_a4_b1_c1": {
+      "type": "slot",
+      "params": {
+        "width": 4,
+        "length": 30,
+        "depth": 2
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "links",
+        "alignment": "centered",
+        "edge_distances": {
+          "right": 15
+        },
+        "angle_deg": 0
+      },
+      "operation": "subtract"
+    },
+    "n12_oben_a1_a3_b3_c0": {
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "length": 40,
+        "depth": 3
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "vorne": 20
+        },
+        "center_offset": {
+          "left": 15
+        },
+        "angle_deg": 0
+      },
+      "operation": "subtract"
+    }
+  }
+}
