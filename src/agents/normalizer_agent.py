@@ -115,20 +115,52 @@ _DIRECTION_PHRASE_RE = re.compile(
 )
 
 
+# Per-direction Bemassungs-Konventionen: A1 (abstand, edge-to-center),
+# A2 (kante, edge-to-edge), A3 (versatz, center-relativ). Pro Richtung
+# gilt genau eine. Der Klassifizierer entscheidet welche — wenn er fuer
+# eine Richtung eine Konvention emittiert, sind die anderen beiden fuer
+# dieselbe Richtung stale und muessen aus den Normalizer-Parses raus.
+_CONVENTION_PREFIXES: tuple[str, ...] = ("abstand_", "versatz_", "kante_")
+
+
 def _merge_param_hints(params: dict, hints: dict) -> None:
     """In-place: classifier hints win over normalizer parses.
 
     Rationale (ADR 0003 Stufe 5c): the classifier sees one focused phrase
-    with explicit guidance for `abstand_*` / `versatz_*` / `durchmesser`
-    / `tiefe` / `rotation_deg`. The normalizer sees the same phrase but
-    runs with think=false through a much larger prompt and occasionally
-    drops one of two edge-distance values to 0 (Bug 4 in Run 3db7d152).
-    When the classifier explicitly emits a value, it overrides whatever
-    the normalizer parsed. Keys the classifier did not emit stay as the
-    normalizer set them (e.g. position keyword, richtung, kanten).
+    with explicit guidance for `abstand_*` / `versatz_*` / `kante_*` /
+    `durchmesser` / `tiefe` / `rotation_deg`. The normalizer sees the same
+    phrase but runs with think=false through a much larger prompt and
+    occasionally (a) drops one of two edge-distance values to 0 or
+    (b) parses the wrong Bemassungs-Konvention (`kante_links` where the
+    classifier correctly read A1 `abstand_links`).
+
+    Two-step merge:
+      1. Konventions-Konflikt aufloesen: fuer jede Richtung, fuer die der
+         Klassifizierer eine A1/A2/A3-Konvention emittiert, werden die
+         konkurrierenden Konventions-Keys derselben Richtung aus `params`
+         entfernt. Der Klassifizierer ist die Autoritaet fuer die
+         Konventions-Wahl pro Achse — der Normalizer-Parse darf sie nicht
+         ueberstimmen.
+      2. Werte uebernehmen: jeder Hint ueberschreibt den Normalizer-Wert.
+
+    Keys die der Klassifizierer NICHT emittiert bleiben wie der Normalizer
+    sie setzte (z.B. position keyword, richtung).
     """
     if not isinstance(params, dict) or not isinstance(hints, dict):
         return
+
+    # Step 1: clear conflicting convention-keys per direction.
+    hint_directions: set[str] = set()
+    for key in hints:
+        for prefix in _CONVENTION_PREFIXES:
+            if key.startswith(prefix) and hints.get(key) is not None:
+                hint_directions.add(key[len(prefix):])
+                break
+    for direction in hint_directions:
+        for prefix in _CONVENTION_PREFIXES:
+            params.pop(prefix + direction, None)
+
+    # Step 2: classifier hints overwrite.
     for key, val in hints.items():
         if val is None:
             continue

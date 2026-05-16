@@ -25,6 +25,16 @@ parameter_hints:
     richtung: "x" | "y" | "z" wenn explizit "entlang x/y/z" oder
     "entlang der X/Y/Z-Achse" genannt ist.
 
+abstand_* vs kante_* — WICHTIG:
+  abstand_<richtung>  = Abstand der Nut-MITTE zur Bauteilkante.
+    Default. "von linker Kante 12mm", "12mm von der oberen Kante",
+    "20mm von rechter Kante entfernt" -> abstand_*.
+  kante_<richtung>    = Abstand einer NUT-AUSSENKANTE zur Bauteilkante.
+    NUR wenn die Phrase explizit die Kante der Nut nennt:
+    "die linke Nut-Kante 12mm vom Rand", "obere Nut-Kante 15mm von oben".
+  Im Zweifel abstand_* — kante_* braucht das Wort "Nut-Kante" o.ae.
+  Nie beide fuer dieselbe Richtung ausgeben.
+
 Nicht rechnen:
   Keine Laenge aus Teilmassen ableiten. Wenn keine Laenge genannt ist,
   laenge weglassen; der deterministische FeatureBuilder fuellt sie spaeter.

@@ -10,6 +10,26 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-15
 
+- **Slot-Klassifizierer A1/A2-Disambiguierung + Normalizer Konventions-
+  Konflikt-Aufloesung.** Zwei zusammengehoerige Fixes, die den Slot-Pfad
+  stabilisieren und N_coverage als vollen Pipeline-Golden freischalten
+  (Heatmap 21/0, 0 Retries):
+  1. `prompt_classifier_slot` hatte `abstand_*` und `kante_*` nur als
+     Key-Liste, ohne Regel wann welche. Folge: "von linker Kante 12mm"
+     wurde flaky mal als A1 (`abstand_*`, edge-to-CENTER), mal als A2
+     (`kante_*`, edge-to-EDGE) klassifiziert — identische Geometrie ergab
+     -48 oder -45.5. Jetzt mit expliziter Regel: `kante_*` nur bei
+     explizit genannter "Nut-Kante", sonst `abstand_*`.
+  2. `normalizer_agent._merge_param_hints` addierte Klassifizierer-Hints,
+     ohne konfligierende Normalizer-Parses zu loeschen — `abstand_links`
+     (Hint) und `kante_links` (Normalizer-Parse) koexistierten, der
+     feature_builder waehlte dann A2. Jetzt: wenn der Klassifizierer fuer
+     eine Richtung eine Konvention (A1/A2/A3) emittiert, werden die
+     anderen beiden Konventions-Keys derselben Richtung aus `params`
+     entfernt. Der Klassifizierer ist die Autoritaet fuer die Konventions-
+     Wahl pro Achse.
+  N_coverage hat jetzt einen Pipeline-Real-Run-Test (9 Nuten, 2/2 PASS).
+
 - **N_coverage Resolver-Golden + `feature_builder` rotation_deg-Fix.**
   Drittes L2-Coverage-Golden, vorerst **resolver-only**:
   `N_coverage_all_sides_all_orientations` verifiziert die Slot-per-Achsen-

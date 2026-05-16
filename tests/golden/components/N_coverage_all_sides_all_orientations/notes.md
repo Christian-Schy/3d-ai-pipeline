@@ -90,28 +90,29 @@ per-Achsen-Logik auf die konservative bbox-Approximation zurueck
 (beide Achsen edge-to-CENTER) — bekannte Limitation, in Konvention 21
 dokumentiert.
 
-## Status — Resolver-Coverage gruen, Pipeline-Test deferred
+## Status — Pipeline + Resolver gruen
 
-Dieses Golden ist aktuell **resolver-only** (kein `pipeline/specs.txt`).
-Der resolver-component-test verifiziert die Slot-per-Achsen-DIN-Mathe
-fuer alle 9 Faelle deterministisch (gruen). Der Pipeline-Real-Run-Test
-ist **noch nicht** beigelegt, weil der `slot_classifier` wording-sensibel
-zwischen A1 (`abstand_*`, edge-to-CENTER) und A2 (`kante_*`, edge-to-EDGE)
-routet: identische Geometrie wie V2's `slot_top_y_edge` (erwartet -48)
-ergibt mit leicht anderem Wording (-45.5, edge-to-EDGE). Das ist dieselbe
-Wurzel wie die rotierten Slots (N09/N10): der Normalizer/Klassifizierer-
-Pfad fuer Slots ist instabiler als fuer Bohrung/Tasche.
+Pipeline-Real-Run-Test 2/2 PASS (77.7s), resolver-component-test 16/16.
+Voll im Heatmap (21/0).
 
-Der Pipeline-Test kommt zurueck, sobald der Normalizer die strukturierten
-Klassifizierer-Hints durchreicht statt aus dem Rohtext zu re-extrahieren
-(Normalizer-Architektur-Fix, eigene Sitzung). Bis dahin sichert dieses
-Golden die Resolver-Seite ab.
+Frueher war der Pipeline-Test instabil, weil der `slot_classifier` A1
+(`abstand_*`, edge-to-CENTER) und A2 (`kante_*`, edge-to-EDGE) flaky
+routete — identische Geometrie wie V2's `slot_top_y_edge` (-48) ergab
+mit leicht anderem Wording -45.5. Zwei Fixes haben das geloest:
+1. `slot_classifier`-Prompt hat jetzt die A1/A2-Disambiguierungs-Regel
+   (kante_* nur bei explizit genannter "Nut-Kante", sonst abstand_*).
+2. `normalizer_agent._merge_param_hints` loescht konfligierende
+   Konventions-Keys pro Richtung: wenn der Klassifizierer fuer eine
+   Richtung A1/A2/A3 emittiert, werden die anderen beiden Konventionen
+   derselben Richtung aus dem Normalizer-Parse entfernt.
 
-## Was dieser Test absichert (Resolver-Seite)
+## Was dieser Test absichert
 
-- Slot per-Achsen-DIN (Length edge-to-edge, Width edge-to-center) ueber
-  alle Orientierungen (entlang X/Y/Z, Richtungs-Verb, parallel-zu)
-- Resolver-Math fuer alle Edge-Distance-/Center-Offset-Pfade auf 6 Seiten
+- Klassifizierer-Pfad fuer Nut auf allen 6 Seiten
+- A1/A2-Disambiguierung (`abstand_*` vs `kante_*`)
+- Orientierungs-Erkennung: "entlang X/Y/Z", Richtungs-Verb, "parallel zu"
+- Slot per-Achsen-DIN (Length edge-to-edge, Width edge-to-center)
+- Resolver-Math fuer alle Edge-Distance-/Center-Offset-Pfade
 - Multi-Feature-Aggregation auf einem Bauteil
 
 ## Naechste L2-Goldens (Plan)
