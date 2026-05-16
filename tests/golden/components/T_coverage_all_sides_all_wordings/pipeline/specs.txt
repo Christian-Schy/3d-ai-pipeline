@@ -1,0 +1,9 @@
+# Spec-Varianten fuer T_coverage (Tasche-Capability L2 Cov-3).
+# Jede Variante muss dasselbe expected_resolved.json produzieren.
+# Konstruiert aus T01-T05, T07, T09-T11 in docs/conventions/22_tasche_din.md.
+# Deferred (siehe notes.md): T06 (A2+A1 Mischfall — Klassifizierer flaky),
+# T08 (A5 Pocket-Anker — kein Anker-Konzept im Klassifizierer),
+# T12 (flush+A1 Mischfall — Klassifizierer flaky).
+
+# D1 — Feature-zuerst Wording-Variante (9 Taschen)
+wuerfel 120x90x50. oben eine tasche 30x20x10 von linker kante 15mm und von vorderer kante 25mm, vorne eine tasche 25x18x8 die linke taschen-kante 12mm vom linken rand und die untere taschen-kante 15mm vom unteren rand, unten eine tasche 30x25x6 von der mitte um 10mm nach rechts und 15mm nach hinten versetzt, hinten eine zentrierte tasche 50x30x8, links eine tasche 25x18x10 mittig auf der hoehe und von rechter kante 20mm, oben eine tasche 30x20x10 jeweils 12mm von linker und vorderer kante, oben eine tasche 25x20x8 von linker kante 25mm und 10mm aus mitte nach hinten versetzt, oben eine tasche 30x15x8 um 30 grad gedreht von linker kante 40mm und von vorderer kante 30mm, oben eine zentrierte tasche 25x18x10 um 20 grad im uhrzeigersinn gedreht.

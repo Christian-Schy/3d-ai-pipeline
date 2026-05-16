@@ -1,0 +1,166 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {
+        "x": 120,
+        "y": 90,
+        "z": 50
+      },
+      "operation": "add"
+    },
+    "t01_oben_a1_b2": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 30,
+        "y": 20,
+        "depth": 10
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -45.0,
+        "offset_y": -20.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "t02_vorne_a2_b2": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 8
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": -35.5,
+        "offset_y": -1.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "t03_unten_a3_b2": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 30,
+        "y": 25,
+        "depth": 6
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 15.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "t04_hinten_a4_b0": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 50,
+        "y": 30,
+        "depth": 8
+      },
+      "placement": {
+        "face": ">Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "t05_links_a1_a4_b1": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 10
+      },
+      "placement": {
+        "face": "<X",
+        "alignment": "centered",
+        "offset_x": 25.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "t07_oben_a6": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 30,
+        "y": 20,
+        "depth": 10
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -48.0,
+        "offset_y": -33.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "t09_oben_a1_a3_b3": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 25,
+        "y": 20,
+        "depth": 8
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -35.0,
+        "offset_y": 10.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "t10_oben_a1_b2_c2": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 30,
+        "y": 15,
+        "depth": 8
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -20.0,
+        "offset_y": -15.0,
+        "angle_deg": 30.0
+      },
+      "operation": "subtract"
+    },
+    "t11_oben_a4_b0_c3": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 10
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": -20.0
+      },
+      "operation": "subtract"
+    }
+  }
+}

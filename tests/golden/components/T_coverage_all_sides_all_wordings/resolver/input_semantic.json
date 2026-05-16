@@ -1,0 +1,185 @@
+{
+  "description": "T_coverage_all_sides_all_wordings — Capability 1.0 Cov-3 (Tasche). 9 stabile Taschen (T01-T05, T07, T09-T11) aus docs/conventions/22_tasche_din.md auf Wuerfel 120x90x50. T06/T08/T12 deferred — siehe notes.md.",
+  "build_order": [
+    "wuerfel",
+    "t01_oben_a1_b2",
+    "t02_vorne_a2_b2",
+    "t03_unten_a3_b2",
+    "t04_hinten_a4_b0",
+    "t05_links_a1_a4_b1",
+    "t07_oben_a6",
+    "t09_oben_a1_a3_b3",
+    "t10_oben_a1_b2_c2",
+    "t11_oben_a4_b0_c3"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {
+        "x": 120,
+        "y": 90,
+        "z": 50
+      },
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "t01_oben_a1_b2": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 30,
+        "y": 20,
+        "depth": 10
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 15,
+          "vorne": 25
+        }
+      },
+      "operation": "subtract"
+    },
+    "t02_vorne_a2_b2": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 8
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "pocket_edge_distances": {
+          "left": 12,
+          "bottom": 15
+        }
+      },
+      "operation": "subtract"
+    },
+    "t03_unten_a3_b2": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 30,
+        "y": 25,
+        "depth": 6
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "unten",
+        "alignment": "centered",
+        "center_offset": {
+          "right": 10,
+          "hinten": 15
+        }
+      },
+      "operation": "subtract"
+    },
+    "t04_hinten_a4_b0": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 50,
+        "y": 30,
+        "depth": 8
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "hinten",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "t05_links_a1_a4_b1": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 10
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "links",
+        "alignment": "centered",
+        "edge_distances": {
+          "right": 20
+        }
+      },
+      "operation": "subtract"
+    },
+    "t07_oben_a6": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 30,
+        "y": 20,
+        "depth": 10
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 12,
+          "vorne": 12
+        }
+      },
+      "operation": "subtract"
+    },
+    "t09_oben_a1_a3_b3": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 25,
+        "y": 20,
+        "depth": 8
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 25
+        },
+        "center_offset": {
+          "hinten": 10
+        }
+      },
+      "operation": "subtract"
+    },
+    "t10_oben_a1_b2_c2": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 30,
+        "y": 15,
+        "depth": 8
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 40,
+          "vorne": 30
+        },
+        "angle_deg": 30
+      },
+      "operation": "subtract"
+    },
+    "t11_oben_a4_b0_c3": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 10
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "angle_deg": -20
+      },
+      "operation": "subtract"
+    }
+  }
+}

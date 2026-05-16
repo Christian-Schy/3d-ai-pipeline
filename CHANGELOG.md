@@ -10,6 +10,17 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-15
 
+- **L2-Coverage-Golden: `T_coverage_all_sides_all_wordings` (Tasche).**
+  Zweites L2-Coverage-Golden. 9 stabile Taschen (T01-T05, T07, T09-T11
+  aus `docs/conventions/22_tasche_din.md`) auf einem Wuerfel 120x90x50
+  mit A1/A2/A3/A4/A6 × B0-B3 × C0/C2/C3. Pipeline-Test 2/2 PASS (76.8s).
+  Drei Faelle deferred: T08 (A5 Pocket-Anker — `pocket_classifier` hat
+  kein Anker-Konzept), T06 (A2+A1-Mischfall — Klassifizierer routet
+  "von linker Kante" flaky zwischen A1/A2, 2/3 Runs falsch), T12
+  (flush+A1-Mischfall — Alignment-Klassifikation flaky, 1/3 Runs falsch).
+  Alle drei bleiben gueltige Konventions-Bestandteile; Begruendung +
+  Rueckhol-Bedingung in `notes.md`.
+
 - **Validator-Fix: asymmetrische Volumen-Toleranz fuer Multi-Part-Assemblies.**
   `_volume_check_passes` behandelte die naive Volumen-Summe (Wuerfel + alle
   Platten) als exakten Erwartungswert mit symmetrischer ±20%-Toleranz. Bei
