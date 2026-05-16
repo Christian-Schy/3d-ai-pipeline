@@ -10,6 +10,21 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-15
 
+- **Validator-Fix: asymmetrische Volumen-Toleranz fuer Multi-Part-Assemblies.**
+  `_volume_check_passes` behandelte die naive Volumen-Summe (Wuerfel + alle
+  Platten) als exakten Erwartungswert mit symmetrischer ±20%-Toleranz. Bei
+  Multi-Part-Assemblies mit ueberlappenden additiven Teilen (E_kombo: 12
+  Platten "geometrisch ueberlappend") ist die Summe aber eine **Obergrenze**
+  — Overlap reduziert das echte Union-Volumen. E_kombo lag mit 21.3% unter
+  der Summe, knapp ueber der Schwelle → Volume-Check schlug fehl → LLM-
+  Semantik-Check sprang an und las die 150×120×120-Bounding-Box faelschlich
+  als "Wuerfel 120mm statt 100mm" → Validator-Retry-Schleife (~8 Min
+  verschwendet, 2-3 Runden). Fix: bei >=2 additiven Solids (neuer Helper
+  `_count_additive_solids`) gilt asymmetrische Toleranz — `actual <
+  expected` ist normal (Overlap), nur `actual > expected*1.2` ist ein
+  echter Fehler. E_kombo laeuft jetzt one-shot (290s statt 1100s, kein
+  Retry). Single-Solid-Blueprints behalten die symmetrische Pruefung.
+
 - **L2-Coverage-Pilot: `B_coverage_all_sides_all_wordings` (Bohrung).**
   Erstes von vier geplanten L2-Coverage-Goldens (CLAUDE.md "Capability 1.0
   → Cov 4"). Deckt H01-H06 + H08-H10 aus `docs/conventions/20_bohrung_din.md`

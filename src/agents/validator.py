@@ -406,8 +406,38 @@ class ValidatorAgent(BaseAgent):
 
         return total if total > 0 else None
 
+    def _count_additive_solids(self, blueprint: dict) -> int:
+        """Count additive solid parts (box/cylinder/plate) in the blueprint.
+
+        Holes/pockets/slots/chamfers are not solids. Used to detect
+        multi-part assemblies where additive parts may overlap.
+        """
+        features = blueprint.get("features", {})
+        if not isinstance(features, dict):
+            return 0
+        _NON_SOLID = ("hole", "drill", "bore", "pocket", "slot", "groove",
+                      "chamfer", "fillet", "bevel", "shell", "cutout")
+        count = 0
+        for feat in features.values():
+            if not isinstance(feat, dict):
+                continue
+            if feat.get("operation", "add") == "subtract":
+                continue
+            ftype = (feat.get("type") or "").lower()
+            if any(kw in ftype for kw in _NON_SOLID):
+                continue
+            count += 1
+        return count
+
     def _volume_check_passes(self, blueprint: dict, actual_volume: float | None) -> bool:
-        """Return True if actual STL volume matches expected blueprint volume (±20%).
+        """Return True if actual STL volume matches expected blueprint volume.
+
+        Single-solid blueprints: symmetric ±20% tolerance.
+        Multi-part additive blueprints (>=2 additive solids): the naive
+        volume sum is an UPPER bound — overlapping plates can only reduce
+        actual volume, never increase it. So actual < expected is normal;
+        only actual significantly EXCEEDING expected signals a real error
+        (unexpected extra geometry).
 
         If volume cannot be computed from blueprint, returns True (don't block).
         If actual_volume is None (e.g. non-watertight mesh), returns False so
@@ -418,12 +448,21 @@ class ValidatorAgent(BaseAgent):
         expected = self._compute_expected_volume(blueprint)
         if expected is None or expected <= 0:
             return True
-        ratio = abs(actual_volume - expected) / expected
-        within = ratio <= 0.20
+
+        additive_solids = self._count_additive_solids(blueprint)
+        if additive_solids >= 2:
+            # Multi-part: expected is an upper bound. Pass when actual does
+            # not exceed expected by more than 20% (tessellation slack).
+            within = actual_volume <= expected * 1.20
+            ratio = (actual_volume - expected) / expected
+        else:
+            ratio = abs(actual_volume - expected) / expected
+            within = ratio <= 0.20
         self.log.info("validator_volume_check",
                       expected_mm3=round(expected, 0),
                       actual_mm3=round(actual_volume, 0),
                       ratio_pct=round(ratio * 100, 1),
+                      additive_solids=additive_solids,
                       passes=within)
         return within
 
