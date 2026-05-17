@@ -328,9 +328,10 @@ def _generate_subtract(
         py = float(pp.get("y") or 100)
         pz = float(pp.get("z") or 10)
         rows, cols, spacing_x, spacing_y = _grid_layout(params, face, px, py, pz)
+        grid_angle = float(placement.get("angle_deg") or 0)
         return T.hole_pattern_grid(
             func_name, hd, depth, rows, cols, spacing_x, spacing_y,
-            face, ox, oy, use_ntp, ntp_point
+            face, ox, oy, grid_angle, use_ntp, ntp_point
         )
 
     elif ftype == "hole_pattern_circular":
@@ -380,9 +381,10 @@ def _generate_subtract(
         px = float(pp.get("x") or 100)
         py = float(pp.get("y") or 100)
         pz = float(pp.get("z") or 10)
+        linear_angle = float(placement.get("angle_deg") or 0)
         return T.hole_pattern_linear(
             func_name, hd, depth, count, spacing, direction,
-            face, ox, oy, px, py, pz, use_ntp, ntp_point
+            face, ox, oy, px, py, pz, linear_angle, use_ntp, ntp_point
         )
 
     elif ftype in ("slot", "groove"):

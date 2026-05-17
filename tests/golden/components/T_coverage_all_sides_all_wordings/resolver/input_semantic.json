@@ -1,5 +1,5 @@
 {
-  "description": "T_coverage_all_sides_all_wordings — Capability 1.0 Cov-3 (Tasche). 9 stabile Taschen (T01-T05, T07, T09-T11) aus docs/conventions/22_tasche_din.md auf Wuerfel 120x90x50. T06/T08/T12 deferred — siehe notes.md.",
+  "description": "T_coverage_all_sides_all_wordings — Capability 1.0 Cov-3 (Tasche). 12 Taschen (T01-T12) aus docs/conventions/22_tasche_din.md auf Wuerfel 120x90x50. Vollstaendig: T06+T12 (Phase A: Pocket A1/A2-Regel + Resolver-Fix pocket_edge_distances=0), T08 (Phase B: A5-Anker via anker_ecke-Klassifizierer-Hint).",
   "build_order": [
     "wuerfel",
     "t01_oben_a1_b2",
@@ -7,10 +7,13 @@
     "t03_unten_a3_b2",
     "t04_hinten_a4_b0",
     "t05_links_a1_a4_b1",
+    "t06_rechts_a2_a1_b3",
     "t07_oben_a6",
+    "t08_unten_a5",
     "t09_oben_a1_a3_b3",
     "t10_oben_a1_b2_c2",
-    "t11_oben_a4_b0_c3"
+    "t11_oben_a4_b0_c3",
+    "t12_vorne_buendig_a1_b1"
   ],
   "features": {
     "wuerfel": {
@@ -109,6 +112,26 @@
       },
       "operation": "subtract"
     },
+    "t06_rechts_a2_a1_b3": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 20,
+        "y": 15,
+        "depth": 8
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 18
+        },
+        "pocket_edge_distances": {
+          "top": 10
+        }
+      },
+      "operation": "subtract"
+    },
     "t07_oben_a6": {
       "type": "pocket_rect",
       "params": {
@@ -123,6 +146,24 @@
         "edge_distances": {
           "left": 12,
           "vorne": 12
+        }
+      },
+      "operation": "subtract"
+    },
+    "t08_unten_a5": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 6
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "unten",
+        "alignment": "centered",
+        "edge_distances": {
+          "right": 22,
+          "top": 18
         }
       },
       "operation": "subtract"
@@ -178,6 +219,26 @@
         "side": "oben",
         "alignment": "centered",
         "angle_deg": -20
+      },
+      "operation": "subtract"
+    },
+    "t12_vorne_buendig_a1_b1": {
+      "type": "pocket_rect",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 8
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "edge_distances": {
+          "right": 20
+        },
+        "pocket_edge_distances": {
+          "top": 0
+        }
       },
       "operation": "subtract"
     }

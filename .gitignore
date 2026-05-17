@@ -38,7 +38,9 @@ data/dspy_optimized/*
 !data/dspy_optimized/hole_classifier_optimized.json
 !data/dspy_optimized/pocket_classifier_optimized.json
 !data/dspy_optimized/slot_classifier_optimized.json
-!data/dspy_optimized/pattern_classifier_optimized.json
+!data/dspy_optimized/grid_classifier_optimized.json
+!data/dspy_optimized/circular_classifier_optimized.json
+!data/dspy_optimized/linear_classifier_optimized.json
 !data/dspy_optimized/edge_feature_classifier_optimized.json
 !data/dspy_optimized/inventar_optimized.json
 !data/dspy_optimized/normalizer_optimized.json

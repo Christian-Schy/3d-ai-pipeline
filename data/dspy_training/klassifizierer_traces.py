@@ -794,7 +794,8 @@ TRACES.extend([
 # classify ONE splitter phrase. Pattern phrases keep typ="bohrung" because
 # the Normalizer refines the feature family, but explicit pattern-level
 # hints (anzahl, kreis_durchmesser, abstand, abstand_kante, richtung) are
-# valid classifier outputs for the PatternClassifier sub-contract.
+# valid classifier outputs for the ADR-0009 grid/circular/linear
+# sub-contracts (routed by phrase keyword).
 TRACES.extend([
     {
         "id": "klass_combo_lochkreis_oben_coarse_bohrung",
@@ -1247,9 +1248,10 @@ TRACES.extend([
 # Heatmap-Befunde nach Klassifizierer-Split: pocket_classifier kippt bei
 # "deren X kante Y mm von Z" Edge-to-Edge (T_kombo t07 + EF tasche),
 # slot_classifier hat kante_unten aber nicht kante_oben/rechts/links
-# (N_kombo Faelle), pattern_classifier fehlen 2x2-Lochmuster-Grids und
-# Lochreihe mit Anker+Startversatz (M_kombo M1, M5). Diese Traces
+# (N_kombo Faelle), den Grid-Pattern-Phrasen fehlen 2x2-Lochmuster-Grids
+# und Lochreihe mit Anker+Startversatz (M_kombo M1, M5). Diese Traces
 # schliessen genau diese Luecken — Wording aus den Component-Goldens.
+# (Explizit-Raster-Traces fuer den ADR-0009 grid_classifier folgen unten.)
 TRACES.extend([
     # ── Pocket: explizite "deren X kante Y mm von Z" Edge-to-Edge ────────
     {
@@ -1296,6 +1298,96 @@ TRACES.extend([
         },
         "source_run": None,
         "bug_pattern": "edge-to-edge: kombiniert kante_* mit versatz_* auf anderer Achse",
+    },
+    {
+        "id": "klass_curated_tasche_t06_a2_a1_mischfall",
+        "phrase": "rechts eine tasche 20x15x8 die obere taschen-kante 10mm vom oberen rand und von linker kante 18mm",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "rechts",
+            "parameter_hints": {"laenge": 20, "breite": 15, "tiefe": 8,
+                                "kante_oben": 10, "abstand_links": 18},
+        },
+        "source_run": None,
+        "bug_pattern": "T06 A2+A1-Mischfall: 'taschen-kante' triggert kante_*, parallel 'von <kante>' ohne Taschen-Kante = abstand_*",
+    },
+    {
+        "id": "klass_curated_tasche_t08_ecke_versatz_a1_dativ",
+        "phrase": "unten eine tasche 25x18x6 in der oberen rechten ecke 22mm nach links und 18mm nach unten versetzt",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "unten",
+            "parameter_hints": {"laenge": 25, "breite": 18, "tiefe": 6,
+                                "abstand_rechts": 22, "abstand_oben": 18},
+        },
+        "source_run": None,
+        "bug_pattern": "T08 A5=A1: 'in der oberen rechten ecke, X nach links/unten versetzt' bemasst das Zentrum von rechter+oberer Kante -> abstand_*",
+    },
+    {
+        "id": "klass_curated_tasche_t08_ecke_versatz_a1_nominativ",
+        "phrase": "oben eine tasche 30x20x10 obere rechte ecke 30mm nach links und 25mm nach unten versetzt",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 30, "breite": 20, "tiefe": 10,
+                                "abstand_rechts": 30, "abstand_oben": 25},
+        },
+        "source_run": None,
+        "bug_pattern": "Ecke+Versatz Nominativ 'obere rechte ecke' -> selbe A1-Dekomposition wie Dativ",
+    },
+    {
+        "id": "klass_curated_tasche_t08_ecke_versatz_a1_bottom_left",
+        "phrase": "oben eine tasche 25x15x8 in der unteren linken ecke der seite 30mm nach rechts und 20mm nach oben versetzt",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "oben",
+            "parameter_hints": {"laenge": 25, "breite": 15, "tiefe": 8,
+                                "abstand_links": 30, "abstand_unten": 20},
+        },
+        "source_run": None,
+        "bug_pattern": "Ecke+Versatz andere Ecke: 'untere linke ecke' nennt linke+untere Kante -> abstand_links/abstand_unten",
+    },
+    {
+        "id": "klass_curated_tasche_t08_ecke_versatz_a1_top_left",
+        "phrase": "vorne eine tasche 20x15x6 obere linke ecke 16mm nach rechts und 14mm nach unten versetzt",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "vorne",
+            "parameter_hints": {"laenge": 20, "breite": 15, "tiefe": 6,
+                                "abstand_links": 16, "abstand_oben": 14},
+        },
+        "source_run": None,
+        "bug_pattern": "Ecke+Versatz Kurzform 'obere linke ecke' -> abstand_links/abstand_oben (kein Sonder-Key)",
+    },
+    {
+        "id": "klass_curated_tasche_t12_buendig_a1_mischfall",
+        "phrase": "vorne eine tasche 25x18x8 oben buendig anliegend und 20mm von der rechten kante",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "tasche",
+            "seite": "vorne",
+            "parameter_hints": {"laenge": 25, "breite": 18, "tiefe": 8,
+                                "kante_oben": 0, "abstand_rechts": 20},
+        },
+        "source_run": None,
+        "bug_pattern": "T12 buendig+A1: 'oben buendig anliegend' -> kante_oben: 0; 'von rechter Kante' parallel = abstand_rechts",
     },
     {
         "id": "klass_curated_tasche_kanten_von_plattenkante",
@@ -1345,6 +1437,38 @@ TRACES.extend([
         },
         "source_run": None,
         "bug_pattern": "slot 'von X-kante' (ohne 'deren') = abstand_*; versatz_unten getrennt auf zweiter Achse",
+    },
+    {
+        "id": "klass_curated_nut_n04_anfang_endpunkt_x",
+        "phrase": "oben eine nut 5x3 anfangspunkt 20mm von linker kante endpunkt 80mm von linker kante von vorderer kante 30mm",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 5, "tiefe": 3,
+                                "anfang_links": 20, "ende_links": 80,
+                                "abstand_vorne": 30, "richtung": "x"},
+        },
+        "source_run": None,
+        "bug_pattern": "N04 Anfangs-/Endpunkt-Modell: zwei Endpunkt-Distanzen statt laenge; LLM rechnet NICHT, FeatureBuilder bildet laenge",
+    },
+    {
+        "id": "klass_curated_nut_n04_anfang_endpunkt_y",
+        "phrase": "oben eine nut 6x4 anfangspunkt 15mm von vorderer kante endpunkt 70mm von vorderer kante von linker kante 25mm",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "nut",
+            "seite": "oben",
+            "parameter_hints": {"breite": 6, "tiefe": 4,
+                                "anfang_vorne": 15, "ende_vorne": 70,
+                                "abstand_links": 25, "richtung": "y"},
+        },
+        "source_run": None,
+        "bug_pattern": "N04-Variante: Endpunkte an vorderer Kante -> richtung y; Achse folgt aus den Punkten",
     },
     {
         "id": "klass_curated_nut_oben_y_kante_rechts_anliegend",
@@ -1812,6 +1936,308 @@ TRACES.extend([
         },
         "source_run": None,
         "bug_pattern": "grenzfall: 'centerline' = expliziter Center-Bezug -> abstand_* (auch ohne 'kante' im Phrasing-Pattern)",
+    },
+])
+
+
+# ── ADR 0009 — Grid-Klassifizierer: explizites Raster vs Eckbohrungen ─────
+# Der pattern_classifier wurde in grid/circular/linear gesplittet. Der
+# grid_classifier muss "explizites Raster" (NxM + Rasterabstand →
+# rows/cols/rasterabstand) sauber von "Eckbohrungen" (NxM/Eckbohrungen +
+# Randabstand → anzahl/abstand_kante) trennen. Diese Traces liefern beide
+# Seiten — die explizit-Raster-Faelle (M_coverage M01/M02/M05/M10) fehlten
+# bisher ganz, die Eckbohrungs-Gegenbeispiele schuetzen gegen den
+# 2x2-als-Raster-Regress (M_kombo m02).
+TRACES.extend([
+    # Explizites Raster — rows/cols + Rasterabstand.
+    {
+        "id": "klass_grid_explizit_4x3_rasterabstand_zentriert",
+        "phrase": "oben ein lochmuster 4x3, bohrungen 6mm durchmesser 12 tief, rasterabstand 25mm, zentriert",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 6, "tiefe": 12,
+                                "rows": 4, "cols": 3, "rasterabstand": 25},
+        },
+        "source_run": None,
+        "bug_pattern": "explizites Raster: 'lochmuster NxM' + 'rasterabstand' -> rows/cols/rasterabstand, NICHT anzahl/inset",
+    },
+    {
+        "id": "klass_grid_explizit_4x2_rasterabstand_edge_distance",
+        "phrase": "oben ein lochmuster 4x2, bohrungen 5mm durchmesser 10 tief, rasterabstand 20mm, von linker kante 15mm und von vorderer kante 20mm",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 5, "tiefe": 10,
+                                "rows": 4, "cols": 2, "rasterabstand": 20,
+                                "abstand_links": 15, "abstand_vorne": 20},
+        },
+        "source_run": None,
+        "bug_pattern": "explizites Raster mit edge-distance Pattern-Center: abstand_* getrennt von rasterabstand",
+    },
+    {
+        "id": "klass_grid_explizit_3x3_rasterabstand_unten",
+        "phrase": "unten ein lochmuster 3x3 mit 5mm bohrungen 12 tief und rasterabstand 30mm, jeweils 18mm vom unteren linken rand",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "unten",
+            "parameter_hints": {"durchmesser": 5, "tiefe": 12,
+                                "rows": 3, "cols": 3, "rasterabstand": 30,
+                                "abstand_links": 18, "abstand_vorne": 18},
+        },
+        "source_run": None,
+        "bug_pattern": "explizites Raster A6: 'jeweils X vom Rand' -> zwei abstand_*",
+    },
+    {
+        "id": "klass_grid_explizit_3x2_anisotrop_rasterabstand",
+        "phrase": "oben ein lochmuster 3x2, 5mm bohrungen 10 tief, rasterabstand 25mm in x und 20mm in y, von linker kante 30mm und 10mm aus mitte nach hinten",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 5, "tiefe": 10,
+                                "rows": 3, "cols": 2,
+                                "rasterabstand_x": 25, "rasterabstand_y": 20,
+                                "abstand_links": 30, "versatz_hinten": 10},
+        },
+        "source_run": None,
+        "bug_pattern": "anisotropes Raster: 'rasterabstand X in x und Y in y' -> rasterabstand_x/rasterabstand_y",
+    },
+    {
+        "id": "klass_grid_m06_rotation_zentriert",
+        "phrase": "oben ein lochmuster 3x2 mit 6mm bohrungen 10 tief und rasterabstand 25mm um 15 grad gedreht zentriert",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 6, "tiefe": 10,
+                                "rows": 3, "cols": 2, "rasterabstand": 25,
+                                "rotation_deg": 15},
+        },
+        "source_run": None,
+        "bug_pattern": "M06 Pattern-Rotation: 'um 15 grad gedreht' -> rotation_deg: 15 (CCW positiv)",
+    },
+    {
+        "id": "klass_grid_explizit_raster_3x4_synonym",
+        "phrase": "oben ein raster 3x4 mit 6mm bohrungen 8 tief und 20mm lochabstand zentriert",
+        "teil_type": "box",
+        "teil_params": {"x": 160, "y": 120, "z": 30},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 6, "tiefe": 8,
+                                "rows": 3, "cols": 4, "rasterabstand": 20},
+        },
+        "source_run": None,
+        "bug_pattern": "Synonym: 'raster NxM' + 'lochabstand' gleichbedeutend mit 'lochmuster' + 'rasterabstand'",
+    },
+    # Eckbohrungs-Gegenbeispiele — Randabstand, KEINE rows/cols.
+    {
+        "id": "klass_grid_eckbohrung_4_randabstand_gegenbeispiel",
+        "phrase": "oben 4 eckbohrungen jeweils 20mm von den kanten entfernt 8mm durchmesser durchgaengig",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 12},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 8, "anzahl": 4,
+                                "abstand_kante": 20},
+        },
+        "source_run": None,
+        "bug_pattern": "Eckbohrungen: Randabstand ohne Rasterabstand -> anzahl/abstand_kante, NIEMALS rows/cols",
+    },
+    {
+        "id": "klass_grid_eckbohrung_2x2_randabstand_gegenbeispiel",
+        "phrase": "oben ein 2x2 lochmuster mit 6mm bohrungen 5 tief, randabstand 12mm zur kante",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 120, "z": 20},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 6, "tiefe": 5,
+                                "anzahl": 4, "abstand_kante": 12},
+        },
+        "source_run": None,
+        "bug_pattern": "Gegenbeispiel M_kombo m02: '2x2 lochmuster' OHNE Rasterabstand sind 4 Eckbohrungen, nicht explizites Raster",
+    },
+])
+
+
+# ── ADR 0009 — Circular- + Linear-Klassifizierer: Wording-Varianten ──────
+# Der circular_classifier und der linear_classifier brauchen je eine
+# stabile Trace-Basis. Die alten pattern_classifier-Traces decken die
+# Standard-Faelle ab; diese ergaenzen Wording-Varianten (kreismuster,
+# teilkreis-durchmesser, reihe aus, verlaeuft-nach Richtungs-Verb).
+TRACES.extend([
+    {
+        "id": "klass_circular_kreismuster_wording",
+        "phrase": "oben ein kreismuster aus 6 bohrungen 4mm durchmesser 8 tief, teilkreis-durchmesser 40mm",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 4, "tiefe": 8,
+                                "anzahl": 6, "kreis_durchmesser": 40},
+        },
+        "source_run": None,
+        "bug_pattern": "circular: 'kreismuster aus N' + 'teilkreis-durchmesser X' Wording-Variante",
+    },
+    {
+        "id": "klass_circular_rechts_face",
+        "phrase": "rechts ein kreismuster aus 6 bohrungen 4mm durchmesser 8 tief auf teilkreis 40mm",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "rechts",
+            "parameter_hints": {"durchmesser": 4, "tiefe": 8,
+                                "anzahl": 6, "kreis_durchmesser": 40},
+        },
+        "source_run": None,
+        "bug_pattern": "circular: Teilkreis auf seitlicher Face",
+    },
+    {
+        "id": "klass_circular_lochkreis_durchgaengig",
+        "phrase": "oben ein lochkreis 80mm mit 8 bohrungen je 6mm durchmesser durchgaengig",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 150, "z": 25},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 6, "anzahl": 8,
+                                "kreis_durchmesser": 80},
+        },
+        "source_run": None,
+        "bug_pattern": "circular: 'lochkreis Xmm' Standard-Form ohne tiefe",
+    },
+    {
+        "id": "klass_circular_m09_a5_ecke_als_edge_distance",
+        "phrase": "links ein kreismuster aus 4 bohrungen 4mm durchmesser 8 tief auf einem teilkreis von 20mm in der oberen rechten ecke 15mm nach links und 15mm nach unten versetzt",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "links",
+            "parameter_hints": {"bohr_durchmesser": 4, "tiefe": 8,
+                                "anzahl": 4, "kreis_durchmesser": 20,
+                                "abstand_rechts": 15, "abstand_oben": 15},
+        },
+        "source_run": None,
+        "bug_pattern": "M09 A5=A1: Teilkreis-Center ist point-like, 'in der oberen rechten ecke X versetzt' -> abstand_rechts/abstand_oben",
+    },
+    {
+        "id": "klass_circular_lochkreis_edge_distance",
+        "phrase": "oben ein lochkreis 50mm mit 4 bohrungen 5mm durchmesser 6 tief, von linker kante 40mm",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 120, "z": 30},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 5, "tiefe": 6,
+                                "anzahl": 4, "kreis_durchmesser": 50,
+                                "abstand_links": 40},
+        },
+        "source_run": None,
+        "bug_pattern": "circular: Pattern-Center per edge-distance (A1 Teilkreis-Center)",
+    },
+    {
+        "id": "klass_linear_reihe_aus_wording",
+        "phrase": "vorne eine reihe aus 5 bohrungen 6mm durchmesser 10 tief entlang x, abstand 20mm",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "vorne",
+            "parameter_hints": {"durchmesser": 6, "tiefe": 10,
+                                "anzahl": 5, "abstand": 20, "richtung": "x"},
+        },
+        "source_run": None,
+        "bug_pattern": "linear: 'reihe aus N bohrungen ... entlang X' Wording-Variante",
+    },
+    {
+        "id": "klass_linear_verlaeuft_nach_hinten_verb",
+        "phrase": "oben eine reihe aus 4 bohrungen 5mm durchmesser 10 tief, verlaeuft nach hinten, abstand 20mm",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 5, "tiefe": 10,
+                                "anzahl": 4, "abstand": 20, "richtung": "y"},
+        },
+        "source_run": None,
+        "bug_pattern": "linear: Richtungs-Verb 'verlaeuft nach hinten' -> richtung y",
+    },
+    {
+        "id": "klass_linear_verlaeuft_nach_rechts_verb",
+        "phrase": "vorne eine bohrungsreihe aus 5 bohrungen 6mm durchmesser, verlaeuft nach rechts, abstand 18mm",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 100, "z": 60},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "vorne",
+            "parameter_hints": {"durchmesser": 6, "anzahl": 5,
+                                "abstand": 18, "richtung": "x"},
+        },
+        "source_run": None,
+        "bug_pattern": "linear: Richtungs-Verb 'verlaeuft nach rechts' -> richtung x",
+    },
+    {
+        "id": "klass_linear_m07_rotation_cw",
+        "phrase": "hinten eine reihe aus 4 bohrungen 5mm durchmesser 8 tief entlang x-achse mit abstand 18mm um 20 grad im uhrzeigersinn gedreht mittig auf der breite und 12mm von oberer kante",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "hinten",
+            "parameter_hints": {"durchmesser": 5, "tiefe": 8,
+                                "anzahl": 4, "abstand": 18, "richtung": "x",
+                                "rotation_deg": -20, "abstand_oben": 12},
+        },
+        "source_run": None,
+        "bug_pattern": "M07 Pattern-Rotation: 'um 20 grad im uhrzeigersinn' -> rotation_deg: -20 (CW negativ)",
+    },
+    {
+        "id": "klass_linear_lochreihe_edge_distance",
+        "phrase": "oben eine lochreihe entlang y mit 4 bohrungen 5mm durchmesser 10 tief, abstand 20mm, von linker kante 30mm",
+        "teil_type": "box",
+        "teil_params": {"x": 150, "y": 100, "z": 40},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 5, "tiefe": 10,
+                                "anzahl": 4, "abstand": 20, "richtung": "y",
+                                "abstand_links": 30},
+        },
+        "source_run": None,
+        "bug_pattern": "linear: Reihen-Center per edge-distance (A1 outermost-Hole)",
     },
 ])
 

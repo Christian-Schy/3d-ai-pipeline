@@ -126,7 +126,9 @@ def _fake_classifier_config(**flags):
         "hole_enabled": False,
         "pocket_enabled": False,
         "slot_enabled": False,
-        "pattern_enabled": False,
+        "grid_enabled": False,
+        "circular_enabled": False,
+        "linear_enabled": False,
         "edge_feature_enabled": False,
     }
     defaults.update(flags)
@@ -145,7 +147,10 @@ def test_detect_classifier_subagent_routes_only_unambiguous_phrases():
     assert detect_classifier_subagent("oben eine 8mm bohrung") == "hole_classifier"
     assert detect_classifier_subagent("oben eine tasche 20x10x5") == "pocket_classifier"
     assert detect_classifier_subagent("rechts eine nut 5x3 entlang z") == "slot_classifier"
-    assert detect_classifier_subagent("oben lochkreis 60mm mit 6 bohrungen") == "pattern_classifier"
+    assert detect_classifier_subagent("oben lochkreis 60mm mit 6 bohrungen") == "circular_classifier"
+    assert detect_classifier_subagent("oben ein lochmuster 4x3 rasterabstand 25mm") == "grid_classifier"
+    assert detect_classifier_subagent("oben 4 eckbohrungen 20mm von den kanten") == "grid_classifier"
+    assert detect_classifier_subagent("oben eine bohrungsreihe entlang x abstand 20mm") == "linear_classifier"
     assert detect_classifier_subagent("oben eine fase 2mm") == "edge_feature_classifier"
     assert detect_classifier_subagent("oben eine tasche mit bohrung") is None
 

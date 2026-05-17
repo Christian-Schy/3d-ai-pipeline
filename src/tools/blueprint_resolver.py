@@ -645,7 +645,7 @@ def _apply_edge_distances_axis(
             val = float(raw_val)
         except (TypeError, ValueError):
             continue
-        if val <= 0:
+        if val < 0:
             continue
         axis_info = mapping.get(key.lower())
         if not axis_info:
@@ -654,6 +654,12 @@ def _apply_edge_distances_axis(
         half = parent_w / 2 if axis == "wx" else parent_h / 2
 
         is_box_for_axis = is_box_wx if axis == "wx" else is_box_wy
+        # `val == 0` ist nur in edge-to-EDGE-Mode (is_box) semantisch
+        # valide ("buendig anliegend" — Feature-Kante auf Parent-Kante).
+        # In edge-to-CENTER-Mode hiesse `0`, dass das Feature-Center auf
+        # der Kante saesse (halb ausserhalb) — also filtern.
+        if val == 0 and not is_box_for_axis:
+            continue
         child_half = 0.0
         if is_box_for_axis:
             child_half = child_w / 2 if axis == "wx" else child_h / 2
@@ -1074,8 +1080,14 @@ def _compute_offsets(
     ox_from_pocket_edges = oy_from_pocket_edges = 0.0
     ox_pocket_set = oy_pocket_set = False
     if pocket_edge_distances:
+        # `kante_<dir>: 0` ist semantisch valide — "buendig anliegend",
+        # also Feature-Kante exakt auf der Parent-Kante. Nur fuer
+        # `pocket_edge_distances` (edge-to-EDGE) erlaubt; bei
+        # `edge_distances` (edge-to-CENTER) bleibt `> 0` Pflicht, weil
+        # `0` dort hiesse "Center auf Kante" und das Feature halb
+        # ausserhalb des Bauteils saesse.
         non_zero = {k: v for k, v in pocket_edge_distances.items()
-                    if isinstance(v, (int, float)) and float(v) > 0}
+                    if isinstance(v, (int, float)) and float(v) >= 0}
         if non_zero:
             ox_p, oy_p, ox_pocket_set, oy_pocket_set = _apply_edge_distances_axis(
                 face, non_zero, parent_w, parent_h, child_w, child_h,

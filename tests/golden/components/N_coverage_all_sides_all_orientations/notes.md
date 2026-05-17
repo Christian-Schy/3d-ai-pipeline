@@ -9,7 +9,11 @@ X/Y/Z) + DIN-Wording-Varianten A1-A6 × B0-B3 × C0-C3 auf einem
 
 ## Test-Faelle (aus [`docs/conventions/21_nut_slot_din.md`](../../../../docs/conventions/21_nut_slot_din.md))
 
-9 Nuten — N01-N03, N05-N08, N11, N12. N04/N09/N10 deferred (siehe unten).
+12 Nuten — N01-N12, vollstaendig. Keine deferred Cases mehr.
+N09 + N10 ab Phase A aktiv (rotierte Slots, Slot-Klassifizierer
+A1/A2-Regel + Normalizer-Konflikt-Aufloesung 87af981). N04 ab Phase B
+aktiv (Anfangs-/Endpunkt-Modell, ADR-0010-Muster: `anfang_*`/`ende_*`
+Klassifizierer-Hints, `feature_builder` rechnet `laenge`).
 
 | Feature | Face | Orient | Matrix-Zellen | DIN-Bezug |
 |---|---|---|---|---|
@@ -42,26 +46,39 @@ X/Y/Z) + DIN-Wording-Varianten A1-A6 × B0-B3 × C0-C3 auf einem
   entlang Y (N01, N07), entlang Z (N05), Richtungs-Verb (N03),
   "parallel zur Kante" (N11).
 
-## Bekannte Limitierungen — N04 + N09 + N10 deferred
+## Phase A — N09 + N10 reaktiviert (2026-05-16)
 
-Drei Faelle aus Konvention 21 sind aus dem Pipeline-Golden ausgelassen.
-Alle drei bleiben gueltige Konventions-Bestandteile; die Resolver-Mathe
-ist korrekt (im resolver-component-test ueber separate Faelle gedeckt).
+Vorher deferred. Re-aktivierungs-Grundlage: der Slot-Klassifizierer-
+A1/A2-Regel-Fix (Commit 87af981) plus die agent-agnostische Normalizer-
+Konflikt-Aufloesung (`_merge_param_hints` loescht konkurrierende
+Konventions-Keys derselben Richtung) erzwingen jetzt eine konsistente
+Konventions-Wahl pro Achse. Die bereits vorhandenen Normalizer-Demos
+`norm_slot_axb_entlang_laenge_rotation_ccw` (N09 CCW-Vorbild) und
+`norm_slot_axb_entlang_laenge_rotation_cw` (N10 CW-Vorbild) decken
+"Nut entlang X-Achse um N° gedreht" stabil ab.
 
-- **N04 (Anfangs-/Endpunkt-Modell)** — "Nut 5x3, Anfangspunkt 20mm von
-  linker Kante, Endpunkt 80mm von linker Kante" beschreibt die Nut ueber
-  Start-/Endpunkt statt `laenge`. Der `slot_classifier`-Prompt hat keine
-  Anfangspunkt/Endpunkt-Keys im Schema. Resolver-aequivalent: `length=60`
-  (= 80-20) plus `edge_distance left=20` auf der Length-Achse.
-- **N09 + N10 (rotierte Slots, C2/C3)** — "entlang X-Achse, um N° gedreht".
-  Der Klassifizierer emittiert `rotation_deg` korrekt (inkl. Vorzeichen
-  fuer CW). Der Normalizer verschluckt die Rotation aber **flaky** bei der
-  Kombination Achsen-Angabe + Rotation — die Nut landet mal bei angle 0
-  statt N°. N09 lief in einem Run gruen, im naechsten rot. Beide Faelle
-  sind daher deferred bis ein Normalizer-Demo/Prompt fuer
-  "Nut entlang X-Achse um N° gedreht" die richtung+drehung-Kombination
-  stabil haelt. C2/C3-Rotation ist ueber T_coverage T10/T11 (Pocket
-  CCW/CW) bereits abgedeckt.
+Falls die Heatmap im Real-Run weiter flaky meldet: dedizierter
+Normalizer-Demo mit der exakten N09-/N10-Wording-Variante ergaenzen —
+Phase A bleibt offen bis Real-Run-PASS.
+
+## Phase B — N04 aktiviert (2026-05-16)
+
+Vorher deferred ("`slot_classifier` hat keine Anfangspunkt/Endpunkt-Keys").
+Schema-getrieben geloest (ADR-0010-Muster):
+
+- **Klassifizierer-Schema** additiv um `anfang_<kante>` / `ende_<kante>`
+  erweitert (12 Zahlen-Keys). Der `slot_classifier`-Prompt lehrt:
+  zwei Endpunkt-Distanzen + Bezugskante extrahieren, NICHT die Laenge
+  rechnen, `richtung` aus den Punkten ableiten.
+- **`feature_builder._resolve_slot_endpoints`** bildet deterministisch
+  `laenge = |ende - anfang|` und `abstand_<kante> = min(anfang, ende)`
+  (frueherer Endpunkt = edge-to-EDGE-Start auf der Length-Achse). Reine
+  Arithmetik — kein Sprachverstaendnis im Code.
+- 2 Klassifizierer-Demos (X-/Y-Achse) + 1 Normalizer-Demo +
+  Normalizer-Prompt-Beispiel. N04 als `n04_oben_a1_b2_c0_endpoints` in
+  Pipeline + Resolver Golden.
+
+Keine deferred Cases mehr in N_coverage — 12/12.
 
 Der `feature_builder` liest seit dieser Session `rotation_deg` zusaetzlich
 zu `drehung/winkel/angle/rotation` — damit der Klassifizierer-Output-Key

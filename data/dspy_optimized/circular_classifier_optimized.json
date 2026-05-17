@@ -1,0 +1,101 @@
+{
+  "predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "phrase": "oben ein lochkreis 80mm mit 8 bohrungen je 6mm durchmesser durchgaengig",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 150, \"y\": 150, \"z\": 25}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"anzahl\": 8, \"kreis_durchmesser\": 80, \"durchgaengig\": true}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "oben ein lochkreis mit 6 bohrungen 8mm durchmesser 5 tief auf einem teilkreis von 60mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5, \"anzahl\": 6, \"kreis_durchmesser\": 60}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "rechts ein lochkreis 70mm mit 8 bohrungen je 12mm durchmesser",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 120, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 12, \"anzahl\": 8, \"kreis_durchmesser\": 70}}"
+      },
+      {
+        "augmented": true,
+        "phrase": "links ein kreismuster aus 4 bohrungen 4mm durchmesser 8 tief auf einem teilkreis von 20mm in der oberen rechten ecke 15mm nach links und 15mm nach unten versetzt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"links\", \"parameter_hints\": {\"durchmesser\": 4, \"tiefe\": 8, \"anzahl\": 4, \"kreis_durchmesser\": 20, \"versatz_links\": 15, \"versatz_unten\": 15}}"
+      },
+      {
+        "phrase": "oben lochkreis mit 6 bohrungen 5mm durchmesser 4 tief auf teilkreis 50mm 10mm nach links und 5mm nach unten versetzt",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 120, \"y\": 90, \"z\": 50}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 4, \"anzahl\": 6, \"kreis_durchmesser\": 50, \"versatz_links\": 10, \"versatz_unten\": 5}}"
+      },
+      {
+        "phrase": "oben ein kreismuster aus 6 bohrungen 4mm durchmesser 8 tief, teilkreis-durchmesser 40mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 4, \"tiefe\": 8, \"anzahl\": 6, \"kreis_durchmesser\": 40}}"
+      },
+      {
+        "phrase": "oben ein lochkreis 50mm mit 4 bohrungen 5mm durchmesser 6 tief, von linker kante 40mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 200, \"y\": 120, \"z\": 30}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 6, \"anzahl\": 4, \"kreis_durchmesser\": 50, \"abstand_links\": 40}}"
+      },
+      {
+        "phrase": "rechts ein kreismuster aus 6 bohrungen 4mm durchmesser 8 tief auf teilkreis 40mm",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 40}",
+        "parent_phrase": "(keine)",
+        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 4, \"tiefe\": 8, \"anzahl\": 6, \"kreis_durchmesser\": 40}}"
+      }
+    ],
+    "signature": {
+      "instructions": "Klassifiziere EINE Kreis-Lochmuster-Phrase (Lochkreis/Teilkreis).",
+      "fields": [
+        {
+          "prefix": "Phrase:",
+          "description": "Eine einzelne Lochkreis/Teilkreis-Phrase."
+        },
+        {
+          "prefix": "Teil Type:",
+          "description": "Form des Host-Teils."
+        },
+        {
+          "prefix": "Teil Params:",
+          "description": "JSON der Host-Teil-Parameter."
+        },
+        {
+          "prefix": "Parent Phrase:",
+          "description": "Parent-Phrase, sonst '(keine)'."
+        },
+        {
+          "prefix": "Klassifikation:",
+          "description": "JSON {typ:'bohrung', seite, parameter_hints}; Kreis-Hints duerfen anzahl, kreis_durchmesser, durchmesser, tiefe, abstand_*, versatz_* enthalten."
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.12",
+      "dspy": "3.2.1",
+      "cloudpickle": "3.1"
+    }
+  }
+}

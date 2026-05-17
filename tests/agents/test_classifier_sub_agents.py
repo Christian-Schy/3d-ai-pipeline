@@ -30,7 +30,9 @@ def test_sub_agent_registry_builds_all_agents():
         "hole_classifier",
         "pocket_classifier",
         "slot_classifier",
-        "pattern_classifier",
+        "grid_classifier",
+        "circular_classifier",
+        "linear_classifier",
         "edge_feature_classifier",
     }
     for name in CLASSIFIER_SUB_AGENT_CLASSES:
@@ -83,10 +85,10 @@ def test_slot_classifier_keeps_axis_hint_as_direction():
     }
 
 
-def test_pattern_classifier_allows_pattern_specific_hints():
-    from src.agents.classifier_sub_agents import PatternClassifier
+def test_circular_classifier_allows_circle_specific_hints():
+    from src.agents.classifier_sub_agents import CircularClassifier
 
-    agent = PatternClassifier()
+    agent = CircularClassifier()
     agent.call_json = MagicMock(return_value={
         "typ": "bohrung",
         "seite": "oben",
@@ -94,7 +96,6 @@ def test_pattern_classifier_allows_pattern_specific_hints():
             "anzahl": 6,
             "kreis_durchmesser": 60,
             "durchmesser": 10,
-            "richtung": "x",
         },
     })
 
@@ -108,7 +109,77 @@ def test_pattern_classifier_allows_pattern_specific_hints():
         "anzahl": 6,
         "kreis_durchmesser": 60,
         "durchmesser": 10,
-        "richtung": "x",
+    }
+
+
+def test_grid_classifier_keeps_explicit_raster_hints():
+    from src.agents.classifier_sub_agents import GridClassifier
+
+    agent = GridClassifier()
+    agent.call_json = MagicMock(return_value={
+        "typ": "bohrung",
+        "seite": "oben",
+        "parameter_hints": {
+            "rows": 4,
+            "cols": 3,
+            "rasterabstand": 25,
+            "durchmesser": 6,
+            "kreis_durchmesser": 99,
+        },
+    })
+
+    out = agent.classify(
+        _phrase("oben ein lochmuster 4x3 rasterabstand 25mm"),
+        _teil(),
+    )
+
+    assert out["typ"] == "bohrung"
+    # rows/cols/rasterabstand pass; kreis_durchmesser is not a grid hint.
+    assert out["parameter_hints"] == {
+        "rows": 4,
+        "cols": 3,
+        "rasterabstand": 25,
+        "durchmesser": 6,
+    }
+
+
+def test_grid_classifier_keeps_corner_hole_hints():
+    from src.agents.classifier_sub_agents import GridClassifier
+
+    agent = GridClassifier()
+    agent.call_json = MagicMock(return_value={
+        "typ": "bohrung",
+        "seite": "oben",
+        "parameter_hints": {"anzahl": 4, "abstand_kante": 20, "durchmesser": 8},
+    })
+
+    out = agent.classify(
+        _phrase("oben 4 eckbohrungen 20mm von den kanten 8mm durchmesser"),
+        _teil(),
+    )
+
+    assert out["parameter_hints"] == {
+        "anzahl": 4, "abstand_kante": 20, "durchmesser": 8,
+    }
+
+
+def test_linear_classifier_keeps_axis_hint():
+    from src.agents.classifier_sub_agents import LinearClassifier
+
+    agent = LinearClassifier()
+    agent.call_json = MagicMock(return_value={
+        "typ": "bohrung",
+        "seite": "oben",
+        "parameter_hints": {"anzahl": 5, "abstand": 20, "richtung": "X-Achse"},
+    })
+
+    out = agent.classify(
+        _phrase("oben bohrungsreihe 5 bohrungen entlang x abstand 20mm"),
+        _teil(),
+    )
+
+    assert out["parameter_hints"] == {
+        "anzahl": 5, "abstand": 20, "richtung": "x",
     }
 
 

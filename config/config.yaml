@@ -59,7 +59,15 @@ agent_options:
     think: false
     temperature: 0.0
     num_ctx: 4096
-  pattern_classifier:
+  grid_classifier:
+    think: false
+    temperature: 0.0
+    num_ctx: 4096
+  circular_classifier:
+    think: false
+    temperature: 0.0
+    num_ctx: 4096
+  linear_classifier:
     think: false
     temperature: 0.0
     num_ctx: 4096
@@ -88,7 +96,9 @@ models:
   hole_classifier:          "gemma4:26b"   # ADR 0006 Sub-Klassifizierer
   pocket_classifier:        "gemma4:26b"
   slot_classifier:          "gemma4:26b"
-  pattern_classifier:       "gemma4:26b"
+  grid_classifier:          "gemma4:26b"   # ADR 0009 Pattern-Split
+  circular_classifier:      "gemma4:26b"
+  linear_classifier:        "gemma4:26b"
   edge_feature_classifier:  "gemma4:26b"
   position_extractor:       "gemma4:26b"   # Pre-digester pro Kind-Teil (Multi-Part)
   text_splitter:            "gemma4:26b"   # Spec → Text pro Teil (Multi-Part)
@@ -147,13 +157,16 @@ ui:
 plan_validator:
   max_retries: 2
 
-# --- ADR 0006 classifier sub-agent rollout flags ---
+# --- ADR 0006/0009 classifier sub-agent rollout flags ---
 # Enable one sub-agent at a time only after training and heatmap adoption.
-# hole_classifier is the first adopted sub-agent; all other families still
-# use the monolithic fallback until their own Phase-D cycle is green.
+# ADR 0009 split the former `pattern_classifier` into grid/circular/linear.
+# The three start disabled (monolithic fallback handles pattern phrases)
+# until trained and heatmap-verified — then flip each to true.
 classifier_subagents:
   hole_enabled: true
   pocket_enabled: true
   slot_enabled: true
-  pattern_enabled: true
+  grid_enabled: true
+  circular_enabled: true
+  linear_enabled: true
   edge_feature_enabled: true

@@ -35,6 +35,7 @@ _POSITION_HINT_KEYS = {
 }
 
 
+
 def _coerce_number(value: object) -> int | float | None:
     if isinstance(value, bool):
         return None
@@ -182,6 +183,16 @@ class PocketClassifier(ClassifierSubAgent):
     }
 
 
+# Slot Anfangs-/Endpunkt-Keys (Konvention 21 N04). Der Klassifizierer
+# extrahiert die zwei Endpunkt-Distanzen; feature_builder rechnet daraus
+# laenge + abstand (deterministisch).
+_SLOT_ENDPOINT_KEYS = {
+    f"{prefix}_{direction}"
+    for prefix in ("anfang", "ende")
+    for direction in ("oben", "unten", "rechts", "links", "vorne", "hinten")
+}
+
+
 class SlotClassifier(ClassifierSubAgent):
     name = "slot_classifier"
     prompt_file = "prompt_classifier_slot.py"
@@ -190,17 +201,53 @@ class SlotClassifier(ClassifierSubAgent):
     allowed_hint_keys = {
         "laenge", "breite", "tiefe", "richtung", "rotation_deg",
         *_POSITION_HINT_KEYS,
+        *_SLOT_ENDPOINT_KEYS,
     }
 
 
-class PatternClassifier(ClassifierSubAgent):
-    name = "pattern_classifier"
-    prompt_file = "prompt_classifier_pattern.py"
+class GridClassifier(ClassifierSubAgent):
+    """ADR 0009 — Raster-Lochmuster + Eckbohrungen.
+
+    Trennt explizites Raster (`rows`/`cols`/`rasterabstand` bei genanntem
+    Rasterabstand) von Eckbohrungen (`anzahl`/`abstand_kante` bei Randabstand).
+    """
+
+    name = "grid_classifier"
+    prompt_file = "prompt_classifier_grid.py"
     default_typ = "bohrung"
     allowed_typs = {"bohrung"}
     allowed_hint_keys = {
         "durchmesser", "bohr_durchmesser", "tiefe", "anzahl",
-        "kreis_durchmesser", "abstand", "abstand_kante", "richtung",
+        "rows", "cols", "rasterabstand", "rasterabstand_x", "rasterabstand_y",
+        "abstand_kante", "rotation_deg",
+        *_POSITION_HINT_KEYS,
+    }
+
+
+class CircularClassifier(ClassifierSubAgent):
+    """ADR 0009 — Kreis-Lochmuster (Lochkreis / Teilkreis)."""
+
+    name = "circular_classifier"
+    prompt_file = "prompt_classifier_circular.py"
+    default_typ = "bohrung"
+    allowed_typs = {"bohrung"}
+    allowed_hint_keys = {
+        "durchmesser", "bohr_durchmesser", "tiefe", "anzahl",
+        "kreis_durchmesser",
+        *_POSITION_HINT_KEYS,
+    }
+
+
+class LinearClassifier(ClassifierSubAgent):
+    """ADR 0009 — Linear-Lochmuster (Bohrungsreihe / Lochreihe)."""
+
+    name = "linear_classifier"
+    prompt_file = "prompt_classifier_linear.py"
+    default_typ = "bohrung"
+    allowed_typs = {"bohrung"}
+    allowed_hint_keys = {
+        "durchmesser", "bohr_durchmesser", "tiefe", "anzahl",
+        "abstand", "richtung", "rotation_deg",
         *_POSITION_HINT_KEYS,
     }
 
@@ -225,7 +272,9 @@ CLASSIFIER_SUB_AGENT_CLASSES = {
     "hole_classifier": HoleClassifier,
     "pocket_classifier": PocketClassifier,
     "slot_classifier": SlotClassifier,
-    "pattern_classifier": PatternClassifier,
+    "grid_classifier": GridClassifier,
+    "circular_classifier": CircularClassifier,
+    "linear_classifier": LinearClassifier,
     "edge_feature_classifier": EdgeFeatureClassifier,
 }
 

@@ -127,6 +127,28 @@ def _extract_pocket_edge_distances(params: dict) -> dict | None:
     return distances if distances else None
 
 
+_ENDPOINT_DIRS = ("oben", "unten", "rechts", "links", "vorne", "hinten")
+
+
+def _resolve_slot_endpoints(params: dict) -> None:
+    """In-place: convert Anfangs-/Endpunkt edge-distances → laenge + abstand.
+
+    "Anfangspunkt 20mm von linker Kante, Endpunkt 80mm von linker Kante"
+    liefert `anfang_links=20`, `ende_links=80`. Daraus folgt deterministisch
+    `laenge=60` (= |80-20|) und `abstand_links=20` (frueherer Endpunkt =
+    edge-to-EDGE-Start auf der Length-Achse, Konvention 21). Der LLM
+    extrahiert nur die zwei Zahlen + die Bezugskante; das Rechnen ist Code.
+    """
+    for d in _ENDPOINT_DIRS:
+        a = params.pop(f"anfang_{d}", None)
+        e = params.pop(f"ende_{d}", None)
+        if not isinstance(a, (int, float)) or not isinstance(e, (int, float)):
+            continue
+        if params.get("laenge") is None:
+            params["laenge"] = abs(e - a)
+        params.setdefault(f"abstand_{d}", min(a, e))
+
+
 def _extract_edge_distances(position: str, params: dict) -> dict | None:
     """Extract edge_distances from position keyword + params.
 
@@ -216,6 +238,11 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | Non
 
     # Generate feature ID
     feat_id = f"{typ}_{seite}_{action_idx}" if typ else f"feat_{action_idx}"
+
+    # Slot Anfangs-/Endpunkt-Modell (Konvention 21 N04): vor dem
+    # Params-Bau anfang_*/ende_* zu laenge + abstand_* aufloesen.
+    if feature_type == "slot":
+        _resolve_slot_endpoints(params)
 
     # Build params based on type
     feature_params = _build_params(feature_type, params)

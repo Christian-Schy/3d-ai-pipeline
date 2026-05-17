@@ -10,6 +10,92 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-16
 
+- **Phase C Lueckenfuellung Cap 1.0 Cov 4 — M06 + M07 (Pattern-Rotation)
+  aktiviert (ADR 0012).** Vorher deferred. Die Pattern-Templates
+  `hole_pattern_grid` / `hole_pattern_linear` bekamen einen
+  `angle`-Parameter: Grid dreht den Workplane-Frame
+  (`.transformed(rotate=(0,0,angle))`) vor `.rarray`, Linear rotiert
+  jede Bohrungs-Position um den Reihen-Mittelpunkt. `angle=0` bleibt
+  bit-identisch zum Alt-Verhalten. Der Assembler reicht
+  `placement.angle_deg` durch (kein Schema-/Resolver-Change — der Winkel
+  floss schon bis `placement`). `grid_classifier` + `linear_classifier`
+  bekamen den `rotation_deg`-Hint (CCW positiv, CW negativ). Je 1
+  Klassifizierer- + 1 Normalizer-Demo. M_coverage als `m06_oben_grid_c2`
+  + `m07_hinten_linear_c3` — **M_coverage 10/10 vollstaendig**, keine
+  deferred Patterns mehr. 308 Tests gruen.
+- **Phase B Lueckenfuellung Cap 1.0 Cov 4 — M09 (Kreis-Pattern A5)
+  aktiviert.** Vorher deferred. Zwei Befunde aufgeloest: (1) A5 fuer ein
+  Kreis-Lochmuster ist geometrisch identisch zu A1 — der Teilkreis-
+  Mittelpunkt ist point-like, "in der Ecke X versetzt" = Center X mm
+  von zwei Kanten (`abstand_*`). Genau wie A5 fuer die Bohrung in
+  Konvention 20 entfaellt. Kein Anker-Schema noetig (der spekulativ
+  angelegte `circular_classifier`-`anker_ecke`-Hint wurde wieder
+  entfernt). (2) Konvention 24 M09 (Teilkreis Ø30, 8mm Versatz) ragte
+  ~7mm ueber die 100x40-links-Face — korrigiert auf Ø20 / 15mm Versatz.
+  1 Klassifizierer-Demo + 1 Normalizer-Demo. M_coverage als
+  `m09_links_kreis_a5` in Pipeline + Resolver Golden (8 Patterns);
+  M06/M07 bleiben deferred bis Pattern-Rotation-Template (Phase C).
+- **Phase B Lueckenfuellung Cap 1.0 Cov 4 — N04 (Slot Anfangs-/
+  Endpunkt-Modell) aktiviert (ADR 0011).** Vorher deferred
+  ("slot_classifier hat keine Endpunkt-Keys"). Schema-getrieben wie
+  T08: der `slot_classifier` bekommt additive Hints `anfang_<kante>` /
+  `ende_<kante>` (12 Zahlen-Keys). Der LLM extrahiert die zwei
+  Endpunkt-Distanzen + leitet `richtung` aus den Punkten ab;
+  `feature_builder._resolve_slot_endpoints` rechnet daraus
+  `laenge = |ende - anfang|` und `abstand_<kante> = min(...)` —
+  Arithmetik bleibt deterministisch, nicht im LLM. 2 Klassifizierer-
+  Demos + 1 Normalizer-Demo + Prompt-Beispiele. N_coverage als
+  `n04_oben_a1_b2_c0_endpoints` aktiv — **12/12 Cases vollstaendig**,
+  keine deferred Slots mehr.
+- **Phase B Lueckenfuellung Cap 1.0 Cov 4 — T08 (A5 Pocket-Anker)
+  aktiviert.** Vorher deferred. Befund: A5 braucht **kein** eigenes
+  Anker-Schema. "In der oberen rechten Ecke, X nach links und Y nach
+  unten versetzt" bemasst — Default-Konvention 22 A1, edge-to-CENTER —
+  das Tasche-Zentrum von den zwei Kanten der Ecke: `abstand_rechts:X,
+  abstand_oben:Y`. **A5 = A1.** (Der zuerst gebaute `anker_ecke`-
+  Klassifizierer-Hint, ADR 0010, wurde nach dem Heatmap-Lauf wieder
+  vollstaendig revertiert — er war ueberfluessig und verbog die
+  Anker-Semantik bestehender Goldens; ADR 0010 zurueckgezogen.) Nur bei
+  explizit genannter Taschen-Kante gilt A2 (`kante_*`, → T02/T06).
+  T08-Geometrie: Versatz auf 22/18 korrigiert (≥ Taschen-Halbmass,
+  sonst ragt die zentrums-bemasste Tasche ueber die Face). 4
+  Klassifizierer- + 3 Normalizer-Demos. T_coverage `t08_unten_a5` aktiv
+  — 12/12 Cases.
+- **Phase A Lueckenfuellung Cap 1.0 Cov 4 — T06 + T12 + N09 + N10
+  reaktiviert.** Bisher als deferred "Klassifizierer flaky" / "rotated
+  Slot flaky" notiert; jetzt mit klarem Aktions-Pfad gefixt
+  ([project_next_phase_plan](memory)/[feedback_no_silent_deferrals](memory)).
+  Aenderungen: (1) `pocket_classifier`-Prompt um per-Richtung
+  A1/A2-Regel ergaenzt (Vorbild Slot-Edit 87af981) inkl. Buendig-Marker
+  `kante_<dir>: 0`. (2) `blueprint_resolver` filterte
+  `pocket_edge_distances`-Wert 0 zuvor weg (`> 0` → `>= 0`, mit
+  per-Achse-Schutz: edge-to-center bleibt `> 0`, edge-to-edge erlaubt
+  `0` fuer "buendig anliegend"). (3) Klassifizierer-Traces:
+  `klass_curated_tasche_t06_a2_a1_mischfall`,
+  `klass_curated_tasche_t12_buendig_a1_mischfall`. (4) Normalizer-Traces:
+  `norm_pocket_t06_taschen_kante_a2_a1_mischfall`,
+  `norm_pocket_t12_buendig_oben_a1_rechts` + Normalizer-Prompt-Beispiel
+  "Tasche ... oben buendig anliegend". (5) T_coverage Pipeline + Resolver
+  Goldens erweitert um `t06_rechts_a2_a1_b3` + `t12_vorne_buendig_a1_b1`
+  (11/12 Cases aktiv, T08 deferred bis Phase B). (6) N_coverage Goldens
+  erweitert um `n09_vorne_a1_b2_c2` + `n10_hinten_a1_b2_c3` (11/12 Cases
+  aktiv, N04 deferred bis Phase B Anker-Schema). 307 Tests gruen
+  (tests/tools + tests/golden + tests/agents).
+- **pattern_classifier-Split in grid / circular / linear (ADR 0009).**
+  Der ueberladene `pattern_classifier` (Grid + Kreis + Linear in einem
+  Prompt) wurde in drei fokussierte Sub-Klassifizierer zerlegt:
+  `grid_classifier`, `circular_classifier`, `linear_classifier` — analog
+  dem ADR-0006-Mechanik. Der `grid_classifier` trennt explizites Raster
+  (`Lochmuster NxM` + `Rasterabstand` → `rows/cols/rasterabstand`) von
+  Eckbohrungen (`Randabstand` → `anzahl/abstand_kante`) — der Bug, der
+  beim alten Retrain `M_kombo` m02 regressiert hatte. Neue Prompts,
+  Sub-Agent-Klassen, Routing-Regexes (Runtime + Trace-Projektion),
+  Config-Flags (`grid/circular/linear_enabled`, Default `false`), DSPy-
+  Contracts/Signatures/Module und Klassifizierer-Traces (Explizit-Raster
+  + Eckbohrungs-Gegenbeispiele). Normalizer-Prompt + -Demos um das
+  Explizit-Raster-Wording ergaenzt. `M_coverage_patterns_all_kinds` hat
+  jetzt ein `pipeline/specs.txt` (D1+D2) — Heatmap-PASS nach Training +
+  Aktivierung der Sub-Agents.
 - **Grid-Schema-Erweiterung: `hole_pattern_grid` mit explizitem
   `rows/cols/spacing_x/spacing_y`.** Bisher konnte ein Grid nur ueber
   `count` + `inset` beschrieben werden — das Template leitete das Raster

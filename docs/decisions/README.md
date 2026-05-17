@@ -41,3 +41,7 @@ Verweis auf die neue ADR ergaenzt.
 | [0006](0006-classifier-split-and-future-splits.md) | accepted | Klassifizierer-Split in Sub-Agents (hole/pocket/slot/pattern/edge) |
 | [0007](0007-inventar-step-a-pro-teil-chunking.md) | accepted | Inventar Step A Pro-Teil-Chunking fuer Multi-Part-Specs |
 | [0008](0008-capability-coverage-matrix-structure.md) | accepted | Capability×Coverage Matrix als Projekt-Struktur (ersetzt lineare Phasen) |
+| [0009](0009-pattern-classifier-split-grid-circular-linear.md) | accepted | pattern_classifier-Split in grid/circular/linear Sub-Agents |
+| [0010](0010-a5-anchor-classifier-hint.md) | zurueckgezogen | A5-Anker-Hint verworfen — A5 ist konventionell A1 bzw. A2 |
+| [0011](0011-slot-endpoint-model.md) | accepted | Slot Anfangs-/Endpunkt-Modell (anfang_*/ende_*), Code rechnet laenge |
+| [0012](0012-pattern-rotation.md) | accepted | Pattern-Rotation (Grid + Linear) ueber Template-angle-Parameter |

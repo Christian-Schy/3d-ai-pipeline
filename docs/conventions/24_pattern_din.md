@@ -26,7 +26,14 @@ Position aus der Pattern-Regel — sie haben keine eigenen `abstand_*`-Werte.
 Relevante Matrix-Zellen fuer Pattern-Center (siehe [`11_coverage_matrix.md`](11_coverage_matrix.md)):
 **A1, A3, A4, A6** × **B0, B1, B2, B3** × **C0, C2, C3** × **D1, D2**.
 A2 (`kante_*`) ist fuer point-like Pattern-Center **nicht** anwendbar
-(analog Bohrung). A5 (Bauteil-Face-Anker) ist anwendbar.
+(analog Bohrung).
+
+**A5 ≡ A1 fuer Kreis-Pattern.** Der Teilkreis-Mittelpunkt ist point-like.
+"In der oberen rechten Ecke, X mm versetzt" heisst fuer einen Punkt
+schlicht: Center X mm von zwei Kanten — also `abstand_*` (A1). A5 ist
+damit fuer Kreis-Pattern **kein eigener Fall**, sondern wird als A1
+modelliert (genau wie A5 fuer die Bohrung in Konvention 20 entfaellt).
+Fuer Grid/Linear ist A5 ungetestet und derzeit nicht benoetigt.
 
 ### A1-Bezugspunkt — Pattern-Typ-abhaengig (DIN-konstrukteurnah)
 
@@ -42,8 +49,9 @@ fuer point-like Features) trennt Pattern den A1-Bezugspunkt nach Typ:
 Konkret bei Grid/Linear bedeutet das: `abstand_links=18` bei `Lochmuster 3x3,
 Rasterabstand 30` setzt die *linkeste* Bohrung 18mm vom linken Rand. Pattern-
 Center sitzt dann bei `-W/2 + 18 + (cols-1)*spacing_x/2`. Analog Y.
-A3 (`versatz_*` aus Mitte) und A5 (Anker + Versatz) referenzieren weiterhin
-den **Pattern-Center** — sie sind Center-relativ, nicht Edge-relativ.
+A3 (`versatz_*` aus Mitte) referenziert weiterhin den **Pattern-Center**
+— Center-relativ, nicht Edge-relativ. A5 fuer Kreis-Pattern wird als A1
+(`abstand_*` zum Pattern-Center) modelliert, siehe oben.
 
 ## Wording-Beispiele
 
@@ -100,10 +108,9 @@ sitzt per Definition genau auf der angegebenen Distanz vom Rand. Ueberlauf
 entsteht aber weiterhin:
 - bei **A3** (`versatz_*` aus Mitte) wenn Center+Pattern-Half ueber den
   Rand hinausgeht,
-- bei **A5** (Bauteil-Face-Anker + Versatz) analog,
-- bei **Kreis** mit kleiner Distanz vom Rand und grossem Teilkreis
-  (z.B. M09: Teilkreis Ø30 mit 8mm Eck-Versatz auf 100x40-Face → 7mm
-  Ueberlauf in Y und Z).
+- bei **Kreis** mit kleiner Distanz vom Rand und grossem Teilkreis. Der
+  M09-Test wurde deshalb auf Teilkreis Ø20 mit 15mm Eck-Versatz
+  korrigiert (Ø30/8mm ragte ~7mm ueber die 100x40-links-Face).
 
 `coordinate_validator` prueft heute nur Pattern-Center, nicht einzelne
 Kind-Positionen — Ueberlauf wird nicht gewarnt. Cov-3-Goldens decken nur
@@ -133,15 +140,21 @@ Klassifizierer/Normalizer muss beides erkennen.
 
 ## Code-Pfad
 
-- **Klassifizierer:** [`data/prompts/prompt_classifier_pattern.py`](../../data/prompts/prompt_classifier_pattern.py)
-  — erkennt Typ + Geometrie-Parameter pro Aktion.
+- **Klassifizierer (ADR 0009 — drei Sub-Agents):**
+  [`data/prompts/prompt_classifier_grid.py`](../../data/prompts/prompt_classifier_grid.py)
+  (Raster + Eckbohrungen),
+  [`data/prompts/prompt_classifier_circular.py`](../../data/prompts/prompt_classifier_circular.py)
+  (Lochkreis/Teilkreis),
+  [`data/prompts/prompt_classifier_linear.py`](../../data/prompts/prompt_classifier_linear.py)
+  (Bohrungsreihe) — je ein fokussierter Prompt mit Geometrie-Hints.
 - **Feature-Builder:** [`src/tools/feature_builder.py`](../../src/tools/feature_builder.py)
   Branch `feature_type == "hole_pattern_grid"` / `_linear` / `_circular`.
 - **Resolver:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
   behandelt Pattern-Center wie ein Bohrungs-Center (point-like).
 - **Templates:** [`src/codegen/templates.py`](../../src/codegen/templates.py)
   Pro Pattern-Typ ein Template, das die Kind-Bohrungen aus den Geometrie-
-  Parametern aufzaehlt.
+  Parametern aufzaehlt. `hole_pattern_grid` / `hole_pattern_linear` haben
+  einen `angle`-Parameter fuer Pattern-Rotation C2/C3 (ADR 0012).
 
 ## Tests — Coverage-Matrix-abgeleitet
 
@@ -158,7 +171,7 @@ Pro Test pflegen wir **D1** + **D2**. Pattern-Typ pro Test in Klammern.
 | **M06** | oben | Grid | A4, B0, **C2** | "Wuerfel 150x100x40. Oben ein Lochmuster 3x2, Bohrungen Ø6 Tiefe 10, Rasterabstand 25mm, um 15° gedreht, zentriert." | "Wuerfel 150x100x40. Oben zentriert ein um 15° gedrehtes Lochmuster 3x2 mit Ø6 Tiefe 10 und Rasterabstand 25mm." |
 | **M07** | hinten | Linear | A4+A1, B1, **C3** | "Wuerfel 150x100x40. Hinten eine Reihe aus 4 Bohrungen Ø5 Tiefe 8, Abstand 18mm, um 20° im Uhrzeigersinn gedreht, mittig auf der Breite und 12mm von oberer Kante." | "Wuerfel 150x100x40. Hinten mittig auf der Breite und 12mm von oberer Kante eine Reihe aus 4 Bohrungen Ø5 Tiefe 8 im Abstand 18mm, um 20° im Uhrzeigersinn gedreht." |
 | **M08** | oben | Linear | A1, B2, C0 — Richtungs-Verb | "Wuerfel 150x100x40. Oben eine Reihe aus 4 Bohrungen Ø5 Tiefe 10, verlaeuft nach hinten, Abstand 20mm, von linker Kante 30mm und von vorderer Kante 20mm." | "Wuerfel 150x100x40. Oben 30mm von linker Kante und 20mm von vorderer Kante eine Reihe aus 4 Bohrungen Ø5 Tiefe 10, die nach hinten verlaeuft, Abstand 20mm." |
-| **M09** | links | Kreis | A5, C0 | "Wuerfel 150x100x40. Links ein Kreismuster aus 4 Bohrungen Ø4 Tiefe 8, Teilkreis-Durchmesser 30mm, in der oberen rechten Ecke der Seite, 8mm nach links und 8mm nach unten versetzt." | "Wuerfel 150x100x40. Links in der oberen rechten Ecke der Seite 8mm nach links und 8mm nach unten versetzt ein Kreismuster aus 4 Bohrungen Ø4 Tiefe 8 auf Teilkreis Ø30." |
+| **M09** | links | Kreis | A5 (=A1), C0 | "Wuerfel 150x100x40. Links ein Kreismuster aus 4 Bohrungen Ø4 Tiefe 8, Teilkreis-Durchmesser 20mm, in der oberen rechten Ecke der Seite, 15mm nach links und 15mm nach unten versetzt." | "Wuerfel 150x100x40. Links in der oberen rechten Ecke der Seite 15mm nach links und 15mm nach unten versetzt ein Kreismuster aus 4 Bohrungen Ø4 Tiefe 8 auf Teilkreis Ø20." |
 | **M10** | oben | Grid | A1+A3, B3, C0 | "Wuerfel 150x100x40. Oben ein Lochmuster 3x2, Ø5 Tiefe 10, Rasterabstand 25mm in X und 20mm in Y, von linker Kante 30mm und 10mm aus Mitte nach hinten versetzt." | "Wuerfel 150x100x40. Oben 30mm von linker Kante und 10mm aus Mitte nach hinten versetzt ein Lochmuster 3x2 mit Ø5 Tiefe 10 und Rasterabstand 25mm in X / 20mm in Y." |
 
 **Coverage-Check:**

@@ -34,13 +34,22 @@ def _section_side_from_phrase(phrase: str) -> str | None:
     return match.group(1).lower()
 
 
-_PATTERN_RE = re.compile(
+# ADR 0009 — Pattern split: grid / circular / linear je eigener Sub-Agent.
+_GRID_RE = re.compile(
+    r"\b(?:lochmuster|lochbild|raster|grid|eckbohr\w*|an\s+jeder\s+ecke)\b",
+    re.IGNORECASE,
+)
+_CIRCULAR_RE = re.compile(
+    r"\b(?:lochkreis|teilkreis|kreismuster)\b",
+    re.IGNORECASE,
+)
+_LINEAR_RE = re.compile(
     r"\b(?:"
-    r"lochkreis|teilkreis|eckbohr\w*|bohrungsreihe|lochreihe|lochmuster|lochbild"
+    r"bohrungsreihe|lochreihe"
     r"|loecher\s+der\s+reihe|locher\s+der\s+reihe"
+    r"|reihe\s+aus"
     r"|bohrungen\s+(?:in\s+einer\s+reihe|entlang)"
     r"|bohrungen\s+.*\b(?:abstand|achse)\b"
-    r"|an\s+jeder\s+ecke"
     r")\b",
     re.IGNORECASE,
 )
@@ -56,24 +65,31 @@ _SUBAGENT_FLAG = {
     "hole_classifier": "hole_enabled",
     "pocket_classifier": "pocket_enabled",
     "slot_classifier": "slot_enabled",
-    "pattern_classifier": "pattern_enabled",
+    "grid_classifier": "grid_enabled",
+    "circular_classifier": "circular_enabled",
+    "linear_classifier": "linear_enabled",
     "edge_feature_classifier": "edge_feature_enabled",
 }
 
 
 def detect_classifier_subagent(phrase: str) -> str | None:
-    """Return the ADR-0006 sub-classifier name for an unambiguous phrase.
+    """Return the ADR-0006/0009 sub-classifier name for an unambiguous phrase.
 
-    Pattern phrases are checked before generic holes because they naturally
-    contain words like "bohrungen". If two real feature families remain in
-    one phrase, return None so the monolithic fallback handles it.
+    Pattern phrases (grid / circular / linear) are checked before generic
+    holes because they naturally contain words like "bohrungen". If two real
+    feature families remain in one phrase, return None so the monolithic
+    fallback handles it.
     """
     text = phrase or ""
     matches: list[str] = []
 
-    if _PATTERN_RE.search(text):
-        matches.append("pattern_classifier")
-    elif _HOLE_RE.search(text):
+    if _GRID_RE.search(text):
+        matches.append("grid_classifier")
+    if _CIRCULAR_RE.search(text):
+        matches.append("circular_classifier")
+    if _LINEAR_RE.search(text):
+        matches.append("linear_classifier")
+    if not matches and _HOLE_RE.search(text):
         matches.append("hole_classifier")
 
     if _POCKET_RE.search(text):

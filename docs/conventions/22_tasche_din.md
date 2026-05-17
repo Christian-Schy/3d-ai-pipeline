@@ -53,14 +53,21 @@ Relevante Matrix-Zellen (siehe [`11_coverage_matrix.md`](11_coverage_matrix.md))
 | "mittig auf der Hoehe" | nur Y-Achse zentriert (B1-Komponente) |
 | "rechtsbuendig anliegend" | alignment=flush_right (0 Offset, **kein** Distanz-Mass!) |
 
-### A5 — Anker (Bauteil-Face-Ecke) + Versatz
+### A5 — Face-Ecke + Versatz = A1
 
 | Phrase | Interpretation |
 |---|---|
-| "in der oberen rechten Ecke der Face, 8mm nach links und 6mm nach unten versetzt" | Anker=top_right, offset (-8, -6) |
+| "in der oberen rechten Ecke, 22mm nach links und 18mm nach unten versetzt" | `abstand_rechts:22, abstand_oben:18` (Zentrum von rechter + oberer Kante) |
 
-**Hinweis:** Phrasen wie "obere rechte Ecke **der Tasche**" sind A2, nicht
-A5 — A5 nutzt die **Bauteil-Face-Ecke** als Anker.
+A5 ist **kein eigener Fall**. Eine Ecke nennt zwei Kanten; der Versatz
+bemasst — Default-Konvention A1, edge-to-CENTER — das Tasche-ZENTRUM von
+genau diesen zwei Kanten. "In der oberen rechten Ecke, X nach links,
+Y nach unten" = `abstand_rechts:X, abstand_oben:Y`. Kein `anker_ecke`,
+kein Anker-Schema.
+
+**Hinweis:** Phrasen wie "obere rechte Ecke **der Tasche**" sind A2
+(edge-to-edge, `kante_*`) — dort ist die *Taschen-Kante* explizit
+genannt. "In der Ecke" ohne genannte Taschen-Kante bleibt A1.
 
 ### A6 — "jeweils"
 
@@ -143,7 +150,7 @@ Resolved-Blueprint identisch fuer das D1/D2-Paar.
 | **T05** | links | A1+A4, B1, C0 | "Wuerfel 120x90x50. Links eine Tasche 25x18x10, mittig auf der Hoehe und von rechter Kante 20mm." *(face-local: rechte Kante der Left-Face)* | "Wuerfel 120x90x50. Links mittig auf der Hoehe und 20mm von rechter Kante eine Tasche 25x18x10." |
 | **T06** | rechts | A2+A1, B3, C0 | "Wuerfel 120x90x50. Rechts eine Tasche 20x15x8, die obere Taschen-Kante 10mm vom oberen Rand und von linker Kante 18mm." *(face-local: linke Kante der Right-Face)* | "Wuerfel 120x90x50. Rechts mit der oberen Taschen-Kante 10mm vom oberen Rand und 18mm von linker Kante eine Tasche 20x15x8." |
 | **T07** | oben | A6, C0 | "Wuerfel 120x90x50. Oben eine Tasche 30x20x10 jeweils 12mm von linker und vorderer Kante." | "Wuerfel 120x90x50. Oben jeweils 12mm von linker und vorderer Kante eine Tasche 30x20x10." |
-| **T08** | unten | A5, C0 | "Wuerfel 120x90x50. Unten eine Tasche 25x18x6, in der oberen rechten Ecke, 8mm nach links und 6mm nach unten versetzt." | "Wuerfel 120x90x50. Unten in der oberen rechten Ecke der Face 8mm nach links und 6mm nach unten versetzt eine Tasche 25x18x6." |
+| **T08** | unten | A5 (=A1), C0 | "Wuerfel 120x90x50. Unten eine Tasche 25x18x6, in der oberen rechten Ecke, 22mm nach links und 18mm nach unten versetzt." | "Wuerfel 120x90x50. Unten in der oberen rechten Ecke der Face 22mm nach links und 18mm nach unten versetzt eine Tasche 25x18x6." |
 | **T09** | oben | A1+A3, B3, C0 | "Wuerfel 120x90x50. Oben eine Tasche 25x20x8, von linker Kante 25mm und 10mm aus Mitte nach hinten versetzt." | "Wuerfel 120x90x50. Oben 25mm von der linken Kante und 10mm aus der Mitte nach hinten versetzt eine Tasche 25x20x8." |
 | **T10** | oben | A1, B2, **C2** | "Wuerfel 120x90x50. Oben eine Tasche 30x15x8, um 30° gedreht, von linker Kante 40mm und von vorderer Kante 30mm." | "Wuerfel 120x90x50. Oben 40mm von linker Kante und 30mm von vorderer Kante eine um 30° gedrehte Tasche 30x15x8." |
 | **T11** | oben | A4, B0, **C3** | "Wuerfel 120x90x50. Oben eine zentrierte Tasche 25x18x10, um 20° im Uhrzeigersinn gedreht." | "Wuerfel 120x90x50. Oben zentriert eine um 20° im Uhrzeigersinn gedrehte Tasche 25x18x10." |

@@ -173,6 +173,127 @@ TRACES = [
         ),
     },
     {
+        "id": "norm_pocket_t08_ecke_versatz_a1_dativ",
+        "input": {
+            "beschreibung": (
+                "eine tasche 25x18x6 in der oberen rechten ecke 22mm "
+                "nach links und 18mm nach unten versetzt"
+            ),
+            "seite": "unten",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "wuerfel 120x90x50, unten eine tasche 25x18x6 in der oberen rechten ecke 22mm nach links und 18mm nach unten versetzt",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: unten\n"
+            "position: von_kanten\n"
+            "parameter: laenge=25, breite=18, tiefe=6, "
+            "abstand_rechts=22, abstand_oben=18"
+        ),
+    },
+    {
+        "id": "norm_pocket_t08_ecke_versatz_a1_nominativ",
+        "input": {
+            "beschreibung": (
+                "tasche 30x20x10 obere rechte ecke 30mm nach links "
+                "und 25mm nach unten versetzt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 150, "y": 100, "z": 40},
+            "specification": "wuerfel 150x100x40, oben eine tasche 30x20x10 obere rechte ecke 30mm nach links und 25mm nach unten versetzt",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: laenge=30, breite=20, tiefe=10, "
+            "abstand_rechts=30, abstand_oben=25"
+        ),
+    },
+    {
+        "id": "norm_pocket_t08_ecke_versatz_a1_bottom_left",
+        "input": {
+            "beschreibung": (
+                "tasche 25x15x8 in der unteren linken ecke der seite "
+                "30mm nach rechts und 20mm nach oben versetzt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 150, "y": 100, "z": 40},
+            "specification": "wuerfel 150x100x40, oben eine tasche 25x15x8 in der unteren linken ecke der seite 30mm nach rechts und 20mm nach oben versetzt",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: laenge=25, breite=15, tiefe=8, "
+            "abstand_links=30, abstand_unten=20"
+        ),
+    },
+    {
+        "id": "norm_pocket_t12_buendig_oben_a1_rechts",
+        "input": {
+            "beschreibung": (
+                "eine tasche 25x18x8 oben buendig anliegend und 20mm "
+                "von der rechten kante"
+            ),
+            "seite": "vorne",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "wuerfel 120x90x50, vorne eine tasche 25x18x8 oben buendig anliegend und 20mm von der rechten kante",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: vorne\n"
+            "position: von_kanten\n"
+            "parameter: laenge=25, breite=18, tiefe=8, "
+            "kante_oben=0, abstand_rechts=20"
+        ),
+    },
+    {
+        "id": "norm_pocket_t06_taschen_kante_a2_a1_mischfall",
+        "input": {
+            "beschreibung": (
+                "eine tasche 20x15x8 die obere taschen-kante 10mm vom "
+                "oberen rand und von linker kante 18mm"
+            ),
+            "seite": "rechts",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "wuerfel 120x90x50, rechts eine tasche 20x15x8 die obere taschen-kante 10mm vom oberen rand und von linker kante 18mm",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: rechts\n"
+            "position: von_kanten\n"
+            "parameter: laenge=20, breite=15, tiefe=8, "
+            "kante_oben=10, abstand_links=18"
+        ),
+    },
+    {
+        "id": "norm_slot_n04_anfang_endpunkt_x",
+        "input": {
+            "beschreibung": (
+                "nut 5x3 anfangspunkt 20mm von linker kante endpunkt "
+                "80mm von linker kante von vorderer kante 30mm"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 120, "y": 90, "z": 50},
+            "specification": "wuerfel 120x90x50, oben eine nut 5x3 anfangspunkt 20mm von linker kante endpunkt 80mm von linker kante von vorderer kante 30mm",
+        },
+        "expected": (
+            "typ: nut\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "richtung: x\n"
+            "parameter: breite=5, tiefe=3, anfang_links=20, "
+            "ende_links=80, abstand_vorne=30"
+        ),
+    },
+    {
         "id": "norm_slot_flush_right_edge_with_offset",
         "input": {
             "beschreibung": (
@@ -308,6 +429,27 @@ TRACES = [
             "position: zentriert\n"
             "parameter: kreis_durchmesser=60, anzahl=6, "
             "bohr_durchmesser=8, tiefe=5"
+        ),
+    },
+    {
+        "id": "norm_pattern_lochkreis_m09_a5_als_edge_distance",
+        "input": {
+            "beschreibung": (
+                "kreismuster aus 4 bohrungen 4mm durchmesser 8 tief auf "
+                "einem teilkreis von 20mm in der oberen rechten ecke "
+                "15mm nach links und 15mm nach unten versetzt"
+            ),
+            "seite": "links",
+            "teil_type": "box",
+            "teil_params": {"x": 150, "y": 100, "z": 40},
+            "specification": "wuerfel 150x100x40, links ein kreismuster aus 4 bohrungen 4mm durchmesser 8 tief auf einem teilkreis von 20mm in der oberen rechten ecke 15mm nach links und 15mm nach unten versetzt",
+        },
+        "expected": (
+            "typ: lochkreis\n"
+            "seite: links\n"
+            "position: von_kanten\n"
+            "parameter: kreis_durchmesser=20, anzahl=4, "
+            "bohr_durchmesser=4, tiefe=8, abstand_rechts=15, abstand_oben=15"
         ),
     },
     {
@@ -593,6 +735,111 @@ TRACES = [
             "seite: oben\n"
             "position: von_kanten\n"
             "parameter: anzahl=4, durchmesser=8, tiefe=5, abstand_kante=10"
+        ),
+    },
+    # ADR 0009 — explizites Raster: 'lochmuster NxM' + 'rasterabstand'
+    # geht auf typ: eckbohrungen mit rows/cols/rasterabstand (NICHT
+    # anzahl/abstand_kante). Gegenstueck zum 2x2-Randabstand-Trace oben.
+    {
+        "id": "norm_pattern_grid_explizit_4x3_rasterabstand",
+        "input": {
+            "beschreibung": (
+                "ein lochmuster 4x3 mit bohrungen 6mm durchmesser 12 tief "
+                "und rasterabstand 25mm zentriert"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 150, "y": 100, "z": 40},
+            "specification": "wuerfel 150x100x40, oben ein lochmuster 4x3 mit bohrungen 6mm durchmesser 12 tief und rasterabstand 25mm zentriert",
+        },
+        "expected": (
+            "typ: eckbohrungen\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "parameter: rows=4, cols=3, rasterabstand=25, bohr_durchmesser=6, tiefe=12"
+        ),
+    },
+    {
+        "id": "norm_pattern_grid_explizit_4x2_edge_distance",
+        "input": {
+            "beschreibung": (
+                "ein lochmuster 4x2 mit 5mm bohrungen 10 tief, "
+                "rasterabstand 20mm, von linker kante 15mm und von "
+                "vorderer kante 20mm"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 150, "y": 100, "z": 40},
+            "specification": "wuerfel 150x100x40, oben ein lochmuster 4x2 mit 5mm bohrungen 10 tief rasterabstand 20mm von linker kante 15mm und von vorderer kante 20mm",
+        },
+        "expected": (
+            "typ: eckbohrungen\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: rows=4, cols=2, rasterabstand=20, bohr_durchmesser=5, tiefe=10, abstand_links=15, abstand_vorne=20"
+        ),
+    },
+    {
+        "id": "norm_pattern_grid_m06_rotation",
+        "input": {
+            "beschreibung": (
+                "ein lochmuster 3x2 mit 6mm bohrungen 10 tief und "
+                "rasterabstand 25mm um 15 grad gedreht zentriert"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 150, "y": 100, "z": 40},
+            "specification": "wuerfel 150x100x40, oben ein lochmuster 3x2 mit 6mm bohrungen 10 tief und rasterabstand 25mm um 15 grad gedreht zentriert",
+        },
+        "expected": (
+            "typ: eckbohrungen\n"
+            "seite: oben\n"
+            "position: zentriert\n"
+            "parameter: rows=3, cols=2, rasterabstand=25, "
+            "bohr_durchmesser=6, tiefe=10, drehung=15"
+        ),
+    },
+    {
+        "id": "norm_pattern_linear_m07_rotation_cw",
+        "input": {
+            "beschreibung": (
+                "eine reihe aus 4 bohrungen 5mm durchmesser 8 tief "
+                "entlang x-achse mit abstand 18mm um 20 grad im "
+                "uhrzeigersinn gedreht mittig auf der breite und 12mm "
+                "von oberer kante"
+            ),
+            "seite": "hinten",
+            "teil_type": "box",
+            "teil_params": {"x": 150, "y": 100, "z": 40},
+            "specification": "wuerfel 150x100x40, hinten eine reihe aus 4 bohrungen 5mm durchmesser 8 tief entlang x-achse mit abstand 18mm um 20 grad im uhrzeigersinn gedreht mittig auf der breite und 12mm von oberer kante",
+        },
+        "expected": (
+            "typ: bohrungsreihe\n"
+            "seite: hinten\n"
+            "position: von_kanten\n"
+            "richtung: x\n"
+            "parameter: anzahl=4, bohr_durchmesser=5, tiefe=8, "
+            "abstand=18, drehung=-20, abstand_oben=12"
+        ),
+    },
+    {
+        "id": "norm_pattern_grid_explizit_3x2_anisotrop",
+        "input": {
+            "beschreibung": (
+                "ein lochmuster 3x2 mit 5mm bohrungen 10 tief, "
+                "rasterabstand 25mm in x und 20mm in y, von linker "
+                "kante 30mm und 10mm aus mitte nach hinten"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 150, "y": 100, "z": 40},
+            "specification": "wuerfel 150x100x40, oben ein lochmuster 3x2 mit 5mm bohrungen 10 tief rasterabstand 25mm in x und 20mm in y von linker kante 30mm und 10mm aus mitte nach hinten",
+        },
+        "expected": (
+            "typ: eckbohrungen\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: rows=3, cols=2, rasterabstand_x=25, rasterabstand_y=20, bohr_durchmesser=5, tiefe=10, abstand_links=30, versatz_hinten=10"
         ),
     },
 

@@ -98,7 +98,7 @@ size-audit:
 # ─── Setup ──────────────────────────────────────────────────────────────
 
 install-dev:
-	$(PY) -m pip install ruff mypy radon vulture
+	uv sync --group dev
 
 clean:
 	find . -type d -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true

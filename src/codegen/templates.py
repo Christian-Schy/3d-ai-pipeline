@@ -48,6 +48,8 @@ Registry (wird von assembler.py genutzt):
 
 from __future__ import annotations
 
+import math
+
 
 # ──────────────────────────────────────────────────────────────────
 # Root body templates (no parent)
@@ -219,6 +221,7 @@ def hole_pattern_grid(
     face: str,
     offset_x: float,
     offset_y: float,
+    angle: float = 0.0,
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
 ) -> str:
@@ -227,12 +230,21 @@ def hole_pattern_grid(
     rows = Anzahl entlang Face-Y (vertikal), cols = Anzahl entlang Face-X.
     spacing_x / spacing_y = Rasterabstand (Abstand benachbarter Loecher).
     Das Raster wird um (offset_x, offset_y) zentriert.
+    angle = Pattern-Rotation um den Raster-Mittelpunkt (ADR 0012); 0 lässt
+    das achsen-parallele Verhalten bit-identisch.
     """
     face_sel = _face_selection(face, use_ntp, ntp_point)
     depth_call = _hole_depth(hole_diameter, depth)
 
     rows = max(1, int(rows))
     cols = max(1, int(cols))
+
+    # Pattern-Rotation: nach dem .center() den Workplane-Frame drehen,
+    # damit .rarray die Punkte im gedrehten Raster auslegt (rotiert um
+    # den Raster-Mittelpunkt). angle=0 → keine Zeile, Alt-Verhalten.
+    rotate_line = (
+        f"        .transformed(rotate=(0, 0, {angle}))\n" if angle else ""
+    )
 
     # NOTE: rarray applied to body (not via _ref+cutter pattern).
     # Stable-origin would require manually building N cylinders from _ref.
@@ -243,6 +255,7 @@ def hole_pattern_grid(
         f"        body\n"
         f"        {face_sel}\n"
         f"        .center({offset_x}, {offset_y})\n"
+        f"{rotate_line}"
         f"        .rarray({spacing_x}, {spacing_y}, {cols}, {rows})\n"
         f"        {depth_call}\n"
         f"    ).clean()\n"
@@ -292,6 +305,7 @@ def hole_pattern_linear(
     parent_x: float,
     parent_y: float,
     parent_z: float,
+    angle: float = 0.0,
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
 ) -> str:
@@ -300,6 +314,8 @@ def hole_pattern_linear(
     Generates individual positioned holes using .center() offsets, centered
     around (offset_x, offset_y) — the row's geometric center on the face.
     direction = "x" or "y" — which face axis the row runs along.
+    angle = Pattern-Rotation um den Reihen-Mittelpunkt (ADR 0012); 0 lässt
+    den achsen-parallelen .center()-Ausdruck bit-identisch.
     """
     face_sel = _face_selection(face, use_ntp, ntp_point)
     depth_call = _hole_depth(hole_diameter, depth)
@@ -334,7 +350,23 @@ def hole_pattern_linear(
     lines.append(f"            body")
     lines.append(f"            {face_sel}")
 
-    if direction.lower() == "x":
+    # Pattern-Rotation (ADR 0012): jede Bohrungs-Position wird um den
+    # Reihen-Mittelpunkt gedreht. angle=0 → exakter Alt-Ausdruck.
+    if angle:
+        a = math.radians(angle)
+        cos_a = round(math.cos(a), 6)
+        sin_a = round(math.sin(a), 6)
+        if direction.lower() == "x":
+            lines.append(
+                f"            .center({-offset_x} + pos * {cos_a}, "
+                f"{offset_y} + pos * {sin_a})"
+            )
+        else:
+            lines.append(
+                f"            .center({offset_x} - pos * {sin_a}, "
+                f"{-offset_y} + pos * {cos_a})"
+            )
+    elif direction.lower() == "x":
         lines.append(f"            .center(pos + {-offset_x}, {offset_y})")
     else:
         lines.append(f"            .center({offset_x}, pos + {-offset_y})")

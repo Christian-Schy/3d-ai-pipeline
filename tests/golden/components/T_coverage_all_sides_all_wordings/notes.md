@@ -8,7 +8,7 @@ A1-A6 × B0-B3 × C0/C2/C3 auf einem **Wuerfel 120x90x50**.
 
 ## Test-Faelle (aus [`docs/conventions/22_tasche_din.md`](../../../../docs/conventions/22_tasche_din.md))
 
-9 stabile Taschen — T01-T05, T07, T09-T11. T06/T08/T12 deferred (siehe unten).
+12 Taschen — T01-T12, vollstaendig. Keine deferred Cases mehr.
 
 | Feature | Face | Matrix-Zellen | DIN-Bezug |
 |---|---|---|---|
@@ -17,50 +17,68 @@ A1-A6 × B0-B3 × C0/C2/C3 auf einem **Wuerfel 120x90x50**.
 | `t03_unten_a3_b2` | unten | A3, B2 | center-offset, beide Achsen |
 | `t04_hinten_a4_b0` | hinten | A4, B0 | reines zentriert |
 | `t05_links_a1_a4_b1` | links | A1+A4, B1 | single-axis edge-distance |
+| `t06_rechts_a2_a1_b3` | rechts | A2+A1, B3 | Mischfall edge-to-EDGE oben + edge-to-CENTER links |
 | `t07_oben_a6` | oben | A6 | "jeweils X von zwei Kanten" |
+| `t08_unten_a5` | unten | A5 (=A1) | "in der Ecke + Versatz" → Zentrum von zwei Kanten (`abstand_*`) |
 | `t09_oben_a1_a3_b3` | oben | A1+A3, B3 | edge-distance + center-offset |
 | `t10_oben_a1_b2_c2` | oben | A1, B2, **C2** | edge-to-CENTER + Rotation CCW +30 |
 | `t11_oben_a4_b0_c3` | oben | A4, B0, **C3** | zentriert + Rotation CW -20 |
+| `t12_vorne_buendig_a1_b1` | vorne | A4+A1, B1 | buendig anliegend oben (`kante_*: 0`) + abstand_rechts |
 
 **Coverage-Check:**
-- A1 ✓ (T01, T05, T09, T10)
-- A2 ✓ (T02) — `pocket_edge_distances` edge-to-EDGE
+- A1 ✓ (T01, T05, T06, T09, T10, T12)
+- A2 ✓ (T02, T06) — `pocket_edge_distances` edge-to-EDGE
 - A3 ✓ (T03, T09)
-- A4 ✓ (T04, T05, T11) — pur + single-axis
+- A4 ✓ (T04, T05, T11, T12) — pur + single-axis
+- A5 ✓ (T08) — "in der Ecke + Versatz" = A1 (Zentrum von zwei Kanten), kein Sonder-Schema
 - A6 ✓ (T07)
 - B0 ✓ (T04, T11)
-- B1 ✓ (T05)
+- B1 ✓ (T05, T12)
 - B2 ✓ (T01, T02, T03, T10)
-- B3 ✓ (T09)
-- C0 ✓ (T01-T05, T07, T09) — Default
+- B3 ✓ (T06, T09)
+- C0 ✓ (T01-T09, T12) — Default
 - C2 ✓ (T10) — CCW +30°
 - C3 ✓ (T11) — CW -20°
-- **5 von 6 Seiten:** oben (T01, T07, T09, T10, T11), unten (T03), vorne
-  (T02), hinten (T04), links (T05). **rechts** nur via T06 (deferred) —
-  Resolver-Pfad fuer `>X` ist aber durch B_coverage h06 + N/M-Goldens
-  abgedeckt.
+- **Alle 6 Seiten:** oben (T01, T07, T09, T10, T11), unten (T03, T08),
+  vorne (T02, T12), hinten (T04), links (T05), rechts (T06).
 
-## Bekannte Limitierungen — 3 deferred Cases
+## Phase A — T06 + T12 aktiviert (2026-05-16)
 
-Drei Faelle aus der Konvention 22 sind aus dem **Pipeline**-Golden
-ausgelassen. Alle drei bleiben gueltige Konventions-Bestandteile —
-ihre Resolver-Mathe ist korrekt, der LLM-Pfad ist (noch) nicht stabil.
+Vorher deferred, jetzt im Pipeline-Golden:
 
-- **T08 (A5 Pocket-Anker)** — `pocket_classifier` hat kein Anker-Konzept
-  im Schema. Anders als bei Bohrung ist A5 fuer Tasche valide (Pocket
-  hat eigene Ecke). Braucht Klassifizierer-Schema-Erweiterung.
 - **T06 (A2+A1 Mischfall)** — "obere Taschen-Kante 10mm vom oberen Rand
-  UND von linker Kante 18mm". Der Klassifizierer routet die A1-Phrase
-  "von linker Kante" flaky mal als A1 (edge-to-center), mal als A2
-  (`kante_*`, edge-to-edge). 2/3 Runs falsch. Konvention 22 Code-Pfad
-  flaggt das bereits als TODO ("A2-Trigger-Regel ohne 'deren'").
-- **T12 (flush+A1 Mischfall)** — "oben buendig anliegend und 20mm von
-  der rechten Kante". Alignment-Klassifikation flaky (flush_top vs
-  zentriert). 1/3 Runs falsch.
+  UND von linker Kante 18mm". `pocket_classifier`-Prompt erweitert um
+  per-Richtung A1/A2-Regel (Vorbild Slot-Edit 87af981) — `kante_*`
+  triggert auf "Taschen-Kante" / "deren <richtung> Kante", `abstand_*`
+  bleibt Default. Mischfaelle explizit erlaubt. Demo
+  `klass_curated_tasche_t06_a2_a1_mischfall` + Normalizer-Demo
+  `norm_pocket_t06_taschen_kante_a2_a1_mischfall`.
+- **T12 (buendig+A1 Mischfall)** — "oben buendig anliegend und 20mm
+  von der rechten Kante". `pocket_classifier`-Prompt fuehrt
+  `kante_<richtung>: 0` als Buendig-Marker ein.
+  `blueprint_resolver` filterte `pocket_edge_distances`-Werte von 0
+  zuvor weg (`> 0` → `>= 0` korrigiert, mit per-Achse-Schutz fuer
+  edge-to-center wo `0` invalid bleibt). Demo
+  `klass_curated_tasche_t12_buendig_a1_mischfall` + Normalizer-Demo
+  `norm_pocket_t12_buendig_oben_a1_rechts`.
 
-Sobald die Klassifizierer-Stabilitaet fuer A2/A1-Disambiguierung +
-flush+offset verbessert ist (Demos/Prompt), kommen T06/T12 zurueck;
-T08 nach Anker-Schema-Erweiterung.
+## Phase B — T08 aktiviert (2026-05-16/17)
+
+Vorher deferred ("`pocket_classifier` hat kein Anker-Konzept"). Befund:
+A5 braucht kein Anker-Konzept. "In der oberen rechten Ecke, X nach links
+und Y nach unten versetzt" bemasst — Default-Konvention A1 (edge-to-
+CENTER) — das Tasche-ZENTRUM von den zwei Kanten der genannten Ecke:
+`abstand_rechts:X, abstand_oben:Y`. **A5 = A1.** Kein `anker_ecke`-Schema,
+kein neuer Pfad — T08 nutzt den A1/A2-Pfad, den die T06-Arbeit baute.
+
+Nur wenn die Phrase die **Taschen-Kante** explizit nennt, gilt A2
+(`kante_*`) — das ist T02/T06, nicht T08.
+
+T08-Geometrie korrigiert: Konvention-22-Zahlen (Versatz 8/6) liessen die
+zentrums-bemasste Tasche ueber die Face ragen → Versatz auf 22/18
+gesetzt (≥ Taschen-Halbmass). 4 Klassifizierer- + 3 Normalizer-Demos.
+
+Keine deferred Cases mehr in T_coverage — 12/12.
 
 ## Resolver-Mathe
 

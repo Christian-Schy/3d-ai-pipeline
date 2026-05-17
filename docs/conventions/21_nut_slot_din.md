@@ -92,6 +92,12 @@ linker Kante" → beide Punkte teilen die Y-Position (impliziert durch
 "von vorderer Kante 30mm"), unterscheiden sich nur im X. Daraus folgt:
 Nut verlaeuft entlang X, Laenge = 60mm, Rotation = 0°.
 
+**Code-Pfad (ADR 0011):** Der `slot_classifier` emittiert die zwei
+Endpunkt-Distanzen als `anfang_<kante>` / `ende_<kante>` plus `richtung`.
+Die Laenge wird NICHT vom LLM gerechnet — `feature_builder.
+_resolve_slot_endpoints` bildet `laenge = |ende - anfang|` und
+`abstand_<kante> = min(anfang, ende)` deterministisch.
+
 ### `versatz_*` referenziert immer Nut-CENTER
 
 Anders als `abstand_*` (das per-Achse-DIN unterschiedlich behandelt:

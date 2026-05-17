@@ -24,7 +24,7 @@ Verwendung:
     python train_dspy.py --agent inventar --source all          # Traces + Legacy
 
 Voraussetzungen:
-    - pip install dspy
+    - dspy ist Projekt-Dependency (pyproject.toml) — `uv sync` reicht
     - Ollama läuft lokal mit dem gewünschten Modell
 """
 
@@ -164,7 +164,9 @@ CLASSIFIER_SUB_AGENTS = {
     "hole_classifier",
     "pocket_classifier",
     "slot_classifier",
-    "pattern_classifier",
+    "grid_classifier",
+    "circular_classifier",
+    "linear_classifier",
     "edge_feature_classifier",
 }
 
@@ -472,17 +474,50 @@ class SlotClassifierSignature(dspy.Signature):
     )
 
 
-class PatternClassifierSignature(dspy.Signature):
-    """Klassifiziere EINE Lochmuster-Phrase als Bohrungs-Familie."""
+class GridClassifierSignature(dspy.Signature):
+    """Klassifiziere EINE Raster-Lochmuster- oder Eckbohrungs-Phrase.
 
-    phrase: str = dspy.InputField(desc="Eine einzelne Lochkreis/Eckbohrungen/Reihe-Phrase.")
+    ADR 0009 Pattern-Split: explizites Raster (rows/cols + rasterabstand)
+    von Eckbohrungen (anzahl + abstand_kante) trennen.
+    """
+
+    phrase: str = dspy.InputField(desc="Eine einzelne Lochmuster/Raster/Eckbohrungen-Phrase.")
     teil_type: str = dspy.InputField(desc="Form des Host-Teils.")
     teil_params: str = dspy.InputField(desc="JSON der Host-Teil-Parameter.")
     parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
     klassifikation: str = dspy.OutputField(
-        desc="JSON {typ:'bohrung', seite, parameter_hints}; Pattern-Hints "
-             "duerfen anzahl, kreis_durchmesser, abstand, abstand_kante, "
-             "durchmesser, tiefe, richtung enthalten."
+        desc="JSON {typ:'bohrung', seite, parameter_hints}; Grid-Hints "
+             "duerfen rows, cols, rasterabstand, rasterabstand_x, "
+             "rasterabstand_y, anzahl, abstand_kante, durchmesser, tiefe, "
+             "abstand_*, versatz_* enthalten."
+    )
+
+
+class CircularClassifierSignature(dspy.Signature):
+    """Klassifiziere EINE Kreis-Lochmuster-Phrase (Lochkreis/Teilkreis)."""
+
+    phrase: str = dspy.InputField(desc="Eine einzelne Lochkreis/Teilkreis-Phrase.")
+    teil_type: str = dspy.InputField(desc="Form des Host-Teils.")
+    teil_params: str = dspy.InputField(desc="JSON der Host-Teil-Parameter.")
+    parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
+    klassifikation: str = dspy.OutputField(
+        desc="JSON {typ:'bohrung', seite, parameter_hints}; Kreis-Hints "
+             "duerfen anzahl, kreis_durchmesser, durchmesser, tiefe, "
+             "abstand_*, versatz_* enthalten."
+    )
+
+
+class LinearClassifierSignature(dspy.Signature):
+    """Klassifiziere EINE Linear-Lochmuster-Phrase (Bohrungsreihe/Lochreihe)."""
+
+    phrase: str = dspy.InputField(desc="Eine einzelne Bohrungsreihe/Lochreihe-Phrase.")
+    teil_type: str = dspy.InputField(desc="Form des Host-Teils.")
+    teil_params: str = dspy.InputField(desc="JSON der Host-Teil-Parameter.")
+    parent_phrase: str = dspy.InputField(desc="Parent-Phrase, sonst '(keine)'.")
+    klassifikation: str = dspy.OutputField(
+        desc="JSON {typ:'bohrung', seite, parameter_hints}; Linear-Hints "
+             "duerfen anzahl, abstand, richtung, durchmesser, tiefe, "
+             "abstand_*, versatz_* enthalten."
     )
 
 
@@ -714,8 +749,16 @@ class SlotClassifierModule(_ClassifierModule):
     signature_cls = SlotClassifierSignature
 
 
-class PatternClassifierModule(_ClassifierModule):
-    signature_cls = PatternClassifierSignature
+class GridClassifierModule(_ClassifierModule):
+    signature_cls = GridClassifierSignature
+
+
+class CircularClassifierModule(_ClassifierModule):
+    signature_cls = CircularClassifierSignature
+
+
+class LinearClassifierModule(_ClassifierModule):
+    signature_cls = LinearClassifierSignature
 
 
 class EdgeFeatureClassifierModule(_ClassifierModule):
@@ -1442,8 +1485,18 @@ AGENT_CONFIG = {
         "metric": aktions_klassifizierer_metric,
         "default_model": "gemma4:26b",
     },
-    "pattern_classifier": {
-        "module_cls": PatternClassifierModule,
+    "grid_classifier": {
+        "module_cls": GridClassifierModule,
+        "metric": aktions_klassifizierer_metric,
+        "default_model": "gemma4:26b",
+    },
+    "circular_classifier": {
+        "module_cls": CircularClassifierModule,
+        "metric": aktions_klassifizierer_metric,
+        "default_model": "gemma4:26b",
+    },
+    "linear_classifier": {
+        "module_cls": LinearClassifierModule,
         "metric": aktions_klassifizierer_metric,
         "default_model": "gemma4:26b",
     },

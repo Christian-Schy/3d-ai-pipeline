@@ -1,14 +1,17 @@
 {
-  "description": "N_coverage_all_sides_all_orientations — Capability 1.0 Cov-3 (Nut/Slot). 9 stabile Nuten (N01-N03, N05-N08, N11, N12) aus docs/conventions/21_nut_slot_din.md auf Wuerfel 120x90x50. N04/N09/N10 deferred — siehe notes.md.",
+  "description": "N_coverage_all_sides_all_orientations — Capability 1.0 Cov-3 (Nut/Slot). 12 Nuten (N01-N12) aus docs/conventions/21_nut_slot_din.md auf Wuerfel 120x90x50. Vollstaendig: N09+N10 (Phase A, rotierte Slots) + N04 (Phase B, Anfangs-/Endpunkt-Modell via anfang_*/ende_* Klassifizierer-Hints).",
   "build_order": [
     "wuerfel",
     "n01_oben_a1_b2_c1_y",
     "n02_oben_a1_b2_c0_x",
     "n03_oben_a1_b2_c1_verb",
+    "n04_oben_a1_b2_c0_endpoints",
     "n05_rechts_a2_b2_c1_z",
     "n06_vorne_a3_a4_b1_c0",
     "n07_unten_a6_c1_y",
     "n08_hinten_a4_b0_c0",
+    "n09_vorne_a1_b2_c2",
+    "n10_hinten_a1_b2_c3",
     "n11_links_a1_a4_b1_c1",
     "n12_oben_a1_a3_b3_c0"
   ],
@@ -81,6 +84,25 @@
       },
       "operation": "subtract"
     },
+    "n04_oben_a1_b2_c0_endpoints": {
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "length": 60,
+        "depth": 3
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 20,
+          "vorne": 30
+        },
+        "angle_deg": 0
+      },
+      "operation": "subtract"
+    },
     "n05_rechts_a2_b2_c1_z": {
       "type": "slot",
       "params": {
@@ -148,6 +170,44 @@
         "side": "hinten",
         "alignment": "centered",
         "angle_deg": 0
+      },
+      "operation": "subtract"
+    },
+    "n09_vorne_a1_b2_c2": {
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "length": 30,
+        "depth": 3
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "edge_distances": {
+          "left": 30,
+          "bottom": 15
+        },
+        "angle_deg": 30
+      },
+      "operation": "subtract"
+    },
+    "n10_hinten_a1_b2_c3": {
+      "type": "slot",
+      "params": {
+        "width": 5,
+        "length": 30,
+        "depth": 3
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "hinten",
+        "alignment": "centered",
+        "edge_distances": {
+          "right": 25,
+          "bottom": 15
+        },
+        "angle_deg": -20
       },
       "operation": "subtract"
     },

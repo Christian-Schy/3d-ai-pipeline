@@ -121,10 +121,25 @@ CONTRACTS: dict[str, AgentContract] = {
         output_fields=["klassifikation"],
         default_model="gemma4:26b",
     ),
-    "pattern_classifier": AgentContract(
-        # ADR 0006 Phase D: aktiviert 2026-05-12 mit Grid-Lochmuster und
-        # Lochreihe-mit-ankerpunkt Demos (M_kombo Faelle).
-        name="pattern_classifier",
+    "grid_classifier": AgentContract(
+        # ADR 0009: Pattern-Split. Raster-Lochmuster + Eckbohrungen —
+        # trennt explizites Raster (rows/cols/rasterabstand) von
+        # Eckbohrungen (anzahl/abstand_kante).
+        name="grid_classifier",
+        input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
+        output_fields=["klassifikation"],
+        default_model="gemma4:26b",
+    ),
+    "circular_classifier": AgentContract(
+        # ADR 0009: Pattern-Split. Kreis-Lochmuster (Lochkreis/Teilkreis).
+        name="circular_classifier",
+        input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
+        output_fields=["klassifikation"],
+        default_model="gemma4:26b",
+    ),
+    "linear_classifier": AgentContract(
+        # ADR 0009: Pattern-Split. Linear-Lochmuster (Bohrungsreihe/Lochreihe).
+        name="linear_classifier",
         input_fields=["phrase", "teil_type", "teil_params", "parent_phrase"],
         output_fields=["klassifikation"],
         default_model="gemma4:26b",
@@ -285,39 +300,61 @@ _CLASSIFIER_SUB_AGENTS = {
     "hole_classifier",
     "pocket_classifier",
     "slot_classifier",
-    "pattern_classifier",
+    "grid_classifier",
+    "circular_classifier",
+    "linear_classifier",
     "edge_feature_classifier",
 }
 
-_PATTERN_PHRASE_RE = re.compile(
+# ADR 0009 — Pattern-Split. Mirror der Runtime-Regexes in
+# src/graph/nodes/planning_action_nodes.py (grid / circular / linear).
+_GRID_PHRASE_RE = re.compile(
+    r"\b(?:lochmuster|lochbild|raster|grid|eckbohr\w*|an\s+jeder\s+ecke)\b",
+    re.IGNORECASE,
+)
+_CIRCULAR_PHRASE_RE = re.compile(
+    r"\b(?:lochkreis|teilkreis|kreismuster)\b",
+    re.IGNORECASE,
+)
+_LINEAR_PHRASE_RE = re.compile(
     r"\b(?:"
-    r"lochkreis|teilkreis|eckbohr\w*|bohrungsreihe|lochreihe|lochmuster|lochbild"
+    r"bohrungsreihe|lochreihe"
     r"|loecher\s+der\s+reihe|locher\s+der\s+reihe"
+    r"|reihe\s+aus"
     r"|bohrungen\s+(?:in\s+einer\s+reihe|entlang)"
     r"|bohrungen\s+.*\b(?:abstand|achse)\b"
-    r"|an\s+jeder\s+ecke"
     r")\b",
     re.IGNORECASE,
 )
 
 
 def classifier_sub_agent_name_for_pair(pair: dict) -> str | None:
-    """Return the ADR-0006 sub-classifier target for one classifier pair.
+    """Return the ADR-0006/0009 sub-classifier target for one classifier pair.
 
     The source pair still uses the monolithic classifier output shape
     `{typ, seite, parameter_hints}`. Pattern phrases are detected from the
     input phrase because the monolith deliberately coarse-labels them as
     `bohrung`; the Normalizer later refines them to lochkreis/eckbohrungen/
-    bohrungsreihe.
+    bohrungsreihe. The ADR-0009 split routes them to grid/circular/linear.
     """
     inp = pair.get("input") or {}
     out = pair.get("output") or {}
     phrase = str(inp.get("phrase") or "").lower()
     typ = str(out.get("typ") or "").lower()
 
-    if typ == "bohrung" and _PATTERN_PHRASE_RE.search(phrase):
-        return "pattern_classifier"
     if typ == "bohrung":
+        grid = bool(_GRID_PHRASE_RE.search(phrase))
+        circular = bool(_CIRCULAR_PHRASE_RE.search(phrase))
+        linear = bool(_LINEAR_PHRASE_RE.search(phrase))
+        if grid + circular + linear == 1:
+            if grid:
+                return "grid_classifier"
+            if circular:
+                return "circular_classifier"
+            return "linear_classifier"
+        if grid or circular or linear:
+            # Ambiguous pattern phrase — no clean sub-agent target.
+            return None
         return "hole_classifier"
     if typ == "tasche":
         return "pocket_classifier"
@@ -353,9 +390,21 @@ def _adapter_slot_classifier(trace: dict) -> list[dict]:
     )
 
 
-def _adapter_pattern_classifier(trace: dict) -> list[dict]:
+def _adapter_grid_classifier(trace: dict) -> list[dict]:
     return _filter_classifier_pairs(
-        _adapter_aktions_klassifizierer(trace), "pattern_classifier"
+        _adapter_aktions_klassifizierer(trace), "grid_classifier"
+    )
+
+
+def _adapter_circular_classifier(trace: dict) -> list[dict]:
+    return _filter_classifier_pairs(
+        _adapter_aktions_klassifizierer(trace), "circular_classifier"
+    )
+
+
+def _adapter_linear_classifier(trace: dict) -> list[dict]:
+    return _filter_classifier_pairs(
+        _adapter_aktions_klassifizierer(trace), "linear_classifier"
     )
 
 
@@ -1048,7 +1097,9 @@ ADAPTERS: dict[str, Callable[[dict], list[dict]]] = {
     "hole_classifier": _adapter_hole_classifier,
     "pocket_classifier": _adapter_pocket_classifier,
     "slot_classifier": _adapter_slot_classifier,
-    "pattern_classifier": _adapter_pattern_classifier,
+    "grid_classifier": _adapter_grid_classifier,
+    "circular_classifier": _adapter_circular_classifier,
+    "linear_classifier": _adapter_linear_classifier,
     "edge_feature_classifier": _adapter_edge_feature_classifier,
     "position_extractor": _adapter_position_extractor,
     "platzierer": _adapter_position_normalizer,

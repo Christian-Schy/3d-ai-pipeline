@@ -40,12 +40,17 @@ def test_aktions_klassifizierer_seed_is_trainable():
         "kantenlaenge", "groesse", "rotation_deg", "richtung",
         "bohr_durchmesser", "anzahl", "kreis_durchmesser", "abstand",
         "abstand_kante", "start_offset",
+        "rows", "cols", "rasterabstand", "rasterabstand_x", "rasterabstand_y",
         "abstand_oben", "abstand_unten", "abstand_rechts", "abstand_links",
         "abstand_vorne", "abstand_hinten",
         "kante_oben", "kante_unten", "kante_rechts", "kante_links",
         "kante_vorne", "kante_hinten",
         "versatz_oben", "versatz_unten", "versatz_rechts", "versatz_links",
         "versatz_vorne", "versatz_hinten",
+        "anfang_oben", "anfang_unten", "anfang_rechts", "anfang_links",
+        "anfang_vorne", "anfang_hinten",
+        "ende_oben", "ende_unten", "ende_rechts", "ende_links",
+        "ende_vorne", "ende_hinten",
     }
     ids = [entry["id"] for entry in KLASS_TRACES]
     assert len(ids) == len(set(ids))
@@ -126,7 +131,9 @@ def test_aktions_klassifizierer_split_contracts_are_trainable():
         "hole_classifier": 21,
         "pocket_classifier": 22,
         "slot_classifier": 14,
-        "pattern_classifier": 10,
+        "grid_classifier": 12,
+        "circular_classifier": 7,
+        "linear_classifier": 8,
         "edge_feature_classifier": 10,
     }
 
@@ -143,17 +150,32 @@ def test_aktions_klassifizierer_split_contracts_are_trainable():
         }
         assert getattr(examples[0], "klassifikation")
 
-        if agent == "pattern_classifier":
-            assert len(seed_pairs) >= 10
-            pattern_keys = {
+        if agent == "grid_classifier":
+            grid_keys = {
                 key
                 for pair in seed_pairs
                 for key in pair["output"].get("parameter_hints", {})
             }
+            # Both grid arms must be represented: explicit raster
+            # (rows/cols/rasterabstand) and corner holes (anzahl/abstand_kante).
             assert {
-                "durchmesser", "anzahl", "kreis_durchmesser",
-                "abstand", "abstand_kante", "richtung",
-            } <= pattern_keys
+                "rows", "cols", "rasterabstand",
+                "anzahl", "abstand_kante", "durchmesser",
+            } <= grid_keys
+        if agent == "circular_classifier":
+            circular_keys = {
+                key
+                for pair in seed_pairs
+                for key in pair["output"].get("parameter_hints", {})
+            }
+            assert {"anzahl", "kreis_durchmesser", "durchmesser"} <= circular_keys
+        if agent == "linear_classifier":
+            linear_keys = {
+                key
+                for pair in seed_pairs
+                for key in pair["output"].get("parameter_hints", {})
+            }
+            assert {"anzahl", "abstand", "richtung"} <= linear_keys
         if agent == "slot_classifier":
             slot_keys = {
                 key

@@ -56,7 +56,9 @@ class ModelsConfig(BaseModel):
     hole_classifier: str = "qwen3.5:9b"
     pocket_classifier: str = "qwen3.5:9b"
     slot_classifier: str = "qwen3.5:9b"
-    pattern_classifier: str = "qwen3.5:9b"
+    grid_classifier: str = "qwen3.5:9b"
+    circular_classifier: str = "qwen3.5:9b"
+    linear_classifier: str = "qwen3.5:9b"
     edge_feature_classifier: str = "qwen3.5:9b"
     position_extractor: str = "qwen3.5:9b"
     text_splitter: str = "qwen3.5:9b"
@@ -132,15 +134,18 @@ class PlanValidatorConfig(BaseModel):
 
 
 class ClassifierSubagentsConfig(BaseModel):
-    """Feature flags for ADR-0006 classifier sub-agents.
+    """Feature flags for ADR-0006/0009 classifier sub-agents.
 
     Default false keeps runtime identical to the monolithic classifier until
-    each sub-agent is trained and adopted via heatmap.
+    each sub-agent is trained and adopted via heatmap. The ADR-0009 pattern
+    split (grid/circular/linear) replaces the former `pattern_enabled` flag.
     """
     hole_enabled: bool = False
     pocket_enabled: bool = False
     slot_enabled: bool = False
-    pattern_enabled: bool = False
+    grid_enabled: bool = False
+    circular_enabled: bool = False
+    linear_enabled: bool = False
     edge_feature_enabled: bool = False
 
 

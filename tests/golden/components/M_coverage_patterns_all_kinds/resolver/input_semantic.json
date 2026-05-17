@@ -1,5 +1,5 @@
 {
-  "description": "M_coverage_patterns_all_kinds — Capability 1.0 Cov-3 (Pattern). M01-M05, M08, M10 aus docs/conventions/24_pattern_din.md auf Wuerfel 150x100x40. Grid/Kreis/Linear. M06/M07 (Pattern-Rotation) + M09 (A5-Anker) deferred — siehe notes.md.",
+  "description": "M_coverage_patterns_all_kinds — Capability 1.0 Cov-3 (Pattern). M01-M10 aus docs/conventions/24_pattern_din.md auf Wuerfel 150x100x40, vollstaendig. Grid/Kreis/Linear. M09 (A5) ist als A1 modelliert (Kreis-Pattern-Center ist point-like, analog Bohrung Konvention 20). M06/M07 (Pattern-Rotation C2/C3) ab ADR 0012 aktiv.",
   "build_order": [
     "wuerfel",
     "m01_oben_grid_a4_b0",
@@ -7,7 +7,10 @@
     "m03_rechts_kreis_a4_b0",
     "m04_vorne_linear_a1_a4_b1",
     "m05_unten_grid_a6",
+    "m06_oben_grid_c2",
+    "m07_hinten_linear_c3",
     "m08_oben_linear_a1_b2_verb",
+    "m09_links_kreis_a5",
     "m10_oben_grid_a1_a3_b3"
   ],
   "features": {
@@ -71,6 +74,29 @@
       },
       "operation": "subtract"
     },
+    "m06_oben_grid_c2": {
+      "type": "hole_pattern_grid",
+      "params": {"hole_diameter": 6, "depth": 10, "rows": 3, "cols": 2, "spacing_x": 25, "spacing_y": 25},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "angle_deg": 15
+      },
+      "operation": "subtract"
+    },
+    "m07_hinten_linear_c3": {
+      "type": "hole_pattern_linear",
+      "params": {"hole_diameter": 5, "depth": 8, "count": 4, "spacing": 18, "direction": "x"},
+      "parent": "wuerfel",
+      "position": {
+        "side": "hinten",
+        "alignment": "centered",
+        "edge_distances": {"top": 12},
+        "angle_deg": -20
+      },
+      "operation": "subtract"
+    },
     "m08_oben_linear_a1_b2_verb": {
       "type": "hole_pattern_linear",
       "params": {"hole_diameter": 5, "depth": 10, "count": 4, "spacing": 20, "direction": "y"},
@@ -79,6 +105,17 @@
         "side": "oben",
         "alignment": "centered",
         "edge_distances": {"left": 30, "vorne": 20}
+      },
+      "operation": "subtract"
+    },
+    "m09_links_kreis_a5": {
+      "type": "hole_pattern_circular",
+      "params": {"hole_diameter": 4, "depth": 8, "count": 4, "bolt_circle_diameter": 20},
+      "parent": "wuerfel",
+      "position": {
+        "side": "links",
+        "alignment": "centered",
+        "edge_distances": {"right": 15, "top": 15}
       },
       "operation": "subtract"
     },

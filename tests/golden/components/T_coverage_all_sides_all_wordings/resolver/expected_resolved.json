@@ -94,6 +94,40 @@
       },
       "operation": "subtract"
     },
+    "t06_rechts_a2_a1_b3": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 20,
+        "y": 15,
+        "depth": 8
+      },
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": -27.0,
+        "offset_y": 7.5,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "t08_unten_a5": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 6
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 38.0,
+        "offset_y": 27.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
     "t07_oben_a6": {
       "type": "pocket_rect",
       "parent": "wuerfel",
@@ -159,6 +193,23 @@
         "offset_x": 0.0,
         "offset_y": 0.0,
         "angle_deg": -20.0
+      },
+      "operation": "subtract"
+    },
+    "t12_vorne_buendig_a1_b1": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 25,
+        "y": 18,
+        "depth": 8
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 40.0,
+        "offset_y": 16.0,
+        "angle_deg": 0.0
       },
       "operation": "subtract"
     }

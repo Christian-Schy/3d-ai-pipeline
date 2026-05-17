@@ -60,6 +60,23 @@
       },
       "operation": "subtract"
     },
+    "n04_oben_a1_b2_c0_endpoints": {
+      "type": "slot",
+      "parent": "wuerfel",
+      "params": {
+        "width": 5,
+        "length": 60,
+        "depth": 3
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -10.0,
+        "offset_y": -15.0,
+        "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
     "n05_rechts_a2_b2_c1_z": {
       "type": "slot",
       "parent": "wuerfel",
@@ -125,6 +142,40 @@
         "offset_x": 0.0,
         "offset_y": 0.0,
         "angle_deg": 0.0
+      },
+      "operation": "subtract"
+    },
+    "n09_vorne_a1_b2_c2": {
+      "type": "slot",
+      "parent": "wuerfel",
+      "params": {
+        "width": 5,
+        "length": 30,
+        "depth": 3
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": -30.0,
+        "offset_y": -10.0,
+        "angle_deg": 30.0
+      },
+      "operation": "subtract"
+    },
+    "n10_hinten_a1_b2_c3": {
+      "type": "slot",
+      "parent": "wuerfel",
+      "params": {
+        "width": 5,
+        "length": 30,
+        "depth": 3
+      },
+      "placement": {
+        "face": ">Y",
+        "alignment": "centered",
+        "offset_x": 35.0,
+        "offset_y": -10.0,
+        "angle_deg": -20.0
       },
       "operation": "subtract"
     },
