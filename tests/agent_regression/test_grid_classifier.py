@@ -79,6 +79,11 @@ def grid_classifier() -> GridClassifier:
     return GridClassifier()
 
 
+# W3 (ADR 0014): grid_classifier emittiert direkt typ=eckbohrungen
+# (deckt Raster UND Eckbohrungen-Arm ab — beide laufen auf hole_pattern_grid).
+_EXPECTED_TYP = "eckbohrungen"
+
+
 @pytest.mark.agent_regression
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])
 def test_grid_classifier_case(grid_classifier: GridClassifier, case: dict) -> None:
@@ -86,6 +91,12 @@ def test_grid_classifier_case(grid_classifier: GridClassifier, case: dict) -> No
         {"phrase": case["phrase"], "teil_id": "wuerfel", "phrase_idx": 0},
         default_box(),
     )
+    if res.get("typ") != _EXPECTED_TYP:
+        raise AssertionError(
+            f"\n  case: {case['id']}"
+            f"\n  typ: got {res.get('typ')!r}, expected {_EXPECTED_TYP!r}"
+            f"\n  result: {res}"
+        )
     assert_hints(
         res.get("parameter_hints", {}),
         case["expected"],

@@ -79,6 +79,10 @@ def circular_classifier() -> CircularClassifier:
     return CircularClassifier()
 
 
+# W3 (ADR 0014): circular_classifier emittiert direkt typ=lochkreis.
+_EXPECTED_TYP = "lochkreis"
+
+
 @pytest.mark.agent_regression
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])
 def test_circular_classifier_case(
@@ -90,4 +94,10 @@ def test_circular_classifier_case(
         {"phrase": case["phrase"], "teil_id": "wuerfel", "phrase_idx": 0},
         default_box(),
     )
+    if res.get("typ") != _EXPECTED_TYP:
+        raise AssertionError(
+            f"\n  case: {case['id']}"
+            f"\n  typ: got {res.get('typ')!r}, expected {_EXPECTED_TYP!r}"
+            f"\n  result: {res}"
+        )
     assert_hints(res.get("parameter_hints", {}), case["expected"], case["id"])

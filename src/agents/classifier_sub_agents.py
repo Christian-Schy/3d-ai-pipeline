@@ -210,12 +210,15 @@ class GridClassifier(ClassifierSubAgent):
 
     Trennt explizites Raster (`rows`/`cols`/`rasterabstand` bei genanntem
     Rasterabstand) von Eckbohrungen (`anzahl`/`abstand_kante` bei Randabstand).
+    Beide Arme laufen downstream auf feature_type=hole_pattern_grid; der
+    typ-Name ist daher in beiden Faellen `eckbohrungen` (ADR 0014 W3 —
+    spezifischer typ direkt aus dem Klassifizierer).
     """
 
     name = "grid_classifier"
     prompt_file = "prompt_classifier_grid.py"
-    default_typ = "bohrung"
-    allowed_typs = {"bohrung"}
+    default_typ = "eckbohrungen"
+    allowed_typs = {"eckbohrungen"}
     allowed_hint_keys = {
         "durchmesser", "bohr_durchmesser", "tiefe", "anzahl",
         "rows", "cols", "rasterabstand", "rasterabstand_x", "rasterabstand_y",
@@ -225,12 +228,15 @@ class GridClassifier(ClassifierSubAgent):
 
 
 class CircularClassifier(ClassifierSubAgent):
-    """ADR 0009 — Kreis-Lochmuster (Lochkreis / Teilkreis)."""
+    """ADR 0009 — Kreis-Lochmuster (Lochkreis / Teilkreis).
+
+    W3 (ADR 0014): emittiert direkt typ=lochkreis — Normalizer raffiniert nicht mehr.
+    """
 
     name = "circular_classifier"
     prompt_file = "prompt_classifier_circular.py"
-    default_typ = "bohrung"
-    allowed_typs = {"bohrung"}
+    default_typ = "lochkreis"
+    allowed_typs = {"lochkreis"}
     allowed_hint_keys = {
         "durchmesser", "bohr_durchmesser", "tiefe", "anzahl",
         "kreis_durchmesser",
@@ -239,12 +245,15 @@ class CircularClassifier(ClassifierSubAgent):
 
 
 class LinearClassifier(ClassifierSubAgent):
-    """ADR 0009 — Linear-Lochmuster (Bohrungsreihe / Lochreihe)."""
+    """ADR 0009 — Linear-Lochmuster (Bohrungsreihe / Lochreihe).
+
+    W3 (ADR 0014): emittiert direkt typ=bohrungsreihe — Normalizer raffiniert nicht mehr.
+    """
 
     name = "linear_classifier"
     prompt_file = "prompt_classifier_linear.py"
-    default_typ = "bohrung"
-    allowed_typs = {"bohrung"}
+    default_typ = "bohrungsreihe"
+    allowed_typs = {"bohrungsreihe"}
     allowed_hint_keys = {
         "durchmesser", "bohr_durchmesser", "tiefe", "anzahl",
         "abstand", "richtung", "rotation_deg",

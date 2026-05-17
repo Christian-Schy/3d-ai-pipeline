@@ -1387,10 +1387,12 @@ TRACES = [
     # Beobachtung Run 1c7d13b5 (T_kombo, 1/30 Coin-Flip): Phrase
     # "oben eine tasche 60x40x10 10mm nach rechts versetzt zentral" wurde
     # vom Normalizer-LLM als typ='ignorieren' verworfen, weil das Suffix
-    # "versetzt zentral" wie reine Platzierung wirkte. Trotz Klassifizierer
-    # typ='tasche' fiel die Phrase im feature_definierer-Reconcile durch,
-    # da `_NORMALIZER_FAMILY['tasche']` 'ignorieren' nicht enthaelt und
-    # build_feature im Edge-Case None liefert.
+    # "versetzt zentral" wie reine Platzierung wirkte. Mit der alten
+    # `_NORMALIZER_FAMILY`-Reconcile (vor W3) fiel die Phrase trotz
+    # Klassifizierer typ='tasche' durch; W3 setzt jetzt grundsaetzlich
+    # auf den Klassifizierer-typ, der Normalizer-Drift zu 'ignorieren'
+    # waere damit harmlos. Diese Demos bleiben trotzdem sinnvoll, weil
+    # build_feature die Normalizer-Parameter fuer Geometrie braucht.
     # Diese Demos verankern: bei klar erkennbarer Geometrie (LxBxT bei
     # tasche, Achse+Laenge bei nut) ist 'versetzt + zentral' KEIN
     # Ignorieren-Signal — typ bleibt tasche/nut.

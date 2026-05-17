@@ -73,6 +73,10 @@ def linear_classifier() -> LinearClassifier:
     return LinearClassifier()
 
 
+# W3 (ADR 0014): linear_classifier emittiert direkt typ=bohrungsreihe.
+_EXPECTED_TYP = "bohrungsreihe"
+
+
 @pytest.mark.agent_regression
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["id"])
 def test_linear_classifier_case(linear_classifier: LinearClassifier, case: dict) -> None:
@@ -80,4 +84,10 @@ def test_linear_classifier_case(linear_classifier: LinearClassifier, case: dict)
         {"phrase": case["phrase"], "teil_id": "wuerfel", "phrase_idx": 0},
         default_box(),
     )
+    if res.get("typ") != _EXPECTED_TYP:
+        raise AssertionError(
+            f"\n  case: {case['id']}"
+            f"\n  typ: got {res.get('typ')!r}, expected {_EXPECTED_TYP!r}"
+            f"\n  result: {res}"
+        )
     assert_hints(res.get("parameter_hints", {}), case["expected"], case["id"])

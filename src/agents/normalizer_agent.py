@@ -30,18 +30,11 @@ SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 NORMALIZER_PROMPT_TEMPLATE = _prompt.NORMALIZER_PROMPT_TEMPLATE
 
 
-# Classifier emits a small typ-set; normalizer's vocabulary is broader and
-# includes specific patterns (lochkreis, eckbohrungen, bohrungsreihe, ...).
-# When both agree on the family, the normalizer's more specific typ wins.
-# When they disagree across families OR the normalizer parsed "ignorieren",
-# the classifier's coarse typ wins.
-_NORMALIZER_FAMILY: dict[str, set[str]] = {
-    "bohrung": {"bohrung", "lochkreis", "eckbohrungen", "bohrungsreihe"},
-    "nut":     {"nut"},
-    "tasche":  {"tasche", "aushoelung"},
-    "fase":    {"fase"},
-    "rundung": {"rundung"},
-}
+# W3 (ADR 0014): each classifier emits a specific typ directly — pocket→tasche,
+# slot→nut, hole→bohrung, circular→lochkreis, grid→eckbohrungen,
+# linear→bohrungsreihe, edge_feature→fase|rundung. The normalizer's old
+# typ-refinement (bohrung → lochkreis/eckbohrungen/bohrungsreihe) is gone;
+# `_reconcile_typ` below just trusts the classifier whenever it spoke.
 
 
 # Classifier param-hint keys → normalizer param keys.
@@ -188,19 +181,19 @@ def _merge_direction_hint(normalized: dict, hints: dict) -> None:
 
 
 def _reconcile_typ(classifier_typ: str, normalizer_typ: str) -> str:
-    """Pick the typ to use for build_feature.
+    """Pick the typ for build_feature.
 
-    - classifier "unbekannt"/"" → trust normalizer
-    - normalizer "ignorieren" or different family → trust classifier
-    - same family → trust normalizer (more specific)
+    W3 (ADR 0014): each classifier emits a specific typ directly, so the
+    classifier wins whenever it spoke. Only when its typ is empty or
+    "unbekannt" do we fall back to the normalizer's parse. This kills the
+    dual-source typ-refinement that produced the family-mismatch bugs
+    listed in ADR §1 (e.g. V2: classifier said bohrung, normalizer
+    re-guessed the pattern family — usually wrong).
     """
     classifier_typ = (classifier_typ or "").lower()
-    normalizer_typ = (normalizer_typ or "").lower()
-    if classifier_typ not in _NORMALIZER_FAMILY:
-        return normalizer_typ
-    if normalizer_typ in _NORMALIZER_FAMILY[classifier_typ]:
-        return normalizer_typ
-    return classifier_typ
+    if classifier_typ and classifier_typ != "unbekannt":
+        return classifier_typ
+    return (normalizer_typ or "").lower()
 
 
 def _axis_from_richtung(richtung: str) -> str | None:

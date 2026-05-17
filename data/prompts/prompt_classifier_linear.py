@@ -18,7 +18,7 @@ Linear-Lochmuster: Bohrungsreihe, Lochreihe, Reihe aus Bohrungen.
 Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
 
 typ:
-  Immer "bohrung". Der Normalizer erkennt spaeter die Pattern-Familie.
+  Immer "bohrungsreihe". (W3: spezifischer typ, kein Normalizer-Refine mehr.)
 
 {_SEITE}
 

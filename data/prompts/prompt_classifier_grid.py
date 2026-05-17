@@ -18,7 +18,10 @@ Raster-Lochmuster (Grid) und Eckbohrungen.
 Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
 
 typ:
-  Immer "bohrung". Der Normalizer erkennt spaeter die Pattern-Familie.
+  Immer "eckbohrungen". (W3: dieser Klassifizierer ist fuer Raster und
+  Eckbohrungen zustaendig — beide laufen downstream auf hole_pattern_grid.
+  Die Unterscheidung Explizites-Raster vs. Eckbohrungen steckt in den
+  Parametern, nicht im typ.)
 
 {_SEITE}
 

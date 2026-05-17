@@ -9,7 +9,7 @@
         "teil_type": "box",
         "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 40}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 10, \"anzahl\": 4, \"abstand\": 20, \"richtung\": \"y\"}}"
+        "klassifikation": "{\"typ\": \"bohrungsreihe\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 10, \"anzahl\": 4, \"abstand\": 20, \"richtung\": \"y\"}}"
       },
       {
         "augmented": true,
@@ -17,7 +17,7 @@
         "teil_type": "box",
         "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"anzahl\": 5, \"richtung\": \"y\", \"abstand\": 12, \"durchmesser\": 4}}"
+        "klassifikation": "{\"typ\": \"bohrungsreihe\", \"seite\": \"oben\", \"parameter_hints\": {\"anzahl\": 5, \"richtung\": \"y\", \"abstand\": 12, \"durchmesser\": 4}}"
       },
       {
         "augmented": true,
@@ -25,7 +25,7 @@
         "teil_type": "box",
         "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 120}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"anzahl\": 4, \"abstand\": 15, \"durchmesser\": 6, \"richtung\": \"z\"}}"
+        "klassifikation": "{\"typ\": \"bohrungsreihe\", \"seite\": \"rechts\", \"parameter_hints\": {\"anzahl\": 4, \"abstand\": 15, \"durchmesser\": 6, \"richtung\": \"z\"}}"
       },
       {
         "augmented": true,
@@ -33,35 +33,35 @@
         "teil_type": "box",
         "teil_params": "{\"x\": 200, \"y\": 100, \"z\": 60}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 6, \"anzahl\": 5, \"abstand\": 18, \"richtung\": \"x\"}}"
+        "klassifikation": "{\"typ\": \"bohrungsreihe\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 6, \"anzahl\": 5, \"abstand\": 18, \"richtung\": \"x\"}}"
       },
       {
         "phrase": "unten bohrungen in einer reihe entlang y mit 20mm abstand 5mm durchmesser",
         "teil_type": "box",
         "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 20}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"unten\", \"parameter_hints\": {\"durchmesser\": 5, \"abstand\": 20, \"richtung\": \"y\"}}"
+        "klassifikation": "{\"typ\": \"bohrungsreihe\", \"seite\": \"unten\", \"parameter_hints\": {\"durchmesser\": 5, \"abstand\": 20, \"richtung\": \"y\"}}"
       },
       {
         "phrase": "vorne eine bohrungsreihe entlang z mit 4 bohrungen 5mm durchmesser 4 tief abstand 12mm",
         "teil_type": "box",
         "teil_params": "{\"x\": 120, \"y\": 90, \"z\": 50}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 4, \"anzahl\": 4, \"abstand\": 12, \"richtung\": \"z\"}}"
+        "klassifikation": "{\"typ\": \"bohrungsreihe\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 4, \"anzahl\": 4, \"abstand\": 12, \"richtung\": \"z\"}}"
       },
       {
         "phrase": "hinten eine reihe aus 4 bohrungen 5mm durchmesser 8 tief entlang x-achse mit abstand 18mm um 20 grad im uhrzeigersinn gedreht mittig auf der breite und 12mm von oberer kante",
         "teil_type": "box",
         "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 40}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"hinten\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 8, \"anzahl\": 4, \"abstand\": 18, \"richtung\": \"x\", \"rotation_deg\": -20, \"abstand_oben\": 12}}"
+        "klassifikation": "{\"typ\": \"bohrungsreihe\", \"seite\": \"hinten\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 8, \"anzahl\": 4, \"abstand\": 18, \"richtung\": \"x\", \"rotation_deg\": -20, \"abstand_oben\": 12}}"
       },
       {
         "phrase": "vorne eine reihe aus 5 bohrungen 6mm durchmesser 10 tief entlang x, abstand 20mm",
         "teil_type": "box",
         "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 40}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 10, \"anzahl\": 5, \"abstand\": 20, \"richtung\": \"x\"}}"
+        "klassifikation": "{\"typ\": \"bohrungsreihe\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 10, \"anzahl\": 5, \"abstand\": 20, \"richtung\": \"x\"}}"
       }
     ],
     "signature": {

@@ -9,7 +9,7 @@
         "teil_type": "box",
         "teil_params": "{\"x\": 150, \"y\": 150, \"z\": 25}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"anzahl\": 8, \"kreis_durchmesser\": 80, \"durchgaengig\": true}}"
+        "klassifikation": "{\"typ\": \"lochkreis\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"anzahl\": 8, \"kreis_durchmesser\": 80, \"durchgaengig\": true}}"
       },
       {
         "augmented": true,
@@ -17,7 +17,7 @@
         "teil_type": "box",
         "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5, \"anzahl\": 6, \"kreis_durchmesser\": 60}}"
+        "klassifikation": "{\"typ\": \"lochkreis\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5, \"anzahl\": 6, \"kreis_durchmesser\": 60}}"
       },
       {
         "augmented": true,
@@ -25,7 +25,7 @@
         "teil_type": "box",
         "teil_params": "{\"x\": 120, \"y\": 120, \"z\": 40}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 12, \"anzahl\": 8, \"kreis_durchmesser\": 70}}"
+        "klassifikation": "{\"typ\": \"lochkreis\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 12, \"anzahl\": 8, \"kreis_durchmesser\": 70}}"
       },
       {
         "augmented": true,
@@ -33,35 +33,35 @@
         "teil_type": "box",
         "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 40}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"links\", \"parameter_hints\": {\"durchmesser\": 4, \"tiefe\": 8, \"anzahl\": 4, \"kreis_durchmesser\": 20, \"versatz_links\": 15, \"versatz_unten\": 15}}"
+        "klassifikation": "{\"typ\": \"lochkreis\", \"seite\": \"links\", \"parameter_hints\": {\"durchmesser\": 4, \"tiefe\": 8, \"anzahl\": 4, \"kreis_durchmesser\": 20, \"versatz_links\": 15, \"versatz_unten\": 15}}"
       },
       {
         "phrase": "oben lochkreis mit 6 bohrungen 5mm durchmesser 4 tief auf teilkreis 50mm 10mm nach links und 5mm nach unten versetzt",
         "teil_type": "box",
         "teil_params": "{\"x\": 120, \"y\": 90, \"z\": 50}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 4, \"anzahl\": 6, \"kreis_durchmesser\": 50, \"versatz_links\": 10, \"versatz_unten\": 5}}"
+        "klassifikation": "{\"typ\": \"lochkreis\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 4, \"anzahl\": 6, \"kreis_durchmesser\": 50, \"versatz_links\": 10, \"versatz_unten\": 5}}"
       },
       {
         "phrase": "oben ein kreismuster aus 6 bohrungen 4mm durchmesser 8 tief, teilkreis-durchmesser 40mm",
         "teil_type": "box",
         "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 40}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 4, \"tiefe\": 8, \"anzahl\": 6, \"kreis_durchmesser\": 40}}"
+        "klassifikation": "{\"typ\": \"lochkreis\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 4, \"tiefe\": 8, \"anzahl\": 6, \"kreis_durchmesser\": 40}}"
       },
       {
         "phrase": "oben ein lochkreis 50mm mit 4 bohrungen 5mm durchmesser 6 tief, von linker kante 40mm",
         "teil_type": "box",
         "teil_params": "{\"x\": 200, \"y\": 120, \"z\": 30}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 6, \"anzahl\": 4, \"kreis_durchmesser\": 50, \"abstand_links\": 40}}"
+        "klassifikation": "{\"typ\": \"lochkreis\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 6, \"anzahl\": 4, \"kreis_durchmesser\": 50, \"abstand_links\": 40}}"
       },
       {
         "phrase": "rechts ein kreismuster aus 6 bohrungen 4mm durchmesser 8 tief auf teilkreis 40mm",
         "teil_type": "box",
         "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 40}",
         "parent_phrase": "(keine)",
-        "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 4, \"tiefe\": 8, \"anzahl\": 6, \"kreis_durchmesser\": 40}}"
+        "klassifikation": "{\"typ\": \"lochkreis\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 4, \"tiefe\": 8, \"anzahl\": 6, \"kreis_durchmesser\": 40}}"
       }
     ],
     "signature": {
