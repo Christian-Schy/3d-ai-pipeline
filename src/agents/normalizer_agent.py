@@ -1,17 +1,18 @@
 """
-src/agents/normalizer_agent.py — Text normalization step.
+src/agents/normalizer_agent.py — per-action feature definition.
 
-Takes a free-text action description and converts it to a standardized
-short-form using a fixed vocabulary. The KI only does text understanding —
-no JSON schema, no spatial reasoning.
+Public entry point: `NormalizerAgent.define_feature(klassifikation, teil)`
+turns ONE classified action into ONE SemanticFeature ready for the
+aggregator (ADR 0003 Stufe 3).
 
-Output is plain text with key: value lines that the deterministic
-FeatureBuilder can parse reliably.
-
-Stufe 3 (ADR 0003) adds `define_feature(klassifikation, teil)` — the
-new per-action entry point that takes the classified action from
-AktionsKlassifizierer and returns one SemanticFeature with phrase
-markers for the Aggregator (Stufe 4).
+W4 (ADR 0014 §3): the per-action LLM Normalizer call is gone. The
+classifier owns text understanding; everything from there to the feature
+dict is deterministic (`_build_normalized_from_hints` → `build_feature`).
+The legacy LLM `normalize()` method is kept here only so the
+`tests/agent_regression/test_normalizer.py` suite can still validate its
+behaviour as we sunset it; nothing in the pipeline call path invokes it.
+The class name is unchanged for callsite compatibility — a later
+cleanup pass renames it to something like `FeatureDefinierer`.
 """
 
 import re
@@ -30,19 +31,14 @@ SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
 NORMALIZER_PROMPT_TEMPLATE = _prompt.NORMALIZER_PROMPT_TEMPLATE
 
 
-# W3 (ADR 0014): each classifier emits a specific typ directly — pocket→tasche,
-# slot→nut, hole→bohrung, circular→lochkreis, grid→eckbohrungen,
-# linear→bohrungsreihe, edge_feature→fase|rundung. The normalizer's old
-# typ-refinement (bohrung → lochkreis/eckbohrungen/bohrungsreihe) is gone;
-# `_reconcile_typ` below just trusts the classifier whenever it spoke.
-
-
-# Classifier param-hint keys → normalizer param keys.
-# Most keys match (durchmesser, tiefe, laenge, breite, groesse, ...).
-# `rotation_deg` needs translation: build_feature reads `drehung`.
-# Pocket classifiers may receive user wording "Hoehe"; for subtractive
-# features this is the cut depth and build_feature reads `tiefe`.
-# `richtung` is handled as top-level normalized field, not as parameter.
+# Classifier param-hint keys → build_feature param keys. Most keys match
+# (durchmesser, tiefe, laenge, breite, groesse, anzahl, ...). The two
+# below need translation:
+#   rotation_deg → drehung   — build_feature reads `drehung`.
+#   hoehe        → tiefe     — pocket users say "Hoehe", build_feature
+#                              treats it as the cut depth.
+# `richtung` is handled as a top-level field by `_build_normalized_from_hints`,
+# not as a parameter.
 _HINT_KEY_RENAME: dict[str, str] = {
     "rotation_deg": "drehung",
     "hoehe": "tiefe",
@@ -102,98 +98,12 @@ _EDGE_ANCHOR_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?untere[ern]?\s+kante\b"), "bottom_edge"),
 )
 
-_DIRECTION_PHRASE_RE = re.compile(
-    r"\bentlang(?:\s+(?:der|die|den))?\s+"
-    r"(?P<axis>[xyz])(?:\s*[- ]?\s*(?:achse|axis))?\b"
-)
-
-
-# In-Face-Bemassungs-Konventionen: A1 (abstand, edge-to-center),
-# A2 (kante, edge-to-edge), A3 (versatz, center-relativ).
-_CONVENTION_PREFIXES: tuple[str, ...] = ("abstand_", "versatz_", "kante_")
-
-# Alle Keys, mit denen der Klassifizierer eine In-Face-Positionierung
-# ausdrueckt — Konventions-Keys plus Slot-Endpunkte (anfang_/ende_).
-# Emittiert der Klassifizierer einen davon, besitzt er die Positionierung
-# des Features; der blinde Normalizer-Re-Parse darf sie nicht mitliefern.
-_POSITIONING_PREFIXES: tuple[str, ...] = _CONVENTION_PREFIXES + (
-    "anfang_", "ende_",
-)
-
-
-def _merge_param_hints(params: dict, hints: dict) -> None:
-    """In-place: classifier hints win over normalizer parses.
-
-    Rationale (ADR 0003 Stufe 5c): the classifier sees one focused phrase
-    with explicit guidance for `abstand_*` / `versatz_*` / `kante_*` /
-    `durchmesser` / `tiefe` / `rotation_deg`. The normalizer sees the same
-    phrase but runs with think=false through a much larger prompt and
-    occasionally (a) drops one of two edge-distance values to 0 or
-    (b) parses the wrong Bemassungs-Konvention (`kante_links` where the
-    classifier correctly read A1 `abstand_links`).
-
-    Two-step merge:
-      1. Positionierungs-Hoheit: emittiert der Klassifizierer IRGENDEINEN
-         In-Face-Positionierungs-Hint (abstand_/versatz_/kante_/anfang_/
-         ende_), besitzt er die komplette Positionierung des Features.
-         Dann werden ALLE Konventions-Keys (abstand_/versatz_/kante_) aus
-         dem Normalizer-Parse entfernt — auch auf anderen Richtungen. Der
-         Normalizer re-parsed die Phrase blind und liest denselben Versatz
-         oft gespiegelt (versatz_links wo der Klassifizierer abstand_rechts
-         sah); ein Pro-Richtung-Abgleich kann das nicht aufloesen.
-      2. Werte uebernehmen: jeder Hint ueberschreibt den Normalizer-Wert.
-
-    Keys die der Klassifizierer NICHT emittiert bleiben wie der Normalizer
-    sie setzte (z.B. position keyword, richtung).
-    """
-    if not isinstance(params, dict) or not isinstance(hints, dict):
-        return
-
-    # Step 1: classifier owns positioning. If it emitted any positioning
-    # hint, drop ALL of the normalizer's convention-keys (every direction).
-    classifier_has_positioning = any(
-        key.startswith(_POSITIONING_PREFIXES) and hints.get(key) is not None
-        for key in hints
-    )
-    if classifier_has_positioning:
-        for key in list(params):
-            if key.startswith(_CONVENTION_PREFIXES):
-                del params[key]
-
-    # Step 2: classifier hints overwrite.
-    for key, val in hints.items():
-        if val is None:
-            continue
-        if key == "richtung":
-            continue
-        target = _HINT_KEY_RENAME.get(key, key)
-        params[target] = val
-
-
-def _merge_direction_hint(normalized: dict, hints: dict) -> None:
-    """Promote classifier axis hints to the normalizer's top-level field."""
-    if not isinstance(normalized, dict) or not isinstance(hints, dict):
-        return
-    raw = hints.get("richtung")
-    direction = _axis_from_richtung(str(raw or ""))
-    if direction in {"x", "y", "z"}:
-        normalized["richtung"] = direction
-
-
-def _reconcile_typ(classifier_typ: str, normalizer_typ: str) -> str:
-    """Pick the typ for build_feature.
-
-    W3 (ADR 0014): each classifier emits a specific typ directly, so the
-    classifier wins whenever it spoke. Only when its typ is empty or
-    "unbekannt" do we fall back to the normalizer's parse. This kills the
-    dual-source typ-refinement that produced the family-mismatch bugs
-    listed in ADR §1 (e.g. V2: classifier said bohrung, normalizer
-    re-guessed the pattern family — usually wrong).
-    """
-    classifier_typ = (classifier_typ or "").lower()
-    if classifier_typ and classifier_typ != "unbekannt":
-        return classifier_typ
-    return (normalizer_typ or "").lower()
+# W4 (ADR 0014 §3) eliminated the LLM Normalizer call from `define_feature`.
+# The pre-W4 helpers `_merge_param_hints`, `_reconcile_typ`,
+# `_merge_direction_hint`, `_fill_direction_from_phrase` (plus
+# `_DIRECTION_PHRASE_RE`, `_POSITIONING_PREFIXES`, `_CONVENTION_PREFIXES`)
+# arbitrated between a classifier output and a second LLM parse. With
+# only one source now, all of them are unused and removed.
 
 
 def _axis_from_richtung(richtung: str) -> str | None:
@@ -240,10 +150,19 @@ def _infer_full_slot_length(teil: dict, seite: str, richtung: str) -> float | in
 
 
 def _fill_missing_slot_length(normalized: dict, teil: dict) -> None:
+    """Default a missing slot length from the host part's axis dimension.
+
+    Skipped when classifier emitted anfang_/ende_ endpoint hints — those
+    are a stronger signal and `_resolve_slot_endpoints` (in feature_builder)
+    will compute `laenge = |ende - anfang|` from them. Filling here first
+    would lock in the parent-dim default before that runs.
+    """
     params = normalized.get("parameter")
     if not isinstance(params, dict):
         return
     if params.get("laenge") is not None:
+        return
+    if any(k.startswith(("anfang_", "ende_")) for k in params):
         return
     inferred = _infer_full_slot_length(
         teil,
@@ -263,24 +182,6 @@ def _normalize_phrase(text: str) -> str:
         .replace("ü", "ue")
         .replace("ß", "ss")
     )
-
-
-def _infer_direction_from_phrase(phrase: str) -> str | None:
-    text = _normalize_phrase(phrase)
-    match = _DIRECTION_PHRASE_RE.search(text)
-    if not match:
-        return None
-    return _axis_from_richtung(match.group("axis"))
-
-
-def _fill_direction_from_phrase(normalized: dict, phrase: str) -> None:
-    if normalized.get("richtung"):
-        return
-    if normalized.get("typ") not in {"nut", "bohrungsreihe"}:
-        return
-    direction = _infer_direction_from_phrase(phrase)
-    if direction:
-        normalized["richtung"] = direction
 
 
 def _corner_point_from_text(text: str) -> str | None:
@@ -365,6 +266,101 @@ def _apply_phrase_anchor(feature: dict, phrase: str, params: dict) -> None:
     position.pop("pocket_edge_distances", None)
 
 
+# ──────────────────────────────────────────────────────────────────────
+# W4 (ADR 0014 §3) — deterministic Klassifizierer → build_feature path.
+# Replaces the per-action LLM Normalizer call. The Klassifizierer is now
+# the ONE Textverstaendnis-Schritt; everything below is rule-mapping.
+# ──────────────────────────────────────────────────────────────────────
+
+# Slot-Endpunkt-Achse: Endpunkt-Edge → Slot-Achse. Wird genutzt, wenn der
+# slot_classifier eine Phrase mit anfang_/ende_ schickt aber kein richtung.
+_ENDPOINT_DIR_TO_AXIS: dict[str, str] = {
+    "links": "x", "rechts": "x",
+    "vorne": "y", "hinten": "y",
+    "oben": "z", "unten": "z",
+}
+
+
+def _derive_position_keyword(hints: dict) -> str:
+    """Map classifier hints to the legacy `position` token build_feature reads.
+
+    feature_builder uses `position` mainly to recognize Eckbohrungen layouts
+    (corner-token + generic `abstand_kante` → distribute to two edges).
+    Bei direkter Versatz-Bemassung (abstand_<dir>) macht es keinen
+    Unterschied, weil der Resolver die Werte aus dem parameter-Dict liest.
+    """
+    ns = next((d for d in ("oben", "unten") if f"abstand_{d}" in hints), None)
+    ew = next((d for d in ("rechts", "links") if f"abstand_{d}" in hints), None)
+    if ns and ew:
+        return f"{ns}-{ew}"
+    has_edge_key = any(
+        k.startswith(("abstand_", "kante_", "anfang_", "ende_")) for k in hints
+    )
+    if has_edge_key:
+        return "von_kanten"
+    if any(k.startswith("versatz_") for k in hints):
+        return "von_mitte"
+    return "zentriert"
+
+
+def _derive_richtung_from_endpoints(hints: dict) -> str:
+    """Slot-Achse aus Endpunkt-Edges ableiten (anfang_/ende_ <edge>).
+
+    Wenn der slot_classifier zwei Endpunkte an `links`/`rechts` emittiert,
+    verlaeuft der Slot entlang X (analog `vorne/hinten` → Y, `oben/unten` → Z).
+    Saubere Voll-Bestimmtheit fuer den N04-Endpunkt-Modus auch ohne explizites
+    "entlang X" im Text.
+    """
+    for d, axis in _ENDPOINT_DIR_TO_AXIS.items():
+        if f"anfang_{d}" in hints or f"ende_{d}" in hints:
+            return axis
+    return ""
+
+
+def _build_normalized_from_hints(klassifikation: dict) -> dict:
+    """W4: build the feature_builder-input dict from a classifier output alone.
+
+    Replaces the per-action LLM Normalizer call. The classifier
+    (`parameter_hints`) is the sole source of truth; positioning,
+    direction, parameter sizes and the `position` token are derived
+    deterministically.
+
+    Output shape matches what `build_feature()` expects:
+        {typ, seite, position, richtung, parameter, notes}
+    """
+    typ = (klassifikation.get("typ") or "").lower()
+    seite = (klassifikation.get("seite") or "oben").lower()
+    hints = klassifikation.get("parameter_hints") or {}
+    if not isinstance(hints, dict):
+        hints = {}
+
+    params: dict = {}
+    richtung = ""
+    for key, val in hints.items():
+        if val is None:
+            continue
+        k = str(key).strip().lower()
+        if k == "richtung":
+            axis = _axis_from_richtung(str(val))
+            if axis:
+                richtung = axis
+            continue
+        target = _HINT_KEY_RENAME.get(k, k)
+        params[target] = val
+
+    if not richtung and typ == "nut":
+        richtung = _derive_richtung_from_endpoints(hints)
+
+    return {
+        "typ": typ,
+        "seite": seite,
+        "position": _derive_position_keyword(hints),
+        "richtung": richtung,
+        "parameter": params,
+        "notes": "",
+    }
+
+
 class NormalizerAgent(BaseAgent):
     """Normalizes free-text action descriptions into fixed-vocabulary short-form.
 
@@ -432,64 +428,43 @@ class NormalizerAgent(BaseAgent):
             SemanticFeature dict per ADR 0003 contract:
                 {id, type, params, position, parent, operation,
                  _phrase_idx, _parent_phrase_idx}
+
+        W4 (ADR 0014 §3): the per-action LLM Normalizer call is gone. The
+        classifier output is fed straight into `_build_normalized_from_hints`
+        and from there into the deterministic `build_feature`. One
+        Textverstaendnis-Schritt per action, rest deterministic. The
+        `feature_text` parameter is kept for callsite compatibility but
+        is no longer needed.
         """
+        del feature_text  # no longer consumed — kept in signature for callers
         beschreibung = klassifikation.get("beschreibung", "")
-        seite = klassifikation.get("seite", "oben")
         teil_id = teil.get("id", "")
         phrase_idx = klassifikation.get("phrase_idx", 0)
         parent_phrase_idx = klassifikation.get("parent_phrase_idx")
-        klass_typ = (klassifikation.get("typ") or "").lower()
-        klass_hints = klassifikation.get("parameter_hints") or {}
 
-        # LLM call (existing per-action normalize)
-        spec_context = feature_text or beschreibung
-        normalized = self.normalize(beschreibung, seite, spec_context)
+        normalized = _build_normalized_from_hints(klassifikation)
 
-        # Reconcile typ — classifier wins when families diverge or normalizer
-        # rejected the phrase as placement.
-        chosen_typ = _reconcile_typ(klass_typ, normalized.get("typ", ""))
-        if chosen_typ != normalized.get("typ"):
-            self.log.info(
-                "define_feature_typ_override",
-                normalizer_typ=normalized.get("typ"),
-                klassifizierer_typ=klass_typ,
-                chosen=chosen_typ,
-                phrase=beschreibung[:80],
-            )
-            normalized["typ"] = chosen_typ
-
-        # Trust the classifier's seite verbatim (already validated in Stufe 2).
-        if klassifikation.get("seite"):
-            normalized["seite"] = klassifikation["seite"]
-
-        # Fold classifier hints into normalizer params (gaps only).
-        params = normalized.setdefault("parameter", {})
-        _merge_direction_hint(normalized, klass_hints)
-        _fill_direction_from_phrase(normalized, beschreibung)
-        _merge_param_hints(params, klass_hints)
         if normalized.get("typ") == "nut":
             _fill_missing_slot_length(normalized, teil)
 
-        # Deterministic SemanticFeature build. Returns None when both the
-        # classifier and the normalizer rejected the phrase as a real
-        # feature (typ in {"unbekannt", "ignorieren", ""}). The caller —
-        # feature_definierer_node — drops None results so phantom features
-        # never reach the aggregator.
+        # Deterministic SemanticFeature build. Returns None for sentinel typs
+        # ({"", "ignorieren", "unbekannt"}) — the caller drops None so phantom
+        # features never reach the aggregator.
         feature = build_feature(normalized, teil_id, phrase_idx)
         if feature is None:
             return None
-        _apply_phrase_anchor(feature, beschreibung, params)
+
+        # W5 cleanup target: _apply_phrase_anchor uses regex on the raw
+        # phrase text. It stays here as a transitional helper until the
+        # anchor detection moves into the classifier (ADR 0014 §7 W5).
+        _apply_phrase_anchor(feature, beschreibung, normalized["parameter"])
 
         # Default parent: the host teil. Aggregator (Stufe 4) overrides with
         # the pocket's feature_id for nested children.
         feature["parent"] = teil_id
-
-        # Markers for the Aggregator. _teil_id stays a stable grouping key
-        # even after the Aggregator rewrites `parent` for nested children.
         feature["_teil_id"] = teil_id
         feature["_phrase_idx"] = phrase_idx
         feature["_parent_phrase_idx"] = parent_phrase_idx
-
         return feature
 
     def _parse(self, raw: str, fallback_seite: str) -> dict:

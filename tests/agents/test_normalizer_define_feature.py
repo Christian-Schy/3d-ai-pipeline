@@ -1,17 +1,12 @@
-"""Tests for NormalizerAgent.define_feature() — Stufe 3 ADR 0003.
+"""Tests for NormalizerAgent.define_feature() — W4 deterministic path.
 
-Kernverhalten:
-  - Eingabe: klassifizierte Aktion (Stufe 2 Output) + Teil
-  - Ausgabe: SemanticFeature mit _phrase_idx / _parent_phrase_idx Markern
-  - Reconciliation: Classifier-typ und Normalizer-typ. Selbe Familie →
-    Normalizer (spezifischer); andere Familie / "ignorieren" → Classifier.
-  - parameter_hints fuellen Luecken in normalizer.parameter, ueberschreiben
-    aber NICHT was der Normalizer aus dem Text geparst hat.
-  - rotation_deg-Hint wird auf "drehung" gemappt und landet als angle_deg
-    in feature.position.
+ADR 0014 §3 / W4: define_feature() no longer calls an LLM Normalizer.
+The classifier output (`typ`, `seite`, `parameter_hints`) is fed straight
+into _build_normalized_from_hints → build_feature. One Textverstaendnis-
+Schritt per action; rest deterministic. Pre-W4 tests that mocked
+NormalizerAgent.normalize() are obsolete (the method is no longer in the
+call path); the surviving tests below drive everything via parameter_hints.
 """
-
-from unittest.mock import MagicMock
 
 
 def _make_agent():
@@ -43,27 +38,11 @@ def _teil(**overrides):
     return base
 
 
-def _norm(**overrides):
-    """Return value the mocked normalize() emits (NormalizerAgent's dict)."""
-    base = {
-        "typ": "bohrung",
-        "seite": "rechts",
-        "position": "zentriert",
-        "richtung": "",
-        "parameter": {"durchmesser": 8, "tiefe": 10},
-        "notes": "",
-    }
-    base.update(overrides)
-    return base
-
-
 # ── Standard-Pfad ──────────────────────────────────────────────────────
 
 
 def test_simple_bohrung_full_output_shape():
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm())
-
     feat = agent.define_feature(_klass(), _teil())
 
     assert feat["type"] == "hole_single"
@@ -79,107 +58,37 @@ def test_simple_bohrung_full_output_shape():
 
 def test_markers_propagate_for_nested_child():
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm())
-
     feat = agent.define_feature(
         _klass(phrase_idx=2, parent_phrase_idx=1),
         _teil(),
     )
-
     assert feat["_phrase_idx"] == 2
     assert feat["_parent_phrase_idx"] == 1
 
 
 def test_parent_defaults_to_teil_id():
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm())
     feat = agent.define_feature(_klass(), _teil(id="my_part"))
     assert feat["parent"] == "my_part"
 
 
-# ── Type-Reconciliation ────────────────────────────────────────────────
+# ── Sentinel-Typen → None ──────────────────────────────────────────────
 
 
-def test_normalizer_specific_typ_kept_when_family_matches():
-    """classifier='bohrung', normalizer='eckbohrungen' (same family)
-    → keep normalizer's eckbohrungen → feature_type=hole_pattern_grid."""
+def test_returns_none_for_classifier_unbekannt():
+    """W4: with the LLM Normalizer gone, an `unbekannt`/empty classifier
+    typ has no fallback source — define_feature returns None and the
+    caller drops the action. Replaces the pre-W4 cross-family-rescue."""
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="eckbohrungen",
-        position="von_kanten",
-        parameter={"anzahl": 4, "abstand_kante": 20,
-                   "bohr_durchmesser": 10, "tiefe": "durch"},
-    ))
-
-    feat = agent.define_feature(
-        _klass(typ="bohrung",
-               beschreibung="4 Eckbohrungen je 20mm von den Kanten 10mm Durchmesser durch",
-               parameter_hints={}),
-        _teil(),
-    )
-    assert feat["type"] == "hole_pattern_grid"
+    assert agent.define_feature(_klass(typ="unbekannt"), _teil()) is None
+    assert agent.define_feature(_klass(typ=""), _teil()) is None
 
 
-def test_classifier_overrides_when_family_diverges():
-    """classifier='bohrung', normalizer='tasche' (different family)
-    → trust classifier → feature_type=hole_single."""
+# ── parameter_hints → params ───────────────────────────────────────────
+
+
+def test_hints_drive_params():
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="tasche", parameter={"laenge": 60, "breite": 40, "tiefe": 10},
-    ))
-    feat = agent.define_feature(_klass(typ="bohrung"), _teil())
-    assert feat["type"] == "hole_single"
-
-
-def test_classifier_overrides_normalizer_ignorieren():
-    """If normalizer says 'ignorieren' but classifier picked a real typ,
-    we trust the classifier (Stufe 2 already gated placement vs feature)."""
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="ignorieren", parameter={},
-    ))
-    feat = agent.define_feature(_klass(typ="bohrung"), _teil())
-    assert feat["type"] == "hole_single"
-
-
-def test_unbekannt_classifier_keeps_normalizer_typ():
-    """classifier='unbekannt' → normalizer's typ stays."""
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(typ="nut",
-                                                    richtung="x",
-                                                    parameter={"breite": 5, "tiefe": 5}))
-    feat = agent.define_feature(_klass(typ="unbekannt"), _teil())
-    assert feat["type"] == "slot"
-
-
-def test_returns_none_when_both_sentinel():
-    """Run da35a6ce / e1def0fa regression: phrase 'vorne soll eine platte
-    hin mit 140x20x40' is part declaration, not a feature. Classifier
-    says 'unbekannt', normalizer says 'ignorieren' → MUST return None so
-    no phantom hole_single ends up on the platte."""
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="ignorieren", parameter={},
-    ))
-    feat = agent.define_feature(_klass(typ="unbekannt"), _teil())
-    assert feat is None
-
-
-def test_returns_none_when_classifier_empty_and_normalizer_ignorieren():
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(typ="ignorieren", parameter={}))
-    feat = agent.define_feature(_klass(typ=""), _teil())
-    assert feat is None
-
-
-# ── parameter_hints Merge ──────────────────────────────────────────────
-
-
-def test_hints_fill_missing_params():
-    """Normalizer didn't extract durchmesser; classifier hint fills it."""
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(parameter={}))
-
     feat = agent.define_feature(
         _klass(parameter_hints={"durchmesser": 8, "tiefe": 10}),
         _teil(),
@@ -188,18 +97,9 @@ def test_hints_fill_missing_params():
     assert feat["params"]["depth"] == 10
 
 
-def test_classifier_hints_override_normalizer_parses():
-    """ADR 0003 Stufe 5c: Classifier-Hints gewinnen ueber Normalizer-Parses.
-
-    Hintergrund: der Normalizer laeuft mit think=false und droppt bei
-    rotierten Taschen mit edge_distances gelegentlich einen Wert auf 0
-    (Bug 4 in Run 3db7d152). Wenn der Klassifizierer einen Hint
-    explizit emittiert, ueberschreibt er den Normalizer-Parse.
-    """
+def test_hint_overrides_default_diameter():
+    """hints provide the only param source — no second parser to merge."""
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        parameter={"durchmesser": 10, "tiefe": 10},
-    ))
     feat = agent.define_feature(
         _klass(parameter_hints={"durchmesser": 8}),
         _teil(),
@@ -207,20 +107,14 @@ def test_classifier_hints_override_normalizer_parses():
     assert feat["params"]["diameter"] == 8
 
 
-def test_classifier_hint_overrides_normalizer_zero_value():
-    """Bug-4-Fall: Normalizer hat abstand_links=0 (verloren), Klassifizierer
-    hat abstand_links=10 (korrekt extrahiert) → Hint gewinnt."""
+def test_edge_distances_from_hints():
+    """W4 regression: classifier emits abstand_oben/_links → both reach the
+    feature's edge_distances. Pre-W4 a normalizer-zero-drop could swap one
+    of them to 0; now there is no second source to drift."""
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="tasche",
-        position="von_kanten",
-        parameter={"laenge": 20, "breite": 30, "tiefe": 10,
-                   "abstand_oben": 10, "abstand_links": 0},
-    ))
     feat = agent.define_feature(
         _klass(typ="tasche",
-               beschreibung="oben eine Tasche 20x30x10 die obere Kante "
-                            "von oben 10mm die linke Seite von links 10mm",
+               beschreibung="oben eine Tasche 20x30x10 oben 10mm links 10mm",
                seite="oben",
                parameter_hints={"laenge": 20, "breite": 30, "tiefe": 10,
                                 "abstand_oben": 10, "abstand_links": 10}),
@@ -230,19 +124,13 @@ def test_classifier_hint_overrides_normalizer_zero_value():
     assert feat["position"]["edge_distances"]["top"] == 10
 
 
-def test_classifier_direction_hint_promoted_before_slot_length_inference():
-    """`richtung` is the one non-numeric classifier hint.
+# ── Slot richtung / laenge / angle_deg ────────────────────────────────
 
-    It must become the normalizer's top-level direction before slot length
-    inference runs; otherwise "entlang y" on the top face would infer x-length.
-    """
+
+def test_slot_direction_hint_promoted_before_length_inference():
+    """The richtung hint must reach build_feature so slot-length defaulting
+    picks the correct parent axis. "entlang y" on the top face → length=y_dim."""
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="oben",
-        richtung="",
-        parameter={"breite": 5, "tiefe": 5},
-    ))
     feat = agent.define_feature(
         _klass(typ="nut",
                seite="oben",
@@ -254,16 +142,121 @@ def test_classifier_direction_hint_promoted_before_slot_length_inference():
     assert feat["position"]["angle_deg"] == 90.0
 
 
-def test_hole_pattern_linear_direction_hint_becomes_param():
+def test_slot_y_axis_sets_angle_deg_90():
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="bohrungsreihe",
-        seite="vorne",
-        richtung="",
-        parameter={"anzahl": 4, "durchmesser": 5, "tiefe": 4, "abstand": 12},
-    ))
     feat = agent.define_feature(
-        _klass(typ="bohrung",
+        _klass(typ="nut",
+               beschreibung="oben eine nut 5x5 entlang y-achse laenge 40mm",
+               seite="oben",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "y"}),
+        _teil(),
+    )
+    assert feat["type"] == "slot"
+    assert feat["position"]["angle_deg"] == 90.0
+
+
+def test_slot_y_axis_combines_with_explicit_rotation():
+    """Slot 'entlang y-achse 15 grad gedreht' → 90 + 15 = 105."""
+    agent = _make_agent()
+    feat = agent.define_feature(
+        _klass(typ="nut",
+               beschreibung="oben eine nut 5x5 entlang y-achse 15 grad gedreht",
+               seite="oben",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "y", "rotation_deg": 15}),
+        _teil(),
+    )
+    assert feat["position"]["angle_deg"] == 105.0
+
+
+def test_slot_x_axis_keeps_angle_deg_0():
+    agent = _make_agent()
+    feat = agent.define_feature(
+        _klass(typ="nut", seite="oben",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "x"}),
+        _teil(),
+    )
+    assert feat["position"]["angle_deg"] == 0.0
+
+
+def test_slot_without_length_defaults_to_parent_axis_dimension():
+    """Slot ohne explizite Laenge → durchgehend entlang Achse aus Teil-Dim."""
+    agent = _make_agent()
+    feat = agent.define_feature(
+        _klass(typ="nut",
+               beschreibung="oben eine nut 5x5 entlang x-achse 10mm nach rechts versetzt",
+               seite="oben",
+               parameter_hints={"breite": 5, "tiefe": 5,
+                                "richtung": "x", "versatz_rechts": 10}),
+        _teil(raw_params={"x": 100, "y": 80, "z": 30}),
+    )
+    assert feat["params"]["length"] == 100
+    assert feat["position"]["center_offset"] == {"right": 10}
+
+
+def test_slot_explicit_length_is_kept():
+    agent = _make_agent()
+    feat = agent.define_feature(
+        _klass(typ="nut", seite="oben",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "x"}),
+        _teil(raw_params={"x": 100, "y": 80, "z": 30}),
+    )
+    assert feat["params"]["length"] == 40
+
+
+def test_slot_right_face_y_axis_keeps_angle_deg_0():
+    """Auf >X Face ist die lokale horizontale Achse global Y."""
+    agent = _make_agent()
+    feat = agent.define_feature(
+        _klass(typ="nut", seite="rechts",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "y"}),
+        _teil(),
+    )
+    assert feat["position"]["angle_deg"] == 0.0
+
+
+def test_slot_right_face_z_axis_sets_angle_deg_90():
+    """Auf >X Face ist die lokale vertikale Achse global Z."""
+    agent = _make_agent()
+    feat = agent.define_feature(
+        _klass(typ="nut", seite="rechts",
+               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "z"}),
+        _teil(),
+    )
+    assert feat["position"]["angle_deg"] == 90.0
+
+
+def test_slot_endpoints_resolve_to_axis_without_explicit_richtung():
+    """W4: anfang_links/ende_links allein müssen für richtung=x reichen,
+    auch wenn der Klassifizierer kein 'richtung' im Hint emittiert hat."""
+    agent = _make_agent()
+    feat = agent.define_feature(
+        _klass(typ="nut", seite="oben",
+               beschreibung="oben eine nut 5x3 anfangspunkt 20mm von linker kante "
+                            "endpunkt 80mm von linker kante",
+               parameter_hints={"breite": 5, "tiefe": 3,
+                                "anfang_links": 20, "ende_links": 80}),
+        _teil(raw_params={"x": 100, "y": 80, "z": 30}),
+    )
+    assert feat["type"] == "slot"
+    assert feat["params"]["length"] == 60
+    assert feat["position"]["angle_deg"] == 0.0  # x-Achse → 0
+
+
+# ── Linear pattern (W3 + W4) ───────────────────────────────────────────
+
+
+def test_hole_pattern_linear_direction_hint_becomes_param():
+    """W3: linear_classifier emits typ=bohrungsreihe directly. W4: richtung
+    flows through from the classifier hint."""
+    agent = _make_agent()
+    feat = agent.define_feature(
+        _klass(typ="bohrungsreihe",
                seite="vorne",
                beschreibung="vorne eine bohrungsreihe entlang z mit 4 bohrungen",
                parameter_hints={"anzahl": 4, "durchmesser": 5, "tiefe": 4,
@@ -275,166 +268,18 @@ def test_hole_pattern_linear_direction_hint_becomes_param():
     assert feat["position"]["notes"] == "entlang Z"
 
 
-def test_hole_pattern_linear_direction_inferred_from_phrase():
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="bohrungsreihe",
-        seite="vorne",
-        richtung="",
-        parameter={"anzahl": 4, "durchmesser": 5, "tiefe": 4, "abstand": 12},
-    ))
-    feat = agent.define_feature(
-        _klass(typ="bohrung",
-               seite="vorne",
-               beschreibung="vorne eine bohrungsreihe entlang z-achse mit 4 bohrungen",
-               parameter_hints={"anzahl": 4, "durchmesser": 5, "tiefe": 4,
-                                "abstand": 12}),
-        _teil(raw_params={"x": 120, "y": 90, "z": 50}),
-    )
-    assert feat["type"] == "hole_pattern_linear"
-    assert feat["params"]["direction"] == "z"
-    assert feat["position"]["notes"] == "entlang Z"
-
-
-def test_slot_y_axis_sets_angle_deg_90():
-    """Slot 'entlang y-achse' → angle_deg=90 (deterministische Achsen→
-    Winkel-Konvention aus N_kombo_basics notes.md). LLM erkennt richtung,
-    Code mappt zu Winkel.
-    """
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="oben",
-        richtung="y",
-        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
-    ))
-    feat = agent.define_feature(
-        _klass(typ="nut",
-               beschreibung="oben eine nut 5x5 entlang y-achse laenge 40mm",
-               seite="oben"),
-        _teil(),
-    )
-    assert feat["type"] == "slot"
-    assert feat["position"]["angle_deg"] == 90.0
-
-
-def test_slot_y_axis_combines_with_explicit_rotation():
-    """Slot 'entlang y-achse 15 grad gedreht' → 90 + 15 = 105."""
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="oben",
-        richtung="y",
-        parameter={"breite": 5, "tiefe": 5, "laenge": 40, "drehung": 15},
-    ))
-    feat = agent.define_feature(
-        _klass(typ="nut",
-               beschreibung="oben eine nut 5x5 entlang y-achse 15 grad gedreht",
-               seite="oben"),
-        _teil(),
-    )
-    assert feat["position"]["angle_deg"] == 105.0
-
-
-def test_slot_x_axis_keeps_angle_deg_0():
-    """Slot 'entlang x-achse' → angle_deg=0 (default; keine Achsen-Korrektur)."""
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="oben",
-        richtung="x",
-        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
-    ))
-    feat = agent.define_feature(_klass(typ="nut", seite="oben"), _teil())
-    assert feat["position"]["angle_deg"] == 0.0
-
-
-def test_slot_without_length_defaults_to_parent_axis_dimension():
-    """Slot ohne explizite Laenge bedeutet in N_kombo durchgehend entlang Achse."""
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="oben",
-        richtung="x",
-        parameter={"breite": 5, "tiefe": 5, "versatz_rechts": 10},
-    ))
-    feat = agent.define_feature(
-        _klass(typ="nut",
-               beschreibung="oben eine nut 5x5 entlang x-achse 10mm nach rechts versetzt",
-               seite="oben",
-               parameter_hints={"breite": 5, "tiefe": 5, "versatz_rechts": 10}),
-        _teil(raw_params={"x": 100, "y": 80, "z": 30}),
-    )
-    assert feat["params"]["length"] == 100
-    assert feat["position"]["center_offset"] == {"right": 10}
-
-
-def test_slot_explicit_length_is_kept():
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="oben",
-        richtung="x",
-        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
-    ))
-    feat = agent.define_feature(
-        _klass(typ="nut", seite="oben",
-               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40}),
-        _teil(raw_params={"x": 100, "y": 80, "z": 30}),
-    )
-    assert feat["params"]["length"] == 40
-
-
-def test_slot_right_face_y_axis_keeps_angle_deg_0():
-    """Auf >X Face ist die lokale horizontale Achse global Y."""
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="rechts",
-        richtung="y",
-        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
-    ))
-    feat = agent.define_feature(
-        _klass(typ="nut", seite="rechts",
-               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40}),
-        _teil(),
-    )
-    assert feat["position"]["angle_deg"] == 0.0
-
-
-def test_slot_right_face_z_axis_sets_angle_deg_90():
-    """Auf >X Face ist die lokale vertikale Achse global Z."""
-    agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="rechts",
-        richtung="z",
-        parameter={"breite": 5, "tiefe": 5, "laenge": 40},
-    ))
-    feat = agent.define_feature(
-        _klass(typ="nut", seite="rechts",
-               parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40}),
-        _teil(),
-    )
-    assert feat["position"]["angle_deg"] == 90.0
+# ── Anchor regex (W5 cleanup target — bleibt fuer W4) ──────────────────
 
 
 def test_slot_right_edge_anchor_from_phrase():
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="oben",
-        position="von_kanten",
-        richtung="y",
-        parameter={"breite": 5, "tiefe": 5, "laenge": 40,
-                   "kante_rechts": 0, "versatz_oben": 10},
-    ))
     feat = agent.define_feature(
         _klass(typ="nut",
                beschreibung="oben eine nut 5x5 entlang y-achse laenge 40mm "
                             "liegt auf rechter kante an, 10mm nach oben versetzt",
                seite="oben",
                parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40,
+                                "richtung": "y",
                                 "kante_rechts": 0, "versatz_oben": 10}),
         _teil(),
     )
@@ -449,28 +294,15 @@ def test_slot_right_edge_anchor_from_phrase():
 
 def test_bare_corner_phrase_is_positioning_not_anchor():
     """Regressions-Wache: eine blosse Ecken-Erwaehnung ohne expliziten
-    Parent-Verweis ("liegt auf …" / "… der Tasche auf … des Wuerfels")
-    ist Positionierung, KEIN Anker.
-
-    Frueher fabrizierte `_infer_phrase_anchor` fuer jede Ecken-Erwaehnung
-    einen Anker und ueberschrieb damit die Klassifizierer-Positionierung
-    (Bug auf T_kombo t08). Jetzt: kein Anker — die Versatz-Werte bleiben
-    als center_offset erhalten.
-    """
+    Parent-Verweis ist Positionierung, KEIN Anker."""
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="nut",
-        seite="oben",
-        position="von_mitte",
-        richtung="y",
-        parameter={"breite": 5, "tiefe": 5, "laenge": 30},
-    ))
     feat = agent.define_feature(
         _klass(typ="nut",
                beschreibung="oben eine nut 5x5 entlang y-achse laenge 30mm "
                             "obere rechte ecke 10mm nach unten und 20mm nach links versetzt",
                seite="oben",
                parameter_hints={"breite": 5, "tiefe": 5, "laenge": 30,
+                                "richtung": "y",
                                 "versatz_unten": 10, "versatz_links": 20}),
         _teil(),
     )
@@ -482,11 +314,6 @@ def test_bare_corner_phrase_is_positioning_not_anchor():
 
 def test_pocket_corner_to_corner_anchor_uses_child_corner():
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="tasche",
-        seite="oben",
-        parameter={"laenge": 30, "breite": 20, "tiefe": 10},
-    ))
     feat = agent.define_feature(
         _klass(typ="tasche",
                beschreibung="oben eine tasche 30x20x10 obere rechte ecke "
@@ -503,12 +330,6 @@ def test_pocket_corner_to_corner_anchor_uses_child_corner():
 
 def test_hole_edge_to_edge_anchor_uses_child_edge():
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="bohrung",
-        seite="oben",
-        position="rechts",
-        parameter={"durchmesser": 5, "tiefe": 5, "kante_rechts": 0},
-    ))
     feat = agent.define_feature(
         _klass(typ="bohrung",
                beschreibung="oben eine 5mm bohrung 5 tief rechte kante "
@@ -524,14 +345,12 @@ def test_hole_edge_to_edge_anchor_uses_child_edge():
     }
 
 
+# ── Hint-Key-Rename ────────────────────────────────────────────────────
+
+
 def test_rotation_deg_hint_maps_to_drehung_then_angle_deg():
-    """Classifier hints rotation_deg=10 → params['drehung']=10
-    → feature.position.angle_deg=10."""
+    """rotation_deg hint → params['drehung'] → feature.position.angle_deg."""
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(
-        typ="tasche",
-        parameter={"laenge": 60, "breite": 40, "tiefe": 10},
-    ))
     feat = agent.define_feature(
         _klass(typ="tasche",
                beschreibung="oben eine Tasche 60x40x10 um 10 grad gedreht",
@@ -544,9 +363,19 @@ def test_rotation_deg_hint_maps_to_drehung_then_angle_deg():
     assert feat["position"]["angle_deg"] == 10.0
 
 
+def test_pocket_hoehe_hint_maps_to_tiefe():
+    """Pocket-Wording 'Hoehe' = Schnitttiefe → build_feature liest tiefe."""
+    agent = _make_agent()
+    feat = agent.define_feature(
+        _klass(typ="tasche", seite="oben",
+               parameter_hints={"laenge": 60, "breite": 40, "hoehe": 8}),
+        _teil(),
+    )
+    assert feat["params"]["depth"] == 8
+
+
 def test_hints_with_none_values_are_skipped():
     agent = _make_agent()
-    agent.normalize = MagicMock(return_value=_norm(parameter={}))
     feat = agent.define_feature(
         _klass(parameter_hints={"durchmesser": None, "tiefe": 10}),
         _teil(),
@@ -555,15 +384,12 @@ def test_hints_with_none_values_are_skipped():
     assert feat["params"]["depth"] == 10
 
 
-# ── Seite-Override ─────────────────────────────────────────────────────
+# ── seite ──────────────────────────────────────────────────────────────
 
 
-def test_classifier_seite_overrides_normalizer_seite():
-    """Stufe 2 already fixed seite (e.g. inherited from parent for nested).
-    The normalizer must not silently flip it."""
+def test_classifier_seite_propagates_verbatim():
+    """seite from the classifier is the source of truth — no second-guessing."""
     agent = _make_agent()
-    # Normalizer parsed seite=oben from text; classifier insists rechts.
-    agent.normalize = MagicMock(return_value=_norm(seite="oben"))
     feat = agent.define_feature(_klass(seite="rechts"), _teil())
     assert feat["position"]["side"] == "rechts"
 
@@ -571,36 +397,31 @@ def test_classifier_seite_overrides_normalizer_seite():
 # ── Module-level helpers ───────────────────────────────────────────────
 
 
-def test_merge_param_hints_renames_rotation_deg():
-    from src.agents.normalizer_agent import _merge_param_hints
-    params: dict = {}
-    _merge_param_hints(params, {"rotation_deg": 15})
-    assert params == {"drehung": 15}
+def test_build_normalized_from_hints_position_corner():
+    """Two perpendicular abstand_* keys → corner position token."""
+    from src.agents.normalizer_agent import _build_normalized_from_hints
+    n = _build_normalized_from_hints({
+        "typ": "tasche", "seite": "oben",
+        "parameter_hints": {"abstand_oben": 10, "abstand_rechts": 15,
+                            "laenge": 20, "breite": 30, "tiefe": 5},
+    })
+    assert n["position"] == "oben-rechts"
 
 
-def test_merge_param_hints_maps_pocket_hoehe_to_tiefe():
-    from src.agents.normalizer_agent import _merge_param_hints
-    params: dict = {}
-    _merge_param_hints(params, {"hoehe": 8})
-    assert params == {"tiefe": 8}
+def test_build_normalized_from_hints_position_zentriert():
+    from src.agents.normalizer_agent import _build_normalized_from_hints
+    n = _build_normalized_from_hints({
+        "typ": "tasche", "seite": "oben",
+        "parameter_hints": {"laenge": 20, "breite": 30, "tiefe": 5},
+    })
+    assert n["position"] == "zentriert"
 
 
-def test_reconcile_typ_same_family_keeps_normalizer():
-    from src.agents.normalizer_agent import _reconcile_typ
-    assert _reconcile_typ("bohrung", "lochkreis") == "lochkreis"
-
-
-def test_reconcile_typ_cross_family_returns_classifier():
-    from src.agents.normalizer_agent import _reconcile_typ
-    assert _reconcile_typ("bohrung", "tasche") == "bohrung"
-
-
-def test_reconcile_typ_unknown_classifier_returns_normalizer():
-    from src.agents.normalizer_agent import _reconcile_typ
-    assert _reconcile_typ("unbekannt", "tasche") == "tasche"
-    assert _reconcile_typ("", "bohrung") == "bohrung"
-
-
-def test_reconcile_typ_normalizer_ignorieren_returns_classifier():
-    from src.agents.normalizer_agent import _reconcile_typ
-    assert _reconcile_typ("bohrung", "ignorieren") == "bohrung"
+def test_build_normalized_from_hints_endpoint_richtung():
+    from src.agents.normalizer_agent import _build_normalized_from_hints
+    n = _build_normalized_from_hints({
+        "typ": "nut", "seite": "oben",
+        "parameter_hints": {"breite": 5, "tiefe": 3,
+                            "anfang_links": 20, "ende_links": 80},
+    })
+    assert n["richtung"] == "x"

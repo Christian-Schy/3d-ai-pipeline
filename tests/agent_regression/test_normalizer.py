@@ -1,29 +1,27 @@
 """
-tests/agent_regression/test_normalizer.py — live regression cases for
-NormalizerAgent.normalize().
+tests/agent_regression/test_normalizer.py — DEPRECATED.
 
-After specialization (Positionierungs-Vokabular raus aus prompt_normalizer.py),
-the Normalizer's job is:
+W4 (ADR 0014 §3) eliminated the per-action LLM Normalizer call: the
+classifier output is fed straight into the deterministic feature_builder
+via `NormalizerAgent._build_normalized_from_hints`. The
+`NormalizerAgent.normalize()` LLM method is still on the class but is
+NOT invoked by the pipeline anywhere, so regression-testing its
+behaviour against Ollama no longer protects production code (and burns
+~30 s of GPU per run for nothing). The deterministic path is covered by
+`tests/agents/test_normalizer_define_feature.py`.
 
-  - typ refinement   (bohrung → lochkreis/eckbohrungen/bohrungsreihe)
-  - richtung         (slot/line axis)
-  - position keyword (zentriert / von_kanten / ...)
-  - sizes            (laenge, breite, tiefe, durchmesser, drehung)
-  - notes            (free text)
-
-The Normalizer must NOT emit per-direction positioning params anymore —
-that's exclusively the classifier's job. The `assert_no_doppelarbeit`
-guard below catches any `abstand_<dir>/versatz_<dir>/kante_<dir>/
-anfang_<dir>/ende_<dir>` leak in the parameter dict.
-
-Pattern-specific keys like `abstand_kante` (eckbohrungen corner→hole
-distance, no direction suffix) and `abstand` (bohrungsreihe spacing)
-are NOT positioning — they describe the pattern itself.
+Kept skipped instead of deleted so the cases stay around if anyone
+resurrects the LLM Normalizer.
 """
 
 from __future__ import annotations
 
 import pytest
+
+pytestmark = pytest.mark.skip(
+    reason="W4: NormalizerAgent.normalize() no longer runs in the pipeline; "
+           "test_normalizer_define_feature.py covers the deterministic path."
+)
 
 from src.agents.normalizer_agent import NormalizerAgent
 

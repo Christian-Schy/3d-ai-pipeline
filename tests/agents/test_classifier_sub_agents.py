@@ -86,11 +86,14 @@ def test_slot_classifier_keeps_axis_hint_as_direction():
 
 
 def test_circular_classifier_allows_circle_specific_hints():
+    """W3 (ADR 0014): circular_classifier emits typ=lochkreis. If the LLM
+    drifts back to the generic 'bohrung', allowed_typs filtering kicks in
+    and the default 'lochkreis' wins — same observable typ either way."""
     from src.agents.classifier_sub_agents import CircularClassifier
 
     agent = CircularClassifier()
     agent.call_json = MagicMock(return_value={
-        "typ": "bohrung",
+        "typ": "bohrung",  # LLM-drift case — fallback to default_typ kicks in
         "seite": "oben",
         "parameter_hints": {
             "anzahl": 6,
@@ -104,7 +107,7 @@ def test_circular_classifier_allows_circle_specific_hints():
         _teil(),
     )
 
-    assert out["typ"] == "bohrung"
+    assert out["typ"] == "lochkreis"
     assert out["parameter_hints"] == {
         "anzahl": 6,
         "kreis_durchmesser": 60,
@@ -113,11 +116,14 @@ def test_circular_classifier_allows_circle_specific_hints():
 
 
 def test_grid_classifier_keeps_explicit_raster_hints():
+    """W3 (ADR 0014): grid_classifier emits typ=eckbohrungen (covers both
+    explicit Raster and corner-hole arms — feature_builder routes both to
+    hole_pattern_grid)."""
     from src.agents.classifier_sub_agents import GridClassifier
 
     agent = GridClassifier()
     agent.call_json = MagicMock(return_value={
-        "typ": "bohrung",
+        "typ": "bohrung",  # LLM-drift case — fallback to default_typ kicks in
         "seite": "oben",
         "parameter_hints": {
             "rows": 4,
@@ -133,7 +139,7 @@ def test_grid_classifier_keeps_explicit_raster_hints():
         _teil(),
     )
 
-    assert out["typ"] == "bohrung"
+    assert out["typ"] == "eckbohrungen"
     # rows/cols/rasterabstand pass; kreis_durchmesser is not a grid hint.
     assert out["parameter_hints"] == {
         "rows": 4,
