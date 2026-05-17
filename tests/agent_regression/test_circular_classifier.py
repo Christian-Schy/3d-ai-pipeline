@@ -64,12 +64,10 @@ CASES: list[dict] = [
         "phrase": "oben ein lochkreis aus 4 bohrungen 4mm 8 tief teilkreis 20mm in der oberen rechten ecke 15mm nach links und 15mm nach unten versetzt",
         "expected": {"anzahl": 4, "kreis_durchmesser": 20,
                      "abstand_rechts": 15, "abstand_oben": 15},
-        "covers": "A5; Teilkreis-Mittelpunkt point-like → Ecke wird zu zwei Kanten-Abstaenden",
-        "xfail": "W1/W2-Befund: circular-Prompt traegt seit W2 die geteilte "
-                 "ecken_regel.md — Agent emittiert TROTZDEM versatz_* (literale "
-                 "Bewegungsrichtung). hole flippte mit demselben Fragment, "
-                 "circular nicht → kein Prompt-Problem, sondern fehlende A5-Demo. "
-                 "Retraining-Ziel (make retrain-validate A=circular_classifier).",
+        "covers": "A5; Teilkreis-Mittelpunkt point-like → Ecke wird zu zwei "
+                  "Kanten-Abstaenden. Flippte in W5b zu gruen: das Entfernen des "
+                  "anker-Fragments entschlackte den Prompt — das Modell wendet "
+                  "die Ecken-Regel jetzt korrekt an (gleicher Effekt wie hole/W2).",
     },
 ]
 

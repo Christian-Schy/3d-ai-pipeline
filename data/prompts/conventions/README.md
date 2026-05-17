@@ -27,6 +27,7 @@ klassifizierer-spezifischen Kopf + diesen Fragmenten zusammen.
 | `punkt_positionierung.md` | abstand_*/versatz_* fuer punktfoermige Features | hole, grid, circular, linear |
 | `flaeche_positionierung.md` | abstand_* vs kante_* (edge-to-center vs edge-to-edge) + buendig | pocket, slot |
 | `ecken_regel.md` | Feature in Face-Ecke → zwei abstand_-Keys, Bewegungsrichtung-Mapping | pocket, hole, slot, grid, circular, linear |
+| `anker.md` | Anker auf Parent-Bauteil (W5) — anker_kind / anker_eltern Enums | pocket, hole, slot, grid, circular, linear |
 | `rotation.md` | rotation_deg Vorzeichen (CCW positiv, CW negativ) | pocket, slot, grid, linear |
 | `json_only.md` | Antwort-Format-Abschluss | alle |
 

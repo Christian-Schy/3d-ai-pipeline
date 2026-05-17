@@ -268,10 +268,11 @@ def test_hole_pattern_linear_direction_hint_becomes_param():
     assert feat["position"]["notes"] == "entlang Z"
 
 
-# ── Anchor regex (W5 cleanup target — bleibt fuer W4) ──────────────────
+# ── Anchor from hints (W5 — anker_kind / anker_eltern) ─────────────────
 
 
-def test_slot_right_edge_anchor_from_phrase():
+def test_slot_anchor_parent_edge_with_offset():
+    """anker_eltern + versatz_<dir> → anchor.offset, KEIN kind."""
     agent = _make_agent()
     feat = agent.define_feature(
         _klass(typ="nut",
@@ -280,7 +281,8 @@ def test_slot_right_edge_anchor_from_phrase():
                seite="oben",
                parameter_hints={"breite": 5, "tiefe": 5, "laenge": 40,
                                 "richtung": "y",
-                                "kante_rechts": 0, "versatz_oben": 10}),
+                                "kante_rechts": 0, "versatz_oben": 10,
+                                "anker_eltern": "right_edge"}),
         _teil(),
     )
     assert feat["position"]["anchor"] == {
@@ -293,13 +295,13 @@ def test_slot_right_edge_anchor_from_phrase():
 
 
 def test_bare_corner_phrase_is_positioning_not_anchor():
-    """Regressions-Wache: eine blosse Ecken-Erwaehnung ohne expliziten
-    Parent-Verweis ist Positionierung, KEIN Anker."""
+    """Wache: ohne anker_eltern wird KEIN Anker gebaut — Versatz-Werte
+    bleiben als center_offset erhalten."""
     agent = _make_agent()
     feat = agent.define_feature(
         _klass(typ="nut",
-               beschreibung="oben eine nut 5x5 entlang y-achse laenge 30mm "
-                            "obere rechte ecke 10mm nach unten und 20mm nach links versetzt",
+               beschreibung="oben eine nut 5x5 obere rechte ecke "
+                            "10mm nach unten und 20mm nach links versetzt",
                seite="oben",
                parameter_hints={"breite": 5, "tiefe": 5, "laenge": 30,
                                 "richtung": "y",
@@ -307,19 +309,21 @@ def test_bare_corner_phrase_is_positioning_not_anchor():
         _teil(),
     )
     assert "anchor" not in feat["position"], (
-        f"bare corner darf keinen Anker erzeugen: {feat['position']}"
+        f"ohne anker_eltern kein Anker: {feat['position']}"
     )
     assert feat["position"].get("center_offset") == {"bottom": 10, "left": 20}
 
 
-def test_pocket_corner_to_corner_anchor_uses_child_corner():
+def test_pocket_corner_to_corner_anchor():
     agent = _make_agent()
     feat = agent.define_feature(
         _klass(typ="tasche",
-               beschreibung="oben eine tasche 30x20x10 obere rechte ecke "
-                            "der tasche auf obere rechte ecke des wuerfels",
+               beschreibung="oben eine tasche 30x20x10 obere rechte ecke der tasche "
+                            "auf obere rechte ecke des wuerfels",
                seite="oben",
-               parameter_hints={"laenge": 30, "breite": 20, "tiefe": 10}),
+               parameter_hints={"laenge": 30, "breite": 20, "tiefe": 10,
+                                "anker_kind": "top_right",
+                                "anker_eltern": "top_right"}),
         _teil(),
     )
     assert feat["position"]["anchor"] == {
@@ -328,21 +332,43 @@ def test_pocket_corner_to_corner_anchor_uses_child_corner():
     }
 
 
-def test_hole_edge_to_edge_anchor_uses_child_edge():
+def test_hole_edge_to_edge_anchor():
     agent = _make_agent()
     feat = agent.define_feature(
         _klass(typ="bohrung",
-               beschreibung="oben eine 5mm bohrung 5 tief rechte kante "
-                            "der bohrung auf rechte kante der platte",
+               beschreibung="oben eine 5mm bohrung rechte kante der bohrung "
+                            "auf rechte kante der platte",
                seite="oben",
                parameter_hints={"durchmesser": 5, "tiefe": 5,
-                                "kante_rechts": 0}),
+                                "kante_rechts": 0,
+                                "anker_kind": "right_edge",
+                                "anker_eltern": "right_edge"}),
         _teil(),
     )
     assert feat["position"]["anchor"] == {
         "child_point": "right_edge",
         "parent_point": "right_edge",
     }
+
+
+def test_anchor_point_alias_normalization():
+    """W5b: `_normalize_anchor_point` maps German phrasings to the canonical
+    enum. The AnchorClassifier relies on this so the LLM may answer with
+    either 'obere rechte ecke' or 'top_right'."""
+    from src.agents.classifier_sub_agents import _normalize_anchor_point
+    # canonical pass-through
+    assert _normalize_anchor_point("top_right") == "top_right"
+    assert _normalize_anchor_point("right_edge") == "right_edge"
+    # German corner phrasings (space / hyphen / underscore interchangeable)
+    assert _normalize_anchor_point("obere rechte ecke") == "top_right"
+    assert _normalize_anchor_point("rechte_obere_ecke") == "top_right"
+    assert _normalize_anchor_point("unten links") == "bottom_left"
+    # German edge phrasings
+    assert _normalize_anchor_point("rechte kante") == "right_edge"
+    assert _normalize_anchor_point("obere-kante") == "top_edge"
+    # garbage / empty → None
+    assert _normalize_anchor_point("") is None
+    assert _normalize_anchor_point("irgendwas") is None
 
 
 # ── Hint-Key-Rename ────────────────────────────────────────────────────

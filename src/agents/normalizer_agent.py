@@ -15,20 +15,13 @@ The class name is unchanged for callsite compatibility — a later
 cleanup pass renames it to something like `FeatureDefinierer`.
 """
 
-import re
-
 import structlog
 
 from src.agents.base import BaseAgent
 from src.config.loader import get_config
 from src.tools.feature_builder import build_feature
-from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
-
-_prompt = load_prompt("prompt_normalizer.py")
-SYSTEM_PROMPT = _prompt.SYSTEM_PROMPT
-NORMALIZER_PROMPT_TEMPLATE = _prompt.NORMALIZER_PROMPT_TEMPLATE
 
 
 # Classifier param-hint keys → build_feature param keys. Most keys match
@@ -62,48 +55,15 @@ _ANCHOR_OFFSET_PARAM_MAP: dict[str, str] = {
     "versatz_hinten": "back",
 }
 
-_CORNER_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
-    (re.compile(r"\bobere\s+rechte\s+ecke\b"), "top_right"),
-    (re.compile(r"\brechte\s+obere\s+ecke\b"), "top_right"),
-    (re.compile(r"\bobere\s+linke\s+ecke\b"), "top_left"),
-    (re.compile(r"\blinke\s+obere\s+ecke\b"), "top_left"),
-    (re.compile(r"\buntere\s+rechte\s+ecke\b"), "bottom_right"),
-    (re.compile(r"\brechte\s+untere\s+ecke\b"), "bottom_right"),
-    (re.compile(r"\buntere\s+linke\s+ecke\b"), "bottom_left"),
-    (re.compile(r"\blinke\s+untere\s+ecke\b"), "bottom_left"),
-)
-
-_CHILD_CORNER_RE = re.compile(
-    r"\b(?P<corner>(?:obere|untere|rechte|linke)\s+"
-    r"(?:rechte|linke|obere|untere)\s+ecke)\s+"
-    r"(?:der|des)\s+(?:tasche|nut|bohrung|platte|features?)\b"
-)
-
-_CHILD_EDGE_RE = re.compile(
-    r"\b(?P<edge>rechte|linke|obere|untere)\s+kante\s+"
-    r"(?:der|des)\s+(?:tasche|nut|bohrung|platte|features?)\b"
-)
-
-_EDGE_WORD_TO_POINT: dict[str, str] = {
-    "rechte": "right_edge",
-    "linke": "left_edge",
-    "obere": "top_edge",
-    "untere": "bottom_edge",
-}
-
-_EDGE_ANCHOR_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
-    (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?rechte[ern]?\s+kante\b"), "right_edge"),
-    (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?linke[ern]?\s+kante\b"), "left_edge"),
-    (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?obere[ern]?\s+kante\b"), "top_edge"),
-    (re.compile(r"\b(?:liegt\s+auf|auf)\s+(?:der\s+)?untere[ern]?\s+kante\b"), "bottom_edge"),
-)
-
-# W4 (ADR 0014 §3) eliminated the LLM Normalizer call from `define_feature`.
-# The pre-W4 helpers `_merge_param_hints`, `_reconcile_typ`,
-# `_merge_direction_hint`, `_fill_direction_from_phrase` (plus
-# `_DIRECTION_PHRASE_RE`, `_POSITIONING_PREFIXES`, `_CONVENTION_PREFIXES`)
-# arbitrated between a classifier output and a second LLM parse. With
-# only one source now, all of them are unused and removed.
+# W4 (ADR 0014 §3) eliminated the LLM Normalizer from `define_feature`;
+# its merge/reconcile helpers are gone with it.
+#
+# W5 (ADR 0014 §7) eliminated the regex-on-raw-phrase anchor detection
+# (`_apply_phrase_anchor`, `_infer_phrase_anchor`, `_CORNER_PATTERNS`,
+# `_CHILD_CORNER_RE`, `_CHILD_EDGE_RE`, `_EDGE_ANCHOR_PATTERNS`,
+# `_normalize_phrase`, `_corner_point_from_text`). The anchor is now an
+# emitted classifier hint (`anker_kind` / `anker_eltern`); the
+# deterministic `_apply_anchor_from_hints` below applies it.
 
 
 def _axis_from_richtung(richtung: str) -> str | None:
@@ -173,25 +133,8 @@ def _fill_missing_slot_length(normalized: dict, teil: dict) -> None:
         params["laenge"] = inferred
 
 
-def _normalize_phrase(text: str) -> str:
-    return (
-        (text or "")
-        .lower()
-        .replace("ä", "ae")
-        .replace("ö", "oe")
-        .replace("ü", "ue")
-        .replace("ß", "ss")
-    )
-
-
-def _corner_point_from_text(text: str) -> str | None:
-    for pattern, point in _CORNER_PATTERNS:
-        if pattern.search(text):
-            return point
-    return None
-
-
 def _anchor_offset_from_params(params: dict) -> dict | None:
+    """Translate versatz_<richtung> params to anchor.offset {top/bottom/...}."""
     offset = {}
     for param_key, anchor_key in _ANCHOR_OFFSET_PARAM_MAP.items():
         value = params.get(param_key)
@@ -201,60 +144,22 @@ def _anchor_offset_from_params(params: dict) -> dict | None:
     return offset or None
 
 
-def _infer_phrase_anchor(phrase: str) -> dict | None:
-    """Detect a part-on-part anchor reference in the phrase.
+def _apply_anchor_from_hints(feature: dict, hints: dict, params: dict) -> None:
+    """W5: build feature.position.anchor from classifier hints.
 
-    An anchor needs BOTH:
-      - an explicit child reference: "Ecke der Tasche" / "Kante der Nut" /
-        "obere Kante der Bohrung" (matched by _CHILD_CORNER_RE / _CHILD_EDGE_RE), AND
-      - an explicit parent reference: "liegt auf der ... Kante" / "auf <corner> des
-        Wuerfels" (matched by _EDGE_ANCHOR_PATTERNS or via " auf " after a child match).
-
-    Bare corner mentions like "in der oberen rechten Ecke 22mm nach links versetzt"
-    are POSITIONING — handled by the classifier (abstand_rechts/abstand_oben), NOT
-    anchoring. Returning an anchor for those overrides the classifier's edge_distances
-    with a position-less corner-snap (bug seen on T_kombo t08).
+    Replaces the pre-W5 `_apply_phrase_anchor` regex on the raw phrase.
+    The classifier emits `anker_kind` / `anker_eltern` (already filtered
+    to `_ANCHOR_POINTS` enums in classifier_sub_agents._clean_hints);
+    here we just assemble the anchor dict and let it override the
+    coordinate-based position fields.
     """
-    text = _normalize_phrase(phrase)
-    if not text:
-        return None
-
-    child_point = "center"
-    child_match = _CHILD_CORNER_RE.search(text)
-    child_edge_match = None
-    if child_match:
-        child_point = _corner_point_from_text(child_match.group("corner")) or "center"
-    else:
-        child_edge_match = _CHILD_EDGE_RE.search(text)
-        if child_edge_match:
-            child_point = _EDGE_WORD_TO_POINT.get(child_edge_match.group("edge"), "center")
-
-    # Parent-Verweis muss explizit sein. Drei legitime Signale:
-    #   (a) _EDGE_ANCHOR_PATTERNS: "liegt auf der ... Kante" — parent klar.
-    #   (b) child_match + " auf " im Text: "Ecke der Tasche auf <corner> des Wuerfels".
-    # Eine blosse Ecken-Erwaehnung ohne (a) oder (b) ist KEIN Anker, sondern
-    # Positionierung (Klassifizierer-Aufgabe). Vorher: Fallback
-    # `_corner_point_from_text(text)` hat dafuer faelschlich einen Anker
-    # fabriziert und damit edge_distances vom Klassifizierer ueberschrieben.
-    parent_point = None
-    for pattern, point in _EDGE_ANCHOR_PATTERNS:
-        if pattern.search(text):
-            parent_point = point
-            break
-
-    if parent_point is None and child_match and " auf " in text:
-        after_anchor = text.split(" auf ", 1)[1]
-        parent_point = _corner_point_from_text(after_anchor)
-
-    if parent_point is None:
-        return None
-    return {"child_point": child_point, "parent_point": parent_point}
-
-
-def _apply_phrase_anchor(feature: dict, phrase: str, params: dict) -> None:
-    anchor = _infer_phrase_anchor(phrase)
-    if not anchor:
+    if not isinstance(hints, dict):
         return
+    parent = hints.get("anker_eltern")
+    if not parent:
+        return
+    child = hints.get("anker_kind") or "center"
+    anchor = {"child_point": child, "parent_point": parent}
     offset = _anchor_offset_from_params(params)
     if offset:
         anchor["offset"] = offset
@@ -362,46 +267,26 @@ def _build_normalized_from_hints(klassifikation: dict) -> dict:
 
 
 class NormalizerAgent(BaseAgent):
-    """Normalizes free-text action descriptions into fixed-vocabulary short-form.
+    """Per-action feature definition (W4/W5: no LLM, deterministic only).
 
-    Pipeline calls per single action -> 1 feature dict.
-    Training target: data/dspy_optimized/normalizer_optimized.json
+    The class name and `name = "normalizer"` are preserved purely so the
+    pipeline registry and existing callsites keep working. There is no
+    `normalize()` LLM method anymore; the only entry point is
+    `define_feature(klassifikation, teil)`, which is rule-only — the
+    `BaseAgent`-provided model/demos infrastructure is left in place but
+    not consumed by any code path here.
     """
 
     name = "normalizer"
-    dspy_demo_fields = {
-        "input_fields": ["beschreibung", "seite", "teil_type",
-                         "teil_params", "specification"],
-        "output_field": "normalisierung",
-    }
+    # W4/W5: no LLM call survives — no demos to load.
+    dspy_demo_fields = None
 
     def __init__(self):
         cfg = get_config()
-        # Use the same model as inventar (both are LLM-text-normalization tasks)
+        # Model attribute stays so callers reading `agent.model` keep working,
+        # but it is no longer used to make any LLM call from this class.
         self.model = getattr(cfg.models, "normalizer", cfg.models.inventar)
         super().__init__()
-
-    def normalize(self, beschreibung: str, seite: str,
-                  specification: str) -> dict:
-        """Normalize one action description.
-
-        Args:
-            beschreibung: Free-text action from inventar.aktionen
-            seite: The side from inventar (oben/unten/rechts/links/vorne/hinten)
-            specification: Original user spec for context
-
-        Returns:
-            dict with parsed fields: typ, seite, position, richtung, parameter, notes
-        """
-        prompt = NORMALIZER_PROMPT_TEMPLATE.format(
-            beschreibung=beschreibung,
-            seite=seite or "oben",
-            specification=specification,
-        )
-
-        raw = self.call(prompt, system=SYSTEM_PROMPT, json_mode=False)
-        self._last_raw_response = raw
-        return self._parse(raw, seite)
 
     def define_feature(
         self,
@@ -429,18 +314,20 @@ class NormalizerAgent(BaseAgent):
                 {id, type, params, position, parent, operation,
                  _phrase_idx, _parent_phrase_idx}
 
-        W4 (ADR 0014 §3): the per-action LLM Normalizer call is gone. The
-        classifier output is fed straight into `_build_normalized_from_hints`
-        and from there into the deterministic `build_feature`. One
-        Textverstaendnis-Schritt per action, rest deterministic. The
-        `feature_text` parameter is kept for callsite compatibility but
-        is no longer needed.
+        W4 (ADR 0014 §3) eliminated the per-action LLM Normalizer call;
+        the classifier output flows straight through
+        `_build_normalized_from_hints` into the deterministic
+        `build_feature`. W5 (ADR 0014 §7) removed the last regex on the
+        raw phrase by moving anchor detection into the classifier — the
+        `anker_kind` / `anker_eltern` hints feed
+        `_apply_anchor_from_hints`. The `feature_text` parameter is kept
+        in the signature for callsite compatibility but is no longer read.
         """
         del feature_text  # no longer consumed — kept in signature for callers
-        beschreibung = klassifikation.get("beschreibung", "")
         teil_id = teil.get("id", "")
         phrase_idx = klassifikation.get("phrase_idx", 0)
         parent_phrase_idx = klassifikation.get("parent_phrase_idx")
+        hints = klassifikation.get("parameter_hints") or {}
 
         normalized = _build_normalized_from_hints(klassifikation)
 
@@ -454,10 +341,7 @@ class NormalizerAgent(BaseAgent):
         if feature is None:
             return None
 
-        # W5 cleanup target: _apply_phrase_anchor uses regex on the raw
-        # phrase text. It stays here as a transitional helper until the
-        # anchor detection moves into the classifier (ADR 0014 §7 W5).
-        _apply_phrase_anchor(feature, beschreibung, normalized["parameter"])
+        _apply_anchor_from_hints(feature, hints, normalized["parameter"])
 
         # Default parent: the host teil. Aggregator (Stufe 4) overrides with
         # the pocket's feature_id for nested children.
@@ -466,73 +350,3 @@ class NormalizerAgent(BaseAgent):
         feature["_phrase_idx"] = phrase_idx
         feature["_parent_phrase_idx"] = parent_phrase_idx
         return feature
-
-    def _parse(self, raw: str, fallback_seite: str) -> dict:
-        """Parse the normalized text output into a dict.
-
-        Stops at the second 'typ:' line — prevents multi-feature LLM responses
-        from bleeding into the wrong action slot.
-        """
-        result = {
-            "typ": "",
-            "seite": fallback_seite or "oben",
-            "position": "zentriert",
-            "richtung": "",
-            "parameter": {},
-            "notes": "",
-        }
-
-        typ_seen = False
-        for line in raw.strip().splitlines():
-            line = line.strip()
-            if not line or ":" not in line:
-                continue
-            key, _, val = line.partition(":")
-            key = key.strip().lower()
-            val = val.strip()
-
-            if key == "typ":
-                if typ_seen:
-                    # Second feature block starts — stop here
-                    break
-                typ_seen = True
-                result["typ"] = val.lower()
-            elif key == "seite":
-                result["seite"] = val.lower()
-            elif key == "position":
-                result["position"] = val.lower()
-            elif key == "richtung":
-                result["richtung"] = val.lower()
-            elif key == "notes":
-                result["notes"] = val
-            elif key == "parameter":
-                result["parameter"] = self._parse_params(val)
-
-        # Validate seite against allowed values
-        valid_seiten = {"oben", "unten", "rechts", "links", "vorne", "hinten"}
-        if result["seite"] not in valid_seiten:
-            self.log.warning("normalizer_invalid_seite",
-                             seite=result["seite"], fallback=fallback_seite)
-            result["seite"] = fallback_seite or "oben"
-
-        return result
-
-    def _parse_params(self, text: str) -> dict:
-        """Parse 'key=val, key=val' into a dict."""
-        params = {}
-        for part in text.split(","):
-            part = part.strip()
-            if "=" not in part:
-                continue
-            k, _, v = part.partition("=")
-            k = k.strip().lower()
-            v = v.strip()
-            # Try to convert to number
-            if v.lower() in ("durch", "durchgaengig", "null", "none"):
-                params[k] = None
-            else:
-                try:
-                    params[k] = float(v) if "." in v else int(v)
-                except ValueError:
-                    params[k] = v
-        return params

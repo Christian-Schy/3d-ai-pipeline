@@ -5,6 +5,10 @@
 
 from src.utils.prompt_loader import load_convention
 
+# NOTE (W5b): Anker-Erkennung ist ein eigener Mikro-Klassifizierer
+# (AnchorClassifier) — NICHT Teil dieses Prompts. Hier bewusst kein
+# anker-Fragment, damit der Klassifizierer eine Aufgabe weniger traegt.
+
 _SEITE = load_convention("seite")
 _PUNKT = load_convention("punkt_positionierung")
 _ECKEN = load_convention("ecken_regel")
@@ -24,10 +28,8 @@ parameter_hints:
   Nur explizite Zahlen aus der Phrase.
   Erlaubte Keys:
     durchmesser, tiefe
-    abstand_oben, abstand_unten, abstand_rechts, abstand_links,
-    abstand_vorne, abstand_hinten
-    versatz_oben, versatz_unten, versatz_rechts, versatz_links,
-    versatz_vorne, versatz_hinten
+    abstand_<richtung>, versatz_<richtung>
+      (oben/unten/rechts/links/vorne/hinten)
 
 {_PUNKT}
 

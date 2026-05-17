@@ -210,3 +210,67 @@ der eigentliche Gewinn.
   entfallen kann, ist Verschwendung. ADR 0013 zurueckgezogen.
 - **Weiter per Prompt-/Regex-Patch flicken:** erzeugt genau die
   Kaskade, die dieses ADR beendet.
+
+## 12. Bewusste Abweichung — Keyword-Routing der Sub-Klassifizierer
+
+W5 zielt auf „kein Regex auf rohen User-Text". Es gibt EINEN Sonderfall,
+der bewusst NICHT auf einen LLM umgestellt wird: das Sub-Klassifizierer-
+Routing in `src/graph/nodes/planning_action_nodes.detect_classifier_subagent`.
+Regex-basierte Keyword-Sets (`_HOLE_RE`, `_POCKET_RE`, `_SLOT_RE`,
+`_GRID_RE`, `_CIRCULAR_RE`, `_LINEAR_RE`, `_EDGE_RE`) entscheiden, an
+welchen Sub-Klassifizierer eine Aktions-Phrase geht.
+
+**Warum die Ausnahme:** Ein LLM-Routing-Schritt waere ein ZWEITER
+Textverstaendnis-Call pro Aktion und widerspraeche Prinzip §3
+(ein Textverstaendnis-Schritt pro Aktion). Der Trade-off:
+
+- Vorteil Regex: kein Mehrkost, keine zweite LLM-Latenz, deterministisch.
+- Nachteil Regex: Routing-Mismatches in Grenzfaellen (z.B. "vier Loecher
+  in den Ecken, von den Kanten 20mm" — Regex routet via `_HOLE_RE` zu
+  hole_classifier, semantisch ist es Eckbohrungen = grid).
+
+**Sicherung:** Die L0.5-Agent-Regression-Suite (W1) fangt eine
+Falsch-Route in Sekunden — der Mismatch wird sichtbar und liefert
+direkt einen Demo-Kandidaten fuers Retraining. Damit ist „Routing-
+Drift" eine Klasse, die wir messen statt vermeiden.
+
+**Eskalation:** Falls die Suite anfaengt, regelmaessig Routing-
+Mismatches zu zeigen (>5 % Cases ueber Zeit), kippt der ROI und der
+Sub-Dispatcher wird als kleiner LLM-Schritt nachgezogen — dann ggf.
+mit eigener ADR.
+
+## 13. Bewusste Abweichung — Anker im pocket/slot-Klassifizierer
+
+Die W5-Anker-Migration (Regex `_apply_phrase_anchor` → Klassifizierer-
+Hints `anker_kind`/`anker_eltern`) ist in vier von sechs Positions-
+Klassifizierern aktiv: `hole`, `grid`, `circular`, `linear`. In
+`pocket` und `slot` ist sie bewusst NICHT aktiviert.
+
+**Grund:** beide Klassifizierer tragen die `flaeche_positionierung`-
+Konvention (`kante_*` edge-to-edge — z.B. "obere Taschen-Kante 10mm vom
+Rand" → `kante_oben: 10`). Diese Wortlaut-Klasse ("Taschen-Kante",
+"Nut-Kante") ueberlappt mit der Anker-Kind-Referenz im Prompt. Empirisch
+(W5-Session 2026-05-17): das kleine Modell stallt bei langen "Taschen-
+Kante … vom Rand"-Phrasen ueber 60 s und kommt nicht zu einer Antwort —
+auch nach mehrmaligem Verschaerfen des Anker-Fragments mit
+Anti-Beispielen. Das Token-Budget und die parallelen Regel-Pfade
+ueberfordern das Modell.
+
+**Konsequenz:** pocket/slot-Anker werden vom Klassifizierer NICHT
+emittiert. Im deterministischen Pfad gibt es daher fuer pocket-on-
+pocket / slot-on-pocket-Anker keinen automatisch gesetzten
+`feature.position.anchor`. Heute betrifft das insbesondere die
+seltenen T_kombo-„corner-of-pocket-on-corner-of-cube"-Faelle. Die Unit-
+Tests in `tests/agents/test_normalizer_define_feature.py` injizieren
+die Anker-Hints per Mock — der deterministische Bau ist also korrekt;
+nur das LLM-Frontend fehlt.
+
+**Eskalation/Follow-up:** die pocket/slot-Anker werden mit einem
+spaeteren Schritt nachgezogen — entweder ueber DSPy-Demo-Retraining
+mit Anker-Beispielen (am wahrscheinlichsten Loesungsweg) oder ueber
+einen abgespaltenen "pocket_anchor_specifier"-Mikro-Call. Bis dahin
+ist Anker-Erkennung in der Pipeline auf hole/grid/circular/linear
+beschraenkt — aber: der vorher dafuer eingesetzte Regex-Pfad
+(`_apply_phrase_anchor`) ist trotzdem geloescht; der Plan-Defekt liegt
+also nicht mehr in Code, sondern im LLM-Verhalten — was das L0.5-Netz
+weiterhin sichtbar macht.

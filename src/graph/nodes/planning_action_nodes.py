@@ -6,7 +6,10 @@ import structlog
 
 from src.graph.state import PipelineState
 from src.agents.aktions_klassifizierer import AktionsKlassifizierer
-from src.agents.classifier_sub_agents import CLASSIFIER_SUB_AGENT_CLASSES
+from src.agents.classifier_sub_agents import (
+    CLASSIFIER_SUB_AGENT_CLASSES,
+    AnchorClassifier,
+)
 from src.config.loader import get_config
 from src.tools.aktions_aggregator import aggregate as aktions_aggregate
 from src.tools.aktions_splitter import split_spec_into_aktionen
@@ -70,6 +73,19 @@ _SUBAGENT_FLAG = {
     "linear_classifier": "linear_enabled",
     "edge_feature_classifier": "edge_feature_enabled",
 }
+
+
+def _has_anchor_cue(phrase: str) -> bool:
+    """Cheap early-out before the anchor micro-call (ADR 0014 W5b).
+
+    An anchor is always phrased as "<feature-punkt> AUF <parent-punkt>"
+    ("liegt auf der rechten Kante", "Ecke der Tasche auf Ecke des
+    Wuerfels"). A phrase without the word "auf" cannot carry an anchor,
+    so we skip the extra LLM call. This is routing, not interpretation
+    (ADR 0014 §12 category) — the AnchorClassifier still makes the real
+    decision for every phrase that passes the cue.
+    """
+    return " auf " in f" {(phrase or '').lower()} "
 
 
 def detect_classifier_subagent(phrase: str) -> str | None:
@@ -189,6 +205,7 @@ def aktions_klassifizierer_node(state: PipelineState) -> dict:
 
     fallback_agent = _registry.get_agent(AktionsKlassifizierer)
     sub_agents: dict[str, object] = {}
+    anchor_agent: AnchorClassifier | None = None
     route_counts = {"fallback": 0}
     klassifikationen: list[dict] = []
     raw_responses: list[str] = []
@@ -269,6 +286,26 @@ def aktions_klassifizierer_node(state: PipelineState) -> dict:
                 inherited=inherited_side,
             )
             k["seite"] = inherited_side
+
+        # W5b — Anker-Mikro-Klassifizierer. Eigener fokussierter Call statt
+        # 6. Aufgabe im typ-Klassifizierer (ADR 0014 §13). Edge-Features
+        # (fase/rundung) haben keinen Anker. Cue-gated, damit anker-freie
+        # Phrasen den Extra-Call sparen.
+        if (
+            route != "edge_feature_classifier"
+            and _has_anchor_cue(p.get("phrase", ""))
+        ):
+            if anchor_agent is None:
+                anchor_agent = _registry.get_agent(AnchorClassifier)
+            try:
+                anchor_hints = anchor_agent.classify_anchor(p.get("phrase", ""))
+            except Exception as e:  # noqa: BLE001
+                log.warning("aktions_klassifizierer_anchor_failed",
+                            phrase=p.get("phrase", "")[:80], error=str(e)[:200])
+                anchor_hints = {}
+            if anchor_hints:
+                k.setdefault("parameter_hints", {}).update(anchor_hints)
+                route_counts["anchor_hits"] = route_counts.get("anchor_hits", 0) + 1
 
         klassifikationen.append(k)
         by_idx_per_teil[(teil_id, p.get("phrase_idx"))] = k

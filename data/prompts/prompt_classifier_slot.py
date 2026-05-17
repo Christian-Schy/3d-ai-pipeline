@@ -5,6 +5,12 @@
 
 from src.utils.prompt_loader import load_convention
 
+# NOTE (W5): like pocket, slot uses `flaeche_positionierung` (kante_*).
+# The anker fragment conflicts with that on phrases mentioning "Nut-Kante";
+# we leave it out here so the small classifier model does not stall on
+# long edge-to-edge wordings. Slot anchors are covered by unit-test
+# mocks; production slot-on-parent anchors are a W5 follow-up.
+
 _SEITE = load_convention("seite")
 _FLAECHE = load_convention("flaeche_positionierung")
 _ECKEN = load_convention("ecken_regel")
@@ -22,14 +28,14 @@ typ:
 {_SEITE}
 
 parameter_hints:
-  Nur explizite Werte aus der Phrase.
+  Erlaubte Werte aus der Phrase.
   Zahlen-Keys:
     laenge, breite, tiefe, rotation_deg
     abstand_*, kante_*, versatz_* (oben/unten/rechts/links/vorne/hinten)
     anfang_*, ende_*  (oben/unten/rechts/links/vorne/hinten)
   String-Key:
     richtung: "x" | "y" | "z" wenn explizit "entlang x/y/z" oder
-    "entlang der X/Y/Z-Achse" genannt ist.
+      "entlang der X/Y/Z-Achse" genannt ist.
 
 {_FLAECHE}
 

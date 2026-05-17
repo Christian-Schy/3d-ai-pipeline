@@ -5,6 +5,9 @@
 
 from src.utils.prompt_loader import load_convention
 
+# NOTE (W5b): Anker-Erkennung laeuft im AnchorClassifier-Mikro-Agenten,
+# nicht in diesem Prompt — eine Aufgabe weniger fuer den Klassifizierer.
+
 _SEITE = load_convention("seite")
 _PUNKT = load_convention("punkt_positionierung")
 _ECKEN = load_convention("ecken_regel")
@@ -48,7 +51,7 @@ typ:
   ausdruecklich genannt ist.
 
 parameter_hints:
-  Nur explizite Werte aus der Phrase.
+  Erlaubte Werte aus der Phrase.
   Zahlen-Keys:
     durchmesser, bohr_durchmesser, tiefe,
     rows, cols, rasterabstand, rasterabstand_x, rasterabstand_y,

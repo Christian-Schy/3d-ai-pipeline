@@ -75,6 +75,12 @@ agent_options:
     think: false
     temperature: 0.0
     num_ctx: 4096
+  anchor_classifier:
+    think: false       # Mikro-Klassifizierer, eine Aufgabe — kein Reasoning
+    temperature: 0.0
+    num_ctx: 4096      # MUSS = typ-Klassifizierer: laeuft pro Aktion direkt
+                       # daneben; abweichendes num_ctx erzwingt Ollama-Modell-
+                       # Reload (20-40s) bei jedem Wechsel.
   normalizer:
     think: false       # Klassifizierer hat typ/seite/parameter_hints schon
     temperature: 0.05  # geliefert — Aufgabe ist nur noch position/richtung

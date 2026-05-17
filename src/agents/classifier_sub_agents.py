@@ -34,6 +34,27 @@ _POSITION_HINT_KEYS = {
     "versatz_vorne", "versatz_hinten",
 }
 
+# Anker-Schema (ADR 0014 W5/W5b): die Anker-Erkennung lebt im eigenen
+# Mikro-Agenten `AnchorClassifier` (unten), NICHT in den typ-Klassifizierern
+# — die Anker-Disambiguierung als zusaetzliche parallele Aufgabe hat das
+# kleine Modell ueberlastet (pocket/slot Hang, ADR 0014 §13). Die
+# typ-Klassifizierer emittieren KEINE anker_*-Hints; der AnchorClassifier
+# mergt seine Hints orchestrierungsseitig dazu (planning_action_nodes).
+_ANCHOR_POINTS = {
+    "top_left", "top_right", "bottom_left", "bottom_right",
+    "top_edge", "bottom_edge", "left_edge", "right_edge",
+    "center",
+}
+
+_ANCHOR_ALIAS = {
+    "oben_rechts": "top_right", "oben_links": "top_left",
+    "unten_rechts": "bottom_right", "unten_links": "bottom_left",
+    "rechte_obere": "top_right", "linke_obere": "top_left",
+    "rechte_untere": "bottom_right", "linke_untere": "bottom_left",
+    "obere_kante": "top_edge", "untere_kante": "bottom_edge",
+    "rechte_kante": "right_edge", "linke_kante": "left_edge",
+    "mitte": "center", "zentrum": "center",
+}
 
 
 def _coerce_number(value: object) -> int | float | None:
@@ -57,6 +78,43 @@ def _normalize_direction(value: object) -> str | None:
     for axis in ("x", "y", "z"):
         if text in {axis, f"{axis}-achse", f"{axis}achse", f"{axis}-axis", f"{axis}axis"}:
             return axis
+    return None
+
+
+def _normalize_anchor_point(value: object) -> str | None:
+    """Normalize anchor-point hint to the canonical English enum.
+
+    Accepts the canonical tokens (top_right / right_edge / center) plus
+    common German phrasings: "obere rechte ecke", "rechte obere ecke",
+    "oben rechts", "rechte kante", "mitte". Spaces / hyphens / underscores
+    are interchangeable. Returns None for anything outside
+    `_ANCHOR_POINTS` so the LLM cannot silently inject garbage.
+    """
+    text = str(value or "").strip().lower().replace(" ", "_").replace("-", "_")
+    if text in _ANCHOR_POINTS:
+        return text
+    if text in _ANCHOR_ALIAS:
+        return _ANCHOR_ALIAS[text]
+
+    # Pattern-based: tokenize, ignore "ecke" filler, look for a vertical +
+    # horizontal direction (corner) or a single direction + "kante" (edge).
+    parts = [p for p in text.split("_") if p and p != "ecke"]
+    vert = next((p for p in parts if p in ("obere", "oben", "untere", "unten")), None)
+    horiz = next((p for p in parts if p in ("rechte", "rechts", "linke", "links")), None)
+    if vert and horiz:
+        v = "top" if vert.startswith("ob") else "bottom"
+        h = "right" if horiz.startswith("rech") else "left"
+        return f"{v}_{h}"
+    if "kante" in parts:
+        for p in parts:
+            if p in ("obere", "oben"):
+                return "top_edge"
+            if p in ("untere", "unten"):
+                return "bottom_edge"
+            if p in ("rechte", "rechts"):
+                return "right_edge"
+            if p in ("linke", "links"):
+                return "left_edge"
     return None
 
 
@@ -275,6 +333,59 @@ class EdgeFeatureClassifier(ClassifierSubAgent):
         if any(word in text for word in ("fase", "chamfer")):
             return "fase"
         return self.default_typ
+
+
+class AnchorClassifier(BaseAgent):
+    """ADR 0014 W5b — Anker-Mikro-Klassifizierer.
+
+    EINE Aufgabe: erkennt, ob eine Aktions-Phrase einen Anker auf das
+    Parent-Bauteil enthaelt. Ausgegliedert aus den typ-Klassifizierern,
+    weil die Anker-Disambiguierung dort als zusaetzliche parallele
+    Aufgabe das kleine Modell ueberlastet hat (pocket/slot Hang).
+
+    Kein typ, keine seite, keine Masse — nur anker_kind / anker_eltern.
+    `classify_anchor(phrase)` gibt {} zurueck, wenn kein Anker erkannt
+    wird (der Normalfall) — sonst {anker_eltern[, anker_kind]}.
+    """
+
+    name = "anchor_classifier"
+    # Prompt-only; bekommt erst per spaeterem Training eigene Demos.
+    dspy_demo_fields = None
+
+    def __init__(self) -> None:
+        cfg = get_config()
+        self.model = getattr(cfg.models, "anchor_classifier",
+                             cfg.models.aktions_klassifizierer)
+        prompt_mod = load_prompt("prompt_classifier_anchor.py")
+        self.system_prompt = prompt_mod.SYSTEM_PROMPT
+        self.template = prompt_mod.ANCHOR_TEMPLATE
+        super().__init__()
+
+    def classify_anchor(self, phrase: str) -> dict[str, str]:
+        """Return {anker_eltern[, anker_kind]} or {} when no anchor.
+
+        An anchor requires `anker_eltern` (the parent-side point). A lone
+        `anker_kind` without a parent is dropped — that matches the
+        convention rule "ohne anker_eltern wird anker_kind ignoriert".
+        """
+        prompt = self.template.format(phrase=phrase or "")
+        try:
+            raw = self.call_json(prompt, system=self.system_prompt)
+        except Exception as e:  # noqa: BLE001
+            log.warning("anchor_classifier_call_failed",
+                        phrase=(phrase or "")[:80], error=str(e)[:200])
+            return {}
+        if not isinstance(raw, dict):
+            return {}
+
+        parent = _normalize_anchor_point(raw.get("anker_eltern"))
+        if not parent:
+            return {}
+        out: dict[str, str] = {"anker_eltern": parent}
+        kind = _normalize_anchor_point(raw.get("anker_kind"))
+        if kind:
+            out["anker_kind"] = kind
+        return out
 
 
 CLASSIFIER_SUB_AGENT_CLASSES = {
