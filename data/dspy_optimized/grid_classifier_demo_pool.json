@@ -1,0 +1,156 @@
+[
+  {
+    "phrase": "oben 4 eckbohrungen jeweils 15mm von den kanten entfernt 8mm durchmesser durchgaengig",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 150,
+      "y": 100,
+      "z": 12
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"anzahl\": 4, \"abstand_kante\": 15}}"
+  },
+  {
+    "phrase": "vorne an jeder ecke eine bohrung je 20mm von den kanten entfernt 6mm durchmesser",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 20,
+      "z": 80
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"vorne\", \"parameter_hints\": {\"durchmesser\": 6, \"abstand_kante\": 20}}"
+  },
+  {
+    "phrase": "oben lochmuster mit 4 bohrungen je 6mm durchmesser 8 tief",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 80,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 8, \"anzahl\": 4}}"
+  },
+  {
+    "phrase": "oben ein 2x2 lochmuster mit 8mm bohrungen 5 tief, randabstand 10mm zur kante",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5, \"anzahl\": 4, \"abstand_kante\": 10}}"
+  },
+  {
+    "phrase": "rechts ein 2x2 lochmuster mit 8mm bohrungen 5 tief, randabstand 10mm zur kante",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 100
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5, \"anzahl\": 4, \"abstand_kante\": 10}}"
+  },
+  {
+    "phrase": "rechts ein 2x2 lochmuster mit 6mm bohrungen 4 tief randabstand 8mm zur kante",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 90,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 4, \"anzahl\": 4, \"abstand_kante\": 8}}"
+  },
+  {
+    "phrase": "oben ein lochmuster 4x3, bohrungen 6mm durchmesser 12 tief, rasterabstand 25mm, zentriert",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 150,
+      "y": 100,
+      "z": 40
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 12, \"rows\": 4, \"cols\": 3, \"rasterabstand\": 25}}"
+  },
+  {
+    "phrase": "oben ein lochmuster 4x2, bohrungen 5mm durchmesser 10 tief, rasterabstand 20mm, von linker kante 15mm und von vorderer kante 20mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 150,
+      "y": 100,
+      "z": 40
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 10, \"rows\": 4, \"cols\": 2, \"rasterabstand\": 20, \"abstand_links\": 15, \"abstand_vorne\": 20}}"
+  },
+  {
+    "phrase": "unten ein lochmuster 3x3 mit 5mm bohrungen 12 tief und rasterabstand 30mm, jeweils 18mm vom unteren linken rand",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 150,
+      "y": 100,
+      "z": 40
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"unten\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 12, \"rows\": 3, \"cols\": 3, \"rasterabstand\": 30, \"abstand_links\": 18, \"abstand_vorne\": 18}}"
+  },
+  {
+    "phrase": "oben ein lochmuster 3x2, 5mm bohrungen 10 tief, rasterabstand 25mm in x und 20mm in y, von linker kante 30mm und 10mm aus mitte nach hinten",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 150,
+      "y": 100,
+      "z": 40
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 10, \"rows\": 3, \"cols\": 2, \"rasterabstand_x\": 25, \"rasterabstand_y\": 20, \"abstand_links\": 30, \"versatz_hinten\": 10}}"
+  },
+  {
+    "phrase": "oben ein lochmuster 3x2 mit 6mm bohrungen 10 tief und rasterabstand 25mm um 15 grad gedreht zentriert",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 150,
+      "y": 100,
+      "z": 40
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 10, \"rows\": 3, \"cols\": 2, \"rasterabstand\": 25, \"rotation_deg\": 15}}"
+  },
+  {
+    "phrase": "oben ein raster 3x4 mit 6mm bohrungen 8 tief und 20mm lochabstand zentriert",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 160,
+      "y": 120,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 8, \"rows\": 3, \"cols\": 4, \"rasterabstand\": 20}}"
+  },
+  {
+    "phrase": "oben 4 eckbohrungen jeweils 20mm von den kanten entfernt 8mm durchmesser durchgaengig",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 150,
+      "y": 100,
+      "z": 12
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"anzahl\": 4, \"abstand_kante\": 20}}"
+  },
+  {
+    "phrase": "oben ein 2x2 lochmuster mit 6mm bohrungen 5 tief, randabstand 12mm zur kante",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 120,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 5, \"anzahl\": 4, \"abstand_kante\": 12}}"
+  }
+]

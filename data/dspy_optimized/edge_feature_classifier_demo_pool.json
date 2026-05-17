@@ -1,0 +1,112 @@
+[
+  {
+    "phrase": "oben an der kante eine fase 2mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 80,
+      "y": 60,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"fase\", \"seite\": \"oben\", \"parameter_hints\": {\"groesse\": 2}}"
+  },
+  {
+    "phrase": "rechts eine fase 3mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 80,
+      "y": 60,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"fase\", \"seite\": \"rechts\", \"parameter_hints\": {\"groesse\": 3}}"
+  },
+  {
+    "phrase": "vorne alle kanten mit fase 1.5mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 80,
+      "y": 60,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"fase\", \"seite\": \"vorne\", \"parameter_hints\": {\"groesse\": 1.5}}"
+  },
+  {
+    "phrase": "hinten eine fase mit kantenlaenge 4mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 80,
+      "y": 60,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"fase\", \"seite\": \"hinten\", \"parameter_hints\": {\"kantenlaenge\": 4}}"
+  },
+  {
+    "phrase": "unten eine rundung radius 4mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 80,
+      "y": 60,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"unten\", \"parameter_hints\": {\"radius\": 4}}"
+  },
+  {
+    "phrase": "links eine rundung 2mm radius",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 80,
+      "y": 60,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"links\", \"parameter_hints\": {\"radius\": 2}}"
+  },
+  {
+    "phrase": "hinten kantenradius 3mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 80,
+      "y": 60,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"hinten\", \"parameter_hints\": {\"radius\": 3}}"
+  },
+  {
+    "phrase": "vorne alle kanten 2mm abrunden",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 80,
+      "y": 60,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"vorne\", \"parameter_hints\": {\"radius\": 2}}"
+  },
+  {
+    "phrase": "darin eine fase 1mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 200,
+      "y": 120,
+      "z": 40
+    },
+    "parent_phrase": "links eine tasche 30x20x8",
+    "klassifikation": "{\"typ\": \"fase\", \"seite\": \"links\", \"parameter_hints\": {\"groesse\": 1}}"
+  },
+  {
+    "phrase": "darin eine rundung radius 1.5mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 200,
+      "y": 120,
+      "z": 40
+    },
+    "parent_phrase": "unten eine tasche 30x20x8",
+    "klassifikation": "{\"typ\": \"rundung\", \"seite\": \"unten\", \"parameter_hints\": {\"radius\": 1.5}}"
+  }
+]

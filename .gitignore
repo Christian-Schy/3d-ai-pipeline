@@ -43,11 +43,19 @@ data/dspy_optimized/*
 !data/dspy_optimized/linear_classifier_optimized.json
 !data/dspy_optimized/edge_feature_classifier_optimized.json
 !data/dspy_optimized/inventar_optimized.json
-!data/dspy_optimized/normalizer_optimized.json
 !data/dspy_optimized/platzierer_frame_optimized.json
 !data/dspy_optimized/platzierer_alignment_optimized.json
 !data/dspy_optimized/platzierer_anchor_optimized.json
 !data/dspy_optimized/platzierer_offset_optimized.json
+# W6 — KNN-Demo-Pools (Laufzeit-Artefakt von scripts/build_classifier_demo_pools.py).
+# Der DemoRetriever liest diese Dateien — muessen im Repo sein.
+!data/dspy_optimized/hole_classifier_demo_pool.json
+!data/dspy_optimized/pocket_classifier_demo_pool.json
+!data/dspy_optimized/slot_classifier_demo_pool.json
+!data/dspy_optimized/grid_classifier_demo_pool.json
+!data/dspy_optimized/circular_classifier_demo_pool.json
+!data/dspy_optimized/linear_classifier_demo_pool.json
+!data/dspy_optimized/edge_feature_classifier_demo_pool.json
 # NOT versioned: aktions_klassifizierer_optimized.json (Monolith, disabled wegen
 # Tasche-Cross-Contamination), position_extractor_optimized.json (rolled back),
 # platzierer_optimized.json (Legacy-Monolith), blueprint_architect/assembly/

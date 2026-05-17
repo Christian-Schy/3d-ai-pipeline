@@ -1,0 +1,365 @@
+[
+  {
+    "phrase": "oben eine nut 5x5 80mm lang",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 80,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 80}}"
+  },
+  {
+    "phrase": "rechts eine nut 6mm breit 4mm tief 50mm lang",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 80,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"rechts\", \"parameter_hints\": {\"breite\": 6, \"tiefe\": 4, \"laenge\": 50}}"
+  },
+  {
+    "phrase": "links eine nut 5x3 nach oben 10mm versetzt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 80,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"links\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"versatz_oben\": 10}}"
+  },
+  {
+    "phrase": "vorne eine nut 4x4 von linker kante 10mm entfernt 70mm lang",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 80,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"vorne\", \"parameter_hints\": {\"breite\": 4, \"tiefe\": 4, \"laenge\": 70, \"abstand_links\": 10}}"
+  },
+  {
+    "phrase": "hinten unten eine nut 5x5 von unterer kante 9mm entfernt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 80,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"hinten\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"abstand_unten\": 9}}"
+  },
+  {
+    "phrase": "rechts eine nut 6x4 die untere kante von unten 12mm entfernt 40mm lang",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 80,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"rechts\", \"parameter_hints\": {\"breite\": 6, \"tiefe\": 4, \"laenge\": 40, \"kante_unten\": 12}}"
+  },
+  {
+    "phrase": "vorne eine nut 5x5 10mm nach unten versetzt 60mm lang",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 80,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"vorne\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 60, \"versatz_unten\": 10}}"
+  },
+  {
+    "phrase": "unten eine nut 8mm breit 3mm tief",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 80,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"unten\", \"parameter_hints\": {\"breite\": 8, \"tiefe\": 3}}"
+  },
+  {
+    "phrase": "in der tasche eine nut 4x3 40mm lang",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 200,
+      "y": 120,
+      "z": 40
+    },
+    "parent_phrase": "vorne eine tasche 60x40x10",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"vorne\", \"parameter_hints\": {\"breite\": 4, \"tiefe\": 3, \"laenge\": 40}}"
+  },
+  {
+    "phrase": "oben eine nut 6mm breit 4mm tief entlang x und zentral",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 6, \"tiefe\": 4, \"richtung\": \"x\"}}"
+  },
+  {
+    "phrase": "rechts eine nut 4mm breit 3mm tief entlang z von mitte 10mm nach oben",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 80,
+      "y": 60,
+      "z": 120
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"rechts\", \"parameter_hints\": {\"breite\": 4, \"tiefe\": 3, \"versatz_oben\": 10, \"richtung\": \"z\"}}"
+  },
+  {
+    "phrase": "oben eine nut 5mm breit 3mm tief entlang der y-achse",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"richtung\": \"y\"}}"
+  },
+  {
+    "phrase": "oben eine nut 5mm breit 3mm tief entlang y 15 grad gedreht",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"richtung\": \"y\", \"rotation_deg\": 15}}"
+  },
+  {
+    "phrase": "auf der linken flaeche eine nut 5mm breit 3mm tief",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 80,
+      "z": 60
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"links\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3}}"
+  },
+  {
+    "phrase": "oben eine nut 5x5 entlang y-achse laenge 40mm von oberer kante 30mm und von linker kante 20mm entfernt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 40, \"richtung\": \"y\", \"abstand_oben\": 30, \"abstand_links\": 20}}"
+  },
+  {
+    "phrase": "oben eine nut 5x5 entlang x-achse laenge 50mm von rechter kante 30mm und 10mm aus mitte nach unten",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 50, \"richtung\": \"x\", \"abstand_rechts\": 30, \"versatz_unten\": 10}}"
+  },
+  {
+    "phrase": "oben eine nut 5x3 anfangspunkt 20mm von linker kante endpunkt 80mm von linker kante von vorderer kante 30mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 90,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"anfang_links\": 20, \"ende_links\": 80, \"abstand_vorne\": 30, \"richtung\": \"x\"}}"
+  },
+  {
+    "phrase": "oben eine nut 6x4 anfangspunkt 15mm von vorderer kante endpunkt 70mm von vorderer kante von linker kante 25mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 90,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 6, \"tiefe\": 4, \"anfang_vorne\": 15, \"ende_vorne\": 70, \"abstand_links\": 25, \"richtung\": \"y\"}}"
+  },
+  {
+    "phrase": "oben eine nut 6x4 anfangspunkt 25mm von rechter kante endpunkt 95mm von rechter kante von vorderer kante 20mm",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 140,
+      "y": 100,
+      "z": 40
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 6, \"tiefe\": 4, \"anfang_rechts\": 25, \"ende_rechts\": 95, \"abstand_vorne\": 20, \"richtung\": \"x\"}}"
+  },
+  {
+    "phrase": "oben eine nut 5x3 anfangspunkt 15mm von linker kante endpunkt 65mm von linker kante",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 80,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"anfang_links\": 15, \"ende_links\": 65, \"richtung\": \"x\"}}"
+  },
+  {
+    "phrase": "oben nut 5 mal 4 anfang 20 von links ende 90 von links",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 130,
+      "y": 90,
+      "z": 35
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 4, \"anfang_links\": 20, \"ende_links\": 90, \"richtung\": \"x\"}}"
+  },
+  {
+    "phrase": "oben eine nut 5x3 anfangspunkt 18mm von hinterer kante endpunkt 78mm von hinterer kante",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 95,
+      "z": 40
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"anfang_hinten\": 18, \"ende_hinten\": 78, \"richtung\": \"y\"}}"
+  },
+  {
+    "phrase": "oben eine nut 5x5 entlang y-achse laenge 40mm liegt auf rechter kante an 10mm nach oben versetzt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 40, \"richtung\": \"y\", \"kante_rechts\": 0, \"versatz_oben\": 10}}"
+  },
+  {
+    "phrase": "oben eine nut 5x5 entlang x-achse laenge 50mm 15 grad gegen uhrzeigersinn gedreht zentral",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 50, \"richtung\": \"x\", \"rotation_deg\": 15}}"
+  },
+  {
+    "phrase": "oben eine nut 5x5 entlang y-achse laenge 40mm 20 grad im uhrzeigersinn gedreht",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 20
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 5, \"laenge\": 40, \"richtung\": \"y\", \"rotation_deg\": -20}}"
+  },
+  {
+    "phrase": "oben eine nut 5x3 entlang x-achse laenge 30mm 8mm nach rechts versetzt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 60,
+      "y": 40,
+      "z": 10
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"laenge\": 30, \"richtung\": \"x\", \"versatz_rechts\": 8}}"
+  },
+  {
+    "phrase": "rechts eine nut 6x4 entlang y-achse laenge 40mm zentriert",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 100
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"rechts\", \"parameter_hints\": {\"breite\": 6, \"tiefe\": 4, \"laenge\": 40, \"richtung\": \"y\"}}"
+  },
+  {
+    "phrase": "oben eine nut 5x3 entlang y-achse laenge 40mm von linker kante 12mm und von oberer kante 18mm entfernt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 90,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"laenge\": 40, \"richtung\": \"y\", \"abstand_links\": 12, \"abstand_oben\": 18}}"
+  },
+  {
+    "phrase": "rechts eine nut 4x3 entlang z-achse 10mm nach oben versetzt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 90,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"rechts\", \"parameter_hints\": {\"breite\": 4, \"tiefe\": 3, \"richtung\": \"z\", \"versatz_oben\": 10}}"
+  },
+  {
+    "phrase": "oben eine nut 4x2 entlang x-achse laenge 30mm 6mm nach rechts versetzt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 70,
+      "y": 50,
+      "z": 8
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 4, \"tiefe\": 2, \"laenge\": 30, \"richtung\": \"x\", \"versatz_rechts\": 6}}"
+  },
+  {
+    "phrase": "oben eine nut 5x3 entlang y-achse laenge 40mm deren obere kante 18mm von oberer wuerfelkante entfernt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 90,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"laenge\": 40, \"richtung\": \"y\", \"kante_oben\": 18}}"
+  },
+  {
+    "phrase": "oben eine nut 5x3 entlang y-achse laenge 40mm von oberer kante 18mm entfernt",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 90,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 5, \"tiefe\": 3, \"laenge\": 40, \"richtung\": \"y\", \"abstand_oben\": 18}}"
+  },
+  {
+    "phrase": "oben eine nut 6x4 entlang x-achse laenge 50mm centerline 15mm von oberer kante",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 30
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"nut\", \"seite\": \"oben\", \"parameter_hints\": {\"breite\": 6, \"tiefe\": 4, \"laenge\": 50, \"richtung\": \"x\", \"abstand_oben\": 15}}"
+  }
+]
