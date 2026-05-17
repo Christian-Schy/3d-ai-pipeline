@@ -47,3 +47,4 @@ Verweis auf die neue ADR ergaenzt.
 | [0012](0012-pattern-rotation.md) | accepted | Pattern-Rotation (Grid + Linear) ueber Template-angle-Parameter |
 | [0013](0013-normalizer-split.md) | superseded by ADR-0014 | NormalizerAgent-Split — verworfen, Normalizer wird eliminiert statt gesplittet |
 | [0014](0014-pipeline-rebuild-clean-architecture.md) | proposed | Pipeline-Rebuild: Clean Per-Action Architecture (Master-Umbau-Plan) |
+| [0015](0015-dormant-reverse-validator-path.md) | accepted | Dormanter Reverse-Validator-Pfad |

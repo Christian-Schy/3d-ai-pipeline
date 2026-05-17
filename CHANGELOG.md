@@ -8,6 +8,17 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-17
+
+- **Dormanter Reverse-Validator-Pfad vorbereitet (ADR 0015).** Neues
+  inaktives Paket `src/validation/` mit stabilen Report-/Evidence-
+  Contracts, strukturierter Fact-Extraction, nicht-blockierendem
+  `ReverseValidator` und ersten konservativen Checks fuer Feature-
+  Struktur, Root-BBox und Root-Volumen. Hole/Slot/Pocket-Familien liefern
+  bewusst `unknown`, bis echte Ist-Geometrie-Extraktion existiert. Keine
+  Graph-/Routing-/Config-Aktivierung; `src/graph/pipeline.py` und
+  `src/graph/edges.py` bleiben unverdrahtet.
+
 ## 2026-05-16
 
 - **Phase C Lueckenfuellung Cap 1.0 Cov 4 — M06 + M07 (Pattern-Rotation)
