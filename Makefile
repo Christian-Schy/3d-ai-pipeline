@@ -64,6 +64,13 @@ agent-regression-filter:
 	@if [ -z "$(F)" ]; then echo "Usage: make agent-regression-filter F=<test-id-substring>"; exit 1; fi
 	$(PY) -m pytest $(TESTS)/agent_regression -m agent_regression -v -k $(F)
 
+# W6 (ADR 0014) — Demo-Pools fuer das KNN-Retrieval der Klassifizierer neu
+# bauen. Extrahiert den vollen kuratierten Pool aus klassifizierer_traces.py
+# nach data/dspy_optimized/{agent}_demo_pool.json. Nach jeder Aenderung an
+# klassifizierer_traces.py aufrufen — der DemoRetriever liest diese Dateien.
+demo-pools:
+	$(PY) scripts/build_classifier_demo_pools.py
+
 # Reproduzierbare Train+Validate-Schleife pro Agent.
 # - max_labeled = 16 (statt 8 default) → 12 labeled + 4 bootstrapped = 16 Demos
 #   im Inferenz-Prompt (~37% statt 19% Coverage bei ~43 pocket-Demos).

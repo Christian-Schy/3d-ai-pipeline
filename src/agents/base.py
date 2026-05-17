@@ -229,15 +229,23 @@ class BaseAgent:
 
         return clean
 
-    def call_json(self, prompt: str, system: str = "") -> dict:
+    def call_json(
+        self,
+        prompt: str,
+        system: str = "",
+        demos: Optional[list[tuple[str, str]]] = None,
+    ) -> dict:
         """Like call(), but parses the response as JSON and returns a dict.
 
         Use this whenever the agent needs to return structured data
         (e.g. Planner → Blueprint, Interpreter → is_complete signal).
 
+        `demos` — optional call-local few-shot pairs (e.g. KNN-retrieved
+        demos, W6). When omitted, the agent-wide DSPy demos are used.
+
         Raises ValueError if the response is not valid JSON.
         """
-        raw = self.call(prompt, system=system, json_mode=True)
+        raw = self.call(prompt, system=system, json_mode=True, demos=demos)
         clean = self._extract_json(raw)
 
         try:
@@ -248,7 +256,7 @@ class BaseAgent:
             # One retry — LLMs sometimes produce truncated or malformed JSON
             # on first attempt but succeed on the second.
             try:
-                raw2 = self.call(prompt, system=system, json_mode=True)
+                raw2 = self.call(prompt, system=system, json_mode=True, demos=demos)
                 clean2 = self._extract_json(raw2)
                 return json.loads(clean2)
             except (json.JSONDecodeError, Exception) as e2:

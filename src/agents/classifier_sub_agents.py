@@ -18,6 +18,7 @@ from typing import Any, ClassVar
 import structlog
 
 from src.agents.base import BaseAgent
+from src.agents.demo_retriever import get_demo_retriever
 from src.config.loader import get_config
 from src.utils.prompt_loader import load_prompt
 
@@ -146,8 +147,9 @@ class ClassifierSubAgent(BaseAgent):
         parent_phrase: str | None = None,
     ) -> dict[str, Any]:
         prompt = self._build_user_prompt(phrase_entry, teil, parent_phrase)
+        demos = self._retrieve_demos(phrase_entry.get("phrase", ""))
         try:
-            raw = self.call_json(prompt, system=self.system_prompt)
+            raw = self.call_json(prompt, system=self.system_prompt, demos=demos)
         except Exception as e:
             log.warning(
                 "classifier_sub_agent_call_failed",
@@ -157,6 +159,24 @@ class ClassifierSubAgent(BaseAgent):
             )
             raw = {}
         return self._build_result(phrase_entry, raw)
+
+    def _retrieve_demos(self, phrase: str) -> list[tuple[str, str]] | None:
+        """W6 (ADR 0014): KNN-retrieved few-shot demos for this phrase.
+
+        Returns the K most relevant demos from the agent's full curated
+        pool (`{agent}_demo_pool.json`, hybrid dense+BM25). Returns None
+        when no pool exists — `call_json` then falls back to the
+        agent-wide BootstrapFewShot demos.
+        """
+        fields = self.dspy_demo_fields or {}
+        retriever = get_demo_retriever(
+            self.name,
+            fields.get("input_fields", []),
+            fields.get("output_field", ""),
+        )
+        if retriever is None:
+            return None
+        return retriever.retrieve(phrase, k=8)
 
     def _build_user_prompt(
         self,

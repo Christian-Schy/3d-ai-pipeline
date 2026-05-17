@@ -212,9 +212,10 @@ def test_sub_agent_prompt_includes_parent_phrase_and_part_context():
     agent = PocketClassifier()
     captured = {}
 
-    def fake_call(prompt, system=""):
+    def fake_call(prompt, system="", demos=None):
         captured["prompt"] = prompt
         captured["system"] = system
+        captured["demos"] = demos
         return {
             "typ": "tasche",
             "seite": "oben",

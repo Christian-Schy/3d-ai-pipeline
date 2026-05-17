@@ -239,38 +239,60 @@ Mismatches zu zeigen (>5 % Cases ueber Zeit), kippt der ROI und der
 Sub-Dispatcher wird als kleiner LLM-Schritt nachgezogen — dann ggf.
 mit eigener ADR.
 
-## 13. Bewusste Abweichung — Anker im pocket/slot-Klassifizierer
+## 13. Anker-Erkennung als Mikro-Klassifizierer (W5/W5b)
 
-Die W5-Anker-Migration (Regex `_apply_phrase_anchor` → Klassifizierer-
-Hints `anker_kind`/`anker_eltern`) ist in vier von sechs Positions-
-Klassifizierern aktiv: `hole`, `grid`, `circular`, `linear`. In
-`pocket` und `slot` ist sie bewusst NICHT aktiviert.
+**Erster Versuch (W5):** Anker wurde als geteiltes Prompt-Fragment in
+alle sechs Positions-Klassifizierer gegeben. Das ueberlastete `pocket`
+und `slot`: beide tragen ohnehin die schwere `flaeche_positionierung`-
+Konvention (`kante_*` edge-to-edge), und der Wortlaut "Taschen-Kante" /
+"Nut-Kante" ueberlappt mit der Anker-Kind-Referenz. Empirisch stallte
+das kleine Modell bei langen "Taschen-Kante … vom Rand"-Phrasen >60 s —
+auch nach Verschaerfen des Fragments. Die Anker-Disambiguierung als
+zusaetzliche parallele Aufgabe sprengte das Token-/Reasoning-Budget.
 
-**Grund:** beide Klassifizierer tragen die `flaeche_positionierung`-
-Konvention (`kante_*` edge-to-edge — z.B. "obere Taschen-Kante 10mm vom
-Rand" → `kante_oben: 10`). Diese Wortlaut-Klasse ("Taschen-Kante",
-"Nut-Kante") ueberlappt mit der Anker-Kind-Referenz im Prompt. Empirisch
-(W5-Session 2026-05-17): das kleine Modell stallt bei langen "Taschen-
-Kante … vom Rand"-Phrasen ueber 60 s und kommt nicht zu einer Antwort —
-auch nach mehrmaligem Verschaerfen des Anker-Fragments mit
-Anti-Beispielen. Das Token-Budget und die parallelen Regel-Pfade
-ueberfordern das Modell.
+**Loesung (W5b):** Anker bekommt einen eigenen Mikro-Agenten —
+`AnchorClassifier` (`prompt_classifier_anchor.py`). EINE Aufgabe:
+`anker_kind` / `anker_eltern` aus einer Phrase. Eingehaengt in
+`aktions_klassifizierer_node` NACH dem typ-Klassifizierer, cue-gated
+auf das Wort "auf" (anker-freie Phrasen sparen den Call). Die typ-
+Klassifizierer tragen damit KEIN Anker-Fragment mehr — eine Aufgabe
+weniger pro Prompt. Anker-Erkennung gilt jetzt fuer ALLE Feature-Typen
+(auch pocket/slot), nur eben in einem separaten fokussierten Schritt.
 
-**Konsequenz:** pocket/slot-Anker werden vom Klassifizierer NICHT
-emittiert. Im deterministischen Pfad gibt es daher fuer pocket-on-
-pocket / slot-on-pocket-Anker keinen automatisch gesetzten
-`feature.position.anchor`. Heute betrifft das insbesondere die
-seltenen T_kombo-„corner-of-pocket-on-corner-of-cube"-Faelle. Die Unit-
-Tests in `tests/agents/test_normalizer_define_feature.py` injizieren
-die Anker-Hints per Mock — der deterministische Bau ist also korrekt;
-nur das LLM-Frontend fehlt.
+Nebeneffekt: das Entfernen des Anker-Fragments aus dem circular-Prompt
+hat dort die A5-Ecken-Regel entsperrt (vorher xfail, jetzt gruen) —
+weniger konkurrierende Regeln, besserer Fokus. Bestaetigt das
+Grundprinzip: ein kleines Modell ist mit jeder Aufgabe weniger besser.
 
-**Eskalation/Follow-up:** die pocket/slot-Anker werden mit einem
-spaeteren Schritt nachgezogen — entweder ueber DSPy-Demo-Retraining
-mit Anker-Beispielen (am wahrscheinlichsten Loesungsweg) oder ueber
-einen abgespaltenen "pocket_anchor_specifier"-Mikro-Call. Bis dahin
-ist Anker-Erkennung in der Pipeline auf hole/grid/circular/linear
-beschraenkt — aber: der vorher dafuer eingesetzte Regex-Pfad
-(`_apply_phrase_anchor`) ist trotzdem geloescht; der Plan-Defekt liegt
-also nicht mehr in Code, sondern im LLM-Verhalten — was das L0.5-Netz
-weiterhin sichtbar macht.
+`anchor_classifier` ist mit `num_ctx=4096` in `config.yaml` —
+identisch zu den typ-Klassifizierern, damit der pro-Aktion direkt
+benachbarte Call kein Ollama-Modell-Reload ausloest.
+
+## 14. KNN-Demo-Retrieval ohne Reranker (W6)
+
+W6 ersetzt BootstrapFewShot (fixe 8-16 Demos, von DSPy beim Training
+gewaehlt) durch Retrieval: aus dem vollen kuratierten Pool werden pro
+Query die K relevantesten Demos geholt (`src/agents/demo_retriever.py`,
+`{agent}_demo_pool.json`). Hybrid — dense (sentence-transformers) +
+BM25 (lexikalisch), per Reciprocal Rank Fusion kombiniert.
+
+**Bewusst KEIN Cross-Encoder-Reranker.** Reranking glaenzt, wenn aus
+Hunderten Kandidaten praezise gefiltert werden muss. Die Klassifizierer-
+Demo-Pools sind 9-43 Eintraege gross — bei so kleinen Pools ist die
+Hybrid-Fusion bereits ausreichend, ein Reranker waere Overkill
+(Modell-Last ohne messbaren Gewinn). Der Reranker bleibt fuer spaeter,
+wenn entweder die Demo-Pools deutlich wachsen oder das Retrieval auf die
+grossen RAG-Wissensbasen ausgeweitet wird.
+
+**Scope:** zunaechst nur die typ-Klassifizierer.
+`interpreter`/`inventar`/`platzierer` behalten BootstrapFewShot — ihre
+Pools sind kleiner/anders, der Nutzen geringer. Ausweiten, sobald dort
+die Datenmenge waechst.
+
+**Erkenntnis:** KNN-Retrieval ist nur so gut wie die Pool-Balance. W6
+deckte auf, dass der slot-Pool nur 2 Endpunkt-Demos hatte (1x/1y) —
+fuer x-Endpunkt-Querys lieferte das Retrieval ein y-Uebergewicht und
+das Modell wobbelte bei `richtung`. Behoben durch Balancieren des
+Pools (Endpunkt-Demos in `klassifizierer_traces.py` ergaenzt). Pool-
+Pflege ist damit eine laufende Aufgabe — das L0.5-Netz macht
+Schieflagen sichtbar.
