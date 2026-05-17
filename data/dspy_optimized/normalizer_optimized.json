@@ -5,111 +5,119 @@
     "demos": [
       {
         "augmented": true,
-        "beschreibung": "5 Bohrungen Ø8 linear, Abstand 25mm, 15mm von vorne, X-zentriert, durchgehend",
+        "beschreibung": "auf der platte oben eine nut 5x3 entlang x-achse laenge 30mm 8mm nach rechts versetzt",
         "seite": "oben",
         "teil_type": "box",
-        "teil_params": "{\"x\": 150, \"y\": 80, \"z\": 20}",
-        "specification": "Platte 150x80x20, oben 5 Bohrungen Ø8 im Abstand 25mm, 15mm von vorne, zentriert in X",
-        "normalisierung": "typ: bohrreihe\nseite: oben\nposition: x_zentriert\nparameter: anzahl=5, durchmesser=8, abstand=25, abstand_vorne=15, tiefe=durch"
+        "teil_params": "{\"x\": 60, \"y\": 40, \"z\": 10}",
+        "specification": "100mm wuerfel, oben eine platte 60x40x10 zentral, auf der platte oben eine nut 5x3 entlang x-achse laenge 30mm 8mm nach rechts versetzt",
+        "normalisierung": "typ: nut\nseite: oben\nposition: von_kanten\nrichtung: x\nparameter: breite=5, tiefe=3, laenge=30, versatz_rechts=8"
       },
       {
         "augmented": true,
-        "beschreibung": "Nut 8x6 durchgehend in Z-Richtung, 20mm von links",
-        "seite": "vorne",
+        "beschreibung": "Fase 2mm alle Kanten",
+        "seite": "unten",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 80, \"z\": 80}",
+        "specification": "Wuerfel 80mm. Oben Tasche 30x20x8 zentral, 45° gedreht. Oben Tasche 20x30x6, 20mm von links/10mm von vorne, -30° CCW. Rechts Bohrung Ø10 mittig. Unten Fase 2mm alle Kanten.",
+        "normalisierung": "typ: fase\nseite: unten\nposition: zentriert\nparameter: groesse=2, kanten=alle"
+      },
+      {
+        "augmented": true,
+        "beschreibung": "Nut 6x6 durchgehend, mittig",
+        "seite": "rechts",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 150, \"y\": 100, \"z\": 20}",
+        "specification": "Platte 150x100x20. Oben ein 4er-Lochkreis Ø8 auf R35, zentral. Rechts eine Nut 6x6 durchgehend von oben nach unten, mittig. Vorne eine Tasche 40x15x8 tief, mittig. An allen oberen Kanten eine 2mm Fase.",
+        "normalisierung": "typ: nut\nseite: rechts\nposition: zentriert\nparameter: breite=6, tiefe=6, laenge=20, tiefe_achse=durchgehend"
+      },
+      {
+        "augmented": true,
+        "beschreibung": "3er Lochkreis Ø8 auf R25, zentral, durchgehend",
+        "seite": "unten",
+        "teil_type": "cylinder",
+        "teil_params": "{\"diameter\": 80, \"height\": 40}",
+        "specification": "Zylinder Ø80 H40, unten 3er Lochkreis Ø8 auf R25, zentral, durchgehend",
+        "normalisierung": "typ: lochkreis\nseite: unten\nposition: zentriert\nparameter: anzahl=3, radius_kreis=25, bohr_durchmesser=8, tiefe=durch"
+      },
+      {
+        "beschreibung": "Bohrung Ø10, 10mm von oberer Kante, X-zentriert",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 20}",
+        "specification": "Platte 100x80x20, oben Bohrung Ø10, 10mm von der oberen Kante, X-zentriert, durchgehend",
+        "normalisierung": "typ: bohrung\nseite: oben\nposition: von_kanten\nparameter: durchmesser=10, tiefe=20, abstand_oben=10\nnotes: 10mm von oberer Kante = innerhalb Face, kein Überstand"
+      },
+      {
+        "beschreibung": "oben eine 5mm bohrung 5 tief von der oberen kante 10mm und von linker kante 8mm entfernt",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 70, \"y\": 50, \"z\": 8}",
+        "specification": "V2 palette feature on plate",
+        "normalisierung": "typ: bohrung\nseite: oben\nposition: von_kanten\nparameter: durchmesser=5, tiefe=5"
+      },
+      {
+        "beschreibung": "Fase 1mm alle Kanten",
+        "seite": "oben",
         "teil_type": "box",
         "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 60}",
-        "specification": "Wuerfel 60mm, vorne vertikale Nut 8x6 durchgehend, 20mm von links",
-        "normalisierung": "typ: nut\nseite: vorne\nposition: von_kanten\nrichtung: z\nparameter: breite=8, tiefe=6, abstand_links=20\nnotes: durchgehend in Z-Richtung"
+        "specification": "Wuerfel 60mm. Links Bohrung Ø12 zentral durch. Rechts Bohrung Ø12 zentral durch. Oben 4er Lochkreis Ø6 auf R18. Alle Kanten Fase 1mm.",
+        "normalisierung": "typ: fase\nseite: oben\nposition: zentriert\nparameter: kanten=alle_kanten"
       },
       {
-        "augmented": true,
-        "beschreibung": "nut 5x3 entlang y-achse laenge 30mm 15 grad gegen uhrzeigersinn",
+        "beschreibung": "Bohrung Ø12 zentral",
         "seite": "oben",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
-        "specification": "100mm wuerfel, oben eine nut 5x3 entlang y-achse laenge 30mm 15 grad gegen uhrzeigersinn gedreht",
-        "normalisierung": "typ: nut\nseite: oben\nposition: zentriert\nrichtung: y\nparameter: breite=5, tiefe=3, laenge=30, winkel=15\nnotes: 15 grad gegen uhrzeigersinn gedreht"
-      },
-      {
-        "augmented": true,
-        "beschreibung": "bohrung 10mm durchmesser durchgaengig mittig",
-        "seite": "oben",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 30}",
-        "specification": "60mm wuerfel, oben eine bohrung 10mm durchmesser durchgaengig mittig",
-        "normalisierung": "typ: bohrung\nseite: oben\nposition: zentriert\nparameter: durchmesser=10, tiefe=durch"
-      },
-      {
-        "beschreibung": "rechts eine tasche 34x22x7 deren vordere kante 9mm von vorne und hintere kante 12mm von hinten entfernt",
-        "seite": "rechts",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 160, \"y\": 80, \"z\": 35}",
-        "specification": "quader, rechts eine tasche mit front/back kanten",
-        "normalisierung": "typ: tasche\nseite: rechts\nposition: von_kanten\nparameter: laenge=34, breite=22, tiefe=7, kante_vorne=9, kante_hinten=12"
-      },
-      {
-        "beschreibung": "Bohrung Ø10, 12mm von links und 8mm von vorne, durchgehend",
-        "seite": "oben",
-        "teil_type": "cylinder",
-        "teil_params": "{\"diameter\": 60, \"height\": 50}",
-        "specification": "Zylinder Ø60 H50, oben 'ne Bohrung Ø10, 12mm von links und 8mm von vorne",
-        "normalisierung": "typ: bohrung\nseite: oben\nposition: von_kanten\nparameter: durchmesser=10, tiefe=durch, abstand_links=12, abstand_vorne=8"
-      },
-      {
-        "beschreibung": "lochkreis mit 4 bohrungen 6mm durchmesser 4 tief auf einem teilkreis von 40mm, 15mm nach rechts und 10mm nach oben versetzt",
-        "seite": "oben",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
-        "specification": "100mm wuerfel, oben ein lochkreis mit 4 bohrungen 6mm durchmesser 4 tief auf einem teilkreis von 40mm 15mm nach rechts und 10mm nach oben versetzt",
-        "normalisierung": "typ: lochkreis\nseite: oben\nposition: von_mitte\nparameter: anzahl=4, durchmesser=6, tiefe=4, kreis_durchmesser=40, versatz_rechts=15, versatz_oben=10"
-      },
-      {
-        "beschreibung": "Tasche 30x20x8 tief, 15mm von oben, mittig",
-        "seite": "rechts",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 50}",
-        "specification": "Quader 100x80x50. Oben Bohrung Ø12, 25mm von links und 20mm von vorne. Oben Bohrung Ø8, 30mm von rechts, zentriert in Y. Rechts Tasche 30x20x8, 15mm von oben, mittig. Vorne Fase 1.5mm.",
-        "normalisierung": "typ: tasche\nseite: rechts\nposition: von_kanten\nparameter: laenge=30, breite=20, tiefe=8, abstand_oben=15"
-      },
-      {
-        "beschreibung": "Nut 8x8 durchgehend in X-Richtung, 20mm von der oberen Kante",
-        "seite": "vorne",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 40}",
-        "specification": "Quader 100x80x40, vorne eine Nut 8x8 durchgehend, 20mm von oben",
-        "normalisierung": "typ: nut\nseite: vorne\nposition: von_kanten\nparameter: breite=8, tiefe=8, laenge=100, abstand_oben=20"
-      },
-      {
-        "beschreibung": "Tasche 20x10x6 tief mittig",
-        "seite": "vorne",
         "teil_type": "box",
         "teil_params": "{\"x\": 60, \"y\": 60, \"z\": 60}",
         "specification": "60mm Wuerfel. Oben Bohrung Ø12 zentral. Unten Bohrung Ø8, 15mm von links. Vorne Tasche 20x10x6 mittig. Rechts Nut 8x6 durchgehend, 20mm von oben.",
-        "normalisierung": "typ: tasche\nseite: vorne\nposition: zentriert\nparameter: laenge=20, breite=10, tiefe=6"
+        "normalisierung": "typ: bohrung\nseite: oben\nposition: zentriert\nparameter: durchmesser=12, tiefe=60"
       },
       {
-        "beschreibung": "Bohrung Ø8 zentral durchgehend",
+        "beschreibung": "Bohrung Ø20 zentral durchgehend",
         "seite": "oben",
-        "teil_type": "box",
-        "teil_params": "{\"x\": 50, \"y\": 40, \"z\": 10}",
-        "specification": "Quader 80x60x30. Oben Platte 50x40x10, obere linke Ecke auf oberer linker Ecke des Quaders, 5mm nach innen. Auf der Platte oben zentral Bohrung Ø8 durchgehend.",
-        "normalisierung": "typ: bohrung\nseite: oben\nposition: zentriert\nparameter: durchmesser=8, tiefe=durch"
+        "teil_type": "cylinder",
+        "teil_params": "{\"diameter\": 80, \"height\": 60}",
+        "specification": "Zylinder Ø80 H60. Oben zentrale Bohrung Ø20 durchgehend. Oben noch 6er Lochkreis Ø8 auf R30. Unten Sackloch Ø15 zentral, 25mm tief.",
+        "normalisierung": "typ: bohrung\nseite: oben\nposition: zentriert\nparameter: durchmesser=20, tiefe=durch"
       },
       {
-        "beschreibung": "lochkreis 70mm mit 8 bohrungen 12mm durchmesser durchgaengig",
-        "seite": "oben",
+        "beschreibung": "Nut 5x5 durchgehend",
+        "seite": "vorne",
         "teil_type": "box",
-        "teil_params": "{\"x\": 120, \"y\": 120, \"z\": 20}",
-        "specification": "120mm wuerfel, oben ein lochkreis 70mm mit 8 bohrungen 12mm durchmesser durchgaengig",
-        "normalisierung": "typ: lochkreis\nseite: oben\nposition: zentriert\nparameter: anzahl=8, durchmesser=12, kreis_durchmesser=70"
+        "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 15}",
+        "specification": "Platte 100x80x15mm. Oben eine zentrale Bohrung Ø12, durchgehend. Oben 4 Bohrungen Ø6, je 12mm von den Ecken, durchgehend. Oben eine Tasche 40x30x8 tief, 20mm von links und 20mm von vorne. Vorne eine Nut 5x5 durchgehend.",
+        "normalisierung": "typ: nut\nseite: vorne\nposition: zentriert\nparameter: breite=5, tiefe=5"
       },
       {
-        "beschreibung": "ein 2x2 lochmuster mit 8mm bohrungen 5 tief, randabstand 10mm zur kante",
+        "beschreibung": "Bohrung Ø12 zentral durchgehend",
         "seite": "oben",
         "teil_type": "box",
-        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
-        "specification": "100mm wuerfel, oben ein 2x2 lochmuster mit 8mm bohrungen 5 tief randabstand 10mm zur kante",
-        "normalisierung": "typ: eckbohrungen\nseite: oben\nposition: von_kanten\nparameter: anzahl=4, durchmesser=8, tiefe=5, abstand_kante=10"
+        "teil_params": "{\"x\": 100, \"y\": 60, \"z\": 20}",
+        "specification": "Platte 100x60x20 hochkant, oben zentrale Bohrung Ø12 durchgehend",
+        "normalisierung": "typ: bohrung\nseite: oben\nposition: zentriert\nparameter: durchmesser=12, tiefe=durch"
+      },
+      {
+        "beschreibung": "Bohrung Ø10 mittig, durchgehend",
+        "seite": "links",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 70, \"y\": 70, \"z\": 70}",
+        "specification": "Auf der linken Seite eines 70mm Wuerfels soll mittig eine Bohrung Ø10 durch.",
+        "normalisierung": "typ: bohrung\nseite: links\nposition: zentriert\nparameter: durchmesser=10, tiefe=durch"
+      },
+      {
+        "beschreibung": "Bohrung Ø12 zentral",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 70, \"y\": 70, \"z\": 70}",
+        "specification": "Wuerfel 70mm. Oben Bohrung Ø12 zentral. Unten Tasche 20x20x6 mittig. Vorne Senkbohrung M8 zentral. Hinten Nut 8x8 durchgehend mittig. Links Radius 3mm an allen Kanten.",
+        "normalisierung": "typ: bohrung\nseite: oben\nposition: zentriert\nparameter: durchmesser=12, tiefe=70"
+      },
+      {
+        "beschreibung": "Bohrung Ø10, 15mm von rechts, mittig in Z",
+        "seite": "rechts",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 80, \"y\": 60, \"z\": 40}",
+        "specification": "Quader 80x60x40. Oben links eine Platte 30x25x8, zentriert an der oberen linken Ecke. Auf dem Quader rechts eine Bohrung Ø10, 15mm von rechts, mittig.",
+        "normalisierung": "typ: bohrung\nseite: rechts\nposition: von_kanten\nparameter: durchmesser=10, tiefe=80, abstand_rechts=15"
       },
       {
         "beschreibung": "Tasche 40x30x8, diagonal = 45° gedreht, zentral",
@@ -118,6 +126,14 @@
         "teil_params": "{\"x\": 100, \"y\": 80, \"z\": 15}",
         "specification": "Platte 100x80x15, oben diagonal Tasche 40x30x8 zentral",
         "normalisierung": "typ: tasche\nseite: oben\nposition: zentriert\nparameter: laenge=40, breite=8, tiefe=30, drehung=45\nnotes: 'diagonal' = 45° CW (Konvention)"
+      },
+      {
+        "beschreibung": "an jeder ecke eine 8mm bohrung jeweils 12mm von den kanten entfernt 5 tief",
+        "seite": "oben",
+        "teil_type": "box",
+        "teil_params": "{\"x\": 100, \"y\": 100, \"z\": 20}",
+        "specification": "100mm wuerfel, oben an jeder ecke eine 8mm bohrung jeweils 12mm von den kanten entfernt 5 tief",
+        "normalisierung": "typ: eckbohrungen\nseite: oben\nposition: von_kanten\nparameter: durchmesser=8, tiefe=5, abstand_kante=12"
       }
     ],
     "signature": {
@@ -154,7 +170,7 @@
   "metadata": {
     "dependency_versions": {
       "python": "3.12",
-      "dspy": "3.1.3",
+      "dspy": "3.2.1",
       "cloudpickle": "3.1"
     }
   }

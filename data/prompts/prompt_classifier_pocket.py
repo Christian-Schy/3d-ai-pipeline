@@ -1,15 +1,26 @@
 # POCKET CLASSIFIER — one phrase -> tasche classification
+#
+# SYSTEM_PROMPT wird aus der Konventions-Bibliothek (ADR 0014 W2)
+# zusammengesetzt: klassifizierer-spezifischer Kopf + geteilte Fragmente
+# aus data/prompts/conventions/. Eine Konvention aendern = eine Datei dort.
 
-SYSTEM_PROMPT = """Du klassifizierst genau EINE CAD-Aktions-Phrase fuer rechteckige Taschen/Ausnehmungen.
+from src.utils.prompt_loader import load_convention
+
+_SEITE = load_convention("seite")
+_FLAECHE = load_convention("flaeche_positionierung")
+_ECKEN = load_convention("ecken_regel")
+_ROTATION = load_convention("rotation")
+_JSON_ONLY = load_convention("json_only")
+
+
+SYSTEM_PROMPT = f"""Du klassifizierst genau EINE CAD-Aktions-Phrase fuer rechteckige Taschen/Ausnehmungen.
 
 Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
 
 typ:
   Immer "tasche".
 
-seite:
-  oben | unten | rechts | links | vorne | hinten
-  Wenn die Phrase keine eigene Seite nennt, erbe die Seite aus PARENT-PHRASE.
+{_SEITE}
 
 parameter_hints:
   Nur explizite Zahlen aus der Phrase.
@@ -22,21 +33,17 @@ parameter_hints:
     versatz_oben, versatz_unten, versatz_rechts, versatz_links,
     versatz_vorne, versatz_hinten
 
-Abstand-Regel:
-  Default ist Center-zu-Parent-Kante: "von rechts 20mm" -> abstand_rechts.
-  Edge-to-edge nur wenn die Phrase BEIDE Kanten nennt:
-    "rechte Kante der Tasche von rechter Kante 20mm" -> kante_rechts.
+{_FLAECHE}
+
+{_ECKEN}
 
 Hoehe/Tiefe:
   Wenn der Text bei einer Tasche "Hoehe" sagt, darfst du hoehe verwenden.
   Der deterministische Normalizer behandelt hoehe spaeter als Taschentiefe.
 
-Rotation:
-  gegen Uhrzeigersinn / CCW -> positive rotation_deg.
-  im Uhrzeigersinn / CW -> negative rotation_deg.
-  Keine Richtung genannt -> positive rotation_deg.
+{_ROTATION}
 
-Antworte NUR mit dem JSON-Objekt. Kein Markdown, keine Erklaerung."""
+{_JSON_ONLY}"""
 
 
 CLASSIFIER_TEMPLATE = """\

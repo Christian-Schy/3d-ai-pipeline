@@ -45,3 +45,5 @@ Verweis auf die neue ADR ergaenzt.
 | [0010](0010-a5-anchor-classifier-hint.md) | zurueckgezogen | A5-Anker-Hint verworfen — A5 ist konventionell A1 bzw. A2 |
 | [0011](0011-slot-endpoint-model.md) | accepted | Slot Anfangs-/Endpunkt-Modell (anfang_*/ende_*), Code rechnet laenge |
 | [0012](0012-pattern-rotation.md) | accepted | Pattern-Rotation (Grid + Linear) ueber Template-angle-Parameter |
+| [0013](0013-normalizer-split.md) | superseded by ADR-0014 | NormalizerAgent-Split — verworfen, Normalizer wird eliminiert statt gesplittet |
+| [0014](0014-pipeline-rebuild-clean-architecture.md) | proposed | Pipeline-Rebuild: Clean Per-Action Architecture (Master-Umbau-Plan) |

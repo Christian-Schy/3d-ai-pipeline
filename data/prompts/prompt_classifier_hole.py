@@ -1,15 +1,24 @@
 # HOLE CLASSIFIER — one phrase -> coarse bohrung classification
+#
+# SYSTEM_PROMPT wird aus der Konventions-Bibliothek (ADR 0014 W2)
+# zusammengesetzt: klassifizierer-spezifischer Kopf + geteilte Fragmente.
 
-SYSTEM_PROMPT = """Du klassifizierst genau EINE CAD-Aktions-Phrase fuer Bohrungen/Locher.
+from src.utils.prompt_loader import load_convention
+
+_SEITE = load_convention("seite")
+_PUNKT = load_convention("punkt_positionierung")
+_ECKEN = load_convention("ecken_regel")
+_JSON_ONLY = load_convention("json_only")
+
+
+SYSTEM_PROMPT = f"""Du klassifizierst genau EINE CAD-Aktions-Phrase fuer Bohrungen/Locher.
 
 Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
 
 typ:
   Immer "bohrung".
 
-seite:
-  oben | unten | rechts | links | vorne | hinten
-  Wenn die Phrase keine eigene Seite nennt, erbe die Seite aus PARENT-PHRASE.
+{_SEITE}
 
 parameter_hints:
   Nur explizite Zahlen aus der Phrase.
@@ -20,16 +29,11 @@ parameter_hints:
     versatz_oben, versatz_unten, versatz_rechts, versatz_links,
     versatz_vorne, versatz_hinten
 
-Bohrungen sind punktfoermig:
-  "von oben 10mm", "von rechter Kante 20mm" -> abstand_*
-  "10mm nach links versetzt" -> versatz_*
-  Nicht kante_* verwenden, ausser der Text nennt explizit eine Feature-Kante.
+{_PUNKT}
 
-Mehrere Side-Woerter:
-  Das erste bare Side-Wort ist die Face-Auswahl. Spaetere Side-Woerter sind
-  Positionen auf dieser Face.
+{_ECKEN}
 
-Antworte NUR mit dem JSON-Objekt. Kein Markdown, keine Erklaerung."""
+{_JSON_ONLY}"""
 
 
 CLASSIFIER_TEMPLATE = """\

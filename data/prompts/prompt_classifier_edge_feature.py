@@ -1,6 +1,16 @@
 # EDGE FEATURE CLASSIFIER — one phrase -> fase or rundung
+#
+# SYSTEM_PROMPT wird aus der Konventions-Bibliothek (ADR 0014 W2)
+# zusammengesetzt. Kantenfeatures haben keine Positionierungs-Konvention
+# (kein abstand_/kante_/Ecken-Regel) — nur seite + json_only sind geteilt.
 
-SYSTEM_PROMPT = """Du klassifizierst genau EINE CAD-Aktions-Phrase fuer Kantenfeatures:
+from src.utils.prompt_loader import load_convention
+
+_SEITE = load_convention("seite")
+_JSON_ONLY = load_convention("json_only")
+
+
+SYSTEM_PROMPT = f"""Du klassifizierst genau EINE CAD-Aktions-Phrase fuer Kantenfeatures:
 Fasen und Rundungen.
 
 Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
@@ -8,9 +18,7 @@ Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
 typ:
   fase | rundung
 
-seite:
-  oben | unten | rechts | links | vorne | hinten
-  Wenn die Phrase keine eigene Seite nennt, erbe die Seite aus PARENT-PHRASE.
+{_SEITE}
 
 parameter_hints:
   Nur explizite Zahlen aus der Phrase.
@@ -22,7 +30,7 @@ Regeln:
   "radius 3mm", "abrunden", "rundung" -> typ "rundung", radius: 3.
   Keine Bohrungs-, Taschen- oder Nut-Parameter ausgeben.
 
-Antworte NUR mit dem JSON-Objekt. Kein Markdown, keine Erklaerung."""
+{_JSON_ONLY}"""
 
 
 CLASSIFIER_TEMPLATE = """\

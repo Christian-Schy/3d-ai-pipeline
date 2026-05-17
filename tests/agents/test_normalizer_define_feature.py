@@ -447,15 +447,23 @@ def test_slot_right_edge_anchor_from_phrase():
     assert "edge_distances" not in feat["position"]
 
 
-def test_slot_corner_anchor_from_phrase_offsets_from_corner():
+def test_bare_corner_phrase_is_positioning_not_anchor():
+    """Regressions-Wache: eine blosse Ecken-Erwaehnung ohne expliziten
+    Parent-Verweis ("liegt auf …" / "… der Tasche auf … des Wuerfels")
+    ist Positionierung, KEIN Anker.
+
+    Frueher fabrizierte `_infer_phrase_anchor` fuer jede Ecken-Erwaehnung
+    einen Anker und ueberschrieb damit die Klassifizierer-Positionierung
+    (Bug auf T_kombo t08). Jetzt: kein Anker — die Versatz-Werte bleiben
+    als center_offset erhalten.
+    """
     agent = _make_agent()
     agent.normalize = MagicMock(return_value=_norm(
         typ="nut",
         seite="oben",
         position="von_mitte",
         richtung="y",
-        parameter={"breite": 5, "tiefe": 5, "laenge": 30,
-                   "versatz_unten": 10, "versatz_links": 20},
+        parameter={"breite": 5, "tiefe": 5, "laenge": 30},
     ))
     feat = agent.define_feature(
         _klass(typ="nut",
@@ -466,12 +474,10 @@ def test_slot_corner_anchor_from_phrase_offsets_from_corner():
                                 "versatz_unten": 10, "versatz_links": 20}),
         _teil(),
     )
-    assert feat["position"]["anchor"] == {
-        "child_point": "center",
-        "parent_point": "top_right",
-        "offset": {"bottom": 10, "left": 20},
-    }
-    assert "center_offset" not in feat["position"]
+    assert "anchor" not in feat["position"], (
+        f"bare corner darf keinen Anker erzeugen: {feat['position']}"
+    )
+    assert feat["position"].get("center_offset") == {"bottom": 10, "left": 20}
 
 
 def test_pocket_corner_to_corner_anchor_uses_child_corner():

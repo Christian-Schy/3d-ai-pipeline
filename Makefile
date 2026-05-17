@@ -52,6 +52,33 @@ goldens-real-filter:
 	@if [ -z "$(F)" ]; then echo "Usage: make goldens-real-filter F=<filter>"; exit 1; fi
 	$(PY) -m scripts.run_real_goldens --filter $(F)
 
+# ─── Agent-Regression (Layer 0.5: per-Agent live LLM cases) ──────────────
+# Needs Ollama. Excluded from default pytest run via pyproject.toml addopts.
+# Faster than `goldens-real` (5 min/agent vs 25 min full heatmap),
+# catches prompt-vs-demo drift before it ever reaches the pipeline.
+
+agent-regression:
+	$(PY) -m pytest $(TESTS)/agent_regression -m agent_regression -v
+
+agent-regression-filter:
+	@if [ -z "$(F)" ]; then echo "Usage: make agent-regression-filter F=<test-id-substring>"; exit 1; fi
+	$(PY) -m pytest $(TESTS)/agent_regression -m agent_regression -v -k $(F)
+
+# Reproduzierbare Train+Validate-Schleife pro Agent.
+# - max_labeled = 16 (statt 8 default) → 12 labeled + 4 bootstrapped = 16 Demos
+#   im Inferenz-Prompt (~37% statt 19% Coverage bei ~43 pocket-Demos).
+#   Konservativ unter num_ctx=4096; bei Bedarf weiter hoch + num_ctx bumpen.
+# - BootstrapFewShot ist intern bereits seed-fixed (random.Random(0));
+#   Train/Dev-Split nutzt seed 42 (train_dspy.py).
+# - Nach Training laeuft die Agent-Regression-Suite fuer den Agent automatisch.
+retrain-validate:
+	@if [ -z "$(A)" ]; then echo "Usage: make retrain-validate A=<agent>  (z.B. A=pocket_classifier)"; exit 1; fi
+	@echo "─── retrain $(A) (max_labeled=16) ───"
+	$(PY) train_dspy.py --agent $(A) --max-labeled 16
+	@echo
+	@echo "─── validate via agent-regression-suite ───"
+	$(PY) -m pytest $(TESTS)/agent_regression -m agent_regression -v -k $$(echo $(A) | sed 's/_classifier//')
+
 # ─── Code-Health Audit ──────────────────────────────────────────────────
 
 audit: lint types complexity duplicates dead-code size-audit

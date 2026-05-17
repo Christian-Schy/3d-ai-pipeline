@@ -1,6 +1,17 @@
 # CIRCULAR CLASSIFIER — one phrase -> circular hole pattern (Lochkreis)
+#
+# SYSTEM_PROMPT wird aus der Konventions-Bibliothek (ADR 0014 W2)
+# zusammengesetzt: klassifizierer-spezifischer Kopf + geteilte Fragmente.
 
-SYSTEM_PROMPT = """Du klassifizierst genau EINE CAD-Aktions-Phrase fuer
+from src.utils.prompt_loader import load_convention
+
+_SEITE = load_convention("seite")
+_PUNKT = load_convention("punkt_positionierung")
+_ECKEN = load_convention("ecken_regel")
+_JSON_ONLY = load_convention("json_only")
+
+
+SYSTEM_PROMPT = f"""Du klassifizierst genau EINE CAD-Aktions-Phrase fuer
 Kreis-Lochmuster: Lochkreis, Teilkreis, Kreismuster.
 
 Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
@@ -8,18 +19,13 @@ Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
 typ:
   Immer "bohrung". Der Normalizer erkennt spaeter die Pattern-Familie.
 
-seite:
-  oben | unten | rechts | links | vorne | hinten
-  Wenn die Phrase keine eigene Seite nennt, erbe die Seite aus PARENT-PHRASE.
+{_SEITE}
 
 parameter_hints:
   Nur explizite Werte aus der Phrase.
   Zahlen-Keys:
     durchmesser, bohr_durchmesser, tiefe, anzahl, kreis_durchmesser,
-    abstand_oben, abstand_unten, abstand_rechts, abstand_links,
-    abstand_vorne, abstand_hinten,
-    versatz_oben, versatz_unten, versatz_rechts, versatz_links,
-    versatz_vorne, versatz_hinten
+    abstand_* / versatz_* (oben/unten/rechts/links/vorne/hinten)
 
 Kreis-Geometrie:
   "Lochkreis 60mm"                       -> kreis_durchmesser: 60
@@ -30,18 +36,14 @@ Kreis-Geometrie:
   "Lochkreis 8x Ø6"                      -> anzahl: 8, bohr_durchmesser: 6
   "je 10mm Durchmesser"                  -> bohr_durchmesser: 10
 
-Pattern-Center-Bemassung (wo der Teilkreis-Mittelpunkt liegt):
-  "von linker Kante 20mm"                -> abstand_links: 20
-  "15mm aus Mitte nach rechts"           -> versatz_rechts: 15
+Der Teilkreis-Mittelpunkt ist punktfoermig — seine Lage auf der Face
+folgt der punktfoermigen Positionierung und der Ecken-Regel unten.
 
-Face-Ecke + Versatz (A5):
-  Der Teilkreis-Mittelpunkt ist point-like — eine Ecken-Angabe wird
-  daher zu zwei Kanten-Abstaenden (wie bei einer Bohrung). "In der
-  oberen rechten Ecke, 15mm nach links und 15mm nach unten versetzt"
-  heisst: Mittelpunkt 15mm von der rechten und 15mm von der oberen
-  Kante -> abstand_rechts: 15, abstand_oben: 15.
+{_PUNKT}
 
-Antworte NUR mit dem JSON-Objekt. Kein Markdown, keine Erklaerung."""
+{_ECKEN}
+
+{_JSON_ONLY}"""
 
 
 CLASSIFIER_TEMPLATE = """\

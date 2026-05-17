@@ -115,12 +115,17 @@ _DIRECTION_PHRASE_RE = re.compile(
 )
 
 
-# Per-direction Bemassungs-Konventionen: A1 (abstand, edge-to-center),
-# A2 (kante, edge-to-edge), A3 (versatz, center-relativ). Pro Richtung
-# gilt genau eine. Der Klassifizierer entscheidet welche — wenn er fuer
-# eine Richtung eine Konvention emittiert, sind die anderen beiden fuer
-# dieselbe Richtung stale und muessen aus den Normalizer-Parses raus.
+# In-Face-Bemassungs-Konventionen: A1 (abstand, edge-to-center),
+# A2 (kante, edge-to-edge), A3 (versatz, center-relativ).
 _CONVENTION_PREFIXES: tuple[str, ...] = ("abstand_", "versatz_", "kante_")
+
+# Alle Keys, mit denen der Klassifizierer eine In-Face-Positionierung
+# ausdrueckt — Konventions-Keys plus Slot-Endpunkte (anfang_/ende_).
+# Emittiert der Klassifizierer einen davon, besitzt er die Positionierung
+# des Features; der blinde Normalizer-Re-Parse darf sie nicht mitliefern.
+_POSITIONING_PREFIXES: tuple[str, ...] = _CONVENTION_PREFIXES + (
+    "anfang_", "ende_",
+)
 
 
 def _merge_param_hints(params: dict, hints: dict) -> None:
@@ -135,12 +140,14 @@ def _merge_param_hints(params: dict, hints: dict) -> None:
     classifier correctly read A1 `abstand_links`).
 
     Two-step merge:
-      1. Konventions-Konflikt aufloesen: fuer jede Richtung, fuer die der
-         Klassifizierer eine A1/A2/A3-Konvention emittiert, werden die
-         konkurrierenden Konventions-Keys derselben Richtung aus `params`
-         entfernt. Der Klassifizierer ist die Autoritaet fuer die
-         Konventions-Wahl pro Achse — der Normalizer-Parse darf sie nicht
-         ueberstimmen.
+      1. Positionierungs-Hoheit: emittiert der Klassifizierer IRGENDEINEN
+         In-Face-Positionierungs-Hint (abstand_/versatz_/kante_/anfang_/
+         ende_), besitzt er die komplette Positionierung des Features.
+         Dann werden ALLE Konventions-Keys (abstand_/versatz_/kante_) aus
+         dem Normalizer-Parse entfernt — auch auf anderen Richtungen. Der
+         Normalizer re-parsed die Phrase blind und liest denselben Versatz
+         oft gespiegelt (versatz_links wo der Klassifizierer abstand_rechts
+         sah); ein Pro-Richtung-Abgleich kann das nicht aufloesen.
       2. Werte uebernehmen: jeder Hint ueberschreibt den Normalizer-Wert.
 
     Keys die der Klassifizierer NICHT emittiert bleiben wie der Normalizer
@@ -149,16 +156,16 @@ def _merge_param_hints(params: dict, hints: dict) -> None:
     if not isinstance(params, dict) or not isinstance(hints, dict):
         return
 
-    # Step 1: clear conflicting convention-keys per direction.
-    hint_directions: set[str] = set()
-    for key in hints:
-        for prefix in _CONVENTION_PREFIXES:
-            if key.startswith(prefix) and hints.get(key) is not None:
-                hint_directions.add(key[len(prefix):])
-                break
-    for direction in hint_directions:
-        for prefix in _CONVENTION_PREFIXES:
-            params.pop(prefix + direction, None)
+    # Step 1: classifier owns positioning. If it emitted any positioning
+    # hint, drop ALL of the normalizer's convention-keys (every direction).
+    classifier_has_positioning = any(
+        key.startswith(_POSITIONING_PREFIXES) and hints.get(key) is not None
+        for key in hints
+    )
+    if classifier_has_positioning:
+        for key in list(params):
+            if key.startswith(_CONVENTION_PREFIXES):
+                del params[key]
 
     # Step 2: classifier hints overwrite.
     for key, val in hints.items():
@@ -301,12 +308,26 @@ def _anchor_offset_from_params(params: dict) -> dict | None:
 
 
 def _infer_phrase_anchor(phrase: str) -> dict | None:
+    """Detect a part-on-part anchor reference in the phrase.
+
+    An anchor needs BOTH:
+      - an explicit child reference: "Ecke der Tasche" / "Kante der Nut" /
+        "obere Kante der Bohrung" (matched by _CHILD_CORNER_RE / _CHILD_EDGE_RE), AND
+      - an explicit parent reference: "liegt auf der ... Kante" / "auf <corner> des
+        Wuerfels" (matched by _EDGE_ANCHOR_PATTERNS or via " auf " after a child match).
+
+    Bare corner mentions like "in der oberen rechten Ecke 22mm nach links versetzt"
+    are POSITIONING — handled by the classifier (abstand_rechts/abstand_oben), NOT
+    anchoring. Returning an anchor for those overrides the classifier's edge_distances
+    with a position-less corner-snap (bug seen on T_kombo t08).
+    """
     text = _normalize_phrase(phrase)
     if not text:
         return None
 
     child_point = "center"
     child_match = _CHILD_CORNER_RE.search(text)
+    child_edge_match = None
     if child_match:
         child_point = _corner_point_from_text(child_match.group("corner")) or "center"
     else:
@@ -314,18 +335,22 @@ def _infer_phrase_anchor(phrase: str) -> dict | None:
         if child_edge_match:
             child_point = _EDGE_WORD_TO_POINT.get(child_edge_match.group("edge"), "center")
 
+    # Parent-Verweis muss explizit sein. Drei legitime Signale:
+    #   (a) _EDGE_ANCHOR_PATTERNS: "liegt auf der ... Kante" — parent klar.
+    #   (b) child_match + " auf " im Text: "Ecke der Tasche auf <corner> des Wuerfels".
+    # Eine blosse Ecken-Erwaehnung ohne (a) oder (b) ist KEIN Anker, sondern
+    # Positionierung (Klassifizierer-Aufgabe). Vorher: Fallback
+    # `_corner_point_from_text(text)` hat dafuer faelschlich einen Anker
+    # fabriziert und damit edge_distances vom Klassifizierer ueberschrieben.
     parent_point = None
     for pattern, point in _EDGE_ANCHOR_PATTERNS:
         if pattern.search(text):
             parent_point = point
             break
 
-    if parent_point is None:
-        if child_match and " auf " in text:
-            after_anchor = text.split(" auf ", 1)[1]
-            parent_point = _corner_point_from_text(after_anchor)
-        else:
-            parent_point = _corner_point_from_text(text)
+    if parent_point is None and child_match and " auf " in text:
+        after_anchor = text.split(" auf ", 1)[1]
+        parent_point = _corner_point_from_text(after_anchor)
 
     if parent_point is None:
         return None

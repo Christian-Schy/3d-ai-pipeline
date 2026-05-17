@@ -1,6 +1,18 @@
 # GRID CLASSIFIER — one phrase -> grid hole pattern (Raster / Eckbohrungen)
+#
+# SYSTEM_PROMPT wird aus der Konventions-Bibliothek (ADR 0014 W2)
+# zusammengesetzt: klassifizierer-spezifischer Kopf + geteilte Fragmente.
 
-SYSTEM_PROMPT = """Du klassifizierst genau EINE CAD-Aktions-Phrase fuer
+from src.utils.prompt_loader import load_convention
+
+_SEITE = load_convention("seite")
+_PUNKT = load_convention("punkt_positionierung")
+_ECKEN = load_convention("ecken_regel")
+_ROTATION = load_convention("rotation")
+_JSON_ONLY = load_convention("json_only")
+
+
+SYSTEM_PROMPT = f"""Du klassifizierst genau EINE CAD-Aktions-Phrase fuer
 Raster-Lochmuster (Grid) und Eckbohrungen.
 
 Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
@@ -8,9 +20,7 @@ Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
 typ:
   Immer "bohrung". Der Normalizer erkennt spaeter die Pattern-Familie.
 
-seite:
-  oben | unten | rechts | links | vorne | hinten
-  Wenn die Phrase keine eigene Seite nennt, erbe die Seite aus PARENT-PHRASE.
+{_SEITE}
 
 ★★★ KERN-UNTERSCHEIDUNG — zwei Grid-Arten:
 
@@ -40,22 +50,16 @@ parameter_hints:
     durchmesser, bohr_durchmesser, tiefe,
     rows, cols, rasterabstand, rasterabstand_x, rasterabstand_y,
     anzahl, abstand_kante, rotation_deg,
-    abstand_oben, abstand_unten, abstand_rechts, abstand_links,
-    abstand_vorne, abstand_hinten,
-    versatz_oben, versatz_unten, versatz_rechts, versatz_links,
-    versatz_vorne, versatz_hinten
+    abstand_* / versatz_* (oben/unten/rechts/links/vorne/hinten)
+  "je 6mm Durchmesser" -> durchmesser: 6.
 
-Pattern-Rotation:
-  "um 15 Grad gedreht" / "15 Grad gegen Uhrzeigersinn" -> rotation_deg: 15
-  "um 20 Grad im Uhrzeigersinn gedreht"                -> rotation_deg: -20
-  Gegen Uhrzeigersinn / CCW = positiv, im Uhrzeigersinn / CW = negativ.
+{_PUNKT}
 
-Pattern-Center-Bemassung (wo das ganze Raster auf der Seite liegt):
-  "von linker Kante 15mm"        -> abstand_links: 15
-  "10mm aus Mitte nach hinten"   -> versatz_hinten: 10
-  "je 6mm Durchmesser"           -> durchmesser: 6
+{_ECKEN}
 
-Antworte NUR mit dem JSON-Objekt. Kein Markdown, keine Erklaerung."""
+{_ROTATION}
+
+{_JSON_ONLY}"""
 
 
 CLASSIFIER_TEMPLATE = """\

@@ -48,6 +48,17 @@ Projekt-Struktur seit ADR 0008. Ersetzt die alte lineare Phasen-Liste.
 **Definition of Done pro Capability:** Cov 4 grün + Done-Review-Checkliste
 abgehakt (siehe ADR 0008). Cov 5+6 sind Verkaufs-Polish.
 
+### ⚠ Architektur-Umbau aktiv (seit 2026-05-17)
+
+Die Pipeline wird grundlegend umgebaut — **Master-Plan: ADR 0014**
+(`docs/decisions/0014-pipeline-rebuild-clean-architecture.md`). Grund:
+wiederkehrende Regressions-Kaskade durch Re-Derivation zwischen Agenten +
+Konventions-Fragmentierung. Ziel: ein Textverstaendnis-Schritt pro Aktion
+(Klassifizierer), Rest deterministisch, NormalizerAgent eliminiert,
+per-Agent-Regression-Suiten als Netz. Bis der Umbau durch ist, sind Teile
+der Architektur-Beschreibung unten im Fluss. Pickup-Punkt: Memory
+`rebuild_plan_2026_05_17`. CLAUDE.md-Voll-Ueberarbeitung ist Workstream W9.
+
 ### Aktueller Stand (2026-05-14)
 
 | Capability | Stand | Coverage |

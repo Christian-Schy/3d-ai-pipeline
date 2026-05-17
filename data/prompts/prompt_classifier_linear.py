@@ -1,6 +1,18 @@
 # LINEAR CLASSIFIER — one phrase -> linear hole pattern (Bohrungsreihe)
+#
+# SYSTEM_PROMPT wird aus der Konventions-Bibliothek (ADR 0014 W2)
+# zusammengesetzt: klassifizierer-spezifischer Kopf + geteilte Fragmente.
 
-SYSTEM_PROMPT = """Du klassifizierst genau EINE CAD-Aktions-Phrase fuer
+from src.utils.prompt_loader import load_convention
+
+_SEITE = load_convention("seite")
+_PUNKT = load_convention("punkt_positionierung")
+_ECKEN = load_convention("ecken_regel")
+_ROTATION = load_convention("rotation")
+_JSON_ONLY = load_convention("json_only")
+
+
+SYSTEM_PROMPT = f"""Du klassifizierst genau EINE CAD-Aktions-Phrase fuer
 Linear-Lochmuster: Bohrungsreihe, Lochreihe, Reihe aus Bohrungen.
 
 Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
@@ -8,18 +20,13 @@ Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
 typ:
   Immer "bohrung". Der Normalizer erkennt spaeter die Pattern-Familie.
 
-seite:
-  oben | unten | rechts | links | vorne | hinten
-  Wenn die Phrase keine eigene Seite nennt, erbe die Seite aus PARENT-PHRASE.
+{_SEITE}
 
 parameter_hints:
   Nur explizite Werte aus der Phrase.
   Zahlen-Keys:
     durchmesser, bohr_durchmesser, tiefe, anzahl, abstand, rotation_deg,
-    abstand_oben, abstand_unten, abstand_rechts, abstand_links,
-    abstand_vorne, abstand_hinten,
-    versatz_oben, versatz_unten, versatz_rechts, versatz_links,
-    versatz_vorne, versatz_hinten
+    abstand_* / versatz_* (oben/unten/rechts/links/vorne/hinten)
   String-Key:
     richtung: "x" | "y" | "z" — die Achse, entlang der die Reihe verlaeuft.
 
@@ -35,16 +42,13 @@ Richtung — auch als Verb:
   "verlaeuft nach rechts" / "nach links" -> richtung: "x"
   "verlaeuft nach oben" / "nach unten"   -> richtung: "z"
 
-Pattern-Center-Bemassung (wo die Reihe auf der Seite liegt):
-  "von linker Kante 30mm"                -> abstand_links: 30
-  "10mm aus Mitte nach unten"            -> versatz_unten: 10
+{_PUNKT}
 
-Pattern-Rotation:
-  "um 15 Grad gedreht" / "gegen Uhrzeigersinn"  -> rotation_deg: 15
-  "um 20 Grad im Uhrzeigersinn gedreht"         -> rotation_deg: -20
-  CCW = positiv, CW = negativ.
+{_ECKEN}
 
-Antworte NUR mit dem JSON-Objekt. Kein Markdown, keine Erklaerung."""
+{_ROTATION}
+
+{_JSON_ONLY}"""
 
 
 CLASSIFIER_TEMPLATE = """\

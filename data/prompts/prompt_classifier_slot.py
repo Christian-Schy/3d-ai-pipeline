@@ -1,45 +1,56 @@
 # SLOT CLASSIFIER — one phrase -> nut classification
+#
+# SYSTEM_PROMPT wird aus der Konventions-Bibliothek (ADR 0014 W2)
+# zusammengesetzt: klassifizierer-spezifischer Kopf + geteilte Fragmente.
 
-SYSTEM_PROMPT = """Du klassifizierst genau EINE CAD-Aktions-Phrase fuer Nuten/Slots.
+from src.utils.prompt_loader import load_convention
+
+_SEITE = load_convention("seite")
+_FLAECHE = load_convention("flaeche_positionierung")
+_ECKEN = load_convention("ecken_regel")
+_ROTATION = load_convention("rotation")
+_JSON_ONLY = load_convention("json_only")
+
+
+SYSTEM_PROMPT = f"""Du klassifizierst genau EINE CAD-Aktions-Phrase fuer Nuten/Slots.
 
 Antwort: striktes JSON mit den Feldern typ, seite, parameter_hints.
 
 typ:
   Immer "nut".
 
-seite:
-  oben | unten | rechts | links | vorne | hinten
-  Wenn die Phrase keine eigene Seite nennt, erbe die Seite aus PARENT-PHRASE.
+{_SEITE}
 
 parameter_hints:
   Nur explizite Werte aus der Phrase.
   Zahlen-Keys:
     laenge, breite, tiefe, rotation_deg
-    abstand_oben, abstand_unten, abstand_rechts, abstand_links,
-    abstand_vorne, abstand_hinten
-    kante_oben, kante_unten, kante_rechts, kante_links,
-    kante_vorne, kante_hinten
-    versatz_oben, versatz_unten, versatz_rechts, versatz_links,
-    versatz_vorne, versatz_hinten
+    abstand_*, kante_*, versatz_* (oben/unten/rechts/links/vorne/hinten)
+    anfang_*, ende_*  (oben/unten/rechts/links/vorne/hinten)
   String-Key:
     richtung: "x" | "y" | "z" wenn explizit "entlang x/y/z" oder
     "entlang der X/Y/Z-Achse" genannt ist.
 
-abstand_* vs kante_* — WICHTIG:
-  abstand_<richtung>  = Abstand der Nut-MITTE zur Bauteilkante.
-    Default. "von linker Kante 12mm", "12mm von der oberen Kante",
-    "20mm von rechter Kante entfernt" -> abstand_*.
-  kante_<richtung>    = Abstand einer NUT-AUSSENKANTE zur Bauteilkante.
-    NUR wenn die Phrase explizit die Kante der Nut nennt:
-    "die linke Nut-Kante 12mm vom Rand", "obere Nut-Kante 15mm von oben".
-  Im Zweifel abstand_* — kante_* braucht das Wort "Nut-Kante" o.ae.
-  Nie beide fuer dieselbe Richtung ausgeben.
+{_FLAECHE}
 
-Nicht rechnen:
-  Keine Laenge aus Teilmassen ableiten. Wenn keine Laenge genannt ist,
-  laenge weglassen; der deterministische FeatureBuilder fuellt sie spaeter.
+Anfangs-/Endpunkt-Modell:
+  Ist die Nut ueber ZWEI Endpunkte statt eine Laenge beschrieben
+  ("Anfangspunkt 20mm von linker Kante, Endpunkt 80mm von linker
+  Kante"), gib anfang_<kante> und ende_<kante> aus -- beide an
+  derselben Bezugskante, KEIN laenge-Key.
+    "anfangspunkt 20mm von linker kante endpunkt 80mm von linker kante"
+      -> anfang_links: 20, ende_links: 80
+  Achse aus den Endpunkten ableiten:
+    Endpunkte an linker/rechter Kante  -> richtung: "x".
+    Endpunkte an vorderer/hinterer Kante -> richtung: "y".
+  Nicht rechnen: gib die rohen Endpunkt-Distanzen aus, der deterministische
+  FeatureBuilder bildet daraus die Laenge -- NICHT laenge = ende - anfang.
 
-Antworte NUR mit dem JSON-Objekt. Kein Markdown, keine Erklaerung."""
+{_ECKEN}
+
+{_ROTATION}
+
+{_JSON_ONLY}"""
 
 
 CLASSIFIER_TEMPLATE = """\

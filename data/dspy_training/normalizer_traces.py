@@ -38,8 +38,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: laenge=30, breite=20, tiefe=10, "
-            "kante_rechts=25, versatz_oben=10"
+            "parameter: laenge=30, breite=20, tiefe=10"
         ),
     },
     {
@@ -58,8 +57,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: laenge=28, breite=18, tiefe=6, "
-            "kante_oben=11, kante_links=17"
+            "parameter: laenge=28, breite=18, tiefe=6"
         ),
     },
     {
@@ -78,8 +76,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: laenge=30, breite=20, tiefe=5, "
-            "kante_rechts=5, kante_unten=3"
+            "parameter: laenge=30, breite=20, tiefe=5"
         ),
     },
     {
@@ -98,8 +95,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: rechts\n"
             "position: von_kanten\n"
-            "parameter: laenge=34, breite=22, tiefe=7, "
-            "kante_vorne=9, kante_hinten=12"
+            "parameter: laenge=34, breite=22, tiefe=7"
         ),
     },
     {
@@ -151,8 +147,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_kanten\n"
             "richtung: y\n"
-            "parameter: breite=5, tiefe=5, laenge=40, "
-            "abstand_oben=30, abstand_links=20"
+            "parameter: breite=5, tiefe=5, laenge=40"
         ),
     },
     {
@@ -169,7 +164,7 @@ TRACES = [
             "seite: rechts\n"
             "position: von_mitte\n"
             "richtung: z\n"
-            "parameter: breite=4, tiefe=3, versatz_oben=10"
+            "parameter: breite=4, tiefe=3"
         ),
     },
     {
@@ -188,8 +183,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: unten\n"
             "position: von_kanten\n"
-            "parameter: laenge=25, breite=18, tiefe=6, "
-            "abstand_rechts=22, abstand_oben=18"
+            "parameter: laenge=25, breite=18, tiefe=6"
         ),
     },
     {
@@ -208,8 +202,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: laenge=30, breite=20, tiefe=10, "
-            "abstand_rechts=30, abstand_oben=25"
+            "parameter: laenge=30, breite=20, tiefe=10"
         ),
     },
     {
@@ -228,8 +221,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: laenge=25, breite=15, tiefe=8, "
-            "abstand_links=30, abstand_unten=20"
+            "parameter: laenge=25, breite=15, tiefe=8"
         ),
     },
     {
@@ -248,8 +240,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: vorne\n"
             "position: von_kanten\n"
-            "parameter: laenge=25, breite=18, tiefe=8, "
-            "kante_oben=0, abstand_rechts=20"
+            "parameter: laenge=25, breite=18, tiefe=8"
         ),
     },
     {
@@ -268,8 +259,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: rechts\n"
             "position: von_kanten\n"
-            "parameter: laenge=20, breite=15, tiefe=8, "
-            "kante_oben=10, abstand_links=18"
+            "parameter: laenge=20, breite=15, tiefe=8"
         ),
     },
     {
@@ -289,8 +279,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_kanten\n"
             "richtung: x\n"
-            "parameter: breite=5, tiefe=3, anfang_links=20, "
-            "ende_links=80, abstand_vorne=30"
+            "parameter: breite=5, tiefe=3"
         ),
     },
     {
@@ -310,8 +299,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_kanten\n"
             "richtung: y\n"
-            "parameter: breite=5, tiefe=5, laenge=40, "
-            "kante_rechts=0, versatz_oben=10"
+            "parameter: breite=5, tiefe=5, laenge=40"
         ),
     },
     {
@@ -327,7 +315,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: oben\n"
             "position: von_mitte\n"
-            "parameter: durchmesser=9, versatz_rechts=16, versatz_oben=24"
+            "parameter: durchmesser=9"
         ),
     },
     {
@@ -343,7 +331,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: oben\n"
             "position: von_mitte\n"
-            "parameter: durchmesser=7, versatz_links=19, versatz_unten=26"
+            "parameter: durchmesser=7"
         ),
     },
     {
@@ -359,7 +347,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: rechts\n"
             "position: von_mitte\n"
-            "parameter: durchmesser=8, tiefe=durch, versatz_vorne=12"
+            "parameter: durchmesser=8, tiefe=durch"
         ),
     },
     {
@@ -375,7 +363,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: links\n"
             "position: von_mitte\n"
-            "parameter: durchmesser=8, tiefe=durch, versatz_hinten=14"
+            "parameter: durchmesser=8, tiefe=durch"
         ),
     },
     {
@@ -391,8 +379,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: unten\n"
             "position: von_kanten\n"
-            "parameter: durchmesser=6, tiefe=10, "
-            "abstand_vorne=6, abstand_hinten=8"
+            "parameter: durchmesser=6, tiefe=10"
         ),
     },
     {
@@ -449,7 +436,7 @@ TRACES = [
             "seite: links\n"
             "position: von_kanten\n"
             "parameter: kreis_durchmesser=20, anzahl=4, "
-            "bohr_durchmesser=4, tiefe=8, abstand_rechts=15, abstand_oben=15"
+            "bohr_durchmesser=4, tiefe=8"
         ),
     },
     {
@@ -561,7 +548,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_mitte\n"
             "richtung: x\n"
-            "parameter: breite=5, tiefe=3, laenge=30, versatz_rechts=8"
+            "parameter: breite=5, tiefe=3, laenge=30"
         ),
     },
     {
@@ -616,7 +603,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_kanten\n"
             "richtung: x\n"
-            "parameter: breite=4, tiefe=2, laenge=25, abstand_oben=10"
+            "parameter: breite=4, tiefe=2, laenge=25"
         ),
     },
 
@@ -676,7 +663,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_mitte\n"
             "parameter: anzahl=4, durchmesser=6, tiefe=4, "
-            "kreis_durchmesser=40, versatz_rechts=15, versatz_oben=10"
+            "kreis_durchmesser=40"
         ),
     },
     {
@@ -776,7 +763,7 @@ TRACES = [
             "typ: eckbohrungen\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: rows=4, cols=2, rasterabstand=20, bohr_durchmesser=5, tiefe=10, abstand_links=15, abstand_vorne=20"
+            "parameter: rows=4, cols=2, rasterabstand=20, bohr_durchmesser=5, tiefe=10"
         ),
     },
     {
@@ -819,7 +806,7 @@ TRACES = [
             "position: von_kanten\n"
             "richtung: x\n"
             "parameter: anzahl=4, bohr_durchmesser=5, tiefe=8, "
-            "abstand=18, drehung=-20, abstand_oben=12"
+            "abstand=18, drehung=-20"
         ),
     },
     {
@@ -839,7 +826,7 @@ TRACES = [
             "typ: eckbohrungen\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: rows=3, cols=2, rasterabstand_x=25, rasterabstand_y=20, bohr_durchmesser=5, tiefe=10, abstand_links=30, versatz_hinten=10"
+            "parameter: rows=3, cols=2, rasterabstand_x=25, rasterabstand_y=20, bohr_durchmesser=5, tiefe=10"
         ),
     },
 
@@ -862,8 +849,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_kanten\n"
             "richtung: x\n"
-            "parameter: anzahl=5, durchmesser=8, tiefe=5, abstand=15, "
-            "versatz_unten=10"
+            "parameter: anzahl=5, durchmesser=8, tiefe=5, abstand=15"
         ),
     },
     {
@@ -1021,8 +1007,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: oben\n"
             "position: von_mitte\n"
-            "parameter: durchmesser=18, tiefe=10, abstand_oben=10, "
-            "versatz_links=90"
+            "parameter: durchmesser=18, tiefe=10"
         ),
     },
 
@@ -1092,8 +1077,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: durchmesser=18, tiefe=10, "
-            "abstand_unten=10, abstand_rechts=10"
+            "parameter: durchmesser=18, tiefe=10"
         ),
     },
     {
@@ -1111,8 +1095,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: durchmesser=12, tiefe=8, "
-            "abstand_oben=15, abstand_links=15"
+            "parameter: durchmesser=12, tiefe=8"
         ),
     },
     {
@@ -1134,8 +1117,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: durchmesser=18, tiefe=10, "
-            "abstand_oben=10, abstand_rechts=10"
+            "parameter: durchmesser=18, tiefe=10"
         ),
     },
     # Gegenstueck: "an jeder ecke" / eckbohrungen sind die EINZIGEN Faelle
@@ -1191,8 +1173,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: unten\n"
             "position: von_kanten\n"
-            "parameter: durchmesser=6, tiefe=8, "
-            "abstand_vorne=12, abstand_rechts=12"
+            "parameter: durchmesser=6, tiefe=8"
         ),
     },
     {
@@ -1211,8 +1192,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: rechts\n"
             "position: von_kanten\n"
-            "parameter: durchmesser=7, tiefe=9, "
-            "abstand_rechts=20, versatz_oben=8"
+            "parameter: durchmesser=7, tiefe=9"
         ),
     },
     {
@@ -1232,8 +1212,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: laenge=30, breite=20, tiefe=6, "
-            "kante_rechts=25, kante_unten=10"
+            "parameter: laenge=30, breite=20, tiefe=6"
         ),
     },
     {
@@ -1252,8 +1231,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: vorne\n"
             "position: von_mitte\n"
-            "parameter: laenge=28, breite=18, tiefe=5, "
-            "versatz_rechts=15, versatz_oben=5, drehung=-20"
+            "parameter: laenge=28, breite=18, tiefe=5, drehung=-20"
         ),
     },
     {
@@ -1273,8 +1251,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_kanten\n"
             "richtung: y\n"
-            "parameter: breite=5, tiefe=3, laenge=40, "
-            "abstand_links=12, abstand_oben=18"
+            "parameter: breite=5, tiefe=3, laenge=40"
         ),
     },
     {
@@ -1291,7 +1268,7 @@ TRACES = [
             "seite: rechts\n"
             "position: von_mitte\n"
             "richtung: z\n"
-            "parameter: breite=4, tiefe=3, versatz_oben=10"
+            "parameter: breite=4, tiefe=3"
         ),
     },
     {
@@ -1311,7 +1288,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_mitte\n"
             "parameter: anzahl=6, durchmesser=5, tiefe=4, "
-            "kreis_durchmesser=50, versatz_links=10, versatz_unten=5"
+            "kreis_durchmesser=50"
         ),
     },
     {
@@ -1369,8 +1346,7 @@ TRACES = [
             "typ: bohrung\n"
             "seite: oben\n"
             "position: von_kanten\n"
-            "parameter: durchmesser=5, tiefe=5, "
-            "abstand_oben=10, abstand_links=8"
+            "parameter: durchmesser=5, tiefe=5"
         ),
     },
     {
@@ -1403,7 +1379,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_mitte\n"
             "richtung: x\n"
-            "parameter: breite=4, tiefe=2, laenge=30, versatz_rechts=6"
+            "parameter: breite=4, tiefe=2, laenge=30"
         ),
     },
 
@@ -1431,7 +1407,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: oben\n"
             "position: von_mitte\n"
-            "parameter: laenge=60, breite=40, tiefe=10, versatz_rechts=10"
+            "parameter: laenge=60, breite=40, tiefe=10"
         ),
     },
     {
@@ -1447,7 +1423,7 @@ TRACES = [
             "typ: tasche\n"
             "seite: oben\n"
             "position: von_mitte\n"
-            "parameter: laenge=30, breite=20, tiefe=6, versatz_rechts=5, versatz_unten=3"
+            "parameter: laenge=30, breite=20, tiefe=6"
         ),
     },
     {
@@ -1464,7 +1440,7 @@ TRACES = [
             "seite: oben\n"
             "position: von_mitte\n"
             "richtung: y\n"
-            "parameter: breite=5, tiefe=4, laenge=30, versatz_rechts=8"
+            "parameter: breite=5, tiefe=4, laenge=30"
         ),
     },
 ]

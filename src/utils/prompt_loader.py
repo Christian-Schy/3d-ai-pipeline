@@ -25,3 +25,18 @@ def load_prompt(filename: str) -> ModuleType:
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def load_convention(name: str) -> str:
+    """Load a shared prompt-convention fragment from data/prompts/conventions/.
+
+    A fragment is a plain-text block injected verbatim into classifier
+    SYSTEM_PROMPTs (ADR 0014 W2 — Konventions-Bibliothek). One fragment
+    encodes one DIN/positioning convention; editing the file propagates
+    the change to every prompt that includes it, so a convention can
+    never again live in only one of several sibling classifiers.
+
+    `name` is the file stem without extension, e.g. "ecken_regel".
+    """
+    path = Path("data/prompts/conventions") / f"{name}.md"
+    return path.read_text(encoding="utf-8").strip()

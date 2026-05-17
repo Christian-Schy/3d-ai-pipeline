@@ -33,9 +33,10 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
-addopts = ["-m", "not slow"]
+addopts = ["-m", "not slow and not agent_regression"]
 markers = [
     "slow: integration tests that need Ollama and real models",
+    "agent_regression: per-agent live regression cases (Ollama; ~5 min/agent). Run with: pytest tests/agent_regression -m agent_regression -v",
 ]
 
 # ─── Code-Quality Tools (siehe Makefile + ADR 0008 Done-Review) ──────────
