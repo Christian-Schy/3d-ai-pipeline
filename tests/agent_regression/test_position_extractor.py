@@ -41,11 +41,9 @@ CASES: list[dict] = [
         "placement": False,
         "feature": True,
         "min_features": 2,
-        "covers": "Zwei Features — beide muessen im feature-Bucket landen",
-        "xfail": "W1-Befund (ADR 0014 §10.1, Front-Layer): Labeler legt die "
-                 "Masse-Wiederholung 'wuerfel 80x80x80' UND das bare Feature-"
-                 "Face-Wort 'oben' in den placement-Bucket, statt erstere zu "
-                 "droppen und 'oben' beim Feature-Satz zu belassen. Audit im Umbau.",
+        "covers": "Zwei Features — beide inkl. Seitenwort im feature-Bucket; "
+                  "'wuerfel 80x80x80' als Masse-Wiederholung gedroppt. Geloest "
+                  "durch die Seitenwort-Regel im Prompt (W1-Befund §10.1).",
     },
     {
         "id": "child_plate_placement_and_feature",
