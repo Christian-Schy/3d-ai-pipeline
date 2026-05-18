@@ -112,11 +112,11 @@ gibt es nicht — bündig **schließt Offset aus**.
 ### Rotation ohne explizite Bauteil-Bezugskante
 
 Bei C2/C3 (rotiert ≠ 0°) berechnet der Resolver den Pocket-Footprint nach
-Rotation. Wenn dann eine Pocket-Außenkante zu nah am Bauteilrand liegt,
-warnt `coordinate_validator` (konservative bbox-Approximation
-`max(x,y)/2`). Bei rotierten Taschen nahe Kante kann das ein **False
-Positive** sein — bekannte Limitation (siehe CLAUDE.md "Bekannte
-Limitierungen").
+Rotation. `coordinate_validator._check_offset_bounds` prueft den
+Ueberhang seit 2026-05-18 mit der echten **rotierten AABB**
+(`x_half·|cos θ| + y_half·|sin θ|`), nicht mehr mit axis-aligned `x/2`.
+Damit faengt der Validator vorher uebersehene Ueberhaenge — die alte
+"bbox-Approximation" Limitation ist behoben.
 
 ### "obere Kante der Tasche" auf horizontaler Face
 

@@ -32,7 +32,7 @@ Capability-Sprung noetig.
 | ~~**Slot-Restwandstaerke-Validator** (Aussenkontur → Bauteilkante ≥ Mindest)~~ ✅ erledigt 2026-05-18 (Paket 4) | `src/tools/coordinate_validator.py` Check 11 | — |
 | **Pattern `start_angle_deg`-Vokabular** ("erste Bohrung bei 0°/90°") | `prompt_classifier_circular.py` + Demos | klein |
 | **Pattern Kind-Bohrung-Validation** (jede Bohrung im Pattern gegen Bauteilrand) | `coordinate_validator.py` | mittel |
-| **Tasche rotiert: exakte Konturpruefung** statt bbox-Approximation | `coordinate_validator.py` | mittel |
+| ~~**Tasche rotiert: exakte Konturpruefung** statt bbox-Approximation~~ ✅ erledigt 2026-05-18 | `coordinate_validator.py` rotations-bewusste AABB | — |
 | **Edge-Features Innen-/Aussenkanten-Filter** ("Aussenkanten der Top-Face ohne Tasche-Kanten") | Template + Klassifizierer | mittel |
 | **Edge-Features E2-Coverage** ("horizontale Kanten") | Goldens + Klassifizierer-Demos | klein |
 | ~~**Slot-Pipeline-Goldens-Heatmap** unter Mittellinien-Regel verifizieren~~ ✅ erledigt 2026-05-18 (Paket 1.5) | Ollama-Heatmap-Run | — |

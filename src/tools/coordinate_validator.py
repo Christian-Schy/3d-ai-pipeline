@@ -356,8 +356,21 @@ def _check_offset_bounds(
         feat_half_x = feat_half
         feat_half_y = feat_half
     elif params.get("x") and params.get("y"):
-        feat_half_x = float(params["x"]) / 2
-        feat_half_y = float(params["y"]) / 2
+        # Rotations-bewusste AABB fuer Tasche/Box-artige Features. Vor
+        # 2026-05-18 nutzte der Check axis-aligned x/2, y/2 ohne Rotation
+        # -> unterschaetzte die AABB rotierter Pockets nahe Kante (CLAUDE.md
+        # "Bekannte Limitierungen"). Mit angle_deg=0 unveraendert.
+        x_half = float(params["x"]) / 2
+        y_half = float(params["y"]) / 2
+        angle_deg = float(placement.get("angle_deg", 0.0) or 0.0)
+        if angle_deg:
+            a = math.radians(angle_deg)
+            cos_a, sin_a = abs(math.cos(a)), abs(math.sin(a))
+            feat_half_x = x_half * cos_a + y_half * sin_a
+            feat_half_y = x_half * sin_a + y_half * cos_a
+        else:
+            feat_half_x = x_half
+            feat_half_y = y_half
     elif params.get("width") and params.get("length"):
         feat_half_x = float(params["width"]) / 2
         feat_half_y = float(params["length"]) / 2

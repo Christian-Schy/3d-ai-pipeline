@@ -89,11 +89,26 @@ Tabelle pro Feature-Klasse: ✓ = Pflicht-Coverage, — = nicht anwendbar,
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | **Bohrung** ([20](20_bohrung_din.md)) | ✓ | — | ✓ | ✓ | ✓ | ✓ | ⏳ Cap 6.0 | ✓ | ✓ | ✓ | ✓ | ✓ | — | — | point-like, keine Rotation, keine **eigene** Feature-Kante |
 | **Tasche** ([22](22_tasche_din.md)) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ⏳ Cap 6.0 | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ | volle Bezugs-Methodik + Rotation |
-| **Nut/Slot** ([21](21_nut_slot_din.md)) | ✓ | ✓ | ✓ | ✓ | — | ✓ | ⏳ Cap 6.0 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ *(Konv.21 Edge-Case ≠ 90er)* | + Length/Width per-Achse, + 3 Richtungs-Wordings |
-| **Pattern** ([24](24_pattern_din.md)) | ✓ | — | ✓ | ✓ | — | ✓ | ⏳ Cap 6.0 | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ *(Pattern-Rotation, nicht Kind-Bohrung)* | 3 Typen: Grid, Kreis, Linear-Reihe |
+| **Nut/Slot** ([21](21_nut_slot_din.md)) | ✓ | ✓ | ✓ | ✓ | ✓(=A1) | ✓ | ⏳ Cap 6.0 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | + Mittellinien-Bezug beide Achsen + 3 Richtungs-Wordings |
+| **Pattern** ([24](24_pattern_din.md)) | ✓ | — | ✓ | ✓ | ✓(=A1) | ✓ | ⏳ Cap 6.0 | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ *(Pattern-Rotation, nicht Kind-Bohrung)* | 3 Typen: Grid, Kreis, Linear-Reihe |
 | **Plate** ([25](25_plate_din.md)) | ✓ | ✓ | ✓ | ✓ | ✓ | — | ⏳ Cap 6.0 | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ | + Auflage-Face-Wahl, + Side-Stack, + Orientierung hochkant/flach |
 
-Legende: ✓ = Pflicht-Coverage heute, — = nicht anwendbar, ⏳ = geplant mit der genannten Capability.
+Legende: ✓ = Pflicht-Coverage heute, ✓(=A1) = Wording-Variante von A1
+(Eck-Phrase, numerisch identisch), — = nicht anwendbar, ⏳ = geplant mit
+der genannten Capability.
+
+Hinweise zur Tabelle (Stand 2026-05-18):
+
+- **Slot A5 = ✓(=A1):** Eck-Phrase fuer Slots wird unter der Mittellinien-
+  Regel ([Konv. 21](21_nut_slot_din.md)) als zwei `abstand_*` aufgeloest
+  (kein eigenes Anker-Schema). Frueher "—", weil die per-Achse-Regel
+  Eck-Slots ungeklaert liess.
+- **Pattern A5 = ✓(=A1):** Pattern-Center ist point-like → Eck-Phrase
+  fuer Kreis-Pattern numerisch == A1. Bei Grid/Linear greift A1 ebenfalls
+  (zur outermost-Hole, [Konv. 24](24_pattern_din.md)).
+- **Plate C2/C3:** Combined-Cell ✓ — `25_plate_din.md` testet C2 (P09);
+  C3-Test ist noch nicht geschrieben und faellt damit in den Plan-Bucket
+  (siehe `25_*` Coverage-Luecken).
 
 ## Wording-Varianten pro Achse (Vokabular-Pool)
 

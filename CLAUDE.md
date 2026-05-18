@@ -396,9 +396,11 @@ Vor Training: Schema eingefroren — sonst Moving Target.
 - Inventar Step B + feature_definierer: Mega-Calls bei vielen Aktionen
   → Latenz 70-313s, verklumpt Tasche+Bohrung-Verschachtelungen
   → ADR 0003 in Umsetzung: Pro-Aktion-Mikro-Calls
-- coordinate_validator bei rotierten Pockets nahe Kante: false positive
-  durch konservative bbox-Approximation (max(x,y)/2). Ein eigener
-  Fix-Punkt — bisher keine ADR.
+- ~~coordinate_validator bei rotierten Pockets nahe Kante: bbox-
+  Approximation ignoriert Rotation.~~ Behoben 2026-05-18: `_check_offset_bounds`
+  rechnet jetzt rotations-bewusst (x_half·cos|θ| + y_half·sin|θ|) — fasst
+  die echte AABB der rotierten Tasche und meldet vorher uebersehene
+  Ueberhaenge. Unit-Tests in `tests/tools/test_coordinate_validator.py`.
 
 ## Dokumentations-Konventionen
 
