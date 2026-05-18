@@ -1,0 +1,308 @@
+{
+  "description": "STRESS_all_in_one_part — 22 Features auf einem Wuerfel 120x100x80; alle Cap-1.0-Kombos (6 Seiten, 5 Position-Methoden, NEST, Anker, Patterns)",
+  "build_order": [
+    "wuerfel",
+    "p01_oben_centered",
+    "p02_oben_rot_versatz",
+    "p03_vorne_edge",
+    "p04_rechts_rotated",
+    "p05_unten_eck",
+    "h01_hinten_centered",
+    "h02_unten_eck",
+    "h03_vorne_versatz",
+    "h04_hinten_eck",
+    "h05_rechts_centered",
+    "h06_links_versatz",
+    "h07_anker_corner_to_corner",
+    "s01_oben_y_edge",
+    "s02_oben_x_edge",
+    "s03_vorne_z_offset",
+    "s04_rechts_y_offset",
+    "s05_oben_diagonal",
+    "m01_unten_grid",
+    "m02_oben_circular",
+    "m03_links_linear",
+    "nest_h_in_p01",
+    "nest_h_in_p05"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 120, "y": 100, "z": 80},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "p01_oben_centered": {
+      "type": "pocket_rect",
+      "params": {"x": 35, "y": 25, "depth": 6},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "p02_oben_rot_versatz": {
+      "type": "pocket_rect",
+      "params": {"x": 22, "y": 14, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"right": 35, "top": 30},
+        "angle_deg": 30
+      },
+      "operation": "subtract"
+    },
+    "p03_vorne_edge": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 20, "depth": 6},
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "pocket_edge_distances": {"right": 15, "bottom": 8}
+      },
+      "operation": "subtract"
+    },
+    "p04_rechts_rotated": {
+      "type": "pocket_rect",
+      "params": {"x": 24, "y": 14, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered",
+        "center_offset": {"top": 20},
+        "angle_deg": 45
+      },
+      "operation": "subtract"
+    },
+    "p05_unten_eck": {
+      "type": "pocket_rect",
+      "params": {"x": 25, "y": 18, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "unten",
+        "alignment": "centered",
+        "pocket_edge_distances": {"top": 10, "right": 18}
+      },
+      "operation": "subtract"
+    },
+    "h01_hinten_centered": {
+      "type": "hole_single",
+      "params": {"diameter": 8, "depth": 15},
+      "parent": "wuerfel",
+      "position": {
+        "side": "hinten",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "h02_unten_eck": {
+      "type": "hole_single",
+      "params": {"diameter": 6, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "unten",
+        "alignment": "centered",
+        "edge_distances": {"top": 18, "left": 18}
+      },
+      "operation": "subtract"
+    },
+    "h03_vorne_versatz": {
+      "type": "hole_single",
+      "params": {"diameter": 7, "depth": 8},
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "center_offset": {"right": 25, "top": 10}
+      },
+      "operation": "subtract"
+    },
+    "h04_hinten_eck": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 10},
+      "parent": "wuerfel",
+      "position": {
+        "side": "hinten",
+        "alignment": "centered",
+        "edge_distances": {"top": 15, "right": 20}
+      },
+      "operation": "subtract"
+    },
+    "h05_rechts_centered": {
+      "type": "hole_single",
+      "params": {"diameter": 6, "depth": 12},
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "h06_links_versatz": {
+      "type": "hole_single",
+      "params": {"diameter": 8, "depth": 12},
+      "parent": "wuerfel",
+      "position": {
+        "side": "links",
+        "alignment": "centered",
+        "center_offset": {"top": 8}
+      },
+      "operation": "subtract"
+    },
+    "h07_anker_corner_to_corner": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right"
+        }
+      },
+      "operation": "subtract"
+    },
+    "s01_oben_y_edge": {
+      "type": "slot",
+      "params": {"width": 5, "depth": 4, "length": 35},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"top": 20, "left": 25},
+        "angle_deg": 90,
+        "notes": "entlang Y"
+      },
+      "operation": "subtract"
+    },
+    "s02_oben_x_edge": {
+      "type": "slot",
+      "params": {"width": 5, "depth": 4, "length": 30},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"bottom": 15, "right": 30},
+        "angle_deg": 0,
+        "notes": "entlang X"
+      },
+      "operation": "subtract"
+    },
+    "s03_vorne_z_offset": {
+      "type": "slot",
+      "params": {"width": 4, "depth": 3, "length": 25},
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "center_offset": {"left": 35},
+        "angle_deg": 90,
+        "notes": "entlang Z"
+      },
+      "operation": "subtract"
+    },
+    "s04_rechts_y_offset": {
+      "type": "slot",
+      "params": {"width": 4, "depth": 3, "length": 25},
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered",
+        "center_offset": {"bottom": 18},
+        "angle_deg": 90,
+        "notes": "entlang Y"
+      },
+      "operation": "subtract"
+    },
+    "s05_oben_diagonal": {
+      "type": "slot",
+      "params": {"width": 4, "depth": 3, "length": 30},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"left": 30, "bottom": 25},
+        "angle_deg": 45,
+        "notes": "Diagonal-Slot"
+      },
+      "operation": "subtract"
+    },
+    "m01_unten_grid": {
+      "type": "hole_pattern_grid",
+      "params": {
+        "hole_diameter": 4,
+        "depth": 4,
+        "count": 6,
+        "rows": 2,
+        "cols": 3,
+        "spacing": 25
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "unten",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "m02_oben_circular": {
+      "type": "hole_pattern_circular",
+      "params": {
+        "hole_diameter": 4,
+        "depth": 4,
+        "count": 6,
+        "bolt_circle_diameter": 25
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"right": 35, "bottom": 30}
+      },
+      "operation": "subtract"
+    },
+    "m03_links_linear": {
+      "type": "hole_pattern_linear",
+      "params": {
+        "hole_diameter": 4,
+        "depth": 4,
+        "count": 4,
+        "spacing": 12,
+        "direction": "z"
+      },
+      "parent": "wuerfel",
+      "position": {
+        "side": "links",
+        "alignment": "centered",
+        "center_offset": {"bottom": 15},
+        "notes": "entlang Z"
+      },
+      "operation": "subtract"
+    },
+    "nest_h_in_p01": {
+      "type": "hole_single",
+      "params": {"diameter": 6, "depth": 4},
+      "parent": "p01_oben_centered",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "nest_h_in_p05": {
+      "type": "hole_single",
+      "params": {"diameter": 4, "depth": 3},
+      "parent": "p05_unten_eck",
+      "position": {
+        "side": "unten",
+        "alignment": "centered",
+        "center_offset": {"right": 5}
+      },
+      "operation": "subtract"
+    }
+  }
+}

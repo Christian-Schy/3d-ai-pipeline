@@ -1,0 +1,328 @@
+{
+  "features": {
+    "teil_a_wuerfel": {
+      "type": "box",
+      "parent": null,
+      "params": {
+        "x": 80,
+        "y": 80,
+        "z": 60
+      }
+    },
+    "teil_b_platte": {
+      "type": "box",
+      "parent": "teil_a_wuerfel",
+      "params": {
+        "x": 60,
+        "y": 60,
+        "z": 10
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "teil_c_box": {
+      "type": "box",
+      "parent": "teil_b_platte",
+      "params": {
+        "x": 40,
+        "y": 40,
+        "z": 30
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ha_unten_centered": {
+      "type": "hole_single",
+      "parent": "teil_a_wuerfel",
+      "params": {
+        "diameter": 8,
+        "depth": 12
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ha_vorne_eck": {
+      "type": "hole_single",
+      "parent": "teil_a_wuerfel",
+      "params": {
+        "diameter": 5,
+        "depth": 10
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 20.0,
+        "offset_y": 15.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ha_oben_centered": {
+      "type": "hole_single",
+      "parent": "teil_a_wuerfel",
+      "params": {
+        "diameter": 6,
+        "depth": 10
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ha_hinten_versatz": {
+      "type": "hole_single",
+      "parent": "teil_a_wuerfel",
+      "params": {
+        "diameter": 5,
+        "depth": 8
+      },
+      "placement": {
+        "face": ">Y",
+        "alignment": "centered",
+        "offset_x": -15.0,
+        "offset_y": 8.0,
+        "angle_deg": 0.0
+      }
+    },
+    "ha_links_versatz": {
+      "type": "hole_single",
+      "parent": "teil_a_wuerfel",
+      "params": {
+        "diameter": 5,
+        "depth": 8
+      },
+      "placement": {
+        "face": "<X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": -18.0,
+        "angle_deg": 0.0
+      }
+    },
+    "pa_links_centered": {
+      "type": "pocket_rect",
+      "parent": "teil_a_wuerfel",
+      "params": {
+        "x": 20,
+        "y": 15,
+        "depth": 4
+      },
+      "placement": {
+        "face": "<X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "sa_rechts_y": {
+      "type": "slot",
+      "parent": "teil_a_wuerfel",
+      "params": {
+        "width": 4,
+        "depth": 3,
+        "length": 20
+      },
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 10.0,
+        "angle_deg": 90.0
+      }
+    },
+    "ma_unten_grid": {
+      "type": "hole_pattern_grid",
+      "parent": "teil_a_wuerfel",
+      "params": {
+        "hole_diameter": 3,
+        "depth": 4,
+        "count": 4,
+        "rows": 2,
+        "cols": 2,
+        "spacing": 12
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 20.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "hb_oben_centered": {
+      "type": "hole_single",
+      "parent": "teil_b_platte",
+      "params": {
+        "diameter": 5,
+        "depth": 4
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "hb_oben_eck": {
+      "type": "hole_single",
+      "parent": "teil_b_platte",
+      "params": {
+        "diameter": 4,
+        "depth": 4
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -20.0,
+        "offset_y": 20.0,
+        "angle_deg": 0.0
+      }
+    },
+    "pb_oben_rot": {
+      "type": "pocket_rect",
+      "parent": "teil_b_platte",
+      "params": {
+        "x": 15,
+        "y": 10,
+        "depth": 3
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 18.0,
+        "offset_y": -12.0,
+        "angle_deg": 30.0
+      }
+    },
+    "sb_oben_x": {
+      "type": "slot",
+      "parent": "teil_b_platte",
+      "params": {
+        "width": 3,
+        "depth": 2,
+        "length": 15
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 15.0,
+        "offset_y": -18.0,
+        "angle_deg": 0.0
+      }
+    },
+    "mb_unten_linear": {
+      "type": "hole_pattern_linear",
+      "parent": "teil_b_platte",
+      "params": {
+        "hole_diameter": 3,
+        "depth": 3,
+        "count": 3,
+        "spacing": 8,
+        "direction": "x"
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "hc_oben_centered": {
+      "type": "hole_single",
+      "parent": "teil_c_box",
+      "params": {
+        "diameter": 4,
+        "depth": 5
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "hc_oben_versatz": {
+      "type": "hole_single",
+      "parent": "teil_c_box",
+      "params": {
+        "diameter": 3,
+        "depth": 4
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": 8.0,
+        "angle_deg": 0.0
+      }
+    },
+    "pc_vorne_centered": {
+      "type": "pocket_rect",
+      "parent": "teil_c_box",
+      "params": {
+        "x": 20,
+        "y": 15,
+        "depth": 3
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "sc_oben_y": {
+      "type": "slot",
+      "parent": "teil_c_box",
+      "params": {
+        "width": 3,
+        "depth": 2,
+        "length": 12
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -10.0,
+        "offset_y": 0.0,
+        "angle_deg": 90.0
+      }
+    },
+    "nest_h_in_pc": {
+      "type": "hole_single",
+      "parent": "pc_vorne_centered",
+      "params": {
+        "diameter": 3,
+        "depth": 5.0
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    }
+  }
+}

@@ -1,0 +1,346 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "parent": null,
+      "params": {
+        "x": 100,
+        "y": 80,
+        "z": 60
+      }
+    },
+    "platte": {
+      "type": "box",
+      "parent": "wuerfel",
+      "params": {
+        "x": 80,
+        "y": 60,
+        "z": 12
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_wuerfel_unten_eck": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 6,
+        "depth": 10
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 35.0,
+        "offset_y": 25.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_wuerfel_vorne_centered": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 8,
+        "depth": 12
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_wuerfel_hinten_versatz": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 5,
+        "depth": 10
+      },
+      "placement": {
+        "face": ">Y",
+        "alignment": "centered",
+        "offset_x": 20.0,
+        "offset_y": 5.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_wuerfel_rechts_eck": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 6,
+        "depth": 10
+      },
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": -28.0,
+        "offset_y": 18.0,
+        "angle_deg": 0.0
+      }
+    },
+    "p_wuerfel_unten_centered": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 30,
+        "y": 20,
+        "depth": 5
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "p_wuerfel_vorne_eck": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 20,
+        "y": 15,
+        "depth": 5
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 25.0,
+        "offset_y": -14.5,
+        "angle_deg": 0.0
+      }
+    },
+    "s_wuerfel_unten_x": {
+      "type": "slot",
+      "parent": "wuerfel",
+      "params": {
+        "width": 4,
+        "depth": 3,
+        "length": 25
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 30.0,
+        "offset_y": -25.0,
+        "angle_deg": 0.0
+      }
+    },
+    "s_wuerfel_links_y": {
+      "type": "slot",
+      "parent": "wuerfel",
+      "params": {
+        "width": 4,
+        "depth": 3,
+        "length": 20
+      },
+      "placement": {
+        "face": "<X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 90.0
+      }
+    },
+    "m_wuerfel_hinten_grid": {
+      "type": "hole_pattern_grid",
+      "parent": "wuerfel",
+      "params": {
+        "hole_diameter": 3,
+        "depth": 4,
+        "count": 4,
+        "rows": 2,
+        "cols": 2,
+        "spacing": 15
+      },
+      "placement": {
+        "face": ">Y",
+        "alignment": "centered",
+        "offset_x": -25.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "m_wuerfel_unten_circular": {
+      "type": "hole_pattern_circular",
+      "parent": "wuerfel",
+      "params": {
+        "hole_diameter": 3,
+        "depth": 4,
+        "count": 6,
+        "bolt_circle_diameter": 20
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 25.0,
+        "offset_y": 15.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_platte_oben_centered": {
+      "type": "hole_single",
+      "parent": "platte",
+      "params": {
+        "diameter": 5,
+        "depth": 5
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_platte_oben_eck": {
+      "type": "hole_single",
+      "parent": "platte",
+      "params": {
+        "diameter": 4,
+        "depth": 5
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -30.0,
+        "offset_y": 20.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_platte_oben_versatz": {
+      "type": "hole_single",
+      "parent": "platte",
+      "params": {
+        "diameter": 4,
+        "depth": 5
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 15.0,
+        "offset_y": -10.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_platte_unten_centered": {
+      "type": "hole_single",
+      "parent": "platte",
+      "params": {
+        "diameter": 5,
+        "depth": 5
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "p_platte_oben_centered": {
+      "type": "pocket_rect",
+      "parent": "platte",
+      "params": {
+        "x": 30,
+        "y": 20,
+        "depth": 4
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "p_platte_oben_rot": {
+      "type": "pocket_rect",
+      "parent": "platte",
+      "params": {
+        "x": 18,
+        "y": 12,
+        "depth": 3
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 22.0,
+        "offset_y": 15.0,
+        "angle_deg": 30.0
+      }
+    },
+    "s_platte_oben_x": {
+      "type": "slot",
+      "parent": "platte",
+      "params": {
+        "width": 3,
+        "depth": 2,
+        "length": 20
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 20.0,
+        "offset_y": 18.0,
+        "angle_deg": 0.0
+      }
+    },
+    "s_platte_oben_y": {
+      "type": "slot",
+      "parent": "platte",
+      "params": {
+        "width": 3,
+        "depth": 2,
+        "length": 15
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -25.0,
+        "offset_y": 0.0,
+        "angle_deg": 90.0
+      }
+    },
+    "m_platte_oben_linear": {
+      "type": "hole_pattern_linear",
+      "parent": "platte",
+      "params": {
+        "hole_diameter": 3,
+        "depth": 2,
+        "count": 3,
+        "spacing": 8,
+        "direction": "x"
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 10.0,
+        "offset_y": -12.0,
+        "angle_deg": 0.0
+      }
+    },
+    "nest_h_in_p_platte": {
+      "type": "hole_single",
+      "parent": "p_platte_oben_centered",
+      "params": {
+        "diameter": 4,
+        "depth": 6.0
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    }
+  }
+}
