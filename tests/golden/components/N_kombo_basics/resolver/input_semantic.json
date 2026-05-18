@@ -105,7 +105,7 @@
       "position": {
         "side": "oben",
         "alignment": "centered",
-        "pocket_edge_distances": {
+        "edge_distances": {
           "right": 30
         },
         "center_offset": {
