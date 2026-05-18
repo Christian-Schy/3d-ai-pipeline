@@ -151,21 +151,27 @@ Erledigt 2026-05-18 (Paket 1):
   N_kombo `nut_ecke_oben_rechts` input `top:10`→`top:25` zur
   Geometrie-Validitaet). 303/303 Tests gruen.
 
-Noch offen:
+Erledigt 2026-05-18 (Paket 1.5 + 4):
 
-- **Pipeline-Goldens-Heatmap unter Mittellinien-Regel verifizieren**
-  (Ollama, separate Sitzung). Spec-Texte (D1/D2 in `21_nut_slot_din.md`
-  und in `tests/golden/components/.../pipeline/specs.txt`) sind
-  grossteils weiter gueltig, mehrdeutige Stellen werden mit dem
-  Heatmap-Lauf re-verifiziert.
-- **Endradien fehlen im Slot-Template:** Eine normgerechte Nut/Langloch
-  hat halbrunde Enden (`R = Breite/2`). Das Template erzeugt heute nur
-  den rechteckigen Schnitt — muss um die zwei Endradien ergaenzt
-  werden.
-- **Validator-Flag Restwandstaerke:** Sobald Endradien existieren,
-  pruefen ob Slot-Aussenkontur einen Mindestabstand zur Bauteilkante
-  einhaelt (heute nur per-bbox-Approximation in
-  `coordinate_validator`).
+- ✅ **Pipeline-Goldens-Heatmap unter Mittellinien-Regel:** 3/3 PASS
+  (N_coverage, N_kombo, V2 nach minimaler Spec-Pflege fuer 2 N_kombo-
+  Cases — Commit 6861a76).
+- ✅ **Endradien im Slot-Template:** `slot()` rendert ab 2026-05-18
+  immer `.slot2D(length, width, angle)` (halbrunde Enden `R = width/2`),
+  unabhaengig vom Winkel. Vor 2026-05-18 nutzte der gerade Pfad
+  `.rect()` (alte edge-to-edge-Konvention).
+- ✅ **Validator Restwandstaerken-Check:** Neuer Check 11
+  `_check_slot_min_clearance` in `coordinate_validator.py` — emittiert
+  WARNING wenn die Slot-Aussenkontur (length×width-AABB, angle-rotiert)
+  naeher als 0.5mm an einer Bauteilkante liegt. Negative Werte =
+  Ueberhang. 4 Unit-Tests in `tests/tools/test_coordinate_validator.py`.
+
+Noch offen aus diesem Audit (kein Slot-Thema mehr):
+
+- Matrix-Feinheiten: Feature-Table A5-Spalte harmonisieren
+  (Pattern/Slot "—" → ✓(=A1)); Plate C3 vs Doc-TBD-Abgleich.
+- Neue Matrix "Zeichnungs-Bezugsarten" mit Datum/Feature-zu-Feature →
+  kommt mit Cap 6.0 (siehe `98_engineering_plan.md` §Cap 6.0).
 
 Weiterhin offen (Engineering-Plan, eigene Capability):
 

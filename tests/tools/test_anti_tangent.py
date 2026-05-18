@@ -33,7 +33,10 @@ class TestSlotAntiTangent:
                           "notes": "entlang x-achse"},
         }
         code = generate_code(_bp([slot]))
-        assert ".rect(100.02," in code, "default-length slot should overshoot to 100+0.02"
+        # Mit Mittellinien-Konvention + slot2D-Template (2026-05-18) wird der
+        # gerade Slot ebenfalls als slot2D gerendert; der +0.02-Overshoot
+        # bleibt wirksam, jetzt halt auf die Endradien-Aussenkontur.
+        assert ".slot2D(100.02," in code, "default-length slot should overshoot to 100+0.02"
 
     def test_slot_explicit_length_is_unchanged(self):
         slot = {
@@ -43,7 +46,7 @@ class TestSlotAntiTangent:
                           "notes": "entlang x-achse"},
         }
         code = generate_code(_bp([slot]))
-        assert ".rect(60.0," in code
+        assert ".slot2D(60.0," in code
         assert "60.02" not in code, "explicit length must not be modified"
 
 

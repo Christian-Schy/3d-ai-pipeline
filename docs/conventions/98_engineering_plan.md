@@ -28,14 +28,14 @@ Capability-Sprung noetig.
 
 | Item | Wo | Aufwand |
 |---|---|---|
-| **Slot-Template Endradien** (`R = Breite/2`) | `src/codegen/templates.py` `slot`-Template | klein |
-| **Slot-Restwandstaerke-Validator** (Aussenkontur → Bauteilkante ≥ Mindest) | `src/tools/coordinate_validator.py` | klein, braucht Endradien |
+| ~~**Slot-Template Endradien** (`R = Breite/2`)~~ ✅ erledigt 2026-05-18 (Paket 4) | `src/codegen/templates.py` `slot`-Template | — |
+| ~~**Slot-Restwandstaerke-Validator** (Aussenkontur → Bauteilkante ≥ Mindest)~~ ✅ erledigt 2026-05-18 (Paket 4) | `src/tools/coordinate_validator.py` Check 11 | — |
 | **Pattern `start_angle_deg`-Vokabular** ("erste Bohrung bei 0°/90°") | `prompt_classifier_circular.py` + Demos | klein |
 | **Pattern Kind-Bohrung-Validation** (jede Bohrung im Pattern gegen Bauteilrand) | `coordinate_validator.py` | mittel |
 | **Tasche rotiert: exakte Konturpruefung** statt bbox-Approximation | `coordinate_validator.py` | mittel |
 | **Edge-Features Innen-/Aussenkanten-Filter** ("Aussenkanten der Top-Face ohne Tasche-Kanten") | Template + Klassifizierer | mittel |
 | **Edge-Features E2-Coverage** ("horizontale Kanten") | Goldens + Klassifizierer-Demos | klein |
-| **Slot-Pipeline-Goldens-Heatmap** unter Mittellinien-Regel verifizieren | Ollama-Heatmap-Run | klein, GPU |
+| ~~**Slot-Pipeline-Goldens-Heatmap** unter Mittellinien-Regel verifizieren~~ ✅ erledigt 2026-05-18 (Paket 1.5) | Ollama-Heatmap-Run | — |
 | **NEST `hole_classifier`-Fix** (Ecken-Regel `abstand_*` statt `versatz_*`) | Prompt/Demo + Retrain | mittel, GPU |
 
 ---

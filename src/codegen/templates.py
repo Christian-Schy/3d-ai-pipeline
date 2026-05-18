@@ -391,21 +391,21 @@ def slot(
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
 ) -> str:
-    """Slot/groove on a face.
+    """Slot/groove on a face — mit halbrunden Endradien (`R = width/2`).
 
-    For straight slots (angle=0 or 90), uses .rect().cutBlind() to produce
-    a full-length rectangular cut that reaches part edges. Only uses .slot2D()
-    for diagonal slots where rounded ends are needed.
+    Verwendet immer `.slot2D(length, width, angle)`, unabhaengig vom Winkel.
+    Eine normgerechte Nut/Langloch hat halbrunde Enden (ISO 129-1 / DIN-
+    Slot-Konvention, siehe `docs/conventions/21_nut_slot_din.md`).
+
+    Vor 2026-05-18 nutzte der gerade Slot-Pfad (angle 0/90) `.rect()`, weil
+    die alte per-Achse-Konvention den Slot edge-to-edge bis zur Bauteilkante
+    laufen liess. Mit der Mittellinien-Regel positioniert der Slot ueber
+    seinen Mittelpunkt; ueberragt er die Bauteilkante (z.B. "durchgaengig"),
+    schneidet CadQuery den Teil ab — der visuelle Edge-Effekt bleibt
+    erhalten, ohne `.rect()`-Sonderfall.
     """
     face_sel = _face_selection(face, use_ntp, ntp_point)
-    # Straight slots use rect() to cut edge-to-edge.
-    # slot2D() has rounded ends (radius=width/2) that stay inside part edges.
-    if angle == 0:
-        shape = f".rect({length}, {width})"
-    elif angle == 90:
-        shape = f".rect({width}, {length})"
-    else:
-        shape = f".slot2D({length}, {width}, {angle})"
+    shape = f".slot2D({length}, {width}, {angle})"
     return (
         f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:\n"
         f"    cutter = (\n"

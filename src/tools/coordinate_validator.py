@@ -40,6 +40,12 @@ class CoordIssue:
         return f"  [{self.severity}] {self.feature_id} — {self.check}: {self.message}"
 
 
+# Mindest-Restwandstaerke (mm) zwischen Slot-Aussenkontur und Bauteilkante.
+# Wird als WARNING gemeldet (nicht ERROR) — Konstrukteur kann eine knappe
+# Restkante bewusst wollen (z.B. Soll-Bruch). docs/conventions/21_nut_slot_din.md.
+_MIN_SLOT_REST_WALL_MM = 0.5
+
+
 def _get_bbox(feature: dict) -> tuple[float, float, float] | None:
     """Returns (x, y, z) dimensions of a feature, or None if not determinable."""
     params = feature.get("params", {})
@@ -282,6 +288,18 @@ def _check_feature(fid: str, features: dict, issues: list) -> None:
     # Check 10: hole pattern spacing fits parent
     if ftype == "hole_pattern_grid":
         _check_pattern_spacing(fid, params, parent_bbox, parent_id, issues)
+
+    # Check 11: Slot-Restwandstaerke (Mittellinien-Konvention,
+    # docs/conventions/21_nut_slot_din.md). Warnt wenn die Slot-Aussen-
+    # kontur (length×width-AABB, angle-rotiert) naeher als
+    # _MIN_SLOT_REST_WALL_MM an einer Bauteilkante liegt. Negative Werte
+    # = Ueberhang.
+    if ftype == "slot":
+        if has_feature_parent and root_parent_id:
+            slot_parent_bbox = _get_bbox(features.get(root_parent_id, {}))
+        else:
+            slot_parent_bbox = parent_bbox
+        _check_slot_min_clearance(fid, feat, slot_parent_bbox, issues)
 
 
 def _check_offset_bounds(
@@ -573,6 +591,77 @@ def _check_build_order_sorting(
 
     if reordered:
         log.info("build_order_reordered", new_order=build_order)
+
+
+def _check_slot_min_clearance(
+    fid: str, feat: dict,
+    parent_bbox: tuple[float, float, float] | None, issues: list
+) -> None:
+    """Check 11: Slot-Restwandstaerke gegen Bauteilkante.
+
+    Berechnet die AABB der Slot-Aussenkontur auf der Placement-Face
+    (`length` entlang Slot-Achse, `width` quer, `angle_deg`-rotiert; die
+    Endradien zaehlen nicht ueber `length`/`width` hinaus, slot2D-Konvention)
+    und meldet WARNING, wenn die Restkante zur naechsten Bauteilkante
+    unter `_MIN_SLOT_REST_WALL_MM` faellt. Negative Werte = Ueberhang.
+
+    Verwendet die Mittellinien-Position aus placement.offset_x/_y (Konv.
+    21, Mittellinien-Bezug). Greift nur fuer slot-Features.
+    """
+    if parent_bbox is None:
+        return
+    placement = feat.get("placement") or {}
+    if not isinstance(placement, dict):
+        return
+    params = feat.get("params") or {}
+    length = params.get("length")
+    width = params.get("width")
+    if not (isinstance(length, (int, float)) and isinstance(width, (int, float))):
+        return
+    if length <= 0 or width <= 0:
+        return
+
+    angle_deg = float(placement.get("angle_deg", 0.0) or 0.0)
+    offset_x = float(placement.get("offset_x", 0.0) or 0.0)
+    offset_y = float(placement.get("offset_y", 0.0) or 0.0)
+    face = placement.get("face", ">Z")
+
+    px, py, pz = parent_bbox
+    if face in (">Z", "<Z"):
+        face_half_x, face_half_y = px / 2, py / 2
+    elif face in (">X", "<X"):
+        face_half_x, face_half_y = py / 2, pz / 2
+    elif face in (">Y", "<Y"):
+        face_half_x, face_half_y = px / 2, pz / 2
+    else:
+        face_half_x, face_half_y = px / 2, py / 2
+
+    a = math.radians(angle_deg)
+    cos_a, sin_a = abs(math.cos(a)), abs(math.sin(a))
+    aabb_half_x = (length / 2) * cos_a + (width / 2) * sin_a
+    aabb_half_y = (length / 2) * sin_a + (width / 2) * cos_a
+
+    clearances = {
+        "rechter":  face_half_x - offset_x - aabb_half_x,
+        "linker":   face_half_x + offset_x - aabb_half_x,
+        "oberer":   face_half_y - offset_y - aabb_half_y,
+        "unterer":  face_half_y + offset_y - aabb_half_y,
+    }
+    min_side = min(clearances, key=lambda k: clearances[k])
+    min_clearance = clearances[min_side]
+
+    if min_clearance < _MIN_SLOT_REST_WALL_MM:
+        issues.append(CoordIssue(
+            severity="WARNING", feature_id=fid,
+            check="slot_restwandstaerke",
+            message=(
+                f"Slot-Restwandstaerke an {min_side} Bauteilkante: "
+                f"{min_clearance:.2f}mm "
+                f"(Mindest {_MIN_SLOT_REST_WALL_MM}mm). "
+                f"Slot-Center=({offset_x:.1f}, {offset_y:.1f}), "
+                f"angle={angle_deg:.0f}°, length={length}, width={width}."
+            ),
+        ))
 
 
 def _check_pattern_spacing(

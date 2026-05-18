@@ -204,16 +204,17 @@ kein Sonderfall — Mittelpunkt + Winkel, edge-to-center wie bei jedem
 Slot. Test prueft weiterhin, dass der Slot innerhalb des Bauteils landet
 (kein Ueberragen).
 
-## Offene Luecken (fuer Plan / Validator)
+## Offene Luecken (Stand 2026-05-18 — erledigt)
 
-- **Endradien fehlen:** Das Slot-Template erzeugt derzeit **keine**
-  Endrundungen (`R = Breite/2`). Eine normgerechte Nut/Langloch hat
-  halbrunde Enden — Template-Erweiterung noetig.
-- **Restwandstaerke-Pruefung (Validator):** Der Abstand Slot-Aussenkante
-  → Bauteilkante ist fertigungsrelevant. Spaeter fuer den Validator
-  markieren: Restwandstaerke gegen einen Mindestwert pruefen (kein
-  Ueberragen, kein zu duenner Steg). Greift sobald Endradien existieren
-  (echte Slot-Aussenkontur statt rechteckiger Approximation).
+- ✅ **Endradien:** Slot-Template rendert seit 2026-05-18 immer
+  `.slot2D(length, width, angle)` mit halbrunden Enden (`R = width/2`).
+  Vor 2026-05-18 nutzte der gerade Pfad `.rect()` (alte edge-to-edge-
+  Konvention).
+- ✅ **Restwandstaerken-Pruefung:** `coordinate_validator.py` Check 11
+  (`_check_slot_min_clearance`) emittiert WARNING wenn die Slot-Aussen-
+  kontur (length×width-AABB, angle-rotiert) naeher als 0.5mm an einer
+  Bauteilkante liegt. Negative Werte = Ueberhang. Schwellwert ueber
+  `_MIN_SLOT_REST_WALL_MM` konfigurierbar.
 
 ## Referenzen
 
