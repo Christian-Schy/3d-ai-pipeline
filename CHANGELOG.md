@@ -8,6 +8,28 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-18
+
+- **W10 — Modifikations-/Error-Pfad vereinheitlicht, `blueprint_architect`
+  entfernt (ADR 0014 §15).** Der monolithische Architect war als
+  Modify-/Error-Fallback gedacht, wurde aber faktisch nie erreicht
+  (0× in 790 `runs.jsonl`-Eintraegen): jeder Run laeuft durch
+  `inventar_node`, der Discriminator `_is_3step_chain` war damit immer
+  wahr. Ersatzlos entfernt statt umgebaut — Routing in `pipeline.py` +
+  `edges.py` einheitlich auf die Per-Aktion-Kette, `_is_3step_chain`
+  weg. Geloescht: `src/agents/blueprint_architect.py`,
+  `src/rag/blueprint_rag.py`, `blueprint_architect_node`, zugehoerige
+  Config-Felder. Loest die in ADR 0014 §10.3 benannte „groesste
+  Doppelung im System".
+- **Cap 1.0 STRESS-Goldens (Resolver-Layer).** Drei Multi-Capability-
+  Component-Goldens unter `tests/golden/components/STRESS_*`:
+  all_in_one_part (22 Features/1 Wuerfel), multi_plate_with_features,
+  three_plates. Alle coordinate_validator-clean, DIN-Mittellinien-Regel.
+- **Paket 2 — hole_classifier Ecken-Regel-Demos (NEST n6).** 8 Eck-
+  Phrase-Demos fuer `typ=bohrung`, Demo-Pool 28→36, agent_regression-
+  NEST-Case. Behebt versatz_*-statt-abstand_*-Fehlklassifikation bei
+  Eck-Phrasen.
+
 ## 2026-05-17
 
 - **Dormanter Reverse-Validator-Pfad vorbereitet (ADR 0015).** Neues

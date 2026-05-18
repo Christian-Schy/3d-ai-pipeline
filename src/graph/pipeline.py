@@ -11,13 +11,12 @@ STRUKTUR (bei Aenderungen pflegen! Siehe CLAUDE.md)
 ═══════════════════════════════════════════════════════════════════
 Routing-Funktionen (Condition-Edges):
   route_after_interpreter             — Interpreter-Loop bis Spec komplett
-  route_after_coordinate_validator    — zurueck zu feature_definierer oder architect
+  route_after_coordinate_validator    — invalid → zurueck zu feature_definierer
   route_after_code_review             — zurueck zu coder bei Issues (max 2);
                                         bei disable_coder → executor durchwinken
   route_after_function_decomposer     — template-Modus ueberspringt Coder;
                                         bei disable_coder + llm-Modus → END
-  route_after_plan_validator          — zurueck zu assembly oder architect
-  _is_3step_chain                     — Helper: unterscheidet Chain vs. Architect
+  route_after_plan_validator          — invalid → zurueck zu assembly
   (in edges.py):
   route_after_entry_router            — alles → interpreter (auch Modifications)
   route_after_executor                — success → validator, fail → error_router
@@ -59,7 +58,6 @@ from src.graph.nodes import (
     platzierer_node,
     assembly_node,
     pocket_child_placer_node,
-    blueprint_architect_node,
     blueprint_resolver_node,
     coordinate_validator_node,
     plan_validator_node,
@@ -91,16 +89,10 @@ def route_after_interpreter(state: PipelineState) -> str:
     return "interpreter"
 
 
-def _is_3step_chain(state: PipelineState) -> bool:
-    """Check if this run used the 3-step chain (inventar → feature_definierer → platzierer → assembly)."""
-    return bool(state.get("inventar"))
-
-
 def route_after_coordinate_validator(state: PipelineState) -> str:
     """After coordinate_validator: valid → plan_validator, invalid → retry.
 
-    3-Step Chain runs: route back to feature_definierer (redo features + placement).
-    Blueprint Architect runs: route back to blueprint_architect.
+    Invalid runs route back to feature_definierer (redo features + placement).
     """
     if state.get("coordinate_valid", True):
         return "plan_validator"
@@ -111,13 +103,9 @@ def route_after_coordinate_validator(state: PipelineState) -> str:
         log.warning("route_coordinate_validator", decision="plan_validator",
                     reason="max_retries_exceeded", attempts=attempts)
         return "plan_validator"
-    if _is_3step_chain(state):
-        log.info("route_coordinate_validator", decision="feature_definierer",
-                 attempts=attempts, mode="3step_retry")
-        return "feature_definierer"
-    log.info("route_coordinate_validator", decision="blueprint_architect",
+    log.info("route_coordinate_validator", decision="feature_definierer",
              attempts=attempts)
-    return "blueprint_architect"
+    return "feature_definierer"
 
 
 def route_after_code_review(state: PipelineState) -> str:
@@ -159,8 +147,7 @@ def route_after_function_decomposer(state: PipelineState) -> str:
 def route_after_plan_validator(state: PipelineState) -> str:
     """After plan_validator: valid → function_decomposer, invalid → retry.
 
-    3-Step Chain runs: route back to assembly (structural/parent errors).
-    Blueprint Architect runs: route back to blueprint_architect.
+    Invalid runs route back to assembly (structural/parent errors).
     """
     from src.config.loader import get_config
     if state.get("plan_valid", True):
@@ -171,14 +158,9 @@ def route_after_plan_validator(state: PipelineState) -> str:
                     reason="max_retries_exceeded",
                     attempts=state.get("plan_validation_attempts"))
         return "function_decomposer"
-    if _is_3step_chain(state):
-        log.info("route_plan_validator", decision="assembly",
-                 issues=state.get("plan_validation_issues", "")[:60],
-                 mode="3step_retry")
-        return "assembly"
-    log.info("route_plan_validator", decision="blueprint_architect",
+    log.info("route_plan_validator", decision="assembly",
              issues=state.get("plan_validation_issues", "")[:60])
-    return "blueprint_architect"
+    return "assembly"
 
 
 def build_graph() -> StateGraph:
@@ -186,18 +168,19 @@ def build_graph() -> StateGraph:
 
     Architecture (S0 — Modulare Trennung, feature_definierer + platzierer getrennt):
 
-    Fresh requests (Per-Aktion-Kette nach ADR 0003 Stufe 5b):
+    All requests (Per-Aktion-Kette nach ADR 0003 Stufe 5b):
       entry_router → interpreter → punctuation → inventar (Step A)
         → aktions_splitter → aktions_klassifizierer → text_splitter
         → position_extractor → feature_definierer → aktions_aggregator
         → platzierer → assembly → blueprint_resolver
         → coordinate_validator → plan_validator → ...
 
-    Modify/Error-Loop: blueprint_architect (legacy chain, unchanged).
+    Modifications run the same chain (entry_router → interpreter → …);
+    the legacy monolithic blueprint_architect was removed in ADR 0014 W10.
 
     Validation failures route back to the originating agent:
-      3-Step Chain → feature_definierer (redo features + placement)
-      Blueprint Architect (legacy, only entered via error-loop) → blueprint_architect
+      coordinate_validator failure → feature_definierer (redo features + placement)
+      plan_validator failure       → assembly (structural/parent errors)
     """
     checkpointer = MemorySaver()
 
@@ -225,8 +208,6 @@ def build_graph() -> StateGraph:
     # Optional pre-resolver step: pulls "Bohrung in Tasche"-style features
     # out of the spec and injects them as feature-in-feature children.
     graph.add_node("pocket_child_placer", pocket_child_placer_node)
-    # Monolithic fallback for modify/fix
-    graph.add_node("blueprint_architect", blueprint_architect_node)
     graph.add_node("blueprint_resolver", blueprint_resolver_node)
     graph.add_node("coordinate_validator", coordinate_validator_node)
     graph.add_node("plan_validator", plan_validator_node)
@@ -288,11 +269,6 @@ def build_graph() -> StateGraph:
     # adds zero overhead to the common case.
     graph.add_edge("assembly", "pocket_child_placer")
     graph.add_edge("pocket_child_placer", "blueprint_resolver")
-
-    # Blueprint Architect (modify/fix fallback) → pocket_child_placer →
-    # Resolver. Routing through the placer keeps feature-in-feature
-    # extraction consistent across both pipelines (3-step + monolithic).
-    graph.add_edge("blueprint_architect", "pocket_child_placer")
     graph.add_edge("blueprint_resolver", "coordinate_validator")
 
     graph.add_conditional_edges(
@@ -300,7 +276,6 @@ def build_graph() -> StateGraph:
         route_after_coordinate_validator,
         {
             "plan_validator": "plan_validator",
-            "blueprint_architect": "blueprint_architect",
             "feature_definierer": "feature_definierer",
         },
     )
@@ -309,7 +284,6 @@ def build_graph() -> StateGraph:
         route_after_plan_validator,
         {
             "function_decomposer": "function_decomposer",
-            "blueprint_architect": "blueprint_architect",
             "assembly": "assembly",
         },
     )
@@ -342,9 +316,8 @@ def build_graph() -> StateGraph:
     graph.add_conditional_edges(
         "validator",
         route_after_validator,
-        {"end": END, "blueprint_architect": "blueprint_architect",
-         "feature_definierer": "feature_definierer", "coder": "coder",
-         "inventar": "inventar"},
+        {"end": END, "feature_definierer": "feature_definierer",
+         "coder": "coder", "inventar": "inventar"},
     )
 
     # Error router: code fix strategies

@@ -15,10 +15,6 @@ ollama:
 # Per-Agent Overrides — nur abweichende Werte eintragen, Rest kommt von ollama-Defaults
 # Verfügbare Felder: think (true/false), temperature (0.0–1.0), num_ctx (int)
 agent_options:
-  blueprint_architect:
-    think: true       # Legacy / modification path; größeres Kontextfenster für Edge-Cases
-    temperature: 0.1
-    num_ctx: 12288
   coder:
     think: false      # qwen3-coder unterstützt 'think' nicht → weglassen
     temperature: 0.05 # Code soll sehr deterministisch sein
@@ -118,15 +114,11 @@ models:
   validator:                "gemma4:26b"
   code_fixer:               "qwen3.5:9b"
 
-  # Legacy fallback path (Modification + Error-Loop)
-  blueprint_architect:      "nemotron-cascade-2:30b"
-
 # --- RAG ---
 rag:
   embedding_model: "all-MiniLM-L6-v2"
   db_path: "data/rag_db"
   n_results:
-    blueprint_architect: 4
     coder:               4
     validator:           3
     interpreter:         2

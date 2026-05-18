@@ -23,7 +23,6 @@ from .planning_feature_nodes import (
 )
 from .planning_assembly_nodes import assembly_node
 from .planning_blueprint_nodes import (
-    blueprint_architect_node,
     blueprint_resolver_node,
     function_decomposer_node,
 )
@@ -40,7 +39,6 @@ __all__ = [
     "platzierer_node",
     "assembly_node",
     "pocket_child_placer_node",
-    "blueprint_architect_node",
     "blueprint_resolver_node",
     "coordinate_validator_node",
     "plan_validator_node",

@@ -72,9 +72,6 @@ class ModelsConfig(BaseModel):
     validator: str = "qwen3.5:9b"
     code_fixer: str = "qwen3.5:9b"
 
-    # Legacy fallback path (Modification + Error-Loop)
-    blueprint_architect: str = "qwen3.5:35b"
-
 
 class RagKnowledgeConfig(BaseModel):
     model_config = {"extra": "ignore"}
@@ -87,7 +84,6 @@ class RagKnowledgeConfig(BaseModel):
 class RagNResultsConfig(BaseModel):
     """Per-agent chunk count. Lower for small focused knowledge bases."""
     model_config = {"extra": "ignore"}
-    blueprint_architect: int = 4
     coder: int = 4
     validator: int = 3
     interpreter: int = 2

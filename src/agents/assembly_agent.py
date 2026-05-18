@@ -7,8 +7,8 @@ semantic blueprint. Determines:
   - How are parts connected (parent + position relationships)?
   - What is the build order?
 
-Output is the same semantic blueprint format that the BlueprintArchitect
-produces — compatible with blueprint_resolver and everything downstream.
+Output is the semantic blueprint format consumed by blueprint_resolver
+and everything downstream.
 """
 
 import json

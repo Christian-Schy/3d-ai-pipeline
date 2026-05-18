@@ -116,7 +116,7 @@ _DIMENSION_ERROR_KEYWORDS = (
 
 
 def route_after_validator(state: PipelineState) -> str:
-    """After Validator: ok → end, placement error → coder, dimension error → inventar, other blueprint error → feature_definierer / blueprint_architect."""
+    """After Validator: ok → end, placement error → coder, dimension error → inventar, other blueprint error → feature_definierer."""
     feedback = state.get("validator_feedback", "")
 
     if not feedback:
@@ -143,24 +143,17 @@ def route_after_validator(state: PipelineState) -> str:
         return "coder"
 
     # Dimension errors: Inventar produced wrong raw_params. Only Inventar can fix.
-    if state.get("inventar") and any(kw in feedback_lower for kw in _DIMENSION_ERROR_KEYWORDS):
+    if any(kw in feedback_lower for kw in _DIMENSION_ERROR_KEYWORDS):
         log.info("route_validator", decision="inventar",
                  reason="dimension_error", feedback=feedback[:80],
                  semantic_attempts=semantic_attempts)
         return "inventar"
 
-    # Blueprint-level errors: route back for correction.
-    # 3-Step Chain runs: retry at feature_definierer (redo features + placement).
-    # Blueprint Architect runs: route back to blueprint_architect.
-    if state.get("inventar"):
-        log.info("route_validator", decision="feature_definierer",
-                 semantic_attempts=semantic_attempts,
-                 feedback=feedback[:60], mode="3step_retry")
-        return "feature_definierer"
-    log.info("route_validator", decision="blueprint_architect",
+    # Blueprint-level errors: retry at feature_definierer (redo features + placement).
+    log.info("route_validator", decision="feature_definierer",
              semantic_attempts=semantic_attempts,
              feedback=feedback[:60])
-    return "blueprint_architect"
+    return "feature_definierer"
 
 
 def route_after_error_router(state: PipelineState) -> str:

@@ -150,7 +150,7 @@ Aus dem Grundmuster abgeleitet — wird im Umbau direkt mit-adressiert:
 | W7 | Mini-Heatmap (~5 repraesentative Specs) als schnelles Integrations-Signal | — |
 | W8 | Blueprint-Schema v3 (Positionierung konsolidieren) | W4 |
 | W9 | CLAUDE.md + `docs/` auf neue Architektur umschreiben | W4–W8, W10 |
-| W10 | **Modifikations-/Error-Loop-Pfad vereinheitlichen.** Heute laeuft er ueber die ALTE Agent-Kette (blueprint_architect/coder) — eine komplette zweite Pipeline (Memory `project_modification_uses_old_chain`). Auf die neue Per-Aktion-Architektur umstellen, alte Kette loeschen. Re-Derivation auf Pipeline-Ebene. | W4 |
+| W10 ✅ | **Modifikations-/Error-Loop-Pfad vereinheitlichen** — erledigt 2026-05-18, siehe §15. | W4 |
 
 **Migrations-Disziplin pro WS:** hinter Flag, L0.5-Suite gruen, L2-Heatmap
 bestaetigt, dann erst naechster WS. Die gruene Baseline wird nie gebrochen.
@@ -296,3 +296,44 @@ das Modell wobbelte bei `richtung`. Behoben durch Balancieren des
 Pools (Endpunkt-Demos in `klassifizierer_traces.py` ergaenzt). Pool-
 Pflege ist damit eine laufende Aufgabe — das L0.5-Netz macht
 Schieflagen sichtbar.
+
+## 15. Modifikations-/Error-Pfad — Architect war dead code (W10)
+
+W10 sollte den `blueprint_architect` (monolithische Alt-Architektur)
+als Modifikations-/Error-Fallback auf die Per-Aktion-Kette umstellen.
+Die Code-Analyse 2026-05-18 ergab: **der Architect-Pfad war bereits
+unerreichbar.**
+
+**Befund:**
+- Der Architect wurde nur erreicht, wenn `state.get("inventar")` falsy
+  ist (Discriminator `_is_3step_chain`). `inventar` wird leer (`{}`)
+  ausschliesslich, wenn `inventar_node` eine Exception faengt.
+- Es gibt **keinen** Graph-Pfad, der `inventar_node` ueberspringt —
+  jeder Run (fresh, Vision, Modify) laeuft hindurch. Modify ist seit
+  2026-04-17 (Memory `project_modification_uses_old_chain`) ohnehin
+  durch `entry_router → interpreter → …` geroutet.
+- Empirie: in 790 `runs.jsonl`-Eintraegen ist der Architect **0×**
+  gelaufen. Der InventarAgent ist robust genug, den `{}`-Crash-Fall nie
+  auszuloesen.
+
+**Entscheidung:** Architect ersatzlos entfernt statt umgebaut. Ein
+ungetesteter Fallback auf eine Architektur, die dieses ADR genau wegen
+Unzuverlaessigkeit abloest, ist kein Sicherheitsnetz. Bei einem totalen
+Inventar-Crash endet der Run jetzt sauber via `max_retries` mit klarer
+Log-Meldung — ehrlicher als ein ungetesteter Rebuild.
+
+**Umfang des Cleanups:**
+- Routing in `pipeline.py` + `edges.py`: alle `blueprint_architect`-
+  Branches raus, Fallback einheitlich auf die Per-Aktion-Kette
+  (`route_after_coordinate_validator` → `feature_definierer`,
+  `route_after_plan_validator` → `assembly`, `route_after_validator`
+  → `feature_definierer`). Helper `_is_3step_chain` entfaellt.
+- Geloescht: `src/agents/blueprint_architect.py` (266 LOC),
+  `src/rag/blueprint_rag.py` (einziger Konsument war der Architect),
+  `blueprint_architect_node` aus `planning_blueprint_nodes.py`.
+- Config: `models.blueprint_architect`, `rag.n_results.blueprint_architect`,
+  `agent_options.blueprint_architect` aus `config.yaml` + `loader.py`.
+
+Damit ist die in §10.3 benannte „groesste Doppelung im System" (eine
+komplette zweite Pipeline) aufgeloest — sie war zum Zeitpunkt des
+Cleanups bereits funktional tot.

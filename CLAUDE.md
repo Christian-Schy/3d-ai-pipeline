@@ -85,7 +85,7 @@ der Architektur-Beschreibung unten im Fluss. Pickup-Punkt: Memory
 
 - GPU: NVIDIA 5060 Ti 16GB VRAM, 64GB RAM DDR5, AMD 7800X3D
 - Max komfortabel: ~35b Modelle, 70b moeglich aber langsam
-- Aktuell: nemotron-cascade-2:30b (Blueprint Architect), qwen3.5:9b (schnelle Agents)
+- Aktuell: gemma4:26b (Klassifizierer/Validator), qwen3.5:9b (schnelle Agents)
 - Think-Modus: Kritisch fuer raeumliche Aufgaben, ohne Think versagen auch grosse Modelle
 
 ## Architektur
