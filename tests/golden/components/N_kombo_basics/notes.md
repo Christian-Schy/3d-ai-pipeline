@@ -51,20 +51,21 @@ Slot mit `pocket_edge_distances` ist edge-to-edge → child_half aus Slot-Footpr
 | nut_zentral_x_l30 | Standard mittig | alignment centered, kein offset | 0, 0 | 0 | 0 | 0 | l30 w5 d5 |
 | nut_versatz_rechts_y_l40 | Versatz + Achse | center_offset{right:10}, entlang y | +10, 0 | 10 | 0 | 90 | l40 w5 d5 |
 | nut_versatz_rechts_x_durchg | Versatz auf Achsen-Achse, durchgaengig | center_offset{right:10}, length=100 | +10, 0 | 10 | 0 | 0 | l100 w5 d5 |
-| nut_kanten_top30_left20_y_l40 | edge_distances zwei Achsen (DIN-Slot) | edge{top:30, left:20}, entlang y | length-axis edge, width-axis center | -30 | 0 | 90 | l40 w5 d5 |
+| nut_kanten_top30_left20_y_l40 | edge_distances zwei Achsen (Mittellinie) | edge{top:30, left:20}, entlang y | Mittellinien-Bezug beide Achsen | -30 | 20 | 90 | l40 w5 d5 |
 | nut_mix_axes_x_l50 | Mischung B3 | pocket_edge{right:30} + center{bottom:10}, entlang x | +(50-30-25), -10 | -5 | -10 | 0 | l50 w5 d5 |
 | nut_rechts_face_y_l40 | Andere Face | side=rechts, alignment centered | 0, 0 (auf >X) | 0 | 0 | 0 | l40 w5 d5 |
 | nut_anchor_right_edge_y_l40 | Anchor Kante + Offset | anchor{right_edge, offset{top:10}}, entlang y | (+50, 0) + (0, +10) | 50 | 10 | 90 | l40 w5 d5 |
-| nut_anchor_top_right_corner_y_l30 | Anchor Ecke + Offset | anchor{top_right, offset{down:10, left:20}}, entlang y | (+50, +50) + (-20, -10) | 30 | 40 | 90 | l30 w5 d5 |
+| nut_ecke_oben_rechts_y_l30 | Ecken-Regel (zwei abstand_*) | edge{top:25, right:20}, entlang y | Mittellinien-Bezug beide Achsen | 30 | 25 | 90 | l30 w5 d5 |
 | nut_rotated_x_l50 | Mit Rotation | alignment centered, angle 15° CCW, entlang x | 0, 0, angle 0+15=15 | 0 | 0 | 15 | l50 w5 d5 |
 
 ### Detail-Mathe pro Variation
 
 **nut_kanten_top30_left20_y_l40:**
-- DIN-Slot-Konvention per Achse: length-axis (entlang Y, hier wy) ist edge-to-EDGE,
-  width-axis (wx) ist edge-to-CENTER (Centerline = Werkzeugreferenz).
-- top:30 → wy (length-axis), oy = +(50 - 30 - 40/2) = 0
-- left:20 → wx (width-axis), ox = -(50 - 20 - 0) = -30
+- Mittellinien-Bezug (Konv. 21, beide Achsen edge-to-CENTER, kein
+  child_half-Abzug — Slot ist hole-like).
+- top:30 → wy, oy = +(50 - 30) = +20 → Mittellinie 30mm vom oberen Rand
+- left:20 → wx, ox = -(50 - 20) = -30 → Mittellinie 20mm vom linken Rand
+- Geometrie-Check: Slot y ∈ [0, 40], x ∈ [-32.5, -27.5] — innerhalb.
 
 **nut_mix_axes_x_l50** (Mischung Achsen, edge-to-edge auf X + center auf Y):
 - right:30 → wx +1, Slot entlang X hat child_half=length/2=25
@@ -80,13 +81,18 @@ Slot mit `pocket_edge_distances` ist edge-to-edge → child_half aus Slot-Footpr
 - offset {top:10} → wy +1, val=10 → +10
 - ox = +50, oy = 0 + 10 = +10
 
-**nut_anchor_top_right_corner_y_l30:**
-- parent_point=top_right auf >Z: (+0.5, +0.5) * (100, 100) = (+50, +50)
-- child_point=center: (0, 0)
-- ox = 50 - 0 = +50, oy = 50 - 0 = +50
-- offset {down:10, left:20} → normed {bottom:10, left:20}
-- _apply_center_offset >Z: bottom wy-1 val=10 → -10; left wx-1 val=20 → -20
-- ox = 50 + (-20) = +30, oy = 50 + (-10) = +40
+**nut_ecke_oben_rechts_y_l30** (Ecken-Regel, "obere rechte Ecke …
+versetzt"):
+- Ecken-Phrase → Ecken-Regel → zwei `abstand_*` → `edge_distances` (kein
+  separater Anker, siehe `10_masseintragung_din406.md`).
+- Mittellinien-Bezug auf beiden Achsen (Konv. 21).
+- right:20 → wx, ox = +(50 - 20) = +30 → Mittellinie 20mm vom rechten Rand
+- top:25 → wy, oy = +(50 - 25) = +25 → Mittellinie 25mm vom oberen Rand
+- Geometrie-Check: Nut y ∈ [10, 40], x ∈ [27.5, 32.5] — innerhalb.
+- Hinweis: Die zu Schritt-1-Zeiten populaere Spec-Phrase "10mm nach unten
+  versetzt" wuerde unter Mittellinien-Bezug die Mittellinie 10mm von der
+  Kante platzieren → Nut-Ende bei +55 → ragt 5mm raus. Daher hier
+  top:25 (Mittellinie 25mm) als sauberer Eck-Slot.
 
 ## Coverage
 
@@ -94,7 +100,7 @@ Slot mit `pocket_edge_distances` ist edge-to-edge → child_half aus Slot-Footpr
 - edge_distances zwei Achsen: nut_kanten_top30_left20_y_l40
 - Mischung Achsen B3: nut_mix_axes_x_l50 (`pocket_edge_distances` + `center_offset`)
 - anchor parent_point=edge: nut_anchor_right_edge_y_l40
-- anchor parent_point=corner: nut_anchor_top_right_corner_y_l30
+- Ecken-Regel (zwei abstand_*, DIN per-Achse): nut_ecke_oben_rechts_y_l30
 - echte Rotation: nut_rotated_x_l50
 - Andere Face (>X): nut_rechts_face_y_l40
 - explizite Laenge vs durchgaengig: alle haben explizite Laenge ausser nut_versatz_rechts_x_durchg

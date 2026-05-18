@@ -1035,20 +1035,13 @@ def _compute_offsets(
                                for p in _HOLE_LIKE_PREFIXES)
             is_box = child_w > 0 and child_h > 0 and not is_hole_like
 
-            # DIN-Konvention fuer Slot/Groove: Length-Achse = edge-to-EDGE
-            # (Slot-Endpunkt ist fertigungsrelevant), Width-Achse =
-            # edge-to-CENTER (Centerline ist Werkzeug-Referenz). Nur fuer
-            # rechtwinklige Slot-Orientierung (angle 0/90/180); andere
-            # Winkel fallen auf das Default-Verhalten zurueck.
+            # Slot/Groove: Mittellinien-Bezug auf beiden Achsen (ISO 129-1,
+            # siehe docs/conventions/21_nut_slot_din.md). Slot ist
+            # hole-like → is_box=False → edge-to-CENTER (Mittellinie) auf
+            # beiden Achsen, ohne child_half-Subtraktion. Keine per-Achse-
+            # Sonderbehandlung. Restwandstaerken-Intent wird ueber
+            # `pocket_edge_distances` (`kante_*`) explizit ausgedrueckt.
             is_box_wx = is_box_wy = None
-            if ftype_lower in ("slot", "groove") and child_w > 0 and child_h > 0:
-                a = abs(float(angle_deg or 0.0)) % 180.0
-                if math.isclose(a, 0.0, abs_tol=1e-6) or math.isclose(a, 180.0, abs_tol=1e-6):
-                    # _get_child_face_size returned (length, width) → wx is length
-                    is_box_wx, is_box_wy = True, False
-                elif math.isclose(a, 90.0, abs_tol=1e-6):
-                    # _get_child_face_size returned (width, length) → wy is length
-                    is_box_wx, is_box_wy = False, True
 
             # DIN-Konvention 24 fuer hole_pattern_linear: A1 (`abstand_*`)
             # bezieht sich auf die outermost-Hole, nicht den Pattern-Center.

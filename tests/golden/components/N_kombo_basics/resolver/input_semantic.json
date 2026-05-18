@@ -9,20 +9,28 @@
     "nut_mix_axes_x_l50",
     "nut_rechts_face_y_l40",
     "nut_anchor_right_edge_y_l40",
-    "nut_anchor_top_right_corner_y_l30",
+    "nut_ecke_oben_rechts_y_l30",
     "nut_rotated_x_l50"
   ],
   "features": {
     "wuerfel": {
       "type": "box",
-      "params": {"x": 100, "y": 100, "z": 100},
+      "params": {
+        "x": 100,
+        "y": 100,
+        "z": 100
+      },
       "orientation": "standard",
       "parent": null,
       "operation": "add"
     },
     "nut_zentral_x_l30": {
       "type": "slot",
-      "params": {"length": 30, "width": 5, "depth": 5},
+      "params": {
+        "length": 30,
+        "width": 5,
+        "depth": 5
+      },
       "parent": "wuerfel",
       "position": {
         "side": "oben",
@@ -33,56 +41,87 @@
     },
     "nut_versatz_rechts_y_l40": {
       "type": "slot",
-      "params": {"length": 40, "width": 5, "depth": 5},
+      "params": {
+        "length": 40,
+        "width": 5,
+        "depth": 5
+      },
       "parent": "wuerfel",
       "position": {
         "side": "oben",
         "alignment": "centered",
-        "center_offset": {"right": 10},
+        "center_offset": {
+          "right": 10
+        },
         "angle_deg": 90
       },
       "operation": "subtract"
     },
     "nut_versatz_rechts_x_durchg": {
       "type": "slot",
-      "params": {"length": 100, "width": 5, "depth": 5},
+      "params": {
+        "length": 100,
+        "width": 5,
+        "depth": 5
+      },
       "parent": "wuerfel",
       "position": {
         "side": "oben",
         "alignment": "centered",
-        "center_offset": {"right": 10},
+        "center_offset": {
+          "right": 10
+        },
         "angle_deg": 0
       },
       "operation": "subtract"
     },
     "nut_kanten_top30_left20_y_l40": {
       "type": "slot",
-      "params": {"length": 40, "width": 5, "depth": 5},
+      "params": {
+        "length": 40,
+        "width": 5,
+        "depth": 5
+      },
       "parent": "wuerfel",
       "position": {
         "side": "oben",
         "alignment": "centered",
-        "edge_distances": {"top": 30, "left": 20},
+        "edge_distances": {
+          "top": 30,
+          "left": 20
+        },
         "angle_deg": 90
       },
       "operation": "subtract"
     },
     "nut_mix_axes_x_l50": {
       "type": "slot",
-      "params": {"length": 50, "width": 5, "depth": 5},
+      "params": {
+        "length": 50,
+        "width": 5,
+        "depth": 5
+      },
       "parent": "wuerfel",
       "position": {
         "side": "oben",
         "alignment": "centered",
-        "pocket_edge_distances": {"right": 30},
-        "center_offset": {"bottom": 10},
+        "pocket_edge_distances": {
+          "right": 30
+        },
+        "center_offset": {
+          "bottom": 10
+        },
         "angle_deg": 0
       },
       "operation": "subtract"
     },
     "nut_rechts_face_y_l40": {
       "type": "slot",
-      "params": {"length": 40, "width": 5, "depth": 5},
+      "params": {
+        "length": 40,
+        "width": 5,
+        "depth": 5
+      },
       "parent": "wuerfel",
       "position": {
         "side": "rechts",
@@ -93,7 +132,11 @@
     },
     "nut_anchor_right_edge_y_l40": {
       "type": "slot",
-      "params": {"length": 40, "width": 5, "depth": 5},
+      "params": {
+        "length": 40,
+        "width": 5,
+        "depth": 5
+      },
       "parent": "wuerfel",
       "position": {
         "side": "oben",
@@ -101,23 +144,28 @@
         "anchor": {
           "child_point": "center",
           "parent_point": "right_edge",
-          "offset": {"top": 10}
+          "offset": {
+            "top": 10
+          }
         },
         "angle_deg": 90
       },
       "operation": "subtract"
     },
-    "nut_anchor_top_right_corner_y_l30": {
+    "nut_ecke_oben_rechts_y_l30": {
       "type": "slot",
-      "params": {"length": 30, "width": 5, "depth": 5},
+      "params": {
+        "length": 30,
+        "width": 5,
+        "depth": 5
+      },
       "parent": "wuerfel",
       "position": {
         "side": "oben",
         "alignment": "centered",
-        "anchor": {
-          "child_point": "center",
-          "parent_point": "top_right",
-          "offset": {"down": 10, "left": 20}
+        "edge_distances": {
+          "top": 25,
+          "right": 20
         },
         "angle_deg": 90
       },
@@ -125,7 +173,11 @@
     },
     "nut_rotated_x_l50": {
       "type": "slot",
-      "params": {"length": 50, "width": 5, "depth": 5},
+      "params": {
+        "length": 50,
+        "width": 5,
+        "depth": 5
+      },
       "parent": "wuerfel",
       "position": {
         "side": "oben",

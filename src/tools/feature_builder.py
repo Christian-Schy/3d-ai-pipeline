@@ -135,9 +135,16 @@ def _resolve_slot_endpoints(params: dict) -> None:
 
     "Anfangspunkt 20mm von linker Kante, Endpunkt 80mm von linker Kante"
     liefert `anfang_links=20`, `ende_links=80`. Daraus folgt deterministisch
-    `laenge=60` (= |80-20|) und `abstand_links=20` (frueherer Endpunkt =
-    edge-to-EDGE-Start auf der Length-Achse, Konvention 21). Der LLM
+    `laenge=60` (= |80-20|) und `abstand_links=50` (Mittelpunkt der zwei
+    Endpunkte = `(anfang+ende)/2`, passend zum Mittellinien-Bezug der
+    Slot-Konvention, siehe `docs/conventions/21_nut_slot_din.md`). Der LLM
     extrahiert nur die zwei Zahlen + die Bezugskante; das Rechnen ist Code.
+
+    Geometrie-Aequivalenz: Frueher (per-Achse-edge-to-EDGE) wurde
+    `abstand=min(a,e)` emittiert; mit der Mittellinien-Regel ist es der
+    Mittelwert. Das resultierende Slot-Center landet in BEIDEN Faellen am
+    selben Ort — nur die `abstand_*`-Semantik aendert sich entsprechend
+    der jeweiligen Resolver-Konvention.
     """
     for d in _ENDPOINT_DIRS:
         a = params.pop(f"anfang_{d}", None)
@@ -146,7 +153,7 @@ def _resolve_slot_endpoints(params: dict) -> None:
             continue
         if params.get("laenge") is None:
             params["laenge"] = abs(e - a)
-        params.setdefault(f"abstand_{d}", min(a, e))
+        params.setdefault(f"abstand_{d}", (a + e) / 2)
 
 
 def _extract_edge_distances(position: str, params: dict) -> dict | None:

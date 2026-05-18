@@ -2,13 +2,21 @@
   "features": {
     "wuerfel": {
       "type": "box",
-      "params": {"x": 100, "y": 100, "z": 100},
+      "params": {
+        "x": 100,
+        "y": 100,
+        "z": 100
+      },
       "parent": null
     },
     "nut_zentral_x_l30": {
       "type": "slot",
       "parent": "wuerfel",
-      "params": {"length": 30, "width": 5, "depth": 5},
+      "params": {
+        "length": 30,
+        "width": 5,
+        "depth": 5
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -20,7 +28,11 @@
     "nut_versatz_rechts_y_l40": {
       "type": "slot",
       "parent": "wuerfel",
-      "params": {"length": 40, "width": 5, "depth": 5},
+      "params": {
+        "length": 40,
+        "width": 5,
+        "depth": 5
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -32,7 +44,11 @@
     "nut_versatz_rechts_x_durchg": {
       "type": "slot",
       "parent": "wuerfel",
-      "params": {"length": 100, "width": 5, "depth": 5},
+      "params": {
+        "length": 100,
+        "width": 5,
+        "depth": 5
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -44,19 +60,27 @@
     "nut_kanten_top30_left20_y_l40": {
       "type": "slot",
       "parent": "wuerfel",
-      "params": {"length": 40, "width": 5, "depth": 5},
+      "params": {
+        "length": 40,
+        "width": 5,
+        "depth": 5
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
         "offset_x": -30.0,
-        "offset_y": 0.0,
+        "offset_y": 20.0,
         "angle_deg": 90.0
       }
     },
     "nut_mix_axes_x_l50": {
       "type": "slot",
       "parent": "wuerfel",
-      "params": {"length": 50, "width": 5, "depth": 5},
+      "params": {
+        "length": 50,
+        "width": 5,
+        "depth": 5
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -68,7 +92,11 @@
     "nut_rechts_face_y_l40": {
       "type": "slot",
       "parent": "wuerfel",
-      "params": {"length": 40, "width": 5, "depth": 5},
+      "params": {
+        "length": 40,
+        "width": 5,
+        "depth": 5
+      },
       "placement": {
         "face": ">X",
         "alignment": "centered",
@@ -80,7 +108,11 @@
     "nut_anchor_right_edge_y_l40": {
       "type": "slot",
       "parent": "wuerfel",
-      "params": {"length": 40, "width": 5, "depth": 5},
+      "params": {
+        "length": 40,
+        "width": 5,
+        "depth": 5
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
@@ -89,22 +121,30 @@
         "angle_deg": 90.0
       }
     },
-    "nut_anchor_top_right_corner_y_l30": {
+    "nut_ecke_oben_rechts_y_l30": {
       "type": "slot",
       "parent": "wuerfel",
-      "params": {"length": 30, "width": 5, "depth": 5},
+      "params": {
+        "length": 30,
+        "width": 5,
+        "depth": 5
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",
         "offset_x": 30.0,
-        "offset_y": 40.0,
+        "offset_y": 25.0,
         "angle_deg": 90.0
       }
     },
     "nut_rotated_x_l50": {
       "type": "slot",
       "parent": "wuerfel",
-      "params": {"length": 50, "width": 5, "depth": 5},
+      "params": {
+        "length": 50,
+        "width": 5,
+        "depth": 5
+      },
       "placement": {
         "face": ">Z",
         "alignment": "centered",

@@ -96,7 +96,7 @@
         "side": "oben",
         "alignment": "centered",
         "edge_distances": {
-          "left": 20,
+          "left": 50,
           "vorne": 30
         },
         "angle_deg": 0

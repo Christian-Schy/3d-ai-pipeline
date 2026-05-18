@@ -21,7 +21,7 @@
         "face": ">Z",
         "alignment": "centered",
         "offset_x": -48.0,
-        "offset_y": 7.0,
+        "offset_y": 27.0,
         "angle_deg": 90.0
       },
       "operation": "subtract"
@@ -37,7 +37,7 @@
       "placement": {
         "face": ">Z",
         "alignment": "centered",
-        "offset_x": -22.0,
+        "offset_x": -42.0,
         "offset_y": -33.0,
         "angle_deg": 0.0
       },
@@ -55,7 +55,7 @@
         "face": ">Z",
         "alignment": "centered",
         "offset_x": -48.0,
-        "offset_y": -7.0,
+        "offset_y": -27.0,
         "angle_deg": 90.0
       },
       "operation": "subtract"
@@ -123,7 +123,7 @@
         "face": "<Z",
         "alignment": "centered",
         "offset_x": -50.0,
-        "offset_y": -22.5,
+        "offset_y": -35.0,
         "angle_deg": 90.0
       },
       "operation": "subtract"
@@ -190,7 +190,7 @@
       "placement": {
         "face": "<X",
         "alignment": "centered",
-        "offset_x": 15.0,
+        "offset_x": 30.0,
         "offset_y": 0.0,
         "angle_deg": 0.0
       },
