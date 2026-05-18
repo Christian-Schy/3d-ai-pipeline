@@ -88,6 +88,18 @@ CASES: list[dict] = [
         "expected": {"abstand_links": 15, "abstand_unten": 12},
         "covers": "EF/NEST §1; Ecke unten-links → abstand_unten + abstand_links (W2 ecken_regel.md)",
     },
+
+    # ── NEST n6 Heatmap-Fail (run 7402cecb) ────────────────────────────
+    # Bohrung in Tasche, Eck-Phrase OHNE explizites Seite-Wort am Anfang
+    # (Seite ergibt sich aus dem Tasche-Kontext). hole_classifier emittierte
+    # vor 2026-05-18 versatz_unten/links, korrekt ist abstand_rechts/oben
+    # (Ecken-Regel; Bemassung Zentrum von rechter+oberer Pocket-Kante).
+    {
+        "id": "09_corner_in_nest_no_side_prefix",
+        "phrase": "obere rechte ecke 3mm nach unten und 5mm nach links versetzt eine 4mm bohrung 3 tief",
+        "expected": {"abstand_rechts": 5, "abstand_oben": 3},
+        "covers": "NEST n6: Eck-Phrase ohne fuehrendes Seite-Wort (Bohrung in Tasche-Kontext) → abstand_*, nicht versatz_*",
+    },
 ]
 
 
