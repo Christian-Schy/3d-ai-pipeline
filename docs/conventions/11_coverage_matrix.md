@@ -20,7 +20,7 @@ Sie verhindert "ad-hoc"-Test-Schreiben mit Luecken. Jede Feature-Konvention
 | **A2** | edge-to-EDGE | `pocket_edge_distances` (`kante_*`) | "linke Taschen-Kante 25mm vom linken Rand" |
 | **A3** | center-relativ | `center_offset` (`versatz_*`) | "10mm aus Mitte nach rechts" |
 | **A4** | alignment | `alignment` | "zentriert", "mittig auf der Hoehe" |
-| **A5** | Anchor (Bauteil-Face-Ecke) + Versatz | `anchor` + `center_offset` | "in der oberen rechten Ecke der Face, 8mm nach links und 6mm nach unten versetzt" |
+| **A5** | Eck-Phrase = A1 (Ecken-Regel, zwei `abstand_*`) | `edge_distances` (zweikantig) | "in der oberen rechten Ecke der Face, 8mm nach links und 6mm nach unten versetzt" → `abstand_rechts: 8, abstand_oben: 6` |
 | **A6** | "jeweils"-Regel | `edge_distances` (Mehrfach) | "jeweils 12mm von linker und vorderer Kante" | "jeweils von den kanten 10mm entfernt" |
 | **A7** | Feature-zu-Feature-Bezug *(geplant Cap 6.0)* | TBD (Constraint-Bemassung) | "Bohrung 10mm vom Taschen-Rand", "zentriert ueber Slot" |
 
@@ -28,10 +28,21 @@ Sie verhindert "ad-hoc"-Test-Schreiben mit Luecken. Jede Feature-Konvention
 - **A1-A6** referenzieren in Capability 1.0 immer die **Bauteilkante**
   (Wuerfel/Platte). A2 (`kante_*`) misst die **Feature-eigene** Aussenkante
   zur Bauteilkante — heute aktiv fuer Tasche und Slot.
-- **A5 wichtig:** Anker bedeutet **Bauteil-Face-Ecke** ("obere rechte Ecke
-  der Face"), nicht Feature-Ecke. Phrasen wie "obere rechte Ecke **der
-  Tasche** soll von oben 10mm entfernt sein" sind A2 (Feature-Ecke als
-  Mess-Bezugspunkt), nicht A5.
+- **A5 = A1 (Eck-Wording-Variante):** "in der oberen rechten Ecke der
+  Face, ... versetzt" zerfaellt per Ecken-Regel in zwei `abstand_*`-
+  Kantenmasse — schema-maessig identisch mit A1. Kein eigenes Anker-
+  Schema (siehe [`10_masseintragung_din406.md`](10_masseintragung_din406.md)
+  Ecken-Regel + `data/prompts/conventions/anker.md`). Vorherige Lesart
+  ("anchor + center_offset") ist zurueckgenommen 2026-05-18.
+- **Bauteil-Face-Ecke vs Feature-Ecke:** A5 nutzt die **Bauteil**-Face-
+  Ecke als sprachlichen Bezug. Phrasen wie "obere rechte Ecke **der
+  Tasche** soll von oben 10mm entfernt sein" sind A2 (Feature-Kante als
+  Mess-Bezug, zwei `kante_*`), nicht A5.
+- **Ueberhang-Hinweis fuer ausgedehnte Features:** Bei A5 = A1 sitzt das
+  Feature-CENTER auf den zwei `abstand_*`-Werten. Bei kleinen `abstand_*`
+  und grossem Feature-Half ragt die Aussenkante ueber den Bauteilrand
+  (Tasche, Slot, Plate). Wer eine **Eck-zu-Eck-Anlage mit definierter
+  Restkante** will, schreibt **A2** (`kante_*`).
 - **A7** referenziert eine **fremde** Feature-Kante / -Center ("Bohrung
   10mm vom Taschen-Rand entfernt"). Gehoert zu **Capability 6.0
   Constraint-Bemassung** und wird mit dieser Capability aktiviert — dann
@@ -265,11 +276,21 @@ sinnvoll.
 - soll auf der y-achse zentriert werden  *(single-axis, gehoert eigentlich zu B1 wenn die andere Achse spezifiziert ist; pur ist es A4)*
 - soll auf der oberen kante zentriert werden  *(zentriert in der Achse parallel zur oberen Kante)*
 
-### A5 — Anchor (Bauteil-Face-Ecke) + Versatz
-- (frei — Beispiel: "Bohrung in der oberen rechten Ecke der Face, 8mm nach links und 6mm nach unten versetzt")
+### A5 — Eck-Phrasen-Wording (numerisch = A1)
+- "Bohrung in der oberen rechten Ecke der Face, 8mm nach links und 6mm nach unten versetzt" → `abstand_rechts:8, abstand_oben:6`
+- "Tasche in der unteren linken Ecke, 12mm und 15mm versetzt" → `abstand_unten:15, abstand_links:12`
 
-*Hinweis:* Feature-Ecke-Phrasen ("obere Ecke **der Tasche** ...") sind A2,
-nicht A5. A5 nutzt **Bauteil-Face-Ecke** als Anker.
+*Hinweis 1:* A5 ist kein eigenes Schema — Eck-Phrasen werden per Ecken-
+Regel in zwei `abstand_*`-Kantenmasse aufgeloest. Numerisch identisch mit
+A1.
+
+*Hinweis 2:* Feature-Ecke-Phrasen ("obere Ecke **der Tasche** ...") sind
+A2 (`kante_*`), nicht A5. A5 nutzt **Bauteil-Face-Ecke** als
+sprachlichen Bezug.
+
+*Hinweis 3:* Wenn das Feature sauber **innerhalb** der Bauteilkante
+liegen soll (Standard-Erwartung), `kante_*` (A2) waehlen — Eck-zu-Eck-
+Anlage mit definierter Restkante.
 
 ### A6 — "jeweils"-Regel
 - jeweils von den seiten/kanten 20mm entfernt

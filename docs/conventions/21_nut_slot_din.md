@@ -1,84 +1,86 @@
-# 21 — Nut / Slot Bemassung (DIN-konform per Achse)
+# 21 — Nut / Slot Bemassung (ISO 129-1, Mittellinien-Bezug)
+
+> Norm-Anker: **DIN EN ISO 129-1:2022-02**. Frueher DIN 406-12 — diese
+> ist zurueckgezogen (siehe [`99_normen_audit.md`](99_normen_audit.md)).
 
 ## Konvention
 
-Slots/Nuten haben **zwei verschieden zu behandelnde Achsen**:
+Eine Nut/ein Langloch wird ueber ihre **Mittellinie** positioniert — auf
+**beiden** Achsen, in **jeder** Rotation. Die Mittellinie ist die
+Symmetrieachse des Slots und zugleich die Werkzeug-Bahn; sie ist das
+norm-treue Bezugselement (ISO 129-1: bemasst wird zu einem definierten
+Geometrieelement — fuer ein symmetrisches Feature ist das die
+Mittellinie, analog zur Achse einer Bohrung).
 
-- **Length-Achse** (Slot-Verlauf, z.B. 40mm lange Nut entlang Y) →
-  **edge-to-EDGE** (Slot-Endpunkt zur Bauteilkante).
-- **Width-Achse** (Slot-Querrichtung, z.B. 5mm Breite) →
-  **edge-to-CENTER** (Centerline zur Bauteilkante).
+- **Position** = Mittellinie + Mittelpunkt + Winkel.
+- `abstand_*` (von der Bauteilkante) → Bauteilkante zur **Slot-
+  Mittellinie**, Length- wie Width-Achse gleich. Kein per-Achse-Sonderfall.
+- `versatz_*` (aus der Bauteilmitte) → Bauteilmitte zum **Slot-Mittelpunkt**.
+- **Rotation** ist kein Sonderfall: Mittelpunkt + Winkel. Eine gedrehte
+  Nut hat keine achsparallele Aussenkante — der Mittelpunkt ist ohnehin
+  die einzig sinnvolle Referenz.
 
-Begruendung (DIN-Praxis):
-- Die **Centerline** des Slots ist die fertigungsrelevante Referenz fuer
-  die Width-Achse — das Werkzeug folgt der Mittellinie. Der Konstrukteur
-  bemasst zur Mittellinie.
-- Die **Endpunkte** des Slots (Anfang und Ende der Endrundungen) sind
-  fertigungsrelevant fuer die Length-Achse — Werkzeug-Anfahrt,
-  Restwandstaerke, Toleranz zur naechsten Geometrie. Der Konstrukteur
-  bemasst zur Slot-Aussenkante in Length-Richtung.
+Die **Slot-Aussenkante / das Slot-Ende** ist **keine** primaere
+Positions-Referenz. Die Distanz Slot-Ende → Bauteilkante
+(Restwandstaerke) ist ein *sekundaeres Funktionsmass* und wird explizit
+ueber `kante_*` (`pocket_edge_distances`, edge-to-EDGE) angegeben — nicht
+ueber den `abstand_*`-Default.
+
+### Abgeloeste per-Achse-Regel
+
+Bis 2026-05-18 galt hier eine per-Achse-Regel (Length-Achse edge-to-EDGE
+zur Slot-Aussenkante, Width-Achse edge-to-CENTER). Das war ein
+Konstrukteurspraxis-Default, der **Positions-** und **Restwandstaerke-**
+Bemassung vermischt hat — keine ISO-129-1-Regel (siehe
+[`99_normen_audit.md`](99_normen_audit.md)). Ersetzt durch die
+einheitliche Mittellinien-Regel oben.
+
+> **Migrations-Status (Stand 2026-05-18, Paket 1 erledigt):**
+> Resolver-Slot-per-Achse-Branch entfernt, `_resolve_slot_endpoints` auf
+> Mittelwert `(anfang+ende)/2` umgestellt. Resolver-Component-Goldens
+> (V2, N_coverage N01-N12, N_kombo) auf Mittellinien-Bezug aktualisiert
+> — 303/303 Tests gruen. Offen: Pipeline-Goldens-Heatmap unter
+> Mittellinien-Konvention verifizieren (Ollama, separate Sitzung) +
+> Spec-Phrasen-Pass wo das Wording mehrdeutig blieb. Endradien-Template
+> und Restwandstaerke-Validator bleiben eigene Arbeitspakete.
 
 ## Wording-Beispiele
 
 Wuerfel 120x90x50, Nut 5x3 (Width × Tiefe), Laenge 40mm entlang Y-Achse
 (angle_deg=90 → wy ist Length-Achse, wx ist Width-Achse):
 
-| Phrase | Klassifizierer-Output | Resolver-Output | Geometrie |
+| Phrase | Klassifizierer-Output | Resolver-Output (Soll) | Geometrie |
 |---|---|---|---|
-| "von linker Kante 12mm" | `abstand_links: 12` | `ox = -W/2 + 12 = -48` (edge-to-CENTER) | Centerline 12mm vom linken Rand |
-| "von oberer Kante 18mm" | `abstand_oben: 18` | `oy = +H/2 - 18 - L/2 = +7` (edge-to-EDGE per DIN-Slot-Konvention) | Slot-Top-Edge 18mm vom oberen Rand |
+| "von linker Kante 12mm" | `abstand_links: 12` | `ox = -W/2 + 12 = -48` | Mittellinie 12mm vom linken Rand |
+| "von oberer Kante 18mm" | `abstand_oben: 18` | `oy = +H/2 - 18 = +27` | Mittellinie 18mm vom oberen Rand |
 
-Das LLM emittiert in BEIDEN Faellen `abstand_*` (Default-Konvention aus
-[`10_masseintragung_din406.md`](10_masseintragung_din406.md)). Der
-**Resolver** unterscheidet je Achse weil er weiss welche Achse Length
-und welche Width ist (aus `angle_deg` und Slot-Achse).
+`abstand_*` referenziert auf **beiden** Achsen die Slot-Mittellinie —
+kein per-Achse-Unterschied. Die Slot-`Laenge` geht NICHT in das
+Positions-Offset ein (sie ist eine Groesse, kein Bezug).
 
-Bei expliziter Phrase "deren obere Kante 18mm von oberer Wuerfelkante" →
-`kante_oben: 18` → wird im Resolver als `pocket_edge_distances` behandelt
-(forciert edge-to-EDGE auf beiden Achsen, ueberschreibt Default).
+Nennt die Phrase explizit die Slot-Endkante ("deren obere Endkante 18mm
+von oberer Wuerfelkante") → `kante_oben: 18` → `pocket_edge_distances`
+(edge-to-EDGE) → der Slot-Endpunkt landet 18mm vom Rand. Das ist der
+bewusste Weg fuer eine Restwandstaerke-Bemassung.
 
 ## Edge-Cases
 
-### Slot-Rotation ungleich 0°/90°/180°
+### Rotation
 
-Bei z.B. 30° gedrehter Slot ist die Length-Achse keine reine wx oder wy.
-Der Resolver faellt in dem Fall auf das Default-Verhalten (edge-to-CENTER
-auf beiden Achsen) zurueck. Das ist konservativ — der Slot landet evtl.
-naeher am Rand als gewollt, aber nicht ausserhalb.
-
-Konstrukteur sollte bei stark gedrehten Slots `pocket_edge_distances`
-explizit verwenden ("deren X-Kante ...") oder einen Anchor-Punkt setzen.
-
-### Slot-Width klein vs Slot-Length gross
-
-Bei sehr schmalen Slots (Width <= 3 mm) ist der Unterschied
-edge-to-CENTER vs edge-to-EDGE auf der Width-Achse minimal (≤1.5mm).
-Der Konstrukteur akzeptiert beide Lesarten implizit. Keine Sonderbehandlung.
-
-Bei langen Slots (Length >= 30 mm) ist der Unterschied auf der Length-
-Achse kritisch — die Slot-Endpunkte koennen sonst ueber die Bauteilkante
-hinaus ragen. Genau diese Fall-Klasse triggerte die Konvention.
+Eine gedrehte Nut wird wie jede Nut ueber Mittelpunkt + Winkel
+positioniert — die Mittellinien-Regel gilt unveraendert, Rotation ist
+**kein Sonderfall**. (Frueher brach die per-Achse-Regel bei ≠90°-Winkeln
+zusammen und musste auf edge-to-CENTER zurueckfallen; mit der
+Mittellinien-Regel entfaellt diese Sonderbehandlung komplett.)
 
 ### Slot mit `pocket_edge_distances` (explizit edge-to-EDGE)
 
-Wenn die Phrase "deren X-Kante" sagt, gewinnt `pocket_edge_distances`
-auf BEIDEN Achsen (auch Width). Das ist die explizite Konstrukteur-
-Forderung "die Nut-Kante exakt X mm vom Rand". Das LLM uebergibt
-beide Felder; der Resolver `pocket_edge_distances`-Pfad ueberschreibt
-die Default-Slot-Per-Achse-Logik.
-
-### Bemassung bei rotierter Nut (≠ 90er)
-
-Bei rotierten Nuten (C2/C3, Rotation ungleich Vielfache von 90°) bemasst
-der Konstrukteur **immer zum Nut-CENTER**, nicht zu einer Length-Kante.
-Begruendung: Length-Kanten sind nach Rotation diagonal — keine sinnvolle
-DIN-Bezugskante mehr. Der Resolver faellt deshalb auf edge-to-CENTER fuer
-**beide** Achsen zurueck (siehe auch oben "Slot-Rotation ungleich 0°/90°/
-180°").
-
-Beispiel N09: "Vorne eine Nut 5x3, 30mm lang entlang X, um 30° gedreht,
-von linker Kante 30mm und von unterer Kante 15mm" → beide `abstand_*`-Werte
-sind zum Nut-CENTER, nicht zu Length-Endpunkten.
+Nennt die Phrase explizit die **Slot-Endkante** / "deren X-Kante",
+emittiert der Klassifizierer `kante_*` → `pocket_edge_distances`. Der
+Resolver misst dann Bauteilkante → Slot-Aussenkante (edge-to-EDGE) auf
+der betroffenen Achse. Das ist der bewusste Weg fuer eine Restwand-
+staerke-/Endkanten-Bemassung und ueberschreibt den `abstand_*`-
+Mittellinien-Default.
 
 ### Anfangs-/Endpunkt-Phrasen sind self-contained
 
@@ -96,25 +98,23 @@ Nut verlaeuft entlang X, Laenge = 60mm, Rotation = 0°.
 Endpunkt-Distanzen als `anfang_<kante>` / `ende_<kante>` plus `richtung`.
 Die Laenge wird NICHT vom LLM gerechnet — `feature_builder.
 _resolve_slot_endpoints` bildet `laenge = |ende - anfang|` und
-`abstand_<kante> = min(anfang, ende)` deterministisch.
+`abstand_<kante> = (anfang + ende) / 2` (Mittelpunkt der zwei Endpunkte,
+passend zum Mittellinien-Bezug).
 
-### `versatz_*` referenziert immer Nut-CENTER
+### `versatz_*` und `abstand_*` — beide zur Mittellinie
 
-Anders als `abstand_*` (das per-Achse-DIN unterschiedlich behandelt:
-Length-Achse edge-to-edge, Width-Achse edge-to-center), referenziert
-`versatz_*` **immer den Nut-CENTER** — auch auf der Length-Achse. Das ist
-die Definition von Achse A3 (center-relativ).
+`abstand_*` (von der Bauteilkante) und `versatz_*` (aus der Bauteilmitte)
+referenzieren beide den **Nut-Mittelpunkt / die Mittellinie** — auf
+beiden Achsen. Sie unterscheiden sich nur im Bezugspunkt (Bauteilkante
+vs. Bauteilmitte), nicht in der Slot-Referenz.
 
 Beispiel N12: "Oben eine Nut 5x3, 40mm lang entlang X, von vorderer Kante
 20mm **und 15mm aus der Mitte nach links versetzt**":
-- `abstand_vorne: 20` → edge-to-CENTER auf Y (Width-Achse) → Nut-
-  Centerline 20mm vom vorderen Rand
-- `versatz_links: 15` → **Nut-CENTER** bei -15 auf X (Length-Achse),
-  **nicht** der Length-Endpunkt
+- `abstand_vorne: 20` → Mittellinie 20mm vom vorderen Rand
+- `versatz_links: 15` → Nut-Mittelpunkt 15mm links der Bauteilmitte
 
-Wer wirklich den Length-Endpunkt referenzieren will, schreibt
-`abstand_links: 15` — dann greift die DIN-Slot-Konvention (Length=edge-to-
-edge) und der Nut-Endpunkt landet 15mm vom Bauteilrand.
+Wer den Slot-**Endpunkt** referenzieren will (Restwandstaerke), nennt
+die Endkante explizit → `kante_*` (`pocket_edge_distances`, edge-to-EDGE).
 
 ## Code-Pfad
 
@@ -124,16 +124,22 @@ edge) und der Nut-Endpunkt landet 15mm vom Bauteilrand.
 - **Feature-Builder:** [`src/tools/feature_builder.py`](../../src/tools/feature_builder.py)
   `_SLOT_AXIS_TO_ANGLE` Mapping side+axis → angle_deg. Slot-Length aus
   Spec ueber `_fill_missing_slot_length` falls fehlend.
-- **Resolver per-Achse:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
-  `_compute_offsets`. Branch `if ftype_lower in ("slot", "groove")`
-  bestimmt aus `angle_deg` welche Achse Length und welche Width ist,
-  setzt `is_box_wx`/`is_box_wy` per-Achse (Length=True → edge-to-EDGE,
-  Width=False → edge-to-CENTER).
+- **Resolver:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
+  `_compute_offsets` — Slot-per-Achse-Branch entfernt (2026-05-18);
+  Slot ist `_HOLE_LIKE_PREFIXES` → `is_box=False` → edge-to-CENTER auf
+  beiden Achsen, ohne `child_half`-Abzug, wie bei `hole_single`.
 - **Slot-Footprint:** `_get_child_face_size` mit `feat_type="slot"`
-  liefert `(width, length)` oder `(length, width)` je nach `angle_deg`,
-  damit `child_h`/`child_w` die korrekten Slot-Dimensionen halten.
+  wird fuer `pocket_edge_distances` (explizites edge-to-EDGE) weiter
+  gebraucht; fuer den `abstand_*`-Default-Pfad nicht mehr.
 
 ## Tests
+
+> **Migrations-Status:** Resolver-Component-Goldens (V2 `slot_top_y_edge`,
+> N_coverage N01–N12, N_kombo) wurden 2026-05-18 auf Mittellinien-Bezug
+> aktualisiert — 303/303 Tests gruen. Pipeline-Goldens (Full-Ollama-Run)
+> stehen noch aus; Spec-Texte (D1/D2) sind grossteils weiter gueltig,
+> mehrdeutige Stellen ("von oberer Kante 18mm") werden mit dem Heatmap-
+> Lauf re-verifiziert.
 
 ### Bestehende Tests (Stand pre-Coverage-Matrix)
 
@@ -189,27 +195,37 @@ Pro Test pflegen wir **D1** + **D2**.
 - C3 ✓ (N10) — CW -20°
 - D1+D2 pro Test ✓
 - Richtungs-Wordings: "entlang Achse" (N01, N02, N04-N12), "verlaeuft nach" (N03), "Anfangs-/Endpunkt" (N04), "parallel zu Kante" (N11)
-- Per-Achse-DIN (Length=edge-to-edge, Width=edge-to-center): implizit in N01 (Y-Length: oy=+7), N02 (X-Length: ox=±..), N06, N07, N12
+- Mittellinien-Bezug (beide Achsen edge-to-center): N01-N12 (Soll-`offset`-Werte werden im Golden-Rework angepasst — siehe Migrations-Hinweis oben)
 
 **Seiten-Verteilung:** oben 5x, unten 1x, vorne 2x, hinten 2x, links 1x, rechts 1x → alle 6 Seiten min. 1x.
 
-**Rotation-Edge-Case (Konv. 21 ≠ 90er):** N09 (C2) und N10 (C3) triggern den
-Konvention-21-Sonderfall — Length-Achse ist keine reine wx/wy mehr, Resolver
-faellt auf konservatives edge-to-CENTER auf beiden Achsen zurueck. Test
-prueft, dass Slot innerhalb des Bauteils landet (kein Ueberragen).
+**Rotation (N09 C2, N10 C3):** Mit der Mittellinien-Regel ist Rotation
+kein Sonderfall — Mittelpunkt + Winkel, edge-to-center wie bei jedem
+Slot. Test prueft weiterhin, dass der Slot innerhalb des Bauteils landet
+(kein Ueberragen).
+
+## Offene Luecken (fuer Plan / Validator)
+
+- **Endradien fehlen:** Das Slot-Template erzeugt derzeit **keine**
+  Endrundungen (`R = Breite/2`). Eine normgerechte Nut/Langloch hat
+  halbrunde Enden — Template-Erweiterung noetig.
+- **Restwandstaerke-Pruefung (Validator):** Der Abstand Slot-Aussenkante
+  → Bauteilkante ist fertigungsrelevant. Spaeter fuer den Validator
+  markieren: Restwandstaerke gegen einen Mindestwert pruefen (kein
+  Ueberragen, kein zu duenner Steg). Greift sobald Endradien existieren
+  (echte Slot-Aussenkontur statt rechteckiger Approximation).
 
 ## Referenzen
 
-- DIN 406-12 — Maßeintragung in Zeichnungen, Schluessel-Massbezuege
-- ISO 5459 — Geometrical Product Specifications, Datums und Datum-Systeme
-  (relevant fuer Slot-Centerline-Bezugs-Konvention)
+- **DIN EN ISO 129-1:2022-02** — Eintragung von Massen und Toleranzen
+  (Primaer-Anker; loest die zurueckgezogene DIN 406-12 ab).
+- **DIN EN ISO 5459:2024** — Datums und Datum-Systeme (relevant sobald
+  Slot-Position toleranzbehaftet auf ein Datum bezogen wird, Cap 7.0).
+- DIN 406-12 — historisch, zurueckgezogen.
 
 ## Stand
 
-Implementiert 2026-05-14 (Commits c5f888d, 4ae367d). Resolver
-per-Achse-Logik plus 8 vereinheitlichte Klassifizierer-Demos plus 3
-Anti-Ignorieren-Demos im Normalizer (gegen Coin-Flip bei "tasche/nut +
-versetzt + zentral" Phrasing).
-
-V2 Real-Pipeline-Run verifiziert: `nut_oben_5: ox=-48.0, oy=+7.0`
-deterministisch ueber 5 Folge-Runs (vorher 1/30 Coin-Flip).
+Mittellinien-Bezug als Konvention seit 2026-05-18 (Schritt 3 Konventions-
+Audit). Die fruehere per-Achse-Regel (implementiert 2026-05-14, Commits
+c5f888d / 4ae367d) ist abgeloest; Code-Umstellung + Slot-Golden-Rework
+offen (Migrations-Status oben).

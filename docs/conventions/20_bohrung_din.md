@@ -50,8 +50,11 @@ identisch** zu A1 mit den entsprechenden Edge-Distanzen (z.B.
 `abstand_rechts: 8` + `abstand_oben: 6`). Konstrukteur-Wording fuer
 Bohrungen folgt daher A1, nicht A5.
 
-A5 gilt fuer Features mit eigener Ecke/Bounding-Box: Plate (Konvention 25),
-Tasche (Konvention 22, T08), Pattern (Konvention 24, M09).
+Das deckt sich mit der Ecken-Regel in
+[`10_masseintragung_din406.md`](10_masseintragung_din406.md): eine Eck-
+Phrase = zwei `abstand_*`-Kantenmasse, kein eigener Anchor-Typ. (Die
+Coverage-Matrix listet Bohrung-A5 noch als Pflicht — das ist ein
+Matrix-Fehler, wird in Schritt `11` bereinigt.)
 
 ### A6 — "jeweils"
 
@@ -124,9 +127,12 @@ Resolved-Blueprint identisch fuer das D1/D2-Paar.
 
 ## Referenzen
 
-- DIN 406 — Maßeintragung in Zeichnungen
-- ISO 129-1 — Eintragung von Maßen und Toleranzen
-- DIN 6 — Schnittdarstellung
+- **DIN EN ISO 129-1:2022-02** — Eintragung von Massen und Toleranzen
+  (Primaer-Anker; loest die zurueckgezogene DIN 406 ab).
+- **DIN EN ISO 128-Reihe** — Schnitt-/Ansichtsdarstellung (loest die
+  zurueckgezogene DIN 6 ab).
+- DIN 406 / DIN 6 — historisch, zurueckgezogen (siehe
+  [`99_normen_audit.md`](99_normen_audit.md)).
 - Verkn. Konvention: [`10_masseintragung_din406.md`](10_masseintragung_din406.md),
   Coverage-Schema: [`11_coverage_matrix.md`](11_coverage_matrix.md)
 

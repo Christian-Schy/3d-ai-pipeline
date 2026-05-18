@@ -1,4 +1,9 @@
-# 10 — Masseintragung (DIN 406, ISO 129)
+# 10 — Masseintragung (ISO 129-1)
+
+> Norm-Anker: **DIN EN ISO 129-1:2022-02**. Die fruehere DIN 406 ist
+> zurueckgezogen — siehe [`99_normen_audit.md`](99_normen_audit.md).
+> Dateiname `_din406` bleibt vorerst (Link-Stabilitaet), wird im
+> Doku-Sweep mit umbenannt.
 
 ## Konvention
 
@@ -29,6 +34,7 @@ zu behandelnde Achsen haben (Length vs Width). Siehe
 | "Bohrung 8mm von linker Kante 12mm und von oberer Kante 18mm entfernt" | Bohrungs-Center bei (-W/2 + 12, +H/2 - 18) |
 | "Tasche 60x40 von oben 20mm und von links 30mm entfernt" | Pocket-Center 20mm und 30mm von den Bauteilkanten |
 | "Bohrung jeweils 12mm von den Kanten entfernt" | abstand_unten=12 + abstand_rechts=12 (jeweils) |
+| "Bohrung obere rechte Ecke, 10mm von oben und 20mm von rechts" | Ecken-Regel: abstand_oben=10 + abstand_rechts=20 (Ecke = zwei Kantenmasse) |
 
 ### `kante_*` (edge-to-EDGE)
 
@@ -44,7 +50,6 @@ zu behandelnde Achsen haben (Length vs Width). Siehe
 |---|---|
 | "10mm nach rechts versetzt" | aus Bauteil-Center um +10 in X verschoben |
 | "5mm aus Mitte nach unten" | aus Bauteil-Center um -5 in Y verschoben |
-| "obere rechte Ecke 10mm nach unten und 20mm nach links versetzt" | Anchor (top_right) + offset (down:10, left:20) — siehe Anchor-Konvention |
 
 ## Edge-Cases
 
@@ -60,6 +65,26 @@ Die Praeposition entscheidet:
 
 Wenn die Phrase BEIDE Kanten nennt ("die obere Kante der Tasche von
 der oberen Wuerfelkante"), gewinnt explizit `kante_*`.
+
+### Ecken-Phrase → Ecken-Regel (zwei `abstand_*`)
+
+"Obere rechte Ecke" o.ae. ist **kein eigener Bezugstyp** — eine Ecke ist
+nur der Punkt, an dem zwei Bauteilkanten zusammentreffen. Eine Eck-
+Platzierung zerfaellt in **zwei `abstand_*`-Kantenmasse** (Ecken-Regel):
+
+| Phrase | Interpretation |
+|---|---|
+| "obere rechte Ecke, 10mm nach unten und 20mm nach links versetzt" | `abstand_oben: 10` + `abstand_rechts: 20` |
+
+Das Wort "versetzt"/"versatz" macht daraus **kein** `versatz_*` (A3) — der
+Bezug ist die Kante/Ecke, nicht die Bauteilmitte. Der Resolver wendet
+danach die feature-typische Mathematik an (Bohrung edge-to-center, Nut
+per-Achse). Es entsteht **kein** `anchor`. Details:
+[`ecken_regel.md`](../../data/prompts/conventions/ecken_regel.md).
+
+Der `anchor` bleibt ausschliesslich dem expliziten "auf"-Bezug
+vorbehalten ("liegt auf der rechten Kante an") — eine echte Punkt-auf-
+Punkt-Beziehung, kein Eck-Versatz.
 
 ### Mehrere Achsen mit verschiedenen Konventionen
 
@@ -82,9 +107,10 @@ abstand_rechts=10. Klassifizierer-Prompt enthaelt diese Regel.
 
 ### Mass-Ketten (DIN-Anti-Pattern)
 
-DIN 406 raet **explizit ab von Mass-Ketten** ("von links 10, dann 20, dann
-15") weil sie Toleranzen aufsummieren. Konstrukteure setzen stattdessen
-alle Masse von einem **gemeinsamen Bezug** aus.
+ISO 129-1 raet (wie zuvor DIN 406) **explizit ab von Mass-Ketten** ("von
+links 10, dann 20, dann 15") weil sie Toleranzen aufsummieren.
+Konstrukteure setzen stattdessen alle Masse von einem **gemeinsamen
+Bezug** aus.
 
 Im Pipeline-Kontext heisst das: wenn der User "von linker Kante 10mm, dann
 weitere 20mm zur naechsten Bohrung" sagt, **muss** der Normalizer/
@@ -134,10 +160,13 @@ inkrementell.
 
 ## Referenzen
 
-- DIN 406 — Technische Zeichnungen, Maßeintragung
-- ISO 129-1 — Technische Produktdokumentation, Eintragung von
-  Massen und Toleranzen
-- DIN 6 — Darstellung in Schnitten (kontextuell relevant)
+- **DIN EN ISO 129-1:2022-02** — Technische Produktdokumentation (TPD),
+  Eintragung von Massen und Toleranzen — Teil 1: Allgemeine Grundlagen.
+  Primaer-Anker; loest die zurueckgezogene DIN 406 ab.
+- **DIN EN ISO 128-Reihe** — Darstellung in Ansichten/Schnitten; loest
+  die zurueckgezogene DIN 6 ab.
+- DIN 406 / DIN 6 — historisch, zurueckgezogen. Nur als Kontext, nicht
+  als aktiver Anker (siehe [`99_normen_audit.md`](99_normen_audit.md)).
 
 ## Stand
 

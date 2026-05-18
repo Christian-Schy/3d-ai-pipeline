@@ -11,7 +11,11 @@ Sie nutzen die **volle** DIN-Bezugs-Methodik aus
   **Feature-Kante** der Tasche nennt. Pocket-Außenkante → Bauteilkante.
 - **A3 (`versatz_*`)** center-relativ aus der Face-Mitte.
 - **A4** alignment (centered / flush).
-- **A5** Anker auf **Bauteil-Face-Ecke** + Versatz.
+- **A5 (= A1)** — Eck-Phrase ("in der oberen rechten Ecke der Face,
+  X nach links, Y nach unten") ist numerisch A1 mit zwei `abstand_*`-
+  Werten (Ecken-Regel aus
+  [`10_masseintragung_din406.md`](10_masseintragung_din406.md)). Kein
+  eigenes Anker-Schema fuer Eck-Phrasen. Details siehe A5-Sektion unten.
 - **A6** "jeweils"-Regel (zwei Bauteilkanten gleich weit).
 - **C0/C2/C3** Rotation 0° / CCW / CW.
 
@@ -176,8 +180,10 @@ Resolved-Blueprint identisch fuer das D1/D2-Paar.
 
 ## Referenzen
 
-- DIN 406 — Maßeintragung in Zeichnungen
-- ISO 129-1 — Eintragung von Massen und Toleranzen
+- **DIN EN ISO 129-1:2022-02** — Eintragung von Massen und Toleranzen
+  (Primaer-Anker; loest die zurueckgezogene DIN 406 ab).
+- DIN 406 — historisch, zurueckgezogen (siehe
+  [`99_normen_audit.md`](99_normen_audit.md)).
 - Verkn. Konventionen: [`10_masseintragung_din406.md`](10_masseintragung_din406.md),
   [`11_coverage_matrix.md`](11_coverage_matrix.md), [`20_bohrung_din.md`](20_bohrung_din.md)
 

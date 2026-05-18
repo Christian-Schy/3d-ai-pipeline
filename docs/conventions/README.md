@@ -77,6 +77,8 @@ Pro Capability eine Datei. Jede Datei enthaelt:
 | 50 | Constraint-Bemassung (Symmetrie, Auto-Close, Feature-Bezuege) | TBD |
 | 60 | STEP-Export-Konvention (AP242) | TBD |
 | 90 | User-Wording-Beispiele (gesammelt aus echten Eingaben) | TBD |
+| [98](98_engineering_plan.md) | Engineering-Capabilities-Plan (Roadmap Cap 1.5-8.0) | aktiv |
+| [99](99_normen_audit.md) | Normen-Audit und Pipeline-Luecken | aktiv |
 
 ## Workflow fuer neue Eintraege
 

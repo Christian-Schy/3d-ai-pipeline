@@ -196,8 +196,15 @@ Pro Test pflegen wir **D1** + **D2**. Pattern-Typ pro Test in Klammern.
 
 ## Referenzen
 
-- DIN 406 — Maßeintragung (Pattern-Center bemasst wie point-like Feature)
-- ISO 5459 — Datums-Systeme (Pattern-Center als Datum)
+- **DIN EN ISO 129-1:2022-02** — Eintragung von Massen und Toleranzen
+  (Primaer-Anker; loest die zurueckgezogene DIN 406 ab). Standardpraxis
+  fuer Lochbilder: Teilkreis-Durchmesser + Anzahl + Winkel der ersten
+  Bohrung (Kreis); Lochabstand + Anzahl + Position der aeussersten
+  Bohrung (Grid/Linear).
+- **DIN EN ISO 5459:2024** — Datums und Datum-Systeme; Pattern-Center
+  bzw. Teilkreis-Mitte als potentielles Datum (relevant ab Cap 7.0).
+- DIN 406 — historisch, zurueckgezogen (siehe
+  [`99_normen_audit.md`](99_normen_audit.md)).
 - Verkn. Konventionen: [`10_masseintragung_din406.md`](10_masseintragung_din406.md),
   [`11_coverage_matrix.md`](11_coverage_matrix.md), [`20_bohrung_din.md`](20_bohrung_din.md)
 

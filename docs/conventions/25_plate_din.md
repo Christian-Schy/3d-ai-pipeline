@@ -91,11 +91,34 @@ wo das Pocket-Center-Bemasst wird).
 | "mittig darauf eine Platte 80x60x15" | zentriert auf Top-Face (B0) |
 | "rechts daneben buendig eine Platte 50x100x10" | Side-Stack (+X) + Y-aligned (typisch flush_back oder centered je nach Wording) |
 
-### A5 — Anker (Bauteil-Face-Ecke) + Versatz
+### A5 — Face-Ecke + Versatz = A1 (mit Ueberhang-Warnung)
+
+Wie bei Tasche ([`22_tasche_din.md`](22_tasche_din.md)) und der Ecken-
+Regel in [`10_masseintragung_din406.md`](10_masseintragung_din406.md):
+Eine Ecke nennt zwei Kanten, der Versatz bemasst — Default-Konvention
+A1, edge-to-CENTER — den **Platten-Center** von genau diesen zwei
+Kanten. Kein eigenes Anker-Schema.
 
 | Phrase | Interpretation |
 |---|---|
-| "darauf eine Platte 40x30x10 in der oberen rechten Ecke der Grundplatte, 5mm nach links und 5mm nach unten versetzt" | Top-Stack, Anker=top_right, offset (-5, -5) |
+| "darauf eine Platte 40x30x10 in der oberen rechten Ecke der Grundplatte, 5mm nach links und 5mm nach unten versetzt" | `abstand_rechts: 5, abstand_oben: 5` (Plate-Center 5mm/5mm von zwei Kanten) |
+
+**Ueberhang-Warnung (wichtig fuer Plate):** Mit A1 sitzt der Platten-
+CENTER auf der angegebenen Distanz; die Aussenkante kann **ueber den
+Rand** der Grundplatte ragen, wenn `abstand_*` < `plate_half`. Im
+Plate-Setting ist das fast immer *nicht* gewollt — der Konstrukteur-
+Reflex bei "in der Ecke ... X versetzt" ist eine **Eck-zu-Eck-Anlage
+mit definierter Restkante**.
+
+Norm-saubere Phrase fuer diesen Fall → **A2 (`kante_*`):**
+
+| Phrase | Interpretation |
+|---|---|
+| "die rechte Plate-Kante 5mm vom rechten Rand und die obere Plate-Kante 5mm vom oberen Rand" | `kante_rechts:5, kante_oben:5` → Plate-Aussenkante 5mm vom Bauteilrand, Plate liegt sauber innerhalb |
+
+Faustregel fuer Goldens: Plate-Position **mit `kante_*`** beschreiben,
+wenn die Platte unterhalb der Grundplatte bleiben soll (Standard-Fall);
+`abstand_*` nur fuer freie Position weg vom Rand.
 
 ### Rotation
 
@@ -152,6 +175,15 @@ gewollt. Default ist flach.
 
 ## Tests — Coverage-Matrix-abgeleitet
 
+> **Migrations-Hinweis (Plate-Eck-Phrasen):** P08 und vergleichbare
+> Goldens mit "in der Ecke der Grundplatte ... versetzt" wurden urspruenglich
+> als Anker mit `child_point=center` modelliert und produzieren damit eine
+> ueberhaengende Platte. Mit der Schritt-1-Regel (Ecke → A1 `abstand_*` zum
+> Plate-Center) ist das numerisch gleich → weiterhin Ueberhang. Empfehlung
+> fuer den Golden-Rework: solche Specs auf `kante_*` (A2) umstellen, dann
+> liegt die Platte sauber innerhalb. Spec-Texte werden im Plate-Golden-
+> Rework angepasst.
+
 Bauteil-Setup: **Grundplatte 200x100x10** als erste Platte, zweite
 Platte variabel pro Test. Pro Test pflegen wir **D1** + **D2**.
 
@@ -198,8 +230,18 @@ Platte variabel pro Test. Pro Test pflegen wir **D1** + **D2**.
 
 ## Referenzen
 
-- DIN 406 — Maßeintragung in Zeichnungen
-- DIN ISO 128 — Allgemeine Grundlagen technischer Zeichnungen (Lage-Bezuege)
+- **DIN EN ISO 129-1:2022-02** — Eintragung von Massen und Toleranzen
+  (Primaer-Anker fuer die Plate-Position auf der Auflageflaeche; loest
+  die zurueckgezogene DIN 406 ab).
+- **DIN EN ISO 128-Reihe** — Allgemeine Grundlagen technischer
+  Zeichnungen / Ansichten/Schnitte (loest DIN 6 ab).
+- *Hinweis:* Plate-Stacking, Auflage-Face und Side-Stack sind
+  Assembly-/Mate-Logik und werden in den klassischen Einzelteil-
+  Bemassungs-Normen nicht direkt geregelt. Eigene Mate-Semantik
+  (Cap 5.0 Assemblies, vgl. ISO 16792 fuer Model-Based Definition)
+  ist Plan-Bucket.
+- DIN 406 / DIN 6 — historisch, zurueckgezogen (siehe
+  [`99_normen_audit.md`](99_normen_audit.md)).
 - Verkn. Konventionen: [`10_masseintragung_din406.md`](10_masseintragung_din406.md),
   [`11_coverage_matrix.md`](11_coverage_matrix.md)
 

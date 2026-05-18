@@ -1,4 +1,15 @@
-# 26 — Edge Features (Fase / Rundung)
+# 26 — Edge Features (definierte Fase / Rundung, ISO 129-1)
+
+> Scope: **definierte** Fase (`chamfer`) und Rundung (`fillet`) — normale
+> dimensionierte Geometrie nach **ISO 129-1**. Die Schreibweisen `Cx`
+> (Fase x × 45°) und `Rx` (Rundung Radius x) stammen aus der allgemeinen
+> Zeichnungs-/Maßeintragungs-Konvention (ISO 129-1 / DIN-Praxis), nicht
+> aus DIN 6784 (zurueckgezogen).
+>
+> **NICHT in diesem Doc:** Kantenzustand nach DIN EN ISO 13715
+> (unbestimmte Kanten — Grat, scharfkantig, gerundet — mit Symbolen
+> `±`/`-`/`+`). Das ist eine eigene Capability fuer Manufacturing-
+> Vorgaben und derzeit nicht implementiert (Plan-Bucket).
 
 ## Konvention
 
@@ -90,13 +101,16 @@ Classifier soll "Außenkanten" als Selektor-Hinweis erkennen und der
 Template kann via `>Z and not (...)` filtern — heute **noch nicht
 implementiert**, gehoert in Cov-4-STRESS.
 
-### "C2" vs "Fase 2mm" — DIN-Kurzschreibweise
+### "C2" vs "Fase 2mm" — Zeichnungs-Kurzschreibweise
 
-DIN 6784 erlaubt "Cx" als Abkuerzung fuer eine 45°-Fase mit
-Kantenlaenge x. Der Classifier muss "C2", "C 2", "C2x45°" als
-aequivalent zu "Fase 2mm" erkennen. Synonym-Tabelle im Classifier-Prompt
-deckt das ab; Wording-Pool sollte mindestens je eine Variante pro
-Synonym in den Demos haben.
+Die Schreibweise "Cx" als Abkuerzung fuer eine 45°-Fase mit
+Kantenlaenge x (und analog "Rx" fuer einen Rundungsradius) ist
+allgemeine Zeichnungspraxis im Sinne von ISO 129-1; sie war auch im
+zurueckgezogenen DIN 6784 enthalten, ist aber nicht dessen Eigenheit.
+Der Classifier muss "C2", "C 2", "C2x45°" als aequivalent zu
+"Fase 2mm" erkennen. Synonym-Tabelle im Classifier-Prompt deckt das
+ab; Wording-Pool sollte mindestens je eine Variante pro Synonym in den
+Demos haben.
 
 ### Symmetrie-Annahmen
 
@@ -187,9 +201,15 @@ Integration in `STRESS_all_in_one_part` und `STRESS_multi_plate_with_features`:
 
 ## Referenzen
 
-- DIN 6784 — Werkstuecke aus Metall, Kantenform und -masse
-- DIN ISO 13715 — Werkstueck-Kanten (unbestimmte Form)
-- ISO 13715 — Edges of undefined shape
+- **DIN EN ISO 129-1:2022-02** — Primaer-Anker fuer die Bemassung
+  definierter Fasen/Rundungen (Cx / Rx als Kurzschreibweisen).
+- **DIN EN ISO 13715:2020-01** — Werkstueck-Kanten *unbestimmter*
+  Gestalt (Grat-/Kantenzustand). **Eigene, derzeit nicht implementierte
+  Capability** — beschreibt nicht die hier abgebildete definierte
+  Fase/Rundung, sondern den Manufacturing-Zustand einer Kante (Symbole
+  `±`/`-`/`+`). Plan-Bucket.
+- DIN 6784 — historisch, zurueckgezogen (siehe
+  [`99_normen_audit.md`](99_normen_audit.md)).
 - Verkn. Konventionen: [`10_masseintragung_din406.md`](10_masseintragung_din406.md),
   [`11_coverage_matrix.md`](11_coverage_matrix.md)
 
