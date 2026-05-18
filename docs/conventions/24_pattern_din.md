@@ -112,10 +112,12 @@ entsteht aber weiterhin:
   M09-Test wurde deshalb auf Teilkreis Ø20 mit 15mm Eck-Versatz
   korrigiert (Ø30/8mm ragte ~7mm ueber die 100x40-links-Face).
 
-`coordinate_validator` prueft heute nur Pattern-Center, nicht einzelne
-Kind-Positionen — Ueberlauf wird nicht gewarnt. Cov-3-Goldens decken nur
-"passt rein"-Faelle ab; Cov-4-STRESS sollte einen "Pattern-passt-knapp"-
-Test enthalten.
+`coordinate_validator` Check 12 (`_check_pattern_child_bounds`, seit
+2026-05-18) iteriert die Kind-Bohrungen pro Pattern (Grid/Linear/Kreis),
+wendet Pattern-Rotation an und meldet WARNING pro Bohrung deren
+`|center| + radius` ueber die Bauteilkante hinausgeht. Max 5
+Einzelmeldungen, danach Aggregat. Komplementaer zu Check 10
+`_check_pattern_spacing` (prueft den Pattern-Span gegen Parent-Dim).
 
 ### Asymmetrische Grids
 

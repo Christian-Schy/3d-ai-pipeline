@@ -230,3 +230,117 @@ def test_rotated_pocket_90deg_swaps_aabb_axes():
     pocket = _pocket("tasche_90", x=80, y=20, offset_y=15, angle_deg=90)
     issues = run_coordinate_check(_bp(pocket))
     assert [i for i in issues if i.check == "offset_overhang_y"]
+
+
+# ── Check 12: Pattern-Kind-Bohrungen gegen Bauteilrand ─────────────────────
+
+def _pattern(fid: str, ftype: str, params: dict,
+             offset_x: float = 0.0, offset_y: float = 0.0,
+             angle_deg: float = 0.0) -> dict:
+    return {
+        "id": fid,
+        "type": ftype,
+        "params": params,
+        "parent": "wuerfel",
+        "operation": "subtract",
+        "placement": {
+            "face": ">Z",
+            "alignment": "centered",
+            "offset_x": offset_x,
+            "offset_y": offset_y,
+            "angle_deg": angle_deg,
+            "notes": "",
+        },
+    }
+
+
+def test_grid_pattern_inside_no_warning():
+    # 3x3 Raster, spacing 20, Durchmesser 5, zentriert auf 100er-Wuerfel.
+    # Aeusserste Bohrungen bei ±20, +/-2.5 → 22.5 < 50. Klar drin.
+    pat = _pattern("grid_safe", "hole_pattern_grid",
+                   {"rows": 3, "cols": 3, "spacing_x": 20, "spacing_y": 20,
+                    "diameter": 5})
+    issues = run_coordinate_check(_bp(pat))
+    assert not [i for i in issues if i.check == "pattern_child_bounds"]
+
+
+def test_grid_pattern_offset_overhang_warns_per_child():
+    # 3x3 Raster spacing 20 bei offset_x=30. Aeusserste rechts bei +30+20=+50.
+    # Mit Durchmesser 10 (radius 5) → +50+5=+55 > 50 → Ueberhang 5mm.
+    # 3 Kinder in der rechten Spalte ragen raus (Mitte+oben+unten).
+    pat = _pattern("grid_edge", "hole_pattern_grid",
+                   {"rows": 3, "cols": 3, "spacing_x": 20, "spacing_y": 20,
+                    "diameter": 10},
+                   offset_x=30)
+    issues = run_coordinate_check(_bp(pat))
+    warns = [i for i in issues if i.check == "pattern_child_bounds"]
+    assert len(warns) == 3, f"expected 3 warnings (rechte Spalte), got {len(warns)}"
+    assert all("X" in w.message for w in warns)
+
+
+def test_circular_pattern_fits_no_warning():
+    # Lochkreis 6 Bohrungen Ø5 auf Teilkreis 40mm, zentriert.
+    # Aeusserster Punkt: 20+2.5 = 22.5 < 50.
+    pat = _pattern("circ_safe", "hole_pattern_circular",
+                   {"count": 6, "pitch_diameter": 40, "diameter": 5})
+    issues = run_coordinate_check(_bp(pat))
+    assert not [i for i in issues if i.check == "pattern_child_bounds"]
+
+
+def test_circular_pattern_too_big_warns_for_all_holes():
+    # Lochkreis 4 Bohrungen Ø10 auf Teilkreis 95mm bei offset (0, 0).
+    # Aeusserster Punkt: 47.5+5 = 52.5 > 50 → 2.5mm Ueberhang.
+    # Alle 4 Kinder ragen raus (eines pro Seite).
+    pat = _pattern("circ_big", "hole_pattern_circular",
+                   {"count": 4, "pitch_diameter": 95, "diameter": 10})
+    issues = run_coordinate_check(_bp(pat))
+    warns = [i for i in issues if i.check == "pattern_child_bounds"]
+    assert len(warns) == 4
+
+
+def test_linear_pattern_x_at_edge_warns_for_outermost():
+    # 4 Bohrungen Ø6 entlang X, spacing 20, offset_x=20.
+    # Positionen: -10, +10, +30, +50 (relativ Pattern-Mitte −30 bis +30 + 20).
+    # Aeusserste rechts: +50+3=+53 > 50 → 3mm Ueberhang. NUR die rechte.
+    pat = _pattern("lin_edge", "hole_pattern_linear",
+                   {"count": 4, "spacing": 20, "direction": "x", "diameter": 6},
+                   offset_x=20)
+    issues = run_coordinate_check(_bp(pat))
+    warns = [i for i in issues if i.check == "pattern_child_bounds"]
+    assert len(warns) == 1
+    assert "X" in warns[0].message
+
+
+def test_grid_pattern_rotation_applies_to_child_positions():
+    # 2x2 Raster spacing 30, Durchmesser 5, um 45° gedreht, zentriert.
+    # Ohne Rotation: Ecken bei ±15. Mit Rot 45°: Diagonalen-Halbachse =
+    # sqrt(15² + 15²) ≈ 21.2 → +/-21.2 in X UND Y. +21.2+2.5=23.7 < 50: safe.
+    # Aber bei Spacing 60: Ecken bei ±30 → Rot 45° → ±42.4 → 42.4+2.5=44.9 <
+    # 50, safe. Bei spacing 70: Ecken bei ±35 → Rot 45° → ±49.5 → 49.5+2.5=52
+    # > 50 → Ueberhang.
+    pat_safe = _pattern("grid_rot_safe", "hole_pattern_grid",
+                        {"rows": 2, "cols": 2, "spacing_x": 30, "spacing_y": 30,
+                         "diameter": 5},
+                        angle_deg=45)
+    pat_overhang = _pattern("grid_rot_oh", "hole_pattern_grid",
+                            {"rows": 2, "cols": 2, "spacing_x": 70,
+                             "spacing_y": 70, "diameter": 5},
+                            angle_deg=45)
+    safe_issues = run_coordinate_check(_bp(pat_safe))
+    oh_issues = run_coordinate_check(_bp(pat_overhang))
+    assert not [i for i in safe_issues if i.check == "pattern_child_bounds"]
+    oh_warns = [i for i in oh_issues if i.check == "pattern_child_bounds"]
+    assert len(oh_warns) >= 1, f"expected at least 1 rotation-overhang, got {oh_warns}"
+
+
+def test_pattern_many_overhangs_aggregates():
+    # Grid 4x4 spacing 30 bei offset (0,0). Sehr viele Ueberhaenge erwartet.
+    # Aeusserste Position: ±45 ± 2.5 (diameter 5) → +47.5 < 50 safe.
+    # Mit diameter 8: +45+4 = +49 < 50 safe. Bei spacing 32 → +48+2.5 > 50.
+    pat = _pattern("grid_many_oh", "hole_pattern_grid",
+                   {"rows": 4, "cols": 4, "spacing_x": 32, "spacing_y": 32,
+                    "diameter": 5})
+    issues = run_coordinate_check(_bp(pat))
+    warns = [i for i in issues if i.check == "pattern_child_bounds"]
+    # Max 5 individual warnings, plus optional aggregate.
+    assert 1 <= len(warns) <= 6
