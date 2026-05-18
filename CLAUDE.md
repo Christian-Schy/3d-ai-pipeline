@@ -48,22 +48,27 @@ Projekt-Struktur seit ADR 0008. Ersetzt die alte lineare Phasen-Liste.
 **Definition of Done pro Capability:** Cov 4 grün + Done-Review-Checkliste
 abgehakt (siehe ADR 0008). Cov 5+6 sind Verkaufs-Polish.
 
-### ⚠ Architektur-Umbau aktiv (seit 2026-05-17)
+### Architektur-Umbau ADR 0014 — fast durch (Stand 2026-05-18)
 
-Die Pipeline wird grundlegend umgebaut — **Master-Plan: ADR 0014**
-(`docs/decisions/0014-pipeline-rebuild-clean-architecture.md`). Grund:
-wiederkehrende Regressions-Kaskade durch Re-Derivation zwischen Agenten +
-Konventions-Fragmentierung. Ziel: ein Textverstaendnis-Schritt pro Aktion
-(Klassifizierer), Rest deterministisch, NormalizerAgent eliminiert,
-per-Agent-Regression-Suiten als Netz. Bis der Umbau durch ist, sind Teile
-der Architektur-Beschreibung unten im Fluss. Pickup-Punkt: Memory
-`rebuild_plan_2026_05_17`. CLAUDE.md-Voll-Ueberarbeitung ist Workstream W9.
+Die Pipeline wurde nach **ADR 0014**
+(`docs/decisions/0014-pipeline-rebuild-clean-architecture.md`)
+grundlegend umgebaut. Grund: wiederkehrende Regressions-Kaskade durch
+Re-Derivation zwischen Agenten + Konventions-Fragmentierung. Ziel: ein
+Textverstaendnis-Schritt pro Aktion, Rest deterministisch.
 
-### Aktueller Stand (2026-05-14)
+Workstream-Stand: W1-W7 + W10 **durch** (Agent-Regression-Suiten,
+Konventions-Bibliothek, spezifische typ-Klassifizierer, NormalizerAgent-
+Elimination, Regex-Audit, KNN-Demos, Mini-Heatmap, Legacy-Architect-
+Entfernung). **W8 deferred** — die Schema-v3-Praemisse („chaotische
+Merges") war empirisch nicht bestaetigt (0/5316 Features mit
+Mehrfach-Positionierung, ADR 0014 §16). **W9** (diese CLAUDE.md-/docs-
+Aktualisierung) laeuft. Pickup-Punkt: Memory `rebuild_plan_2026_05_17`.
+
+### Aktueller Stand (2026-05-18)
 
 | Capability | Stand | Coverage |
 |---|---|---|
-| 1.0 Primitive Assembly | gebaut | Cov 3 (18/18 Component-Goldens grün); fehlt L2-Coverage + Cov 4 STRESS |
+| 1.0 Primitive Assembly | gebaut | Cov 3 (Component- + L2-Coverage-Goldens grün); 3/5 STRESS-Goldens (Resolver-Layer) |
 | 1.5 Extended Primitives | nicht gebaut | Cov 0 |
 | 2.0 Modifications | teilweise (Coder-Pfad) | Cov 0 als Golden |
 | 3.0-9.0 | nicht gebaut | Cov 0 |
@@ -90,29 +95,32 @@ der Architektur-Beschreibung unten im Fluss. Pickup-Punkt: Memory
 
 ## Architektur
 
-### Pipeline Flow (Stand 2026-05-14, Capability 1.0 Cov 3 grün)
+### Pipeline Flow (Stand 2026-05-18, ADR 0003 Per-Aktion-Kette + ADR 0014 W10)
 ```
-entry_router → interpreter(9b) → punctuation(26b)
-  → inventar(26b, 2-step)               — Teile + Aktions-Liste
-  → text_splitter(rule) → position_extractor(26b, per-Teil Labeler)
-  → feature_definierer(26b)             — Aktionen → Features
-  → platzierer(26b)                     — Multi-Part-Placement
-  → assembly(rule) → pocket_child_placer(26b)
-  → blueprint_resolver(rule) → coordinate_validator(rule)
-  → plan_validator(26b, mit determ. Post-Filter)
-  → function_decomposer(rule) → executor(sandbox)
-  → geometry_precheck(rule) → validator(26b)
-  → [error_router → code_fixer]
+entry_router → interpreter → punctuation
+  → inventar (Step A: Teile-Liste)
+  → aktions_splitter (rule)             — Spec → Aktions-Phrasen
+  → aktions_klassifizierer (LLM-Loop)   — 1 typ-Klassifizierer-Call/Phrase
+                                          (+ anchor_classifier cue-gated)
+  → text_splitter (rule)                — per-Teil Chunks fuer Multi-Part
+  → position_extractor (LLM)            — placement- vs feature-Labeler
+  → feature_definierer (LLM-Loop)       — define_feature pro Klassifikation
+  → aktions_aggregator (rule)           — baut teil_definitionen[]
+  → platzierer (LLM)                    — Multi-Part-Placement
+  → assembly (rule) → pocket_child_placer
+  → blueprint_resolver (rule) → coordinate_validator (rule)
+  → plan_validator (LLM, mit determ. Post-Filter)
+  → function_decomposer (rule) → coder → code_review → executor (sandbox)
+  → validator (LLM) → [error_router → code_fixer]
 ```
 
-**Geplante Umstrukturierung (ADR 0003):** Inventar Step B und
-feature_definierer werden auf Pro-Aktion-Mikro-Calls aufgeteilt.
-Dazwischen kommt ein deterministischer Aktions-Splitter und ein
-neuer Aktions-Klassifizierer. Siehe
-[`docs/decisions/0003-inventar-feature-definierer-pro-aktion.md`](docs/decisions/0003-inventar-feature-definierer-pro-aktion.md).
-Motivation: aktueller Pipeline-Bottleneck ist feature_definierer
-(70-313s pro Call) und Inventar verklumpt Tasche+Bohrung-Verschachtelungen
-in eine Aktion.
+EIN Textverstaendnis-Schritt pro Aktion (der typ-Klassifizierer),
+Rest deterministisch — Ziel-Architektur aus ADR 0014. Der frueher
+monolithische Blueprint-Schritt ist in diese Per-Aktion-Kette zerlegt
+(ADR 0003); der NormalizerAgent wurde eliminiert (ADR 0014 W4), der
+Legacy-`blueprint_architect`-Fallback entfernt (ADR 0014 W10).
+Validation-Failures routen zurueck an den verursachenden Agenten
+(coordinate_validator → feature_definierer, plan_validator → assembly).
 
 ### Zwei-Schicht Blueprint (V2, seit 2026-04-07)
 
@@ -197,10 +205,8 @@ Strukturierungs-Entscheidung: ADR 0008.
 
 ### Aktueller Fokus: Capability 1.0 → Cov 4
 
-Capability 1.0 Primitive Assembly ist auf Cov 3 (18/18 Component-Goldens
-grün, einschliesslich V2_balanced_feature_palette mit DIN-konformer
-Slot-Konvention seit 2026-05-14). Naechste Aufgabe: L2-Coverage-Goldens
-und L3-STRESS-Goldens schreiben.
+Capability 1.0 Primitive Assembly ist auf Cov 3. Component-Goldens
+(Splitter + Resolver isoliert) und L2-Coverage-Goldens sind grün:
 
 L2-Coverage-Goldens (eine Capability komplett pro Test, alle Seiten,
 alle Wording-Varianten):
@@ -209,47 +215,32 @@ alle Wording-Varianten):
 - `N_coverage_all_sides_all_orientations` (Slots)
 - `M_coverage_patterns_all_kinds` (Lochmuster Grid/Kreis/Linear)
 
-L3-STRESS-Goldens (Multi-Capability):
-- `STRESS_all_in_one_part` (~20+ Features in einem Wuerfel)
-- `STRESS_multi_plate_with_features`
-- `STRESS_three_plates`
-- `STRESS_voice_long`
-- `STRESS_anchor_chain`
+L3-STRESS-Goldens (Multi-Capability) — Cov-4-Ziel:
+- `STRESS_all_in_one_part` (22 Features in einem Wuerfel) — grün (Resolver-Layer)
+- `STRESS_multi_plate_with_features` — grün (Resolver-Layer)
+- `STRESS_three_plates` — grün (Resolver-Layer)
+- `STRESS_anchor_chain` — offen
+- `STRESS_voice_long` — offen (Splitter-/Pipeline-Layer)
 
-Wenn alle grün UND Done-Review-Checkliste (ADR 0008) abgehakt:
-Capability 1.0 verkaufsreif. Dann Capability 2.0 (Modifications).
+Die drei gebauten STRESS-Goldens decken den deterministischen
+Resolver-Layer ab. Die offenen zwei brauchen den Pipeline-Layer
+(Real-Run gegen Ollama). Wenn alle grün UND Done-Review-Checkliste
+(ADR 0008) abgehakt: Capability 1.0 verkaufsreif. Dann Capability 2.0
+(Modifications).
 
-### Vorgaengig: Architektur-Refactors die noch laufen
+### Validator-Reverse-Engineering (ADR 0015/0016)
 
-Diese ADRs sind noch nicht vollstaendig umgesetzt und blockieren
-Capability-Vorbereitungen:
+Der LLM-Validator ist unzuverlaessig (sagt oft „valid" bei
+offensichtlichen Fehlern). Geplanter Ersatz: ein Reverse-Validator —
+Spiegelbild der Bau-Kette, viele kleine Experten von HINTEN nach VORNE,
+jeder prueft EINEN Aspekt (Position, Drehung, Flaeche, Anker,
+Feature-Count). Deterministisch wo moeglich.
 
-#### Phase A: 3-Step Chain — UMGESETZT, im Refactor
-Der monolithische Blueprint Architect wurde in eine Kette aus
-Inventar → feature_definierer → platzierer → assembly aufgeteilt.
-Heute produktiv. Schwachstelle: feature_definierer ist trotzdem
-ein einziger LLM-Call pro Teil mit allen Aktionen darin — bei
-komplexen Specs 70-313s Latenz.
-
-#### Phase A.5: Pro-Aktion-Mikro-Calls (ADR 0003 — UMGESETZT)
-Inventar Step B + feature_definierer wurden in Pro-Aktion-Mikro-Calls
-zerlegt. Aktions-Splitter + Klassifizierer + per-Phrase Normalizer +
-deterministischer Aggregator. Motivation: Bottleneck-Aufloesung,
-Bug "Tasche mit Bohrung drin"-Verschachtelung, stabile Aktions-IDs.
-Details: ADR 0003.
-#### Phase B: Geometry Assertions (deterministisch, geplant)
-Aus dem resolved Blueprint automatisch Tests generieren — Volumen, BBox,
-Feature-Count. Nach Executor vergleichen: Delta > 5% → Fehler. Ersetzt
-langfristig den unzuverlaessigen LLM-Validator. Bezug zur
-Capability-Matrix: ist Cov-5/Cov-6 Infrastruktur, parallel zu allen
-Capabilities einsetzbar.
-
-#### Phase B Teil 2: Validator-Reverse-Engineering (geplant)
-Spiegelbild der Bau-Kette als Validator: viele kleine Experten von HINTEN
-nach VORNE, anderes Modell als Bau-Pfad fuer unabhaengige Sicht. Jeder
-Validator prueft EIN Aspekt (Position, Drehung, Flaeche, Anker,
-Feature-Count). Deterministisch wo moeglich, LLM nur fuer
-Textverstaendnis-Pruefung. Bezug: ist Cov-5/Cov-6 Infrastruktur.
+Stand: dormantes Scaffold in `src/validation/` existiert (ADR 0015),
+nicht in die Pipeline verdrahtet. Phasenplan fuer den Vollausbau in
+ADR 0016 — Trigger: Cap 1.0 Cov 4 + Cap 6.0 (Datums) + Cap 7.0
+(Toleranzen). Bis dahin tragen die deterministischen Checks im
+`coordinate_validator` die Last.
 
 ## Architektur-Notizen fuer spaeter
 
@@ -377,10 +368,12 @@ startet, wird das zur relevanten Datenquelle.
 
 ### DSPy-Training-Strategie
 Sobald Capability 1.0 Cov 4 grün ist: einmaliges Baseline-Training pro
-Sub-Agent (Klassifizierer-Sub-Agents, Normalizer, position_extractor,
-platzierer). Reward-Signal aus Geometry Assertions (Volumen/BBox/
+Sub-Agent (Klassifizierer-Sub-Agents, position_extractor, platzierer,
+inventar). Reward-Signal aus Geometry Assertions (Volumen/BBox/
 Feature-Count Delta). Kleine Datenmengen OK solange Reward-Signal sauber.
-Vor Training: Schema eingefroren — sonst Moving Target.
+Vor Training: Schema eingefroren — sonst Moving Target. Die Klassifizierer
+nutzen seit ADR 0014 W6 KNN-Demo-Retrieval — Pool-Pflege
+(`klassifizierer_traces.py` + `make demo-pools`) ist laufende Aufgabe.
 
 ## Bekannte Limitierungen
 
@@ -393,9 +386,11 @@ Vor Training: Schema eingefroren — sonst Moving Target.
     (z.B. plan_validator pocket_floor — siehe ADR 0002)
 - Fix-Loop: KI gibt manchmal resolved statt semantic Format zurueck
   → Resolver handhabt das jetzt (orientation wird trotzdem angewandt)
-- Inventar Step B + feature_definierer: Mega-Calls bei vielen Aktionen
-  → Latenz 70-313s, verklumpt Tasche+Bohrung-Verschachtelungen
-  → ADR 0003 in Umsetzung: Pro-Aktion-Mikro-Calls
+- ~~Inventar Step B + feature_definierer: Mega-Calls bei vielen Aktionen
+  (Latenz 70-313s, verklumpt Tasche+Bohrung-Verschachtelungen).~~
+  Behoben: ADR 0003 Per-Aktion-Mikro-Calls umgesetzt — Inventar macht
+  nur noch Step A (Teile-Liste), die Aktions-Verarbeitung laeuft als
+  aktions_splitter → aktions_klassifizierer → feature_definierer-Loop.
 - ~~coordinate_validator bei rotierten Pockets nahe Kante: bbox-
   Approximation ignoriert Rotation.~~ Behoben 2026-05-18: `_check_offset_bounds`
   rechnet jetzt rotations-bewusst (x_half·cos|θ| + y_half·sin|θ|) — fasst

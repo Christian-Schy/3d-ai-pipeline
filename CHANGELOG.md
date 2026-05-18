@@ -10,6 +10,14 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-18
 
+- **W9 — CLAUDE.md auf den aktuellen Architektur-Stand gebracht.**
+  Pipeline-Flow-Diagramm auf die Per-Aktion-Kette (ADR 0003) aktualisiert,
+  veralteten Modell-Annotationen entfernt; Architektur-Umbau-Status
+  (W1-W7+W10 durch, W8 deferred, W9 laufend); Capability-Stand 2026-05-18;
+  NormalizerAgent-/blueprint_architect-Referenzen bereinigt; Phase-B-
+  Sektion auf den Reverse-Validator (ADR 0015/0016) umgestellt.
+- **W8 (Schema v3) deferred (ADR 0014 §16).** Praemisse empirisch nicht
+  bestaetigt — 0/5316 Features setzen je mehr als ein Positionsfeld.
 - **W10 — Modifikations-/Error-Pfad vereinheitlicht, `blueprint_architect`
   entfernt (ADR 0014 §15).** Der monolithische Architect war als
   Modify-/Error-Fallback gedacht, wurde aber faktisch nie erreicht
