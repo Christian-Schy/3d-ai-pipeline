@@ -107,6 +107,12 @@ v3: EIN `placement`-Objekt mit `convention`-Tag (`edge_to_center` |
 (neues Feld, alte bleiben lesbar bis alle Pfade umgestellt sind). Schema
 war eingefroren — dieser Umbau ist die begruendete Ausnahme.
 
+> **Update 2026-05-18 — W8 deferred.** Eine empirische Pruefung vor
+> Umbau-Beginn ergab: die Praemisse („chaotische Merges") ist nicht
+> bestaetigt — 0 von 5316 Features setzen je mehr als ein
+> Positionsfeld. Siehe **§16**. W8 bleibt aufgeschoben bis ein echter
+> Merge-Konflikt getract ist.
+
 ## 5. Test-Struktur — die Fehleranalyse-Pyramide
 
 | Layer | Was | Dauer | Faengt |
@@ -148,7 +154,7 @@ Aus dem Grundmuster abgeleitet — wird im Umbau direkt mit-adressiert:
 | W5 | Regex-auf-User-Text-Audit: JEDE Regex die die rohe Phrase liest (Anker-Helfer, Klassifizierer-Keyword-Routing, Normalizer-Helfer) inventarisieren → LLM-Entscheidung oder loeschen. Anker-Erkennung in den Klassifizierer. | W4 |
 | W6 | `KNNFewShot` statt `BootstrapFewShot` evaluieren + umstellen | W1 |
 | W7 | Mini-Heatmap (~5 repraesentative Specs) als schnelles Integrations-Signal | — |
-| W8 | Blueprint-Schema v3 (Positionierung konsolidieren) | W4 |
+| W8 ⏸ | Blueprint-Schema v3 (Positionierung konsolidieren) — **deferred 2026-05-18**, Praemisse empirisch nicht bestaetigt, siehe §16. | W4 |
 | W9 | CLAUDE.md + `docs/` auf neue Architektur umschreiben | W4–W8, W10 |
 | W10 ✅ | **Modifikations-/Error-Loop-Pfad vereinheitlichen** — erledigt 2026-05-18, siehe §15. | W4 |
 
@@ -337,3 +343,40 @@ Log-Meldung — ehrlicher als ein ungetesteter Rebuild.
 Damit ist die in §10.3 benannte „groesste Doppelung im System" (eine
 komplette zweite Pipeline) aufgeloest — sie war zum Zeitpunkt des
 Cleanups bereits funktional tot.
+
+## 16. Schema v3 (W8) — Praemisse empirisch nicht bestaetigt, deferred
+
+§4 begruendet Schema v3 mit: die vier Positionierungs-Repraesentationen
+(`edge_distances`, `center_offset`, `pocket_edge_distances`, `anchor`)
+seien „ein Hauptgrund fuer chaotische Merges". Vor Beginn des Umbaus
+wurde das 2026-05-18 empirisch geprueft.
+
+**Befund:** Ueber **5316 Features** mit `position`-Objekt in
+`data/sessions/runs.jsonl` hat **kein einziges** zwei oder mehr der vier
+Felder gleichzeitig gesetzt. `feature_builder` emittiert pro Feature
+immer genau **eine** Repraesentation — abgeleitet aus dem Hint-Vokabular
+(`abstand_*` → edge_distances, `versatz_*` → center_offset, `kante_*` →
+pocket_edge_distances, `anker_*` → anchor). Die vier sind keine
+redundante Mehrfach-Repraesentation derselben Sache, sondern vier
+fachlich verschiedene Bemassungs-Konventionen (edge-to-center,
+edge-to-edge, from-center, point-to-point), die sich gegenseitig
+ausschliessen.
+
+Die Prioritaets-/additive-Merge-Logik in `_compute_offsets`
+(`blueprint_resolver.py`) ist damit ein Notnagel, der nie greift. Die
+eigentliche Hint-Ebenen-Merge-Logik (`_merge_param_hints`), die das ADR
+beim Schreiben vor Augen hatte, wurde bereits in **W4 eliminiert**.
+
+**Entscheidung:** W8 deferred. Ein voller Schema-v3-Umbau wuerde das
+eingefrorene Schema invalidieren (Trainingsmaterial-Garantie, CLAUDE.md),
+~23 Component-Goldens + alle Pipeline-Goldens migrieren und
+feature_builder + Resolver umbauen — fuer einen Konflikt, der 0/5316 mal
+auftritt. Der `convention`-Tag waere eine kosmetische Umverpackung;
+der Resolver-Code dahinter (`_apply_edge_distances`,
+`_apply_center_offset`, `_apply_anchor`) bliebe nahezu identisch.
+
+**Trigger fuer ein spaeteres W8:** ein konkret getracter Merge-Konflikt
+(zwei Position-Felder auf einer Achse) ODER ein Klassifizierer, der
+nachweislich widerspruechliche Hints emittiert. Bis dahin gilt: das
+Schema ist mit vier getrennten, sich ausschliessenden Konventionsfeldern
+sauber — Konsolidierung ohne belegten Nutzen waere Risiko ohne Gegenwert.
