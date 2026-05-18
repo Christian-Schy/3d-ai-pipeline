@@ -36,7 +36,7 @@ Capability-Sprung noetig.
 | **Edge-Features Innen-/Aussenkanten-Filter** ("Aussenkanten der Top-Face ohne Tasche-Kanten") | Template + Klassifizierer | mittel |
 | **Edge-Features E2-Coverage** ("horizontale Kanten") | Goldens + Klassifizierer-Demos | klein |
 | ~~**Slot-Pipeline-Goldens-Heatmap** unter Mittellinien-Regel verifizieren~~ ✅ erledigt 2026-05-18 (Paket 1.5) | Ollama-Heatmap-Run | — |
-| **NEST `hole_classifier`-Fix** (Ecken-Regel `abstand_*` statt `versatz_*`) | Prompt/Demo + Retrain | mittel, GPU |
+| ~~**NEST `hole_classifier`-Fix** (Ecken-Regel `abstand_*` statt `versatz_*`)~~ ✅ erledigt 2026-05-18 (Paket 2 — 8 Eck-Demos + agent_regression NEST-Case, 84/84 live gruen) | klassifizierer_traces + demo-pool rebuild | — |
 
 ---
 
