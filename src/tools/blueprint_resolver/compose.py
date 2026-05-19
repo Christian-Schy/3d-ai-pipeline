@@ -23,6 +23,75 @@ from .offsets import (
 )
 
 
+def _alignment_baseline(
+    alignment_lower: str,
+    parent_w: float, parent_h: float,
+    child_w: float, child_h: float,
+) -> tuple[float, float]:
+    """Baseline offsets from alignment keywords (flush_right, flush_top, ...).
+
+    Returns (ox, oy). A keyword like "right" flushes the child against the
+    parent's right edge; absence of a keyword on an axis leaves it at 0
+    (centered). child_w/child_h of 0 (point-like feature) yields 0 — there
+    is no body to flush.
+    """
+    ox = oy = 0.0
+    if "right" in alignment_lower:
+        ox = +(parent_w / 2 - child_w / 2) if child_w > 0 else 0.0
+    elif "left" in alignment_lower:
+        ox = -(parent_w / 2 - child_w / 2) if child_w > 0 else 0.0
+    if "top" in alignment_lower:
+        oy = +(parent_h / 2 - child_h / 2) if child_h > 0 else 0.0
+    elif "bottom" in alignment_lower:
+        oy = -(parent_h / 2 - child_h / 2) if child_h > 0 else 0.0
+    return ox, oy
+
+
+def _classify_edge_box_flags(
+    feat_type: str, child_params: dict, child_w: float, child_h: float,
+) -> tuple[bool, bool | None, bool | None]:
+    """Decide the edge-distance reference convention for a child feature.
+
+    Returns (is_box, is_box_wx, is_box_wy):
+      - is_box:     global default — True ⇒ edge-to-EDGE (subtract child
+                    half-extent), False ⇒ edge-to-CENTER. Additive
+                    plates/boxes are edge-to-edge; hole-like cuts are
+                    edge-to-center (same mental model as "Bohrung 20mm
+                    von rechts").
+      - is_box_wx / is_box_wy: per-axis OVERRIDE (None ⇒ use is_box).
+                    Set for hole patterns where DIN-Konvention 24 pins
+                    A1 to the outermost hole — see docs/conventions/
+                    24_pattern_din.md.
+
+    Slot/Groove stay hole-like (is_box=False) → Mittellinien-Bezug on
+    both axes (ISO 129-1); their Restwand intent is expressed explicitly
+    via pocket_edge_distances, not here.
+    """
+    _HOLE_LIKE_PREFIXES = ("hole", "slot", "groove", "pocket", "cutout",
+                           "chamfer", "fillet", "bevel", "recess")
+    ftype_lower = (feat_type or "").lower()
+    is_hole_like = any(ftype_lower.startswith(p) or ftype_lower == p
+                       for p in _HOLE_LIKE_PREFIXES)
+    is_box = child_w > 0 and child_h > 0 and not is_hole_like
+
+    is_box_wx = is_box_wy = None
+
+    # hole_pattern_linear: direction-axis edge-to-EDGE (subtract span),
+    # perpendicular axis edge-to-CENTER.
+    if ftype_lower == "hole_pattern_linear" and (child_w > 0 or child_h > 0):
+        direction = str(child_params.get("direction") or "x").lower()
+        if direction == "y":
+            is_box_wx, is_box_wy = False, True
+        else:
+            is_box_wx, is_box_wy = True, False
+
+    # hole_pattern_grid (explicit rows/cols schema): both axes edge-to-EDGE.
+    if ftype_lower == "hole_pattern_grid" and (child_w > 0 or child_h > 0):
+        is_box_wx, is_box_wy = True, True
+
+    return is_box, is_box_wx, is_box_wy
+
+
 def _compute_offsets(
     alignment: str,
     edge_distances: dict[str, float] | None,
@@ -60,35 +129,15 @@ def _compute_offsets(
         child_params, face, angle_deg=angle_deg, feat_type=feat_type
     )
 
-    ox, oy = 0.0, 0.0
-
     # Priority 1: Anchor (explicit point-to-point mapping)
     if anchor:
         return _apply_anchor(face, anchor, parent_params, child_params, angle_deg)
 
     # Alignment sets the baseline for both axes; edge_distances / center_offset
     # may override the individual axis they address.
-    alignment_lower = alignment.lower().strip()
-
-    ox_from_alignment = 0.0
-    oy_from_alignment = 0.0
-    ox_has_alignment = False
-    oy_has_alignment = False
-    if "right" in alignment_lower:
-        ox_from_alignment = +(parent_w / 2 - child_w / 2) if child_w > 0 else 0.0
-        ox_has_alignment = True
-    elif "left" in alignment_lower:
-        ox_from_alignment = -(parent_w / 2 - child_w / 2) if child_w > 0 else 0.0
-        ox_has_alignment = True
-    if "top" in alignment_lower:
-        oy_from_alignment = +(parent_h / 2 - child_h / 2) if child_h > 0 else 0.0
-        oy_has_alignment = True
-    elif "bottom" in alignment_lower:
-        oy_from_alignment = -(parent_h / 2 - child_h / 2) if child_h > 0 else 0.0
-        oy_has_alignment = True
-
-    ox = ox_from_alignment
-    oy = oy_from_alignment
+    ox, oy = _alignment_baseline(
+        alignment.lower().strip(), parent_w, parent_h, child_w, child_h
+    )
 
     # Priority 2b: edge_distances (DEFAULT edge-to-CENTER) per-axis
     ox_from_edges = oy_from_edges = 0.0
@@ -97,44 +146,9 @@ def _compute_offsets(
         non_zero = {k: v for k, v in edge_distances.items()
                     if isinstance(v, (int, float)) and float(v) > 0}
         if non_zero:
-            # Default convention: edge-to-CENTER. "Tasche 20mm von rechts"
-            # means the user wants the pocket CENTER 20mm from the parent
-            # edge — same mental model as "Bohrung 20mm von rechts". For
-            # additive plates/boxes (world-frame children) we still need
-            # edge-to-edge, hence the is_box check.
-            _HOLE_LIKE_PREFIXES = ("hole", "slot", "groove", "pocket", "cutout",
-                                   "chamfer", "fillet", "bevel", "recess")
-            ftype_lower = (feat_type or "").lower()
-            is_hole_like = any(ftype_lower.startswith(p) or ftype_lower == p
-                               for p in _HOLE_LIKE_PREFIXES)
-            is_box = child_w > 0 and child_h > 0 and not is_hole_like
-
-            # Slot/Groove: Mittellinien-Bezug auf beiden Achsen (ISO 129-1,
-            # siehe docs/conventions/21_nut_slot_din.md). Slot ist
-            # hole-like → is_box=False → edge-to-CENTER (Mittellinie) auf
-            # beiden Achsen, ohne child_half-Subtraktion. Keine per-Achse-
-            # Sonderbehandlung. Restwandstaerken-Intent wird ueber
-            # `pocket_edge_distances` (`kante_*`) explizit ausgedrueckt.
-            is_box_wx = is_box_wy = None
-
-            # DIN-Konvention 24 fuer hole_pattern_linear: A1 (`abstand_*`)
-            # bezieht sich auf die outermost-Hole, nicht den Pattern-Center.
-            # Direction-Achse = edge-to-EDGE (Pattern-Span subtrahieren),
-            # perpendicular = edge-to-CENTER (Default).
-            if ftype_lower == "hole_pattern_linear" and (child_w > 0 or child_h > 0):
-                direction = str(child_params.get("direction") or "x").lower()
-                if direction == "y":
-                    is_box_wx, is_box_wy = False, True
-                else:
-                    is_box_wx, is_box_wy = True, False
-
-            # DIN-Konvention 24 fuer hole_pattern_grid: A1 bezieht sich auf
-            # die outermost-Hole — beide Achsen edge-to-EDGE (Pattern-Span
-            # subtrahieren). Greift nur beim expliziten Schema, wo
-            # _get_child_face_size eine Footprint > 0 liefert.
-            if ftype_lower == "hole_pattern_grid" and (child_w > 0 or child_h > 0):
-                is_box_wx, is_box_wy = True, True
-
+            is_box, is_box_wx, is_box_wy = _classify_edge_box_flags(
+                feat_type, child_params, child_w, child_h
+            )
             ox_e, oy_e, ox_edge_set, oy_edge_set = _apply_edge_distances_axis(
                 face, non_zero, parent_w, parent_h, child_w, child_h, is_box,
                 is_box_wx=is_box_wx, is_box_wy=is_box_wy,
