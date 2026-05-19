@@ -8,11 +8,11 @@ Package layout (in progress — see CLAUDE.md "Refactor-Pass"):
     core.py        — Public API + topo-sort + feature resolution glue
     orientation.py — Step 1: orientation keyword → dim-swap
     face.py        — Step 2: side keyword → CadQuery face selector
+    offsets.py     — Step 3: edge_distances / center_offset (face-aware)
+    anchor.py      — Step 3b: child-point-on-parent-point placement
+    compose.py     — Step 3c + Step 4: combinator + alignment upgrade
 
 Remaining sections still in core.py (extracted in follow-up sessions):
-    Step 3   — Offsets (edge_distances / pocket_edge_distances / center_offset)
-    Step 3b  — Anchor (child-point-on-parent-point)
-    Step 3c  — Compose (_compute_offsets, alignment upgrade)
     Feature  — _resolve_feature / _resolve_feature_in_feature
 """
 
