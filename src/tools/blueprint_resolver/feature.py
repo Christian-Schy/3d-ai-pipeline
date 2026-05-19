@@ -14,6 +14,8 @@ Public symbols (intra-package):
     _fallback_resolve            — minimal pass-through on exception
     _is_feature_parent           — predicate: parent has its own footprint
     _FEATURE_PARENT_TYPES        — set of feature types that may host children
+    _extract_placement_inputs    — shared position-field reader
+    _apply_pocket_floor_depth    — depth adjust for pocket-floor reference
 """
 
 from __future__ import annotations
@@ -49,6 +51,75 @@ def _is_feature_parent(parent_id, all_features: dict) -> bool:
     if parent.get("operation", "add") != "subtract":
         return False
     return parent.get("type", "").lower() in _FEATURE_PARENT_TYPES
+
+
+def _extract_placement_inputs(
+    feat: dict, position: dict,
+) -> tuple[str, dict | None, dict | None, dict | None, dict | None, float]:
+    """Pull the positional input fields out of a feature's position dict.
+
+    Shared by _resolve_feature and _resolve_feature_in_feature — both read
+    the same fields, run the same flush-from-notes alignment upgrade, and
+    apply the same legacy-grid edge-distance clearing.
+
+    Returns (alignment, edge_distances, pocket_edge_distances,
+             center_offset, anchor, angle_deg).
+
+    Legacy-Grid (count + inset) ist inhaerent zentriert — inset deckt den
+    Kantenabstand, edge_distances wuerden das Raster verschieben. Beim
+    expliziten Grid (rows/cols/spacing) gilt DIN-Konvention 24 A1:
+    edge_distances platzieren die outermost-Hole — sie bleiben.
+    """
+    alignment = position.get("alignment", "centered")
+    notes_text = position.get("notes", "") or feat.get("notes", "") or ""
+    edge_distances = position.get("edge_distances")
+    pocket_edge_distances = position.get("pocket_edge_distances")
+    alignment = _upgrade_alignment_from_notes(
+        alignment, notes_text,
+        has_edge_distances=bool(edge_distances) or bool(pocket_edge_distances),
+    )
+    if feat.get("type") == "hole_pattern_grid":
+        grid_params = feat.get("params", {}) or {}
+        is_explicit_grid = bool(grid_params.get("rows") and grid_params.get("cols"))
+        if not is_explicit_grid:
+            edge_distances = None
+            pocket_edge_distances = None
+    center_offset = position.get("center_offset")
+    anchor = position.get("anchor")
+    if anchor is not None and not isinstance(anchor, dict):
+        anchor = None  # malformed input — ignore gracefully
+    angle_deg = float(position.get("angle_deg", 0.0))
+    return (alignment, edge_distances, pocket_edge_distances,
+            center_offset, anchor, angle_deg)
+
+
+def _apply_pocket_floor_depth(
+    resolved_params: dict, depth_ref: str, pocket_depth: float,
+) -> dict:
+    """Adjust a child feature's depth when it is referenced to a pocket floor.
+
+    When depth_reference is 'pocket_floor' (or 'auto' with a pocket parent),
+    the child's depth is added to pocket_depth so the cut starts at the part
+    top, drills through the pocket, and reaches the requested extra depth
+    into the floor. The original local depth is stashed as `depth_local`.
+
+    Returns a new params dict (input is not mutated).
+    """
+    final_params = dict(resolved_params)
+    if depth_ref not in ("auto", "pocket_floor"):
+        return final_params
+    child_depth = final_params.get("depth")
+    if child_depth is None:
+        return final_params
+    try:
+        child_depth_f = float(child_depth)
+    except (TypeError, ValueError):
+        return final_params
+    if child_depth_f > 0:
+        final_params["depth_local"] = child_depth_f
+        final_params["depth"] = round(child_depth_f + pocket_depth, 6)
+        final_params["depth_reference_applied"] = "pocket_floor"
+    return final_params
 
 
 def _resolve_feature(
@@ -145,37 +216,11 @@ def _resolve_feature(
     side = position.get("side", "oben")
     face = _resolve_face(side, parent_swap=parent_swap)
 
-    # Step 3: Offsets from alignment + edge_distances
-    # Upgrade alignment from notes if the AI put flush hints in notes instead
-    alignment = position.get("alignment", "centered")
-    notes_text = position.get("notes", "") or feat.get("notes", "") or ""
-    edge_distances = position.get("edge_distances")
-    pocket_edge_distances = position.get("pocket_edge_distances")
-    alignment = _upgrade_alignment_from_notes(
-        alignment, notes_text,
-        has_edge_distances=bool(edge_distances) or bool(pocket_edge_distances),
-    )
-    # Legacy-Grid (count + inset) ist inhaerent zentriert — inset deckt den
-    # Kantenabstand, edge_distances wuerden das Raster verschieben. Beim
-    # expliziten Grid (rows/cols/spacing) gilt dagegen DIN-Konvention 24
-    # A1: edge_distances platzieren die outermost-Hole — sie bleiben.
-    # center_offset und anchor wirken in beiden Faellen.
-    if feat.get("type") in ("hole_pattern_grid",):
-        _grid_params = feat.get("params", {}) or {}
-        _is_explicit_grid = bool(
-            _grid_params.get("rows") and _grid_params.get("cols")
-        )
-        if not _is_explicit_grid:
-            if edge_distances:
-                edge_distances = None
-            if pocket_edge_distances:
-                pocket_edge_distances = None
-    center_offset = position.get("center_offset")
-    anchor = position.get("anchor")
-    if anchor is not None and not isinstance(anchor, dict):
-        anchor = None  # malformed input — ignore gracefully
-    # Step 4: Angle (needed before offset so anchor can compensate for rotation)
-    angle_deg = float(position.get("angle_deg", 0.0))
+    # Step 3 + 4: positional inputs (alignment upgrade, legacy-grid edge
+    # clearing, angle). angle_deg is read here so the anchor can compensate
+    # for rotation in _compute_offsets below.
+    (alignment, edge_distances, pocket_edge_distances,
+     center_offset, anchor, angle_deg) = _extract_placement_inputs(feat, position)
 
     offset_x, offset_y = _compute_offsets(
         alignment, edge_distances,
@@ -269,29 +314,8 @@ def _resolve_feature_in_feature(
     # as parent dims regardless of which face it sits on.
     fake_parent_params = {"x": pocket_w, "y": pocket_h, "z": pocket_depth}
 
-    alignment = position.get("alignment", "centered")
-    notes_text = position.get("notes", "") or feat.get("notes", "") or ""
-    edge_distances = position.get("edge_distances")
-    pocket_edge_distances = position.get("pocket_edge_distances")
-    alignment = _upgrade_alignment_from_notes(
-        alignment, notes_text,
-        has_edge_distances=bool(edge_distances) or bool(pocket_edge_distances),
-    )
-    if feat.get("type") in ("hole_pattern_grid",):
-        _grid_params = feat.get("params", {}) or {}
-        _is_explicit_grid = bool(
-            _grid_params.get("rows") and _grid_params.get("cols")
-        )
-        if not _is_explicit_grid:
-            if edge_distances:
-                edge_distances = None
-            if pocket_edge_distances:
-                pocket_edge_distances = None
-    center_offset = position.get("center_offset")
-    anchor = position.get("anchor")
-    if anchor is not None and not isinstance(anchor, dict):
-        anchor = None
-    child_angle = float(position.get("angle_deg", 0.0))
+    (alignment, edge_distances, pocket_edge_distances,
+     center_offset, anchor, child_angle) = _extract_placement_inputs(feat, position)
 
     # 1) Resolve in pocket-local frame (parent dims = pocket footprint).
     # Trick: feed face=">Z" so _get_face_dimensions reads x,y from
@@ -324,20 +348,9 @@ def _resolve_feature_in_feature(
     # 4) Depth-reference handling. Default 'auto' = pocket_floor when parent
     # is a pocket. Adds pocket_depth to child.depth so the cut starts at
     # the part-top face and reaches pocket_floor + child.depth.
-    depth_ref = position.get("depth_reference", "auto")
-    final_params = dict(resolved_params)
-    if depth_ref in ("auto", "pocket_floor"):
-        child_depth = final_params.get("depth")
-        if child_depth is not None:
-            try:
-                child_depth_f = float(child_depth)
-            except (TypeError, ValueError):
-                child_depth_f = None
-            if child_depth_f is not None and child_depth_f > 0:
-                # Stash original for debugging / round-trip.
-                final_params["depth_local"] = child_depth_f
-                final_params["depth"] = round(child_depth_f + pocket_depth, 6)
-                final_params["depth_reference_applied"] = "pocket_floor"
+    final_params = _apply_pocket_floor_depth(
+        resolved_params, position.get("depth_reference", "auto"), pocket_depth,
+    )
 
     # 5) Compose final angle: child face-angle plus pocket face-angle so
     # the child's local axes follow the pocket on the same face.
