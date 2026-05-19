@@ -121,7 +121,7 @@ entry_router → interpreter → punctuation
   → aktions_splitter (rule)             — Spec → Aktions-Phrasen
   → aktions_klassifizierer (LLM-Loop)   — 1 typ-Klassifizierer-Call/Phrase
                                           (+ anchor_classifier cue-gated)
-  → text_splitter (rule)                — per-Teil Chunks fuer Multi-Part
+  → text_splitter (LLM)                 — per-Teil Chunks fuer Multi-Part
   → position_extractor (LLM)            — placement- vs feature-Labeler
   → feature_definierer (LLM-Loop)       — define_feature pro Klassifikation
   → aktions_aggregator (rule)           — baut teil_definitionen[]
