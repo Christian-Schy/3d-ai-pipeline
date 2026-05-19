@@ -10,6 +10,14 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-19
 
+- **Refactor-Pass: `blueprint_resolver` zerlegt.** Die monolithische
+  `src/tools/blueprint_resolver.py` (1609 LOC) ist jetzt ein Package mit
+  7 Sub-Modulen (`orientation`/`face`/`offsets`/`anchor`/`compose`/
+  `feature`/`core`); `core.py` nur noch 198 LOC. Public API unveraendert
+  (`resolve_blueprint`, `BlueprintResolverError`). Beide Done-Review-
+  Komplexitaets-Findings abgearbeitet: `_compute_offsets` F50→D29,
+  `_resolve_feature_in_feature` E31→C15. Commits 1f02660…20340de.
+  Tests pro Commit grün (27 Goldens + 402 unit).
 - **Cap 1.0 Cov 4 erreicht — funktional done.** L1 + L2 + 5/5 STRESS-
   Goldens grün (STRESS_anchor_chain Resolver-Layer + STRESS_voice_long
   Splitter-Layer). 27 Component-Goldens grün. Done-Review-Checkliste

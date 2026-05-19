@@ -81,12 +81,15 @@ Aktualisierung) laeuft. Pickup-Punkt: Memory `rebuild_plan_2026_05_17`.
   Demos (158 Demos in 7 Pools).
 - ✅ **DIN/ISO**: 10/11/20/21/22/24/25/26-Konventions-Docs + 90 Wording-
   Beispiele + Konventions-Walkthrough (4afd59a) gegen ISO 129-1.
-- ⚠ **Code-Qualitaet (teilweise, vorbestehend)**: 59 ruff style-
-  Findings + 7 Dateien >500 LOC + komplexe Funktionen
-  (`_compute_offsets` F=50, `_resolve_feature_in_feature` E=31). Diese
-  Dateien existierten vor Cap 1.0 und sind keine Cap-1.0-Schulden;
-  Aufraeumarbeit gehoert in einen eigenen Refactor-Pass parallel zu
-  Cap 2.0.
+- ⚠ **Code-Qualitaet (laufender Refactor-Pass, vorbestehend)**: 59 ruff
+  style-Findings + Dateien >500 LOC. Vorbestehend, keine Cap-1.0-Schulden;
+  Aufraeumarbeit laeuft als eigener Refactor-Pass parallel zu Cap 2.0.
+  **Stand 2026-05-19**: `blueprint_resolver.py` (1609 LOC) ist in ein
+  Package mit 7 Sub-Modulen zerlegt (core.py nur noch 198 LOC); die
+  beiden genannten Komplexitaets-Findings sind abgearbeitet
+  (`_compute_offsets` F50→D29, `_resolve_feature_in_feature` E31→C15).
+  Verbleibend: `assembler.py` (949 LOC) + `coordinate_validator.py`
+  (911 LOC) analog zerlegen.
 
 ### Empfohlene Reihenfolge
 
@@ -160,7 +163,7 @@ src/graph/pipeline.py           — LangGraph Verdrahtung
 src/graph/state.py              — PipelineState (TypedDict)
 src/graph/blueprint_schema.py   — Pydantic Schema (Semantic + Resolved)
 src/graph/nodes/                — Alle Pipeline-Nodes
-src/tools/blueprint_resolver.py — Deterministic: semantic → resolved
+src/tools/blueprint_resolver/ — Deterministic: semantic → resolved (Package)
 src/tools/coordinate_validator.py — Rule-based geometry checks
 src/codegen/assembler.py        — Blueprint → CadQuery Code
 src/codegen/templates.py        — CadQuery Code-Templates pro Feature
