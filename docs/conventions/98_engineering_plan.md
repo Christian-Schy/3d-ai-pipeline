@@ -30,11 +30,9 @@ Capability-Sprung noetig.
 |---|---|---|
 | ~~**Slot-Template Endradien** (`R = Breite/2`)~~ ✅ erledigt 2026-05-18 (Paket 4) | `src/codegen/templates.py` `slot`-Template | — |
 | ~~**Slot-Restwandstaerke-Validator** (Aussenkontur → Bauteilkante ≥ Mindest)~~ ✅ erledigt 2026-05-18 (Paket 4) | `src/tools/coordinate_validator.py` Check 11 | — |
-| **Pattern `start_angle_deg`-Vokabular** ("erste Bohrung bei 0°/90°") | `prompt_classifier_circular.py` + Demos | klein |
+| ~~**Pattern `start_angle_deg`-Vokabular** ("erste Bohrung bei 0°/90°")~~ ✅ erledigt 2026-05-19 (8e5da3e — Template+Assembler+Classifier+Demos+Tests, 8/8 live gruen) | `prompt_classifier_circular.py` + Demos | — |
 | ~~**Pattern Kind-Bohrung-Validation** (jede Bohrung im Pattern gegen Bauteilrand)~~ ✅ erledigt 2026-05-18 | `coordinate_validator.py` Check 12 (Grid/Linear/Kreis, Pattern-Rotation aware) | — |
 | ~~**Tasche rotiert: exakte Konturpruefung** statt bbox-Approximation~~ ✅ erledigt 2026-05-18 | `coordinate_validator.py` rotations-bewusste AABB | — |
-| **Edge-Features Innen-/Aussenkanten-Filter** ("Aussenkanten der Top-Face ohne Tasche-Kanten") | Template + Klassifizierer | mittel |
-| **Edge-Features E2-Coverage** ("horizontale Kanten") | Goldens + Klassifizierer-Demos | klein |
 | ~~**Slot-Pipeline-Goldens-Heatmap** unter Mittellinien-Regel verifizieren~~ ✅ erledigt 2026-05-18 (Paket 1.5) | Ollama-Heatmap-Run | — |
 | ~~**NEST `hole_classifier`-Fix** (Ecken-Regel `abstand_*` statt `versatz_*`)~~ ✅ erledigt 2026-05-18 (Paket 2 — 8 Eck-Demos + agent_regression NEST-Case, 84/84 live gruen) | klassifizierer_traces + demo-pool rebuild | — |
 
@@ -49,6 +47,14 @@ Bestehend per Coder-Pfad; Plan: in Templates ueberfuehren.
   `chamfer(length, length2, angle)`.
 - Shell-Operation (`.shell(thickness)`) — Template.
 - Reihenfolge-Validator (Fasen vor Rundungen).
+- **Edge-Features Innen-/Aussenkanten-Filter** ("Aussenkanten der
+  Top-Face ohne Tasche-Kanten") — neuer Hint-Key `kanten_auswahl`,
+  Prompt-Sektion im edge_feature_classifier, Demos, Template-Erweiterung
+  mit face-relativer CadQuery-Selector-Logik. Verschoben hierher aus
+  Cap-1.0-Quick-Wins (2026-05-19) — inhaltlich Modifications, nicht
+  Primitive Assembly.
+- **Edge-Features E2-Coverage** ("horizontale Kanten") — Goldens +
+  Klassifizierer-Demos. Ebenfalls aus Cap-1.0-Quick-Wins verschoben.
 
 Norm-Anker: ISO 129-1 (Maßeintragung); separat ISO 13715 fuer
 Kantenzustand (Cap 7.0).
