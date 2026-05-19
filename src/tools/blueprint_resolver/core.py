@@ -82,9 +82,11 @@ Feature-Resolution:
 from __future__ import annotations
 
 import math
-import re
 
 import structlog
+
+from .face import _SIDE_TO_FACE, _resolve_face
+from .orientation import _pop_closest, _resolve_orientation
 
 log = structlog.get_logger()
 
@@ -226,191 +228,16 @@ class BlueprintResolverError(Exception):
 # Step 1: Orientation Resolution
 # ═══════════════════════════════════════════════════════════════════
 
-def _resolve_orientation(params: dict, orientation: str, feat_type: str,
-                         side: str = "") -> tuple[dict, str]:
-    """Resolve orientation keyword into concrete params with swapped dimensions.
-
-    For box-like types (x, y, z):
-      "hochkant"/"aufrecht"/"stehend" → largest dim becomes Z
-      "flach"/"liegend" → smallest dim becomes Z
-      "AxB_liegt_auf" → dimensions rearranged so AxB is the contact face
-                        (depends on side: oben→XY, rechts→YZ, hinten→XZ)
-      "N_hoch" → dim closest to N becomes Z
-
-    For cylinder types (diameter, height): orientation can flip axis
-      "liegend" → cylinder on its side (swap diameter↔height conceptually)
-
-    Args:
-      side: placement side (oben/unten/rechts/links/vorne/hinten).
-            Only used for AxB_liegt_auf to determine which dims form the contact face.
-
-    Returns:
-      (resolved_params, swap_type)
-
-      swap_type indicates which axis was swapped with Z:
-        "none"  — no swap (standard orientation)
-        "x_z"   — X and Z were swapped
-        "y_z"   — Y and Z were swapped
-        "full"  — full reorder (AxB_liegt_auf, N_hoch)
-    """
-    resolved = dict(params)  # shallow copy
-    orientation = orientation.lower().strip()
-
-    if orientation in ("standard", "", "normal"):
-        return resolved, "none"
-
-    # Box-like: has x, y, z
-    if all(k in resolved for k in ("x", "y", "z")):
-        x, y, z = float(resolved["x"]), float(resolved["y"]), float(resolved["z"])
-        dims = [x, y, z]
-
-        if orientation in ("hochkant", "aufrecht", "stehend", "vertikal"):
-            # Largest dimension becomes Z (height)
-            max_dim = max(dims)
-            if z != max_dim:
-                # Find which dim is largest and swap with z
-                if x == max_dim:
-                    resolved["x"], resolved["z"] = z, x
-                    return resolved, "x_z"
-                elif y == max_dim:
-                    resolved["y"], resolved["z"] = z, y
-                    return resolved, "y_z"
-            return resolved, "none"
-
-        elif orientation in ("flach", "liegend", "horizontal"):
-            # Smallest dimension becomes Z (height)
-            min_dim = min(dims)
-            if z != min_dim:
-                if x == min_dim:
-                    resolved["x"], resolved["z"] = z, x
-                    return resolved, "x_z"
-                elif y == min_dim:
-                    resolved["y"], resolved["z"] = z, y
-                    return resolved, "y_z"
-            return resolved, "none"
-
-        elif "_liegt_auf" in orientation:
-            # "AxB_liegt_auf" → A and B become the contact face dimensions,
-            # remaining dimension = depth (perpendicular to contact face).
-            # Which dims form the contact face depends on the placement side:
-            #   oben/unten (>Z/<Z): contact = X×Y, depth = Z
-            #   rechts/links (>X/<X): contact = Y×Z, depth = X
-            #   vorne/hinten (>Y/<Y): contact = X×Z, depth = Y
-            match = re.match(r"(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)_liegt_auf", orientation)
-            if match:
-                target_a = float(match.group(1))
-                target_b = float(match.group(2))
-                remaining = [d for d in dims]
-                dim_a = _pop_closest(remaining, target_a)
-                dim_b = _pop_closest(remaining, target_b)
-                dim_depth = remaining[0] if remaining else x
-
-                side_lower = (side or "").lower()
-                if side_lower in ("oben", "unten"):
-                    # Contact = X×Y, depth = Z
-                    resolved["x"], resolved["y"], resolved["z"] = dim_a, dim_b, dim_depth
-                elif side_lower in ("vorne", "hinten"):
-                    # Contact = X×Z, depth = Y
-                    resolved["x"], resolved["y"], resolved["z"] = dim_a, dim_depth, dim_b
-                else:
-                    # rechts/links or unknown: Contact = Y×Z, depth = X
-                    resolved["x"], resolved["y"], resolved["z"] = dim_depth, dim_a, dim_b
-                return resolved, "full"
-
-        elif "_hoch" in orientation:
-            # "80_hoch" → dimension closest to 80 becomes Z
-            match = re.match(r"(\d+(?:\.\d+)?)_hoch", orientation)
-            if match:
-                target = float(match.group(1))
-                remaining = list(dims)
-                new_z = _pop_closest(remaining, target)
-                resolved["x"], resolved["y"] = remaining[0], remaining[1]
-                resolved["z"] = new_z
-                return resolved, "full"
-
-    # Cylinder: has diameter + height
-    elif "diameter" in resolved and "height" in resolved:
-        if orientation in ("liegend", "horizontal", "flach"):
-            resolved["_orientation_hint"] = "horizontal"
-        elif orientation in ("hochkant", "aufrecht", "stehend", "vertikal"):
-            resolved["_orientation_hint"] = "vertical"  # default anyway
-
-    return resolved, "none"
-
-
-def _pop_closest(dims: list[float], target: float) -> float:
-    """Remove and return the dimension closest to target from dims list."""
-    if not dims:
-        return target
-    best_idx = min(range(len(dims)), key=lambda i: abs(dims[i] - target))
-    return dims.pop(best_idx)
+# _resolve_orientation + _pop_closest are now imported from .orientation
+# at the top of this file (see imports above).
 
 
 # ═══════════════════════════════════════════════════════════════════
 # Step 2: Face Calculation
 # ═══════════════════════════════════════════════════════════════════
 
-# Side keyword → CadQuery face selector
-_SIDE_TO_FACE: dict[str, str] = {
-    "oben":    ">Z",
-    "top":     ">Z",
-    "drauf":   ">Z",
-    "unten":   "<Z",
-    "bottom":  "<Z",
-    "rechts":  ">X",
-    "right":   ">X",
-    "links":   "<X",
-    "left":    "<X",
-    "vorne":   "<Y",
-    "front":   "<Y",
-    "hinten":  ">Y",
-    "back":    ">Y",
-    "zentriert": ">Z",  # default face for centered
-    "centered":  ">Z",
-}
-
-
-def _resolve_face(side: str, parent_swap: str = "none") -> str:
-    """Convert a side keyword to a CadQuery face selector.
-
-    Convention: "oben" always means the original X×Y face of the part
-    (as the user described it). After orientation swap, this face moves:
-      - x_z swap: original >Z face becomes >X face (and <Z becomes <X)
-      - y_z swap: original >Z face becomes >Y face (and <Z becomes <Y)
-
-    So when a parent was reoriented, we remap the child's "oben"/"unten"
-    to point at the face where the original X×Y surface ended up.
-    """
-    side_lower = side.lower().strip()
-    face = _SIDE_TO_FACE.get(side_lower, ">Z")
-
-    # If parent wasn't reoriented, no remapping needed
-    if parent_swap == "none" or parent_swap == "full":
-        return face
-
-    # Remap faces based on which axis was swapped with Z
-    # x_z swap: X↔Z → original top (>Z) is now right (>X), original bottom (<Z) is now left (<X)
-    # y_z swap: Y↔Z → original top (>Z) is now back (>Y), original bottom (<Z) is now front (<Y)
-    if parent_swap == "x_z":
-        remap = {
-            ">Z": ">X",   # "oben" → the original top face, now on right
-            "<Z": "<X",   # "unten" → the original bottom face, now on left
-            ">X": ">Z",   # "rechts" → was X, now Z (top of rotated part)
-            "<X": "<Z",   # "links" → was -X, now -Z (bottom of rotated part)
-            # Y faces unchanged
-        }
-    elif parent_swap == "y_z":
-        remap = {
-            ">Z": ">Y",   # "oben" → the original top face, now on back
-            "<Z": "<Y",   # "unten" → the original bottom face, now on front
-            ">Y": ">Z",   # "hinten" → was Y, now Z
-            "<Y": "<Z",   # "vorne" → was -Y, now -Z
-            # X faces unchanged
-        }
-    else:
-        return face
-
-    return remap.get(face, face)
+# _SIDE_TO_FACE + _resolve_face are now imported from .face at the top
+# of this file (see imports above).
 
 
 # ═══════════════════════════════════════════════════════════════════
