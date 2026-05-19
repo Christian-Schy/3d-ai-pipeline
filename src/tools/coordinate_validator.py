@@ -130,7 +130,7 @@ def run_coordinate_check(blueprint: dict) -> list[CoordIssue]:
 def _resolve_root_parent_id(fid: str, features: dict) -> str | None:
     """Walk the parent chain upward, skipping subtractive ancestors.
 
-    Mirrors src.codegen.assembler._resolve_part_root. Returns the ID of
+    Mirrors src.codegen.assembler.assembly._resolve_part_root. Returns the ID of
     the body-owning ancestor (root part or add-feature) or None.
     Used so feature-in-feature children (hole-in-pocket) are validated
     against the actual containing part, not their pocket parent — depth
