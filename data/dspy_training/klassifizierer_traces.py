@@ -247,6 +247,27 @@ TRACES.extend([
         "source_run": None,
         "bug_pattern": "curated: center offset is not face",
     },
+    # B1 v2 Heatmap-Fail (run 0d9bc3ea, 2026-05-19 18:51): Position-first
+    # Wording — Seite + zwei value-Richtung-Paare + "versetzt" + Bohrung
+    # NACH der Position. hole_classifier vertauscht hier sonst die Werte
+    # (Heatmap-Diff: erwartet versatz_rechts:10/versatz_oben:20, bekam
+    # versatz_rechts:20/versatz_oben:10). Diese Demo bindet die Zahl
+    # explizit an die unmittelbar folgende Richtung.
+    {
+        "id": "klass_curated_bohrung_oben_position_first_versatz_two_axes",
+        "phrase": "oben 10mm nach rechts 20mm nach oben versetzt eine 10mm bohrung 5mm tief",
+        "teil_type": "box",
+        "teil_params": {"x": 200, "y": 200, "z": 200},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 10, "tiefe": 5,
+                                "versatz_rechts": 10, "versatz_oben": 20},
+        },
+        "source_run": "0d9bc3ea",
+        "bug_pattern": "B1 v2: Position-first Wording 'oben X mm nach rechts Y mm nach oben versetzt eine Bohrung' — Zahlen muessen an die direkt folgende Richtung gebunden werden, nicht vertauscht.",
+    },
     # "aus mitte nach <side>" = versatz, NICHT abstand. Heatmap 2026-05-12
     # (run f75a99d4, B3 v1): hole_classifier extrahierte "90mm aus mitte
     # nach links" als abstand_links=90 statt versatz_links=90 → Resolver
@@ -1636,7 +1657,7 @@ TRACES.extend([
                                 "abstand_oben": 30, "abstand_links": 20},
         },
         "source_run": None,
-        "bug_pattern": "slot 'von X-kante' (ohne 'deren') = abstand_* default; Resolver buegelt fuer slot DIN-konform per-Achse",
+        "bug_pattern": "slot 'von X-kante' (ohne 'deren') = abstand_* default; Slot-Mittellinie wird deterministisch im Resolver positioniert",
     },
     {
         "id": "klass_curated_nut_oben_x_kante_rechts_und_versatz",
@@ -2025,7 +2046,7 @@ TRACES.extend([
                                 "abstand_links": 12, "abstand_oben": 18},
         },
         "source_run": None,
-        "bug_pattern": "v2 palette: slot 'von X-kante Y mm' default abstand_*; Resolver per-Achse Slot-Konvention liefert DIN-konform (length-axis edge-to-edge, width-axis edge-to-center)",
+        "bug_pattern": "v2 palette: slot 'von X-kante Y mm' default abstand_*; Resolver platziert die Slot-Mittellinie auf beiden Achsen",
     },
     {
         "id": "klass_v2_slot_right_z_full_offset",
@@ -2206,8 +2227,8 @@ TRACES.extend([
     # ── Grenzfall-Demos: 'deren X-kante' vs 'von X-kante' Unterscheidung ──
     # Zweck: LLM zuverlaessig trainieren, wann kante_* (explizite Feature-
     # Edge-Referenz) vs abstand_* (default, Feature-Center) emittiert wird.
-    # Slot-Achsen-Konvention DIN: Resolver fuegt per-Achse die korrekte
-    # Geometrie hinzu (length-axis edge-to-EDGE, width-axis edge-to-CENTER).
+    # Slot-Konvention: `abstand_*` referenziert die Mittellinie auf
+    # beiden Achsen; `kante_*` bleibt expliziter edge-to-EDGE-Bezug.
     # Trotzdem: konsistente abstand_*/kante_* Emission verhindert Coin-Flip
     # Verhalten beim Klassifizierer (Beobachtung V2 Real-Runs 2026-05-14).
     {
@@ -2240,7 +2261,7 @@ TRACES.extend([
                                 "abstand_oben": 18},
         },
         "source_run": None,
-        "bug_pattern": "grenzfall: 'von X-kante' (kein deren) = default abstand_* (Resolver buegelt fuer slot DIN-konform)",
+        "bug_pattern": "grenzfall: 'von X-kante' (kein deren) = default abstand_* zur Slot-Mittellinie",
     },
     {
         "id": "klass_grenzfall_tasche_von_kante_default",

@@ -143,6 +143,17 @@
     "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"versatz_rechts\": 10, \"versatz_oben\": 5}}"
   },
   {
+    "phrase": "oben 10mm nach rechts 20mm nach oben versetzt eine 10mm bohrung 5mm tief",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 200,
+      "y": 200,
+      "z": 200
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 10, \"tiefe\": 5, \"versatz_rechts\": 10, \"versatz_oben\": 20}}"
+  },
+  {
     "phrase": "oben eine 18mm bohrung 10mm von oberer kante, 90mm aus mitte nach links, 10 tief",
     "teil_type": "box",
     "teil_params": {
