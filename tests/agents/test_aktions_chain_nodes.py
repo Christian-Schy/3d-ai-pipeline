@@ -156,6 +156,7 @@ def test_detect_classifier_subagent_routes_only_unambiguous_phrases():
         == "linear_classifier"
     )
     assert detect_classifier_subagent("oben eine fase 2mm") == "edge_feature_classifier"
+    assert detect_classifier_subagent("in der tasche eine 8mm bohrung 5 tief") == "hole_classifier"
     assert detect_classifier_subagent("oben eine tasche mit bohrung") is None
 
 

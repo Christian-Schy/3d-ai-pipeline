@@ -44,6 +44,17 @@
     "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"unten\", \"parameter_hints\": {\"durchmesser\": 5, \"abstand\": 20, \"richtung\": \"y\"}}"
   },
   {
+    "phrase": "links lochbild 3 bohrungen entlang z mit 10mm abstand 4mm durchmesser",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 80,
+      "z": 60
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"links\", \"parameter_hints\": {\"durchmesser\": 4, \"anzahl\": 3, \"abstand\": 10, \"richtung\": \"z\"}}"
+  },
+  {
     "phrase": "vorne eine bohrungsreihe entlang z mit 4 bohrungen 5mm durchmesser 4 tief abstand 12mm",
     "teil_type": "box",
     "teil_params": {

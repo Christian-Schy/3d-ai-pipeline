@@ -77,24 +77,6 @@
         "angle_deg": 0.0
       }
     },
-    "m05_linear_with_anchor": {
-      "type": "hole_pattern_linear",
-      "parent": "wuerfel",
-      "params": {
-        "hole_diameter": 8,
-        "depth": 5,
-        "count": 5,
-        "spacing": 15,
-        "direction": "x"
-      },
-      "placement": {
-        "face": ">Z",
-        "alignment": "centered",
-        "offset_x": 50.0,
-        "offset_y": 40.0,
-        "angle_deg": 0.0
-      }
-    },
     "m06_grid_on_rechts_face": {
       "type": "hole_pattern_grid",
       "parent": "wuerfel",

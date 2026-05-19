@@ -36,7 +36,7 @@ half_w=30, half_h=20. Bohrung ist hole-like → child_half=0.
 | n3_centered_in_offset_tasche | b (offset right=10) | side=oben, centered | 0, 0 | n/a | 0+10=10, 0, 0 | 15 |
 | n4_centered_in_rotated_30 | c (angle=30) | side=oben, centered | 0, 0 | rotation of 0,0 = 0,0 | 0, 0, angle=30 | 15 |
 | n5_versatz_in_rotated_45 | d (angle=45) | center_offset{right:5} | +5, 0 | rotation of (5,0) by 45 | 3.5355, 3.5355, angle=45 | 15 |
-| n6_anchor_corner_in_tasche | a (centered) | anchor parent=top_right of tasche, offset{down:3, left:5} | +25, +17 | n/a | +25, +17, 0 | 15 |
+| n6_anchor_corner_in_tasche | a (centered) | edge{top:3, right:5} | +25, +17 | n/a | +25, +17, 0 | 15 |
 
 ## Detail-Mathe
 
@@ -56,11 +56,10 @@ Rotation um pocket_angle=+45° (CCW, math-positive):
 - final_oy = 0 + 3.5355 = 3.5355
 - final_angle = (0 + 45) % 360 = 45
 
-### n6 (anchor corner-on-tasche-corner with offset)
-Lokal-Tasche-Frame: parent_anchor top_right of (60, 40) = (+30, +20).
-child_anchor center = (0, 0). Anchor: ox=30, oy=20.
-Plus offset {down:3, left:5}: bottom wy-1·3=-3; left wx-1·5=-5.
-Lokal: ox=+25, oy=+17. pocket_angle=0 → rot stays.
+### n6 (edge_distances corner in Tasche)
+- top:3, wy+1, half=20, hole-like child_half=0: oy = +(20-3) = +17
+- right:5, wx+1, half=30: ox = +(30-5) = +25
+- pocket_angle=0 → rot stays (+25, +17)
 final_ox = 0 + 25 = +25; final_oy = 0 + 17 = +17.
 
 ## Depth-Reference

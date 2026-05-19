@@ -99,6 +99,28 @@
     "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"hinten\", \"parameter_hints\": {\"durchmesser\": 6, \"tiefe\": 5, \"abstand_oben\": 12, \"abstand_rechts\": 12}}"
   },
   {
+    "phrase": "oben 10mm bohrung mit abstand 20 von oben und 30 von rechts 5 tief",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 200,
+      "y": 200,
+      "z": 200
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 10, \"tiefe\": 5, \"abstand_oben\": 20, \"abstand_rechts\": 30}}"
+  },
+  {
+    "phrase": "oben oben 20mm rechts 30mm entfernt eine 10mm bohrung 5 tief",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 200,
+      "y": 200,
+      "z": 200
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 10, \"tiefe\": 5, \"abstand_oben\": 20, \"abstand_rechts\": 30}}"
+  },
+  {
     "phrase": "oben links unten eine 10mm bohrung jeweils 12.5mm von den kanten entfernt 6 tief",
     "teil_type": "box",
     "teil_params": {
@@ -166,6 +188,17 @@
   },
   {
     "phrase": "darin eine 8mm bohrung 5 tief",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 200,
+      "y": 120,
+      "z": 40
+    },
+    "parent_phrase": "oben eine tasche 60x40x10",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5}}"
+  },
+  {
+    "phrase": "in der tasche eine 8mm bohrung 5 tief zentral",
     "teil_type": "box",
     "teil_params": {
       "x": 200,

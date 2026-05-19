@@ -1,12 +1,11 @@
 {
-  "description": "M_kombo_basics — 6 Lochmuster-Variationen auf 100mm Wuerfel",
+  "description": "M_kombo_basics — 5 Lochmuster-Variationen auf 100mm Wuerfel",
   "build_order": [
     "wuerfel",
     "m01_grid_4_corners_centered",
     "m02_grid_4_with_edge_distances_dropped",
     "m03_circular_centered",
     "m04_circular_with_offset",
-    "m05_linear_with_anchor",
     "m06_grid_on_rechts_face"
   ],
   "features": {
@@ -84,29 +83,6 @@
         "center_offset": {
           "right": 15,
           "top": 10
-        }
-      },
-      "operation": "subtract"
-    },
-    "m05_linear_with_anchor": {
-      "type": "hole_pattern_linear",
-      "params": {
-        "hole_diameter": 8,
-        "depth": 5,
-        "count": 5,
-        "spacing": 15,
-        "direction": "x"
-      },
-      "parent": "wuerfel",
-      "position": {
-        "side": "oben",
-        "alignment": "centered",
-        "anchor": {
-          "child_point": "center",
-          "parent_point": "top_right",
-          "offset": {
-            "down": 10
-          }
         }
       },
       "operation": "subtract"

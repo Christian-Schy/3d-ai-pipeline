@@ -67,6 +67,11 @@ _POCKET_RE = re.compile(
 )
 _SLOT_RE = re.compile(r"\bnut(?:en)?\b", re.IGNORECASE)
 _EDGE_RE = re.compile(r"\b(?:fase(?:n)?|rundung(?:en)?|abrunden|radius)\b", re.IGNORECASE)
+_LOCATIVE_PARENT_FEATURE_RE = re.compile(
+    r"\bin\s+(?:der|die|dem|den|dieser|diese|diesem|diesen)\s+"
+    r"(?:tasche(?:n)?|ausnehmung(?:en)?|ausfraesung(?:en)?|aussparung(?:en)?|nut(?:en)?)\b",
+    re.IGNORECASE,
+)
 
 _SUBAGENT_FLAG = {
     "hole_classifier": "hole_enabled",
@@ -100,7 +105,7 @@ def detect_classifier_subagent(phrase: str) -> str | None:
     feature families remain in one phrase, return None so the monolithic
     fallback handles it.
     """
-    text = phrase or ""
+    text = _LOCATIVE_PARENT_FEATURE_RE.sub(" ", phrase or "")
     matches: list[str] = []
 
     linear = bool(_LINEAR_RE.search(text))

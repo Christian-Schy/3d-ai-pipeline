@@ -123,11 +123,7 @@
       "position": {
         "side": "oben",
         "alignment": "centered",
-        "anchor": {
-          "child_point": "center",
-          "parent_point": "top_right",
-          "offset": {"down": 3, "left": 5}
-        }
+        "edge_distances": {"top": 3, "right": 5}
       },
       "operation": "subtract"
     }

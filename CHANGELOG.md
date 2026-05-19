@@ -10,6 +10,16 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-19
 
+- **NEST/B2/V2 Klassifizierer-Demos und Goldens stabilisiert.**
+  `detect_classifier_subagent` ignoriert lokative Parent-Hinweise wie
+  "in der Tasche" bei der Familien-Zaehlung, routet echte Kind-Phrasen
+  also wieder zum Hole-Subagent, laesst "Tasche mit Bohrung" aber im
+  Fallback. `NEST_kombo` nutzt fuer die Eck-Bohrung `edge_distances`
+  statt Anchor, `M_kombo` enthaelt den linearen Anchor-Fall nicht mehr.
+  B2-v2/v3, NEST und V2-Lochkreis-Versatz als Klassifizierer-Demos
+  ergaenzt; Demo-Pools neu gebaut. Verifikation:
+  `run_real_goldens --filter B2,NEST,V2,M_kombo --no-persist --no-jsonl`
+  6/6 PASS.
 - **DSPy Contract-Fails bereinigt.** `lochbild` wird im Pattern-Router
   nicht mehr blind als Grid behandelt, wenn die Phrase eindeutig linear
   ist (`entlang/abstand`); Runtime- und Training-Adapter sind wieder
