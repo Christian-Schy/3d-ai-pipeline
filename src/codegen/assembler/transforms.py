@@ -117,7 +117,8 @@ def _compute_translate(
     parent_z = f"{parent_prefix}_Z" if "z" in parent_params else f"{parent_prefix}_HEIGHT"
     sa_z = f"{sa_prefix}_Z" if "z" in sa_params else f"{sa_prefix}_HEIGHT"
 
-    if face == ">Z":
+    # Keep these formulas as branches: each face maps offsets differently.
+    if face == ">Z":  # noqa: SIM116
         # On top: same XY, shift up by parent height
         return f"({sa_prefix}_OFFSET_X, {sa_prefix}_OFFSET_Y, {parent_z})"
     elif face == "<Z":

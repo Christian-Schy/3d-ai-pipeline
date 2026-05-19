@@ -21,7 +21,6 @@ from .offsets import (
     _get_face_dimensions,
 )
 
-
 # Face-local anchor keywords → (wx_factor, wy_factor) in [-0.5, +0.5] units.
 # The resolver multiplies by face_w / face_h to get concrete coords.
 #
@@ -171,16 +170,22 @@ def _normalize_anchor_point(keyword: str, face: str) -> str:
     if len(parts) >= 2:
         head = parts[0]
         rest = "_".join(parts[1:])
-        if head in ("front", "back") and face not in (">Y", "<Y"):
-            if rest in _ANCHOR_POINT_LUT:
-                if face in _FACE_VIEWER_H_FLIP:
-                    return _H_FLIP_MAP.get(rest, rest)
-                return rest
-        if head in ("top", "bottom") and face not in (">Z", "<Z"):
-            if rest in _ANCHOR_POINT_LUT:
-                if face in _FACE_VIEWER_H_FLIP:
-                    return _H_FLIP_MAP.get(rest, rest)
-                return rest
+        if (
+            head in ("front", "back")
+            and face not in (">Y", "<Y")
+            and rest in _ANCHOR_POINT_LUT
+        ):
+            if face in _FACE_VIEWER_H_FLIP:
+                return _H_FLIP_MAP.get(rest, rest)
+            return rest
+        if (
+            head in ("top", "bottom")
+            and face not in (">Z", "<Z")
+            and rest in _ANCHOR_POINT_LUT
+        ):
+            if face in _FACE_VIEWER_H_FLIP:
+                return _H_FLIP_MAP.get(rest, rest)
+            return rest
     return kw
 
 

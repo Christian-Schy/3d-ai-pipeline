@@ -155,7 +155,7 @@ class CoderAgent(BaseAgent):
 
         Uses ↵ as line separator so the value stays on one log line.
         """
-        lines = [l for l in code.split("\n") if l.strip()][:6]
+        lines = [line for line in code.split("\n") if line.strip()][:6]
         preview = "↵".join(lines)
         self.log.info("coder_code_preview", preview=preview[:400])
 
@@ -206,10 +206,7 @@ class CoderAgent(BaseAgent):
 
         result = []
         for i, feat in enumerate(curr):
-            if i < len(prev):
-                status = "unchanged" if prev[i] == feat else "changed"
-            else:
-                status = "new"
+            status = ("unchanged" if prev[i] == feat else "changed") if i < len(prev) else "new"
             result.append((i, status, feat))
         return result
 

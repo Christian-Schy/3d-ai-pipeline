@@ -90,7 +90,11 @@ def extract_geometry_state(stl_path: str) -> GeometryState:
         # Extract unique Z positions of horizontal faces (normal ≈ [0,0,±1])
         # These are the potential workplane Z heights
         z_face_heights = set()
-        for face_normal, face_center in zip(mesh.face_normals, mesh.triangles_center):
+        for face_normal, face_center in zip(
+            mesh.face_normals,
+            mesh.triangles_center,
+            strict=False,
+        ):
             if abs(face_normal[2]) > 0.99:  # nearly horizontal face
                 z_face_heights.add(round(float(face_center[2]), 2))
 

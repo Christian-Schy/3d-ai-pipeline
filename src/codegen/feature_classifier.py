@@ -54,7 +54,7 @@ def classify_blueprint(blueprint: dict) -> str:
     has_standard = False
     has_complex = False
 
-    for fid, feat in features.items():
+    for _fid, feat in features.items():
         ftype = feat.get("type", "") if isinstance(feat, dict) else ""
         if is_standard(ftype):
             has_standard = True

@@ -11,6 +11,7 @@ Common logic lives here once — not repeated in every agent:
 
 import json
 import socket
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -314,7 +315,6 @@ class BaseAgent:
                 # Empty response = model aborted — treat as retriable
                 if not raw.strip():
                     if attempt < max_retries - 1:
-                        import time
                         delay = base_delay * (2 ** attempt)
                         structlog.get_logger().warning(
                             "ollama_retry",
@@ -344,7 +344,7 @@ class BaseAgent:
                         delay_s=delay,
                         reason="ConnectionRefused",
                     )
-                    import time; time.sleep(delay)
+                    time.sleep(delay)
                     continue
                 raise ConnectionRefusedError(
                     f"Cannot reach Ollama at {_ollama_url()} after {max_retries} attempts. "
@@ -361,7 +361,7 @@ class BaseAgent:
                         delay_s=delay,
                         reason="Timeout",
                     )
-                    import time; time.sleep(delay)
+                    time.sleep(delay)
                     # Rebuild request — urlopen consumes it
                     req = urllib.request.Request(
                         _ollama_url(),
@@ -387,7 +387,7 @@ class BaseAgent:
                             delay_s=delay,
                             reason="URLError_Timeout",
                         )
-                        import time; time.sleep(delay)
+                        time.sleep(delay)
                         req = urllib.request.Request(
                             _ollama_url(),
                             data=data,
@@ -409,7 +409,7 @@ class BaseAgent:
                             delay_s=delay,
                             reason="URLError_ConnectionRefused",
                         )
-                        import time; time.sleep(delay)
+                        time.sleep(delay)
                         continue
                     raise ConnectionRefusedError(
                         f"Cannot reach Ollama at {_ollama_url()} after {max_retries} attempts. "

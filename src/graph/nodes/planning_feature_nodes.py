@@ -185,7 +185,7 @@ def platzierer_node(state: PipelineState) -> dict:
     traces = []
     updated_defs = []
 
-    for idx, teil_def in enumerate(teil_defs):
+    for teil_def in teil_defs:
         teil_id = teil_def["id"]
         is_root = (teil_id == root_teil_id)
         t_start = time.time()
@@ -382,9 +382,9 @@ def _count_pockets(blueprint: dict) -> int:
     for feat in features.values():
         if not isinstance(feat, dict):
             continue
-        if (feat.get("type") or "").lower() in ("pocket_rect", "pocket_round", "cutout"):
-            if (feat.get("operation") or "add").lower() == "subtract":
-                count += 1
+        if (
+            (feat.get("type") or "").lower() in ("pocket_rect", "pocket_round", "cutout")
+            and (feat.get("operation") or "add").lower() == "subtract"
+        ):
+            count += 1
     return count
-
-

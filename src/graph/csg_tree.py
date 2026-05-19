@@ -30,7 +30,7 @@ Feature nodes (features list — applied sequentially after root is built):
 
 from __future__ import annotations
 
-from typing import Literal, Union
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -143,11 +143,11 @@ class CSGIntersect(BaseModel):
 # Union type — any node can be one of these
 # ------------------------------------------------------------------
 
-CSGNode = Union[
-    CSGBox, CSGCylinder, CSGSphere,
-    CSGFillet, CSGChamfer, CSGShell,
-    CSGUnion, CSGCut, CSGIntersect,
-]
+CSGNode = (
+    CSGBox | CSGCylinder | CSGSphere
+    | CSGFillet | CSGChamfer | CSGShell
+    | CSGUnion | CSGCut | CSGIntersect
+)
 
 # Pydantic v2 needs this to resolve forward references in recursive models
 CSGFillet.model_rebuild()
@@ -282,17 +282,17 @@ class FeatureCornerCut(BaseModel):
 
 
 # Union of all feature types — validated by Pydantic
-Feature = Union[
-    FeatureHole,
-    FeatureHolePattern,
-    FeatureHoleGrid,
-    FeatureCboreHole,
-    FeatureCskHole,
-    FeatureSlot,
-    FeaturePolygon,
-    FeatureCornerCut,
-    FeatureText,
-]
+Feature = (
+    FeatureHole
+    | FeatureHolePattern
+    | FeatureHoleGrid
+    | FeatureCboreHole
+    | FeatureCskHole
+    | FeatureSlot
+    | FeaturePolygon
+    | FeatureCornerCut
+    | FeatureText
+)
 
 
 # ------------------------------------------------------------------

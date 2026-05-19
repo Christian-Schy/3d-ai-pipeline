@@ -85,10 +85,10 @@ def compute_feature_positions(ft: FeatureTree) -> dict[str, dict]:
 
         if feature.parent is None:
             w = float(params.get("x") or params.get("diameter") or 0)
-            l = float(params.get("y") or params.get("diameter") or 0)
+            length = float(params.get("y") or params.get("diameter") or 0)
             h = float(params.get("z") or params.get("height") or 0)
             pos[fid] = {"center": (0.0, 0.0, h / 2),
-                        "half": (w / 2, l / 2, h / 2)}
+                        "half": (w / 2, length / 2, h / 2)}
             continue
 
         if feature.operation != "add":

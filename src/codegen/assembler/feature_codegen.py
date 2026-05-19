@@ -302,15 +302,10 @@ def _subtract_pattern_linear(
     if face in _axis_to_dir:
         direction = _axis_to_dir[face].get(direction, "x")
 
-    parent_id = _find_parent(fid, all_features)
-    pp = all_features.get(parent_id, {}).get("params", {}) if parent_id else {}
-    px = float(pp.get("x") or 100)
-    py = float(pp.get("y") or 100)
-    pz = float(pp.get("z") or 10)
     linear_angle = float(placement.get("angle_deg") or 0)
     return T.hole_pattern_linear(
         func_name, hd, depth, count, spacing, direction,
-        face, ox, oy, px, py, pz, linear_angle, False, None
+        face, ox, oy, linear_angle, False, None
     )
 
 

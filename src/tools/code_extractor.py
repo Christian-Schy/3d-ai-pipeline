@@ -37,7 +37,7 @@ class CodeExtractor:
     def _sanitize(self, code: str) -> str:
         """Remove lines that must never appear in sandbox code."""
         lines = code.splitlines()
-        clean = [l for l in lines if not self._BANNED_IMPORTS.match(l)]
+        clean = [line for line in lines if not self._BANNED_IMPORTS.match(line)]
         if len(clean) < len(lines):
             removed = len(lines) - len(clean)
             log.warning("code_sanitized", removed_lines=removed)

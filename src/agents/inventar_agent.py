@@ -302,10 +302,7 @@ class InventarAgent(BaseAgent):
             self, "_last_raw_response", ""
         )
 
-        if isinstance(teile_raw, list):
-            teile = teile_raw
-        else:
-            teile = teile_raw.get("teile", [])
+        teile = teile_raw if isinstance(teile_raw, list) else teile_raw.get("teile", [])
 
         valid_teile = []
         for t in teile:
@@ -343,10 +340,7 @@ class InventarAgent(BaseAgent):
         teile_raw = self.call_json(teile_prompt, system=TEILE_LISTE_SYSTEM)
         raw_parts.append("=STEP_A=\n" + getattr(self, "_last_raw_response", ""))
         # LLM sometimes returns a list directly instead of {"teile": [...]}
-        if isinstance(teile_raw, list):
-            teile = teile_raw
-        else:
-            teile = teile_raw.get("teile", [])
+        teile = teile_raw if isinstance(teile_raw, list) else teile_raw.get("teile", [])
 
         if not teile:
             log.warning("inventar_sequential_step_a_empty",

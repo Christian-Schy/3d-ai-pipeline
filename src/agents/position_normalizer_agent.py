@@ -13,6 +13,8 @@ Splitting these two was necessary because alignment vocabulary
 on a top face "oben" is really "hinten" etc.
 """
 
+from contextlib import suppress
+
 import structlog
 
 from src.agents.base import DSPY_DIR, BaseAgent
@@ -314,10 +316,8 @@ class PositionNormalizerAgent(BaseAgent):
         pre_rotation: dict = {}
         if pre_rotation_raw:
             for k, v in self._parse_abstand_str(pre_rotation_raw).items():
-                try:
+                with suppress(TypeError, ValueError):
                     pre_rotation[k] = float(v)
-                except (TypeError, ValueError):
-                    pass
 
         # ── ausrichtung: from Alignment step (separate mini-call) ──
         ausrichtung = alignment.get("ausrichtung", "zentriert").lower()

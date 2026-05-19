@@ -167,11 +167,10 @@ class CodeAnalyzer:
                     for alias in node.names:
                         if alias.name in self.FORBIDDEN_IMPORTS:
                             found.append(alias.name)
-                elif isinstance(node, ast.ImportFrom):
-                    if node.module and any(
-                        f in node.module for f in self.FORBIDDEN_IMPORTS
-                    ):
-                        found.append(node.module)
+                elif isinstance(node, ast.ImportFrom) and node.module and any(
+                    f in node.module for f in self.FORBIDDEN_IMPORTS
+                ):
+                    found.append(node.module)
         except SyntaxError:
             pass
         return found
@@ -185,9 +184,12 @@ class CodeAnalyzer:
                     for target in node.targets:
                         if isinstance(target, ast.Name) and target.id == "result":
                             return True
-                elif isinstance(node, ast.AugAssign):
-                    if isinstance(node.target, ast.Name) and node.target.id == "result":
-                        return True
+                elif (
+                    isinstance(node, ast.AugAssign)
+                    and isinstance(node.target, ast.Name)
+                    and node.target.id == "result"
+                ):
+                    return True
         except SyntaxError:
             pass
         return False
@@ -224,21 +226,24 @@ class CodeAnalyzer:
         # Pattern: fillet/chamfer before any solid creation
         lines = code.split("\n")
         first_fillet = next(
-            (i for i, l in enumerate(lines) if ".fillet(" in l or ".chamfer(" in l),
+            (i for i, line in enumerate(lines) if ".fillet(" in line or ".chamfer(" in line),
             None
         )
         first_solid = next(
-            (i for i, l in enumerate(lines)
-             if ".box(" in l or ".cylinder(" in l or ".sphere(" in l
-             or ".extrude(" in l or ".circle(" in l or ".rect(" in l),
+            (i for i, line in enumerate(lines)
+             if ".box(" in line or ".cylinder(" in line or ".sphere(" in line
+             or ".extrude(" in line or ".circle(" in line or ".rect(" in line),
             None
         )
-        if first_fillet is not None and first_solid is not None:
-            if first_fillet < first_solid:
-                issues.append(
-                    "fillet/chamfer appears before any solid is created. "
-                    "Always apply fillets and chamfers last."
-                )
+        if (
+            first_fillet is not None
+            and first_solid is not None
+            and first_fillet < first_solid
+        ):
+            issues.append(
+                "fillet/chamfer appears before any solid is created. "
+                "Always apply fillets and chamfers last."
+            )
 
         return issues
 

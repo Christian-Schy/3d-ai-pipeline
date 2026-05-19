@@ -104,15 +104,18 @@ class CodeReviewAgent(BaseAgent):
             })
 
         # Check: NearestToPointSelector used but not imported
-        if 'NearestToPointSelector' in code and 'NearestToPointSelector(' in code:
-            if not re.search(r'from\s+cadquery\.selectors\s+import\s+NearestToPointSelector', code):
-                errors.append({
-                    "check": "D5",
-                    "severity": "ERROR",
-                    "function": "imports",
-                    "message": "NearestToPointSelector is used but not imported!",
-                    "fix_hint": "Add: from cadquery.selectors import NearestToPointSelector",
-                })
+        if (
+            'NearestToPointSelector' in code
+            and 'NearestToPointSelector(' in code
+            and not re.search(r'from\s+cadquery\.selectors\s+import\s+NearestToPointSelector', code)
+        ):
+            errors.append({
+                "check": "D5",
+                "severity": "ERROR",
+                "function": "imports",
+                "message": "NearestToPointSelector is used but not imported!",
+                "fix_hint": "Add: from cadquery.selectors import NearestToPointSelector",
+            })
 
         # Check: SELECTOR_POINT constants defined but NearestToPointSelector not used
         selector_points = re.findall(r'(\w+_SELECTOR_POINT)\s*=', code)
@@ -152,7 +155,6 @@ class CodeReviewAgent(BaseAgent):
             re.MULTILINE
         )
         for match in discarded_pattern.finditer(code):
-            line = match.group(0).strip()
             # Check the full line doesn't start with an assignment or return
             line_start = code.rfind('\n', 0, match.start()) + 1
             full_line = code[line_start:code.find('\n', match.start())].strip()
@@ -236,23 +238,22 @@ class CodeReviewAgent(BaseAgent):
                     issue["_was_error"] = True
                 llm_warnings.append(issue)
 
-            if True:  # LLM issues never block — deterministic checks already ran
-                downgraded = [w for w in llm_warnings if w.get("_was_error")]
-                if downgraded:
-                    warn_text = "\n".join(
-                        f"  [WARNING/downgraded] check {w.get('check', '?')} "
-                        f"({w.get('function', 'global')}): {w.get('message', '')}"
-                        for w in downgraded
-                    )
-                    self.log.info("code_review_llm_warnings_downgraded",
-                                  count=len(downgraded), text=warn_text[:300])
-                else:
-                    self.log.info("code_review_approved",
-                                  llm_issues=len(llm_warnings))
-                return {
-                    "code_review_approved": True,
-                    "code_review_issues": "",
-                }
+            downgraded = [w for w in llm_warnings if w.get("_was_error")]
+            if downgraded:
+                warn_text = "\n".join(
+                    f"  [WARNING/downgraded] check {w.get('check', '?')} "
+                    f"({w.get('function', 'global')}): {w.get('message', '')}"
+                    for w in downgraded
+                )
+                self.log.info("code_review_llm_warnings_downgraded",
+                              count=len(downgraded), text=warn_text[:300])
+            else:
+                self.log.info("code_review_approved",
+                              llm_issues=len(llm_warnings))
+            return {
+                "code_review_approved": True,
+                "code_review_issues": "",
+            }
 
         except (ValueError, ConnectionRefusedError) as e:
             # On error: let the pipeline continue — don't block on reviewer failure

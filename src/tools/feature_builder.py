@@ -13,6 +13,8 @@ feature dict that the blueprint_resolver can process.
 
 from __future__ import annotations
 
+from contextlib import suppress
+
 import structlog
 
 log = structlog.get_logger()
@@ -281,10 +283,7 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | Non
     position_notes = _build_notes(feature_type, richtung, position, notes)
 
     # Determine operation
-    if feature_type in ("chamfer", "fillet", "shell"):
-        operation = "modify"
-    else:
-        operation = "subtract"
+    operation = "modify" if feature_type in ("chamfer", "fillet", "shell") else "subtract"
 
     # Pull rotation around the placement-face normal from the normalized
     # action params. Normalizer stores it under 'drehung' (German), so the
@@ -294,10 +293,8 @@ def build_feature(normalized: dict, teil_id: str, action_idx: int) -> dict | Non
     for key in ("drehung", "winkel", "angle", "rotation", "rotation_deg"):
         val = params.get(key)
         if val is not None:
-            try:
+            with suppress(TypeError, ValueError):
                 angle_deg = float(val)
-            except (TypeError, ValueError):
-                pass
             if angle_deg:
                 break
 

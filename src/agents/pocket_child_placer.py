@@ -307,7 +307,7 @@ class PocketChildPlacer(BaseAgent):
 
     @staticmethod
     def _reparent_hole(
-        old_id: str, new_id: str, pocket_id: str, upstream: dict,
+        _old_id: str, new_id: str, pocket_id: str, upstream: dict,
     ) -> dict:
         """Clone an upstream hole feature, re-parent to a pocket, set depth ref.
 

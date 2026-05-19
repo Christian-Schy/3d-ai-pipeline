@@ -202,7 +202,7 @@ def _orientation_from_contact_face(face_desc: str, params: dict) -> str | None:
     contact = sorted([a, b])
     for i in range(3):
         remaining = sorted([dims[j] for j in range(3) if j != i])
-        if all(abs(r - c) < 0.1 for r, c in zip(remaining, contact)):
+        if all(abs(r - c) < 0.1 for r, c in zip(remaining, contact, strict=False)):
             # Emit AxB_liegt_auf with integer formatting when possible
             def _fmt(v: float) -> str:
                 return str(int(v)) if abs(v - int(v)) < 1e-6 else str(v)
@@ -218,7 +218,7 @@ def _dims_close(a: list[float], b: list[float]) -> bool:
         return False
     a_sorted = sorted(a)
     b_sorted = sorted(b)
-    return all(abs(x - y) < 0.1 for x, y in zip(a_sorted, b_sorted))
+    return all(abs(x - y) < 0.1 for x, y in zip(a_sorted, b_sorted, strict=False))
 
 
 def _build_edge_distances(abstand: dict) -> dict | None:

@@ -79,9 +79,11 @@ def _generate_sub_assembly_builds(
             # Subtract/modify: include direct children AND descendants
             # whose effective body-owner walks back to this sub-assembly
             # (e.g. hole-in-pocket where pocket.parent == sa_fid).
-            if op in ("subtract", "cut", "modify"):
-                if feat.get("parent") == sa_fid or _resolve_part_root(fid, features) == sa_fid:
-                    subtract_children.append(fid)
+            if (
+                op in ("subtract", "cut", "modify")
+                and (feat.get("parent") == sa_fid or _resolve_part_root(fid, features) == sa_fid)
+            ):
+                subtract_children.append(fid)
 
         if not subtract_children and not add_children:
             continue  # No build function needed — make_XYZ() suffices

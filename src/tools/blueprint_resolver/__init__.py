@@ -14,6 +14,6 @@ Package layout:
     feature.py     — Feature-Resolution glue (per-feature, combines all)
 """
 
-from .core import resolve_blueprint, BlueprintResolverError
+from .core import BlueprintResolverError, resolve_blueprint
 
-__all__ = ["resolve_blueprint", "BlueprintResolverError"]
+__all__ = ["BlueprintResolverError", "resolve_blueprint"]

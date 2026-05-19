@@ -243,9 +243,12 @@ class SessionLogger:
             try:
                 e = json.loads(line)
                 total += 1
-                if e.get("feedback") == "good": good += 1
-                if e.get("feedback") == "bad": bad += 1
-                if e.get("success"): success += 1
+                if e.get("feedback") == "good":
+                    good += 1
+                if e.get("feedback") == "bad":
+                    bad += 1
+                if e.get("success"):
+                    success += 1
             except json.JSONDecodeError:
                 continue
 

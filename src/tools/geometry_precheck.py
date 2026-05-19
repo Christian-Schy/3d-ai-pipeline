@@ -473,7 +473,7 @@ def run_geometry_precheck(
     if root.get("type") == "box":
         expected = sorted([root.get("x", 0), root.get("y", 0), root.get("z", 0)])
         actual = sorted([width, depth_dim, height])
-        for exp, act in zip(expected, actual):
+        for exp, act in zip(expected, actual, strict=False):
             if abs(exp - act) > 0.5:
                 issues.append(
                     f"Dimension mismatch: blueprint root says {exp:.1f}mm "

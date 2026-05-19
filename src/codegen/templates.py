@@ -306,9 +306,6 @@ def hole_pattern_linear(
     face: str,
     offset_x: float,
     offset_y: float,
-    parent_x: float,
-    parent_y: float,
-    parent_z: float,
     angle: float = 0.0,
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
@@ -324,23 +321,10 @@ def hole_pattern_linear(
     face_sel = _face_selection(face, use_ntp, ntp_point)
     depth_call = _hole_depth(hole_diameter, depth)
 
-    # Compute face dimensions based on face selector
-    if face in (">Z", "<Z"):
-        face_w, face_h = parent_x, parent_y
-    elif face in (">X", "<X"):
-        face_w, face_h = parent_y, parent_z
-    else:  # >Y, <Y
-        face_w, face_h = parent_x, parent_z
-
     # Compute hole positions along the direction axis
     lines = [
         f"def {func_name}(body: cq.Workplane, _ref: cq.Workplane) -> cq.Workplane:",
     ]
-
-    if direction.lower() == "x":
-        dim = face_w
-    else:
-        dim = face_h
 
     # Calculate positions: center the row on the face.
     # Total row span = (count - 1) * spacing

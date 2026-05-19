@@ -21,6 +21,7 @@ Model: qwen3:8b — fast enough, semantic reasoning doesn't need 30b.
 """
 
 import json
+from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -87,7 +88,7 @@ class ValidatorAgent(BaseAgent):
                 actual = sorted([float(e) for e in stats["extents_mm"]])
                 all_match = len(expected) == len(actual) and all(
                     abs(e - a) / max(e, 1) <= 0.15
-                    for e, a in zip(expected, actual)
+                    for e, a in zip(expected, actual, strict=False)
                   )
                 if all_match:
                     self.log.info("validator_union_skip_semantic",
@@ -182,7 +183,7 @@ class ValidatorAgent(BaseAgent):
         if expected_dims and mesh.extents is not None:
             expected = sorted(expected_dims)
             actual = sorted([float(e) for e in mesh.extents])
-            for exp, act in zip(expected, actual):
+            for exp, act in zip(expected, actual, strict=False):
                 if exp > 0 and abs(exp - act) / exp > 0.15:
                     issues.append(
                         f"Dimension mismatch: Blueprint expects ~{[round(e,1) for e in expected]}mm, "
@@ -224,7 +225,6 @@ class ValidatorAgent(BaseAgent):
             for feat in features.values():
                 if isinstance(feat, dict) and feat.get("parent") is None:
                     params = feat.get("params", {}) or {}
-                    ftype = feat.get("type", "")
                     if all(params.get(k) for k in ("x", "y", "z")):
                         try:
                             x, y, z = float(params["x"]), float(params["y"]), float(params["z"])
@@ -359,10 +359,8 @@ class ValidatorAgent(BaseAgent):
             vol = None
             # Box / plate / step / extrusion
             if all(params.get(k) for k in ("x", "y", "z")):
-                try:
+                with suppress(TypeError, ValueError):
                     vol = float(params["x"]) * float(params["y"]) * float(params["z"])
-                except (TypeError, ValueError):
-                    pass
             # Cylinder / boss_cylindrical
             elif params.get("radius") and params.get("height"):
                 try:
@@ -489,12 +487,12 @@ class ValidatorAgent(BaseAgent):
             "build_order" in blueprint
             and isinstance(blueprint.get("features"), dict)
             and not (state or {}).get("change_description")  # modifications still need LLM
+            and self._volume_check_passes(blueprint, actual_volume)
         ):
-            if self._volume_check_passes(blueprint, actual_volume):
-                self.log.info("validator_volume_rule_pass",
-                              volume_mm3=actual_volume,
-                              msg="Volume matches blueprint — skipping LLM semantic check")
-                return True, ""
+            self.log.info("validator_volume_rule_pass",
+                          volume_mm3=actual_volume,
+                          msg="Volume matches blueprint — skipping LLM semantic check")
+            return True, ""
 
         change_desc = state.get("change_description", "") if state else ""
         if change_desc:

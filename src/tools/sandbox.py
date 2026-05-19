@@ -63,7 +63,6 @@ class Sandbox:
 
         if not analysis.valid:
             # Blocking issues found — no need to run the subprocess
-            error_summary = " | ".join(analysis.issues)
             log.warning("sandbox_blocked_by_analysis", issues=analysis.issues)
             return ExecutionResult(
                 success=False,
@@ -100,7 +99,6 @@ class Sandbox:
             # Code ran without errors, but the geometry might still be broken
             validation = self._validator.validate(output_path)
             if not validation.valid:
-                issue_summary = " | ".join(validation.issues)
                 log.warning("sandbox_stl_invalid", issues=validation.issues)
                 return ExecutionResult(
                     success=False,
