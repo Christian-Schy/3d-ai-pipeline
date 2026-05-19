@@ -84,12 +84,13 @@ Aktualisierung) laeuft. Pickup-Punkt: Memory `rebuild_plan_2026_05_17`.
 - ⚠ **Code-Qualitaet (laufender Refactor-Pass, vorbestehend)**: 59 ruff
   style-Findings + Dateien >500 LOC. Vorbestehend, keine Cap-1.0-Schulden;
   Aufraeumarbeit laeuft als eigener Refactor-Pass parallel zu Cap 2.0.
-  **Stand 2026-05-19**: `blueprint_resolver.py` (1609 LOC) und
-  `assembler.py` (946 LOC) sind je in ein Package zerlegt (resolver
-  core.py 198 LOC, assembler core.py 151 LOC). Komplexitaets-Findings
-  abgearbeitet: `_compute_offsets` F50→D29, `_resolve_feature_in_feature`
-  E31→C15, `_generate_subtract` F120→C17. Verbleibend:
-  `coordinate_validator.py` (911 LOC) analog zerlegen.
+  **Stand 2026-05-19**: Die drei Monolithen `blueprint_resolver.py`
+  (1609 LOC), `assembler.py` (946 LOC) und `coordinate_validator.py`
+  (913 LOC) sind je in ein Package zerlegt — kein Kern-Modul mehr
+  >500 LOC. Komplexitaets-Findings abgearbeitet: `_compute_offsets`
+  F50→D29, `_resolve_feature_in_feature` E31→C15, `_generate_subtract`
+  F120→C17, `_check_feature` F44→D24. Code-Qualitaet-Refactor-Pass
+  damit abgeschlossen.
 
 ### Empfohlene Reihenfolge
 
@@ -164,7 +165,7 @@ src/graph/state.py              — PipelineState (TypedDict)
 src/graph/blueprint_schema.py   — Pydantic Schema (Semantic + Resolved)
 src/graph/nodes/                — Alle Pipeline-Nodes
 src/tools/blueprint_resolver/   — Deterministic: semantic → resolved (Package)
-src/tools/coordinate_validator.py — Rule-based geometry checks
+src/tools/coordinate_validator/  — Rule-based geometry checks (Package)
 src/codegen/assembler/          — Blueprint → CadQuery Code (Package)
 src/codegen/templates.py        — CadQuery Code-Templates pro Feature
 data/prompts/                   — Alle LLM System Prompts

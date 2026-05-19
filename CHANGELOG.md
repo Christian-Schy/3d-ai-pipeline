@@ -16,6 +16,15 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
   synchron. Normalizer-Shortform-Contract um Grid-Keys (`rows`/`cols`/
   `rasterabstand*`) und fehlende Richtungs-Demos fuer `versatz_*`/
   `kante_*` ergaenzt. Ergebnis: volle lokale Testsuite gruen.
+- **Refactor-Pass: `coordinate_validator` zerlegt.**
+  `src/tools/coordinate_validator.py` (913 LOC Monolith) ist jetzt ein
+  Package mit 7 Sub-Modulen (`core`/`issue`/`geometry`/`build_order`/
+  `bounds`/`patterns`/`dimension_checks`); Public API unveraendert
+  (`run_coordinate_check`, `format_issues_for_planner`). Komplexitaets-
+  Finding behoben: `_check_feature` F44→D24 (inline Checks 1/2/4/5/6 in
+  eigene Funktionen). Triplizierte face→half-dims-Abbildung entdoppelt.
+  Commits 481a67e + 608830f. Damit kein Kern-Modul mehr >500 LOC — der
+  Code-Qualitaet-Refactor-Pass ist abgeschlossen.
 - **Refactor-Pass: `assembler` zerlegt.** `src/codegen/assembler.py`
   (946 LOC Monolith) ist jetzt ein Package mit 4 Sub-Modulen
   (`core`/`feature_codegen`/`assembly`/`transforms`); Public API
