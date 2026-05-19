@@ -1,0 +1,260 @@
+{
+  "description": "STRESS_anchor_chain — Anker-Verschachtelung + alle anchor.child_point/parent_point/offset/pre_rotation-Varianten (Wuerfel 120x100x80)",
+  "build_order": [
+    "wuerfel",
+    "pocket_outer",
+    "pocket_inner",
+    "nest_hole_in_inner",
+    "nest_hole_anchor_in_outer",
+    "h_in_outer_center_offset",
+    "h_in_outer_edge_distances",
+    "nest_slot_in_outer",
+    "h_anchor_corner_to_corner",
+    "h_anchor_center_to_corner_offset",
+    "h_anchor_edge_to_edge_seite",
+    "h_anchor_pre_rotation",
+    "h_anchor_synonym_up_left",
+    "p_anchor_corner_to_corner_unten",
+    "s_anchor_with_offset",
+    "h_anchor_in_inner_pocket",
+    "h_normal_versatz_kontrolle",
+    "p_normal_centered_links"
+  ],
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "params": {"x": 120, "y": 100, "z": 80},
+      "orientation": "standard",
+      "parent": null,
+      "operation": "add"
+    },
+    "pocket_outer": {
+      "type": "pocket_rect",
+      "params": {"x": 80, "y": 60, "depth": 12},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "pocket_inner": {
+      "type": "pocket_rect",
+      "params": {"x": 30, "y": 25, "depth": 6},
+      "parent": "pocket_outer",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_left",
+          "parent_point": "top_left",
+          "offset": {"down": 5, "right": 5}
+        }
+      },
+      "operation": "subtract"
+    },
+    "nest_hole_in_inner": {
+      "type": "hole_single",
+      "params": {"diameter": 4, "depth": 3},
+      "parent": "pocket_inner",
+      "position": {
+        "side": "oben",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    },
+    "nest_hole_anchor_in_outer": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 4},
+      "parent": "pocket_outer",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "bottom_right",
+          "parent_point": "bottom_right",
+          "offset": {"up": 4, "left": 4}
+        }
+      },
+      "operation": "subtract"
+    },
+    "h_in_outer_center_offset": {
+      "type": "hole_single",
+      "params": {"diameter": 4, "depth": 4},
+      "parent": "pocket_outer",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"right": 18}
+      },
+      "operation": "subtract"
+    },
+    "h_in_outer_edge_distances": {
+      "type": "hole_single",
+      "params": {"diameter": 4, "depth": 4},
+      "parent": "pocket_outer",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "edge_distances": {"bottom": 8, "right": 10}
+      },
+      "operation": "subtract"
+    },
+    "nest_slot_in_outer": {
+      "type": "slot",
+      "params": {"width": 3, "depth": 3, "length": 20},
+      "parent": "pocket_outer",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "center_offset": {"bottom": 15},
+        "angle_deg": 90,
+        "notes": "entlang Y"
+      },
+      "operation": "subtract"
+    },
+    "h_anchor_corner_to_corner": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right"
+        }
+      },
+      "operation": "subtract"
+    },
+    "h_anchor_center_to_corner_offset": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "center",
+          "parent_point": "top_left",
+          "offset": {"down": 8, "right": 10}
+        }
+      },
+      "operation": "subtract"
+    },
+    "h_anchor_edge_to_edge_seite": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "rechts",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right",
+          "offset": {"down": 6, "left": 8}
+        }
+      },
+      "operation": "subtract"
+    },
+    "h_anchor_pre_rotation": {
+      "type": "hole_single",
+      "params": {"diameter": 5, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "center",
+          "parent_point": "bottom_left",
+          "offset": {"up": 10, "right": 10},
+          "pre_rotation": {"axis": "z", "deg": 30}
+        }
+      },
+      "operation": "subtract"
+    },
+    "h_anchor_synonym_up_left": {
+      "type": "hole_single",
+      "params": {"diameter": 4, "depth": 6},
+      "parent": "wuerfel",
+      "position": {
+        "side": "vorne",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "center",
+          "parent_point": "bottom_right",
+          "offset": {"up": 5, "left": 8}
+        }
+      },
+      "operation": "subtract"
+    },
+    "p_anchor_corner_to_corner_unten": {
+      "type": "pocket_rect",
+      "params": {"x": 20, "y": 15, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "unten",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "top_right",
+          "parent_point": "top_right",
+          "offset": {"down": 12, "left": 15}
+        }
+      },
+      "operation": "subtract"
+    },
+    "s_anchor_with_offset": {
+      "type": "slot",
+      "params": {"width": 4, "depth": 3, "length": 25},
+      "parent": "wuerfel",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "center",
+          "parent_point": "top_left",
+          "offset": {"down": 20, "right": 35}
+        },
+        "angle_deg": 90,
+        "notes": "entlang Y"
+      },
+      "operation": "subtract"
+    },
+    "h_anchor_in_inner_pocket": {
+      "type": "hole_single",
+      "params": {"diameter": 3, "depth": 2},
+      "parent": "pocket_inner",
+      "position": {
+        "side": "oben",
+        "alignment": "centered",
+        "anchor": {
+          "child_point": "bottom_right",
+          "parent_point": "bottom_right",
+          "offset": {"up": 3, "left": 3}
+        }
+      },
+      "operation": "subtract"
+    },
+    "h_normal_versatz_kontrolle": {
+      "type": "hole_single",
+      "params": {"diameter": 6, "depth": 8},
+      "parent": "wuerfel",
+      "position": {
+        "side": "hinten",
+        "alignment": "centered",
+        "center_offset": {"right": 20, "top": 10}
+      },
+      "operation": "subtract"
+    },
+    "p_normal_centered_links": {
+      "type": "pocket_rect",
+      "params": {"x": 25, "y": 20, "depth": 5},
+      "parent": "wuerfel",
+      "position": {
+        "side": "links",
+        "alignment": "centered"
+      },
+      "operation": "subtract"
+    }
+  }
+}

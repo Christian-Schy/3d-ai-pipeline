@@ -1,0 +1,274 @@
+{
+  "features": {
+    "wuerfel": {
+      "type": "box",
+      "parent": null,
+      "params": {
+        "x": 120,
+        "y": 100,
+        "z": 80
+      }
+    },
+    "pocket_outer": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 80,
+        "y": 60,
+        "depth": 12
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "pocket_inner": {
+      "type": "pocket_rect",
+      "parent": "pocket_outer",
+      "params": {
+        "x": 30,
+        "y": 25,
+        "depth": 18.0
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -20.0,
+        "offset_y": 12.5,
+        "angle_deg": 0.0
+      }
+    },
+    "nest_hole_in_inner": {
+      "type": "hole_single",
+      "parent": "pocket_inner",
+      "params": {
+        "diameter": 4,
+        "depth": 21.0
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -20.0,
+        "offset_y": 12.5,
+        "angle_deg": 0.0
+      }
+    },
+    "nest_hole_anchor_in_outer": {
+      "type": "hole_single",
+      "parent": "pocket_outer",
+      "params": {
+        "diameter": 5,
+        "depth": 16.0
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 33.5,
+        "offset_y": -23.5,
+        "angle_deg": 0.0
+      }
+    },
+    "h_in_outer_center_offset": {
+      "type": "hole_single",
+      "parent": "pocket_outer",
+      "params": {
+        "diameter": 4,
+        "depth": 16.0
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 18.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_in_outer_edge_distances": {
+      "type": "hole_single",
+      "parent": "pocket_outer",
+      "params": {
+        "diameter": 4,
+        "depth": 16.0
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 30.0,
+        "offset_y": -22.0,
+        "angle_deg": 0.0
+      }
+    },
+    "nest_slot_in_outer": {
+      "type": "slot",
+      "parent": "pocket_outer",
+      "params": {
+        "width": 3,
+        "depth": 15.0,
+        "length": 20
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": -15.0,
+        "angle_deg": 90.0
+      }
+    },
+    "h_anchor_corner_to_corner": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 5,
+        "depth": 5
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": 57.5,
+        "offset_y": 47.5,
+        "angle_deg": 0.0
+      }
+    },
+    "h_anchor_center_to_corner_offset": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 5,
+        "depth": 5
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -50.0,
+        "offset_y": 42.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_anchor_edge_to_edge_seite": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 5,
+        "depth": 5
+      },
+      "placement": {
+        "face": ">X",
+        "alignment": "centered",
+        "offset_x": 39.5,
+        "offset_y": 31.5,
+        "angle_deg": 0.0
+      }
+    },
+    "h_anchor_pre_rotation": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 5,
+        "depth": 5
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -50.0,
+        "offset_y": -40.0,
+        "angle_deg": 0.0
+      }
+    },
+    "h_anchor_synonym_up_left": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 4,
+        "depth": 6
+      },
+      "placement": {
+        "face": "<Y",
+        "alignment": "centered",
+        "offset_x": 52.0,
+        "offset_y": -35.0,
+        "angle_deg": 0.0
+      }
+    },
+    "p_anchor_corner_to_corner_unten": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 20,
+        "y": 15,
+        "depth": 5
+      },
+      "placement": {
+        "face": "<Z",
+        "alignment": "centered",
+        "offset_x": 35.0,
+        "offset_y": 30.5,
+        "angle_deg": 0.0
+      }
+    },
+    "s_anchor_with_offset": {
+      "type": "slot",
+      "parent": "wuerfel",
+      "params": {
+        "width": 4,
+        "depth": 3,
+        "length": 25
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -25.0,
+        "offset_y": 30.0,
+        "angle_deg": 90.0
+      }
+    },
+    "h_anchor_in_inner_pocket": {
+      "type": "hole_single",
+      "parent": "pocket_inner",
+      "params": {
+        "diameter": 3,
+        "depth": 20.0
+      },
+      "placement": {
+        "face": ">Z",
+        "alignment": "centered",
+        "offset_x": -9.5,
+        "offset_y": 4.5,
+        "angle_deg": 0.0
+      }
+    },
+    "h_normal_versatz_kontrolle": {
+      "type": "hole_single",
+      "parent": "wuerfel",
+      "params": {
+        "diameter": 6,
+        "depth": 8
+      },
+      "placement": {
+        "face": ">Y",
+        "alignment": "centered",
+        "offset_x": 20.0,
+        "offset_y": 10.0,
+        "angle_deg": 0.0
+      }
+    },
+    "p_normal_centered_links": {
+      "type": "pocket_rect",
+      "parent": "wuerfel",
+      "params": {
+        "x": 25,
+        "y": 20,
+        "depth": 5
+      },
+      "placement": {
+        "face": "<X",
+        "alignment": "centered",
+        "offset_x": 0.0,
+        "offset_y": 0.0,
+        "angle_deg": 0.0
+      }
+    }
+  }
+}
