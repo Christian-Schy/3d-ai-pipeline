@@ -41,6 +41,13 @@ from .bounds import (
     _check_slot_min_clearance,
 )
 from .build_order import _check_build_order_sorting
+from .dimension_checks import (
+    _check_bolt_circle,
+    _check_depth_vs_material,
+    _check_dimensions_positive,
+    _check_feature_fits_parent,
+    _check_wall_thickness,
+)
 from .geometry import _get_bbox
 from .issue import CoordIssue
 from .patterns import _check_pattern_child_bounds, _check_pattern_spacing
@@ -120,7 +127,12 @@ def _resolve_root_parent_id(fid: str, features: dict) -> str | None:
 
 
 def _check_feature(fid: str, features: dict, issues: list) -> None:
-    """Run all per-feature checks. Called inside a try/except in run_coordinate_check."""
+    """Run all per-feature checks — thin dispatcher.
+
+    Resolves the per-feature context (parent, feature-in-feature root) once,
+    then routes to the individual `_check_*` handlers with the appropriate
+    ftype gating. Called inside a try/except in run_coordinate_check.
+    """
     feat = features.get(fid)
     if not isinstance(feat, dict):
         return
@@ -138,20 +150,7 @@ def _check_feature(fid: str, features: dict, issues: list) -> None:
     )
     root_parent_id = _resolve_root_parent_id(fid, features) if has_feature_parent else None
 
-    # Check 6: all dimensions > 0
-    for key, val in params.items():
-        if val is None:
-            continue  # null depth = through-hole, valid
-        try:
-            f = float(val)
-            if f < 0:
-                issues.append(CoordIssue(
-                    severity="ERROR", feature_id=fid,
-                    check="dimensions_positive",
-                    message=f"Parameter '{key}' is negative: {val}"
-                ))
-        except (TypeError, ValueError):
-            pass
+    _check_dimensions_positive(fid, params, issues)  # Check 6
 
     # Skip further geometry checks if no parent (root feature)
     if parent_id is None:
@@ -159,7 +158,15 @@ def _check_feature(fid: str, features: dict, issues: list) -> None:
 
     parent_feat = features.get(parent_id, {})
     parent_bbox = _get_bbox(parent_feat)
-    my_bbox = _get_bbox(feat)
+
+    # bbox of the part to validate depth/bounds against — the root-owning
+    # part for feature-in-feature children, else the immediate parent.
+    if has_feature_parent and root_parent_id:
+        root_feat = features.get(root_parent_id, {})
+        root_bbox = _get_bbox(root_feat)
+    else:
+        root_feat = parent_feat
+        root_bbox = parent_bbox
 
     # Check 1: feature smaller than parent — only for subtractive features!
     # Additive features (union/add) are allowed to be larger than their parent.
@@ -167,86 +174,29 @@ def _check_feature(fid: str, features: dict, issues: list) -> None:
     is_subtractive = operation in ("subtract", "cut") or "hole" in ftype or ftype in (
         "pocket_rect", "pocket_round", "slot", "cutout"
     )
-    if parent_bbox and my_bbox and is_subtractive:
-        px, py, pz = parent_bbox
-        fx, fy, fz = my_bbox
-        if fx > px * 1.05 and fy > py * 1.05:
-            issues.append(CoordIssue(
-                severity="WARNING", feature_id=fid,
-                check="feature_fits_parent",
-                message=(
-                    f"{ftype} ({fx}×{fy}) is larger than parent '{parent_id}' "
-                    f"({px}×{py}) in both X and Y"
-                )
-            ))
+    if is_subtractive:
+        _check_feature_fits_parent(
+            fid, ftype, parent_id, parent_bbox, _get_bbox(feat), issues
+        )
 
     # Check 2: hole depth vs parent material
     if "hole" in ftype or ftype in ("pocket_rect", "pocket_round", "slot", "cutout"):
-        depth = params.get("depth")
-        # For feature-in-feature children, the depth was already adjusted by
-        # the resolver to span pocket+hole; check against the root-owning
-        # part's height, not the pocket's own depth.
-        if has_feature_parent and root_parent_id:
-            depth_parent_feat = features.get(root_parent_id, {})
-            depth_parent_bbox = _get_bbox(depth_parent_feat)
-            depth_parent_label = root_parent_id
-        else:
-            depth_parent_bbox = parent_bbox
-            depth_parent_label = parent_id
-        if depth is not None and depth_parent_bbox:
-            pz = depth_parent_bbox[2]
-            if float(depth) > pz:
-                issues.append(CoordIssue(
-                    severity="ERROR", feature_id=fid,
-                    check="depth_vs_material",
-                    message=(
-                        f"Depth {depth}mm exceeds parent '{depth_parent_label}' "
-                        f"height {pz}mm"
-                    )
-                ))
+        depth_label = root_parent_id if (has_feature_parent and root_parent_id) else parent_id
+        _check_depth_vs_material(fid, params, root_bbox, depth_label, issues)
 
     # Check 4: bolt circle geometry
-    if ftype in ("hole_pattern_circular",) or "circle" in ftype:
-        cd = params.get("circle_diameter")
-        hd = params.get("diameter")
-        if cd and hd and parent_bbox:
-            circle_r = float(cd) / 2
-            hole_r = float(hd) / 2
-            px, py, _ = parent_bbox
-            parent_r = min(px, py) / 2
-            if circle_r + hole_r > parent_r:
-                issues.append(CoordIssue(
-                    severity="ERROR", feature_id=fid,
-                    check="bolt_circle_fits",
-                    message=(
-                        f"Bolt circle: circle_r({circle_r}) + hole_r({hole_r}) = "
-                        f"{circle_r + hole_r:.1f} > parent_r({parent_r:.1f})"
-                    )
-                ))
+    if ftype == "hole_pattern_circular" or "circle" in ftype:
+        _check_bolt_circle(fid, params, parent_bbox, issues)
 
     # Check 5: min wall thickness for holes
     if "hole" in ftype:
-        hd = params.get("diameter")
-        if hd and parent_bbox:
-            px, py, _ = parent_bbox
-            min_wall = min(px, py) / 2 - float(hd) / 2
-            if 0 < min_wall < 2.0:
-                issues.append(CoordIssue(
-                    severity="WARNING", feature_id=fid,
-                    check="wall_thickness",
-                    message=(
-                        f"Wall thickness ~{min_wall:.1f}mm after hole ∅{hd}mm "
-                        f"in '{parent_id}' ({px}×{py}) — minimum recommended 2mm"
-                    )
-                ))
+        _check_wall_thickness(fid, params, parent_bbox, parent_id, issues)
 
     # Check 8: offset bounds — feature center + half-size must be inside parent.
     # Feature-in-feature: offsets are in part-frame, so check against the
     # root part instead of the immediate (pocket) parent.
     if has_feature_parent and root_parent_id:
-        bounds_parent_feat = features.get(root_parent_id, {})
-        bounds_parent_bbox = _get_bbox(bounds_parent_feat)
-        _check_offset_bounds(fid, feat, bounds_parent_feat, bounds_parent_bbox, issues)
+        _check_offset_bounds(fid, feat, root_feat, root_bbox, issues)
         # Plus: feature must stay inside its IMMEDIATE pocket parent's footprint.
         _check_offset_inside_pocket(fid, feat, parent_feat, parent_bbox, issues)
     else:
@@ -262,22 +212,14 @@ def _check_feature(fid: str, features: dict, issues: list) -> None:
     # _MIN_SLOT_REST_WALL_MM an einer Bauteilkante liegt. Negative Werte
     # = Ueberhang.
     if ftype == "slot":
-        if has_feature_parent and root_parent_id:
-            slot_parent_bbox = _get_bbox(features.get(root_parent_id, {}))
-        else:
-            slot_parent_bbox = parent_bbox
-        _check_slot_min_clearance(fid, feat, slot_parent_bbox, issues)
+        _check_slot_min_clearance(fid, feat, root_bbox, issues)
 
     # Check 12: Pattern-Kind-Bohrungen gegen Bauteilrand. Iteriert die
     # Bohrungen im Pattern (Grid/Linear/Kreis) und meldet WARNING pro
     # ueberhaengender Bohrung. Pattern-Rotation (Grid/Linear) wird
     # angewandt; Kreis-Pattern ist rotations-invariant.
     if ftype.startswith("hole_pattern_"):
-        if has_feature_parent and root_parent_id:
-            pat_parent_bbox = _get_bbox(features.get(root_parent_id, {}))
-        else:
-            pat_parent_bbox = parent_bbox
-        _check_pattern_child_bounds(fid, feat, pat_parent_bbox, issues)
+        _check_pattern_child_bounds(fid, feat, root_bbox, issues)
 
 
 def format_issues_for_planner(issues: list[CoordIssue]) -> str:
