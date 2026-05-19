@@ -42,9 +42,10 @@ def _section_side_from_phrase(phrase: str) -> str | None:
 
 # ADR 0009 — Pattern split: grid / circular / linear je eigener Sub-Agent.
 _GRID_RE = re.compile(
-    r"\b(?:lochmuster|lochbild|raster|grid|eckbohr\w*|an\s+jeder\s+ecke)\b",
+    r"\b(?:lochmuster|raster|grid|eckbohr\w*|an\s+jeder\s+ecke)\b",
     re.IGNORECASE,
 )
+_GENERIC_LOCHBILD_RE = re.compile(r"\blochbild\b", re.IGNORECASE)
 _CIRCULAR_RE = re.compile(
     r"\b(?:lochkreis|teilkreis|kreismuster)\b",
     re.IGNORECASE,
@@ -102,11 +103,13 @@ def detect_classifier_subagent(phrase: str) -> str | None:
     text = phrase or ""
     matches: list[str] = []
 
-    if _GRID_RE.search(text):
+    linear = bool(_LINEAR_RE.search(text))
+
+    if _GRID_RE.search(text) or (_GENERIC_LOCHBILD_RE.search(text) and not linear):
         matches.append("grid_classifier")
     if _CIRCULAR_RE.search(text):
         matches.append("circular_classifier")
-    if _LINEAR_RE.search(text):
+    if linear:
         matches.append("linear_classifier")
     if not matches and _HOLE_RE.search(text):
         matches.append("hole_classifier")

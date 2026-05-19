@@ -309,9 +309,10 @@ _CLASSIFIER_SUB_AGENTS = {
 # ADR 0009 — Pattern-Split. Mirror der Runtime-Regexes in
 # src/graph/nodes/planning_action_nodes.py (grid / circular / linear).
 _GRID_PHRASE_RE = re.compile(
-    r"\b(?:lochmuster|lochbild|raster|grid|eckbohr\w*|an\s+jeder\s+ecke)\b",
+    r"\b(?:lochmuster|raster|grid|eckbohr\w*|an\s+jeder\s+ecke)\b",
     re.IGNORECASE,
 )
+_GENERIC_LOCHBILD_RE = re.compile(r"\blochbild\b", re.IGNORECASE)
 _CIRCULAR_PHRASE_RE = re.compile(
     r"\b(?:lochkreis|teilkreis|kreismuster)\b",
     re.IGNORECASE,
@@ -343,9 +344,11 @@ def classifier_sub_agent_name_for_pair(pair: dict) -> str | None:
     typ = str(out.get("typ") or "").lower()
 
     if typ == "bohrung":
-        grid = bool(_GRID_PHRASE_RE.search(phrase))
         circular = bool(_CIRCULAR_PHRASE_RE.search(phrase))
         linear = bool(_LINEAR_PHRASE_RE.search(phrase))
+        grid = bool(_GRID_PHRASE_RE.search(phrase)) or (
+            bool(_GENERIC_LOCHBILD_RE.search(phrase)) and not linear
+        )
         if grid + circular + linear == 1:
             if grid:
                 return "grid_classifier"

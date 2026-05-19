@@ -1445,4 +1445,94 @@ TRACES = [
             "parameter: breite=5, tiefe=4, laenge=30"
         ),
     },
+
+    # ── Runtime-Shortform Coverage: alle Richtungs-Keys trainierbar ─────
+    {
+        "id": "norm_contract_versatz_links_unten_vorne",
+        "input": {
+            "beschreibung": (
+                "oben eine 6mm bohrung 5 tief 5mm nach links, "
+                "6mm nach unten und 7mm nach vorne versetzt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 30},
+            "specification": "Directional center-offset coverage for normalizer shortform",
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "parameter: durchmesser=6, tiefe=5, "
+            "versatz_links=5, versatz_unten=6, versatz_vorne=7"
+        ),
+    },
+    {
+        "id": "norm_contract_versatz_hinten",
+        "input": {
+            "beschreibung": "oben eine 5mm bohrung 4 tief 8mm nach hinten versetzt",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 100, "z": 30},
+            "specification": "Directional center-offset coverage for normalizer shortform",
+        },
+        "expected": (
+            "typ: bohrung\n"
+            "seite: oben\n"
+            "position: von_mitte\n"
+            "parameter: durchmesser=5, tiefe=4, versatz_hinten=8"
+        ),
+    },
+    {
+        "id": "norm_contract_kante_rechts_unten",
+        "input": {
+            "beschreibung": (
+                "oben eine tasche 20x10x4 deren rechte kante 5mm "
+                "und untere kante 6mm von der plattenkante entfernt"
+            ),
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 80, "z": 20},
+            "specification": "Explicit pocket-edge coverage for normalizer shortform",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: laenge=20, breite=10, tiefe=4, "
+            "kante_rechts=5, kante_unten=6"
+        ),
+    },
+    {
+        "id": "norm_contract_kante_vorne",
+        "input": {
+            "beschreibung": "oben eine tasche 20x10x4 deren vordere kante 7mm vom rand entfernt",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 80, "z": 20},
+            "specification": "Explicit pocket-edge coverage for normalizer shortform",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: laenge=20, breite=10, tiefe=4, kante_vorne=7"
+        ),
+    },
+    {
+        "id": "norm_contract_kante_hinten",
+        "input": {
+            "beschreibung": "oben eine tasche 20x10x4 deren hintere kante 8mm vom rand entfernt",
+            "seite": "oben",
+            "teil_type": "box",
+            "teil_params": {"x": 100, "y": 80, "z": 20},
+            "specification": "Explicit pocket-edge coverage for normalizer shortform",
+        },
+        "expected": (
+            "typ: tasche\n"
+            "seite: oben\n"
+            "position: von_kanten\n"
+            "parameter: laenge=20, breite=10, tiefe=4, kante_hinten=8"
+        ),
+    },
 ]

@@ -274,6 +274,7 @@ def test_normalizer_training_contract_uses_runtime_shortform():
         "durchmesser", "bohr_durchmesser", "tiefe", "kreis_durchmesser",
         "anzahl", "abstand", "abstand_kante", "breite", "laenge",
         "groesse", "radius", "dicke", "drehung", "kanten",
+        "rows", "cols", "rasterabstand", "rasterabstand_x", "rasterabstand_y",
         "abstand_oben", "abstand_unten", "abstand_rechts", "abstand_links",
         "abstand_vorne", "abstand_hinten",
         "versatz_oben", "versatz_unten", "versatz_rechts", "versatz_links",
@@ -315,6 +316,7 @@ def test_normalizer_training_contract_uses_runtime_shortform():
         "versatz_links", "versatz_unten", "versatz_vorne", "versatz_hinten",
         "kante_oben", "kante_unten", "kante_rechts", "kante_links",
         "kante_vorne", "kante_hinten", "drehung", "dicke",
+        "rows", "cols", "rasterabstand",
     } <= seen_param_keys
 
     examples = to_dspy_examples(raw[:1], "normalizer")

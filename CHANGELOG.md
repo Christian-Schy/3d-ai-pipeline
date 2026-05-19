@@ -10,6 +10,12 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-19
 
+- **DSPy Contract-Fails bereinigt.** `lochbild` wird im Pattern-Router
+  nicht mehr blind als Grid behandelt, wenn die Phrase eindeutig linear
+  ist (`entlang/abstand`); Runtime- und Training-Adapter sind wieder
+  synchron. Normalizer-Shortform-Contract um Grid-Keys (`rows`/`cols`/
+  `rasterabstand*`) und fehlende Richtungs-Demos fuer `versatz_*`/
+  `kante_*` ergaenzt. Ergebnis: volle lokale Testsuite gruen.
 - **Refactor-Pass: `assembler` zerlegt.** `src/codegen/assembler.py`
   (946 LOC Monolith) ist jetzt ein Package mit 4 Sub-Modulen
   (`core`/`feature_codegen`/`assembly`/`transforms`); Public API

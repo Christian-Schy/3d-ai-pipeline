@@ -151,6 +151,10 @@ def test_detect_classifier_subagent_routes_only_unambiguous_phrases():
     assert detect_classifier_subagent("oben ein lochmuster 4x3 rasterabstand 25mm") == "grid_classifier"
     assert detect_classifier_subagent("oben 4 eckbohrungen 20mm von den kanten") == "grid_classifier"
     assert detect_classifier_subagent("oben eine bohrungsreihe entlang x abstand 20mm") == "linear_classifier"
+    assert (
+        detect_classifier_subagent("links lochbild 3 bohrungen entlang z mit 10mm abstand")
+        == "linear_classifier"
+    )
     assert detect_classifier_subagent("oben eine fase 2mm") == "edge_feature_classifier"
     assert detect_classifier_subagent("oben eine tasche mit bohrung") is None
 
