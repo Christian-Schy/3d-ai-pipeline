@@ -1,6 +1,6 @@
 # 98 — Engineering-Capabilities-Plan (Roadmap fuer Cap 1.5-8.0)
 
-Stand: 2026-05-18.
+Stand: 2026-05-19.
 
 Dieses Dokument ist der konkrete **Bau-Plan** fuer die Engineering-Elemente,
 die `99_normen_audit.md` als Luecken identifiziert hat — gegliedert nach
@@ -29,10 +29,10 @@ Capability-Sprung noetig.
 | Item | Wo | Aufwand |
 |---|---|---|
 | ~~**Slot-Template Endradien** (`R = Breite/2`)~~ ✅ erledigt 2026-05-18 (Paket 4) | `src/codegen/templates.py` `slot`-Template | — |
-| ~~**Slot-Restwandstaerke-Validator** (Aussenkontur → Bauteilkante ≥ Mindest)~~ ✅ erledigt 2026-05-18 (Paket 4) | `src/tools/coordinate_validator.py` Check 11 | — |
+| ~~**Slot-Restwandstaerke-Validator** (Aussenkontur → Bauteilkante ≥ Mindest)~~ ✅ erledigt 2026-05-18 (Paket 4) | `src/tools/coordinate_validator/` Check 11 | — |
 | ~~**Pattern `start_angle_deg`-Vokabular** ("erste Bohrung bei 0°/90°")~~ ✅ erledigt 2026-05-19 (8e5da3e — Template+Assembler+Classifier+Demos+Tests, 8/8 live gruen) | `prompt_classifier_circular.py` + Demos | — |
-| ~~**Pattern Kind-Bohrung-Validation** (jede Bohrung im Pattern gegen Bauteilrand)~~ ✅ erledigt 2026-05-18 | `coordinate_validator.py` Check 12 (Grid/Linear/Kreis, Pattern-Rotation aware) | — |
-| ~~**Tasche rotiert: exakte Konturpruefung** statt bbox-Approximation~~ ✅ erledigt 2026-05-18 | `coordinate_validator.py` rotations-bewusste AABB | — |
+| ~~**Pattern Kind-Bohrung-Validation** (jede Bohrung im Pattern gegen Bauteilrand)~~ ✅ erledigt 2026-05-18, Schema-Key-Fix 2026-05-19 | `src/tools/coordinate_validator/` Check 12 (Grid/Linear/Kreis, Pattern-Rotation aware) | — |
+| ~~**Tasche rotiert: exakte Konturpruefung** statt bbox-Approximation~~ ✅ erledigt 2026-05-18 | `src/tools/coordinate_validator/` rotations-bewusste AABB | — |
 | ~~**Slot-Pipeline-Goldens-Heatmap** unter Mittellinien-Regel verifizieren~~ ✅ erledigt 2026-05-18 (Paket 1.5) | Ollama-Heatmap-Run | — |
 | ~~**NEST `hole_classifier`-Fix** (Ecken-Regel `abstand_*` statt `versatz_*`)~~ ✅ erledigt 2026-05-18 (Paket 2 — 8 Eck-Demos + agent_regression NEST-Case, 84/84 live gruen) | klassifizierer_traces + demo-pool rebuild | — |
 
@@ -304,8 +304,8 @@ Details siehe CLAUDE.md "Architektur-Notizen fuer spaeter".
 CLAUDE.md hat eine Reihenfolge 1.0→2.0→6.0→1.5→4.0→7.0→8.0→3.0→5.0→9.0.
 Aus B2B-Sicht (Verkaufsziel) waere ein leicht angepasster Pfad sinnvoll:
 
-1. **Cap 1.0 Quick-Wins** abschliessen (Endradien, Pattern-start_angle,
-   NEST-Klassifizierer-Fix, Heatmap-Verifikation).
+1. **Cap 1.0 Baseline halten** (Quick-Wins sind umgesetzt; relevante
+   Pipeline-Heatmaps nach Agent-/Demo-Aenderungen erneut laufen lassen).
 2. **Cap 2.0 Modifications** (Templates statt Coder).
 3. **Cap 4.0 Connections** — bringt sofortigen B2B-Wert (Senkungen,
    Gewinde sind die haeufigsten "fehlt mir das" beim Konstrukteur).

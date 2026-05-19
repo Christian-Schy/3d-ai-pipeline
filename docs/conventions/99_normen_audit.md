@@ -1,6 +1,6 @@
 # 99 - Normen-Audit und Pipeline-Luecken
 
-Stand: 2026-05-18.
+Stand: 2026-05-19.
 
 Dieses Dokument ist eine Arbeitsliste fuer die Konventions-Bibliothek. Es
 zeigt, wo die aktuellen Docs bereits als Pipeline-Konvention brauchbar sind,
@@ -57,11 +57,11 @@ Kontext genannt werden:
 
 | Datei | Befund | Handlung |
 |---|---|---|
-| `10_masseintragung_din406.md` | Titel und Referenzen fuehren DIN 406 als aktive Grundlage. Zudem wird `edge-to-CENTER` fuer Pockets als Default gesetzt, was eher Pipeline-Konvention als Normregel ist. | Umbenennen/umschreiben auf ISO-129-orientierte Masseintragung; DIN 406 nur historisch nennen. |
+| `10_masseintragung_din406.md` | Inhalt ist auf ISO 129-1 umgestellt; Dateiname enthaelt DIN 406 noch aus Link-Stabilitaetsgruenden. `edge-to-CENTER` fuer Pockets bleibt bewusst Pipeline-Konvention, nicht pauschale Normregel. | Beim naechsten Doku-Sweep Datei umbenennen; bis dahin DIN 406 nur historisch nennen. |
 | `20_bohrung_din.md` | Bohrung als point-like ist fuer CAD-Positionierung sinnvoll, aber technische Zeichnungen koennen Bohrungen ueber Achsen, Mittellinien, Lochbilder, Datums, Passungen, Gewinde, Senkungen und Toleranzen spezifizieren. | Bohrungs-Konvention in Basis-Geometrie und Engineering-Angaben splitten. |
-| `21_nut_slot_din.md` | Slot-Length edge-to-EDGE und Width edge-to-CENTER ist plausibel, aber als DIN-Regel zu stark formuliert. Rotierte Slots fallen auf edge-to-CENTER zurueck. | **Konvention erledigt 2026-05-18:** auf Mittellinien-Bezug umgestellt (norm-treu, beide Achsen edge-to-center). Code-Migration + Slot-Golden-Rework + Endradien-Template + Restwandstaerke-Validator offen — siehe Nut/Slot-Sektion unten. |
+| `21_nut_slot_din.md` | Fruehere Slot-Length-edge-to-EDGE-Regel war als DIN-Regel zu stark formuliert. | **Erledigt 2026-05-18:** auf Mittellinien-Bezug umgestellt (beide Achsen edge-to-center). Code, Component-Goldens, Pipeline-Heatmap, Endradien-Template und Restwandstaerke-Validator sind migriert. |
 | `22_tasche_din.md` | A1 edge-to-CENTER fuer Taschen ist nutzbar, aber nicht immer Konstrukteur-Default. A5 wird als A1 reduziert, obwohl eine technische Zeichnung auch Feature-Ecken und Bezugssysteme nutzen kann. | **Ueberprueft 2026-05-18:** Doc ist weitgehend in Ordnung. A5=A1 ist schon korrekt umgesetzt (deckt Schritt-1 Ecken-Regel). Feature-Ecke der Tasche → A2-dual ist sauber separiert. Norm-Verweise aktualisiert. Plan-Bucket-Punkte (Bodendetails, Datum, rotierte Kontur) bleiben — siehe Tasche-Sektion. |
-| `24_pattern_din.md` | Grid/Linear A1 auf aeusserste Bohrung, Kreis A1 auf Pattern-Center ist praktikabel, aber nicht allgemein normativ. Startwinkel und Kind-Feature-Pruefung sind unvollstaendig. | **Ueberprueft 2026-05-18:** A1-Bezugspunkt pro Typ entspricht der ueblichen Drawing-Konvention (Teilkreis-Mitte / aeusserste Bohrung); ist als Default richtig. A5=A1 fuer Kreis ist schon korrekt umgesetzt. Norm-Verweise aktualisiert. Offen bleibt: `start_angle_deg`-Vokabular nicht implementiert, `coordinate_validator` prueft keine Kind-Bohrungen, Toleranzen pro Lochbild, gemischte Kind-Features (Slot/Tasche in Pattern). |
+| `24_pattern_din.md` | Grid/Linear A1 auf aeusserste Bohrung, Kreis A1 auf Pattern-Center ist praktikabel, aber nicht allgemein normativ. | **Nachgeprueft 2026-05-19:** A1-Bezugspunkt pro Typ ist als Pipeline-Default richtig. `start_angle_deg`-Vokabular ist implementiert. `coordinate_validator` Check 12 prueft Kind-Bohrungen und wurde auf die echten Pipeline-Keys `hole_diameter`/`bolt_circle_diameter` nachgezogen. Offen bleiben Toleranzen pro Lochbild und gemischte Kind-Features (Slot/Tasche in Pattern). |
 | `25_plate_din.md` | Plate-Stacking ist CAD-Assembly-/Mate-Logik, nicht klassische Einzelteil-Zeichnungsnorm. B1/C3 und Bottom-/Side-Stack sind noch lueckenhaft. | **Ueberprueft 2026-05-18:** A5-Sektion enthielt das alte Anker-Modell und produzierte ueberhaengende Plate-Platzierungen (P08). Auf Schritt-1-Regel (Ecke = A1) umgestellt + Ueberhang-Warnung + Empfehlung A2 (`kante_*`) fuer Eck-zu-Eck-Anlage. Plate-Golden-Rework: P08-aehnliche Eck-Specs auf `kante_*` umstellen. Offen bleibt: B1/C3-Coverage-Luecken, Bottom-Stack, echte Mate-Semantik (Cap 5.0), Feature-Zuordnung bei gestapelter Platte. |
 | `26_edge_features_din.md` | DIN 6784 ist zurueckgezogen. ISO 13715 behandelt Kanten unbestimmter Gestalt; symmetrische 45-Grad-Fase per `C2` ist nur ein Teilfall. E2 und Innen-/Aussenkanten fehlen. | **Ueberprueft 2026-05-18:** Konzeptuelle Trennung eingezogen — definierte Fase/Rundung (ISO 129-1, Cx/Rx) ist der Scope dieses Docs; ISO 13715 (Kantenzustand fuer unbestimmte Kanten, Symbole `±`/`-`/`+`) ist eigene Capability und nicht implementiert (Plan-Bucket). Norm-Verweise aktualisiert. Offen: E2-Coverage, asymmetrische Fase (`C2×3`, ≠ 45°), Innen-/Aussenkanten-Filter, Reihenfolge-Validator (Fasen vor Rundungen). |
 | `11_coverage_matrix.md` | Matrix enthaelt Widersprueche: Bohrung A5 als Pflicht, aber Feature-Doc sagt nicht anwendbar; Pattern A5 in Matrix aus, Feature-Doc testet A5; Plate C3 ist als Pflicht/TBD inkonsistent. | **Erledigt 2026-05-18:** A5 als Methode neu definiert (= A1 Ecken-Regel, kein eigenes Anker-Schema). Feature-Table harmonisiert: Slot/Pattern A5 = "✓(=A1)" mit Legende-Eintrag. Plate C2/C3 Combined-Cell-Status als Plan-Bucket dokumentiert. `anker.md`-Widerspruch weg, Wording-Pool + Ueberhang-Hinweis im Methoden-Block aktualisiert. |
@@ -185,14 +185,17 @@ Aktuell gut:
 
 - Grid, Linear-Reihe, Teilkreis.
 - Anzahl, Abstand, Teilkreis-Durchmesser.
+- Startwinkel / erste Bohrung (`start_angle_deg`) fuer Kreis-Pattern.
+- Kind-Bohrungen werden gegen Bauteilgrenzen validiert
+  (Grid/Linear/Kreis, Pattern-Rotation beruecksichtigt).
 
 Noch offen:
 
-- Erste Bohrung / Startwinkel ist dokumentiert, aber nicht implementiert.
-- Randabstand kann aeusserste Bohrung oder Pattern-Center meinen; das muss
-  im Schema explizit werden.
-- Kind-Bohrungen werden nicht vollstaendig gegen Bauteilgrenzen validiert.
+- Randabstand kann aeusserste Bohrung oder Pattern-Center meinen; der
+  aktuelle Default ist typabhaengig (Grid/Linear outermost-Hole, Kreis
+  Pattern-Center), aber spaeter sollte die Bezugsebene explizit werden.
 - Toleranzen pro Lochbild fehlen.
+- Gemischte Kind-Features (Slots/Taschen im Pattern) fehlen.
 
 ### Plate / Assembly
 
@@ -232,9 +235,9 @@ migriert, 325/325 Tests gruen).
 Roadmap fuer die naechsten Capability-Schritte → siehe
 [`98_engineering_plan.md`](98_engineering_plan.md):
 
-1. **Cap 1.0 Quick-Wins** (Slot-Endradien + Restwandstaerke-Validator,
-   Pattern `start_angle_deg`, NEST `hole_classifier`-Fix, Pipeline-Goldens-
-   Heatmap-Verifikation, Tasche-rotiert exakte Konturpruefung).
+1. **Cap 1.0 Quick-Wins** (NEST `hole_classifier`-Fix,
+   Pipeline-Goldens-Heatmap-Verifikation, weitere Validator-Gates fuer
+   reale Nutzerlaeufe).
 2. **Cap 2.0 Modifications** in Templates ueberfuehren (kein Coder).
 3. **Cap 4.0 Connections** — Senkungen, Gewinde, Stufenbohrungen
    (`98_engineering_plan.md` §Cap 4.0).
@@ -249,15 +252,14 @@ Erledigte Punkte aus diesem Audit (Walkthrough):
 - ✅ `11_coverage_matrix.md` A5-Widerspruch geloest (A5 = A1 Ecken-Regel).
 - ✅ A5/Eck-Phrase einheitlich aufgeloest in `10`, `20`, `22`, `24`, `25`, `26`.
 - ✅ Slot-Konvention auf Mittellinien-Bezug — Code + Resolver-Component-
-  Goldens migriert (Paket 1).
+  Goldens + Pipeline-Heatmap + Validator migriert.
 
 Offen aus diesem Audit:
 
-- Matrix-Feinheiten: Feature-Table A5-Spalte harmonisieren
-  (Pattern/Slot "—" → ✓(=A1)); Plate C3 vs Doc-TBD-Abgleich.
 - Neue Matrix "Zeichnungs-Bezugsarten" mit Datum/Feature-zu-Feature →
   kommt mit Cap 6.0 (siehe `98_engineering_plan.md` §Cap 6.0).
-- Pipeline-Goldens-Heatmap unter Mittellinien-Regel verifizieren
+- Pipeline-Goldens-Heatmap fuer Pattern-Sub-Agents nach Training/
+  Aktivierung verifizieren
   (Ollama).
 
 ## Quellen

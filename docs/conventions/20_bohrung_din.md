@@ -90,7 +90,7 @@ Side-Face-Spec, **nicht** zwei `versatz_*`.
 - **Feature-Builder:** [`src/tools/feature_builder.py`](../../src/tools/feature_builder.py)
   `_extract_edge_distances` / `_extract_center_offset` / Re-Routing fuer
   `_POCKET_EDGE_TYPES`-Ausschluss.
-- **Resolver:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
+- **Resolver:** [`src/tools/blueprint_resolver/compose.py`](../../src/tools/blueprint_resolver/compose.py)
   `_compute_offsets` Branch fuer `hole_single` (point-like, kein
   child_half-Subtract).
 

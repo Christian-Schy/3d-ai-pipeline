@@ -20,7 +20,7 @@ Position aus der Pattern-Regel — sie haben keine eigenen `abstand_*`-Werte.
 | Typ | Schema-Feld | Geometrie-Parameter |
 |---|---|---|
 | **Grid** (Raster n×m) | `hole_pattern_grid` | `rows`, `cols`, `spacing_x`, `spacing_y` |
-| **Kreis** (Teilkreis) | `hole_pattern_circular` | `count`, `pitch_diameter`, optional `start_angle_deg` |
+| **Kreis** (Teilkreis) | `hole_pattern_circular` | `count`, `bolt_circle_diameter`, optional `start_angle_deg` |
 | **Linear-Reihe** | `hole_pattern_linear` | `count`, `spacing`, `direction` (x/y) |
 
 Relevante Matrix-Zellen fuer Pattern-Center (siehe [`11_coverage_matrix.md`](11_coverage_matrix.md)):
@@ -75,8 +75,8 @@ A3 (`versatz_*` aus Mitte) referenziert weiterhin den **Pattern-Center**
 
 | Phrase | Schema |
 |---|---|
-| "Kreismuster aus 6 Bohrungen, Teilkreis-Durchmesser 40mm" | `count: 6, pitch_diameter: 40` |
-| "Lochkreis 8x Ø6 auf TK40, beginnt bei 0°" | `count: 8, hole_diameter: 6, pitch_diameter: 40, start_angle_deg: 0` |
+| "Kreismuster aus 6 Bohrungen, Teilkreis-Durchmesser 40mm" | `count: 6, bolt_circle_diameter: 40` |
+| "Lochkreis 8x Ø6 auf TK40, beginnt bei 0°" | `count: 8, hole_diameter: 6, bolt_circle_diameter: 40, start_angle_deg: 0` |
 
 ### Linear-Reihe-spezifische Geometrie
 
@@ -128,10 +128,10 @@ unterstuetzt.
 
 ### Kreis-Pattern: `start_angle_deg`-Vokabular
 
-Der Konstrukteur nennt selten `start_angle_deg` explizit. Default sollte
-0° sein (erste Bohrung bei 3-Uhr / +X). Wording wie "Lochkreis mit erster
-Bohrung oben" sollte zu `start_angle_deg: 90` aufgeloest werden — ist
-heute **nicht implementiert**, gehoert in Cov-4-STRESS.
+Der Konstrukteur nennt selten `start_angle_deg` explizit. Default ist
+0° (erste Bohrung bei 3-Uhr / +X). Wording wie "Lochkreis mit erster
+Bohrung oben" wird seit 2026-05-19 zu `start_angle_deg: 90`
+aufgeloest (Classifier/Demos/Template/Assembler abgesichert).
 
 ### "Verlauft nach" / Richtungs-Verb auf Linear-Reihe
 
@@ -151,8 +151,10 @@ Klassifizierer/Normalizer muss beides erkennen.
   (Bohrungsreihe) — je ein fokussierter Prompt mit Geometrie-Hints.
 - **Feature-Builder:** [`src/tools/feature_builder.py`](../../src/tools/feature_builder.py)
   Branch `feature_type == "hole_pattern_grid"` / `_linear` / `_circular`.
-- **Resolver:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
-  behandelt Pattern-Center wie ein Bohrungs-Center (point-like).
+- **Resolver:** [`src/tools/blueprint_resolver/compose.py`](../../src/tools/blueprint_resolver/compose.py)
+  behandelt Kreis-Pattern-Center wie ein Bohrungs-Center (point-like);
+  Grid/Linear A1 wird ueber den Pattern-Footprint auf die aeusserste
+  Bohrung bezogen.
 - **Templates:** [`src/codegen/templates.py`](../../src/codegen/templates.py)
   Pro Pattern-Typ ein Template, das die Kind-Bohrungen aus den Geometrie-
   Parametern aufzaehlt. `hole_pattern_grid` / `hole_pattern_linear` haben
@@ -203,7 +205,7 @@ Pro Test pflegen wir **D1** + **D2**. Pattern-Typ pro Test in Klammern.
   fuer Lochbilder: Teilkreis-Durchmesser + Anzahl + Winkel der ersten
   Bohrung (Kreis); Lochabstand + Anzahl + Position der aeussersten
   Bohrung (Grid/Linear).
-- **DIN EN ISO 5459:2024** — Datums und Datum-Systeme; Pattern-Center
+- **DIN EN ISO 5459:2025-12** — Datums und Datum-Systeme; Pattern-Center
   bzw. Teilkreis-Mitte als potentielles Datum (relevant ab Cap 7.0).
 - DIN 406 — historisch, zurueckgezogen (siehe
   [`99_normen_audit.md`](99_normen_audit.md)).

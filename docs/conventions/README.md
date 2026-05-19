@@ -38,8 +38,8 @@ Die Konventions-Bibliothek hilft beiden Seiten:
    konsistent dieselbe Konvention zu erkennen.
 2. **Deterministische Seite:** Resolver/Templates/Aggregator
    implementieren die hier dokumentierten Mathe-Regeln. Bei
-   geometrischen Mehrdeutigkeiten (z.B. Slot-Length-Achse) gewinnt
-   die DIN-Konvention.
+   geometrischen Mehrdeutigkeiten gewinnt die dokumentierte Pipeline-
+   Konvention, die sich an DIN/ISO-Bezugselementen orientiert.
 
 Wenn ein LLM-Call patzt: zuerst Demos/Prompt verbessern (Textverstaendnis-
 Problem). Erst wenn das nicht reicht: deterministischen Schutz im
@@ -62,15 +62,15 @@ Pro Capability eine Datei. Jede Datei enthaelt:
 
 | Nr. | Capability | Status |
 |---|---|---|
-| [10](10_masseintragung_din406.md) | Masseintragung allgemein (DIN 406, ISO 129) | aktiv |
+| [10](10_masseintragung_din406.md) | Masseintragung allgemein (ISO 129-1; DIN 406 historisch) | aktiv |
 | [11](11_coverage_matrix.md) | Coverage-Matrix (Test-Aufbau pro Feature) | aktiv |
 | [20](20_bohrung_din.md) | Bohrung (point-like, Matrix-abgeleitet) | aktiv (Pilot) |
-| [21](21_nut_slot_din.md) | Nut/Slot-Bemassung (Length-Achse vs Width-Achse) | aktiv |
+| [21](21_nut_slot_din.md) | Nut/Slot-Bemassung (Mittellinien-Bezug) | aktiv |
 | [22](22_tasche_din.md) | Tasche/Pocket-Bemassung | aktiv (Coverage-Matrix-abgeleitet) |
 | 23 | Polygon + Extended Primitives | TBD (Capability 1.5) |
 | [24](24_pattern_din.md) | Pattern (Grid/Kreis/Linear-Reihe) | aktiv (Coverage-Matrix-abgeleitet) |
 | [25](25_plate_din.md) | Plate-Assembly (Stack/Side/Auflage-Face) | aktiv (Coverage-Matrix-abgeleitet) |
-| [26](26_edge_features_din.md) | Edge Features (Fase / Rundung — DIN 6784 / ISO 13715) | aktiv (Coverage-Matrix-abgeleitet) |
+| [26](26_edge_features_din.md) | Edge Features (definierte Fase/Rundung; ISO 13715 separat) | aktiv (Coverage-Matrix-abgeleitet) |
 | 30 | Toleranzen ISO 286 (IT-Klassen, H7/g6) | TBD |
 | 31 | GD&T ISO 1101 (Form-/Lagetoleranzen) | TBD |
 | 40 | Norm-Bauteile DIN (Schrauben, Lager, Stifte) | TBD |
@@ -91,10 +91,9 @@ Pro Capability eine Datei. Jede Datei enthaelt:
 
 ## Ausnahmen
 
-Wenn die Pipeline absichtlich von der DIN-Konvention abweicht, MUSS das
+Wenn die Pipeline absichtlich von der DIN/ISO-nahen Konvention abweicht, MUSS das
 in der Datei begruendet werden — typisch weil eine Konvention im LLM-
-Pipeline-Setting nicht praktikabel ist. Beispiel-Begruendung:
-"DIN 406 erlaubt Centerline-zu-Edge fuer Slot-Width — wir nehmen
-edge-to-Center, weil Konstrukteur-Wording 'von linker Kante 12mm' bei
-schmalen Slots (≤3 mm Breite) ohnehin auf das Gleiche herauskommt und
-das LLM-Wording-Spektrum kleiner wird."
+Pipeline-Setting nicht praktikabel ist. Beispiel: Pattern-A1 ist in der
+Pipeline typabhaengig (Grid/Linear = aeusserste Bohrung, Kreis =
+Teilkreis-Mitte), weil das dem Konstrukteur-Wording in einfachen CAD-
+Specs stabiler entspricht als ein einziger pauschaler Default.

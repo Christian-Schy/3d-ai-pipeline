@@ -168,9 +168,9 @@ gewollt. Default ist flach.
 - **Assembly-Agent / Platzierer:** [`src/graph/nodes/planning_assembly_nodes.py`](../../src/graph/nodes/planning_assembly_nodes.py)
   bestimmt Stack-Richtung (Top vs Side) und Position der zweiten Platte
   relativ zur Grundplatte.
-- **Resolver:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
+- **Resolver:** [`src/tools/blueprint_resolver/`](../../src/tools/blueprint_resolver/)
   `_resolve_orientation` + `_compute_offsets` fuer Multi-Part-Setting.
-- **Assembler:** [`src/codegen/assembler.py`](../../src/codegen/assembler.py)
+- **Assembler:** [`src/codegen/assembler/`](../../src/codegen/assembler/)
   `MergeAssembler` verschmilzt mittels Union.
 
 ## Tests — Coverage-Matrix-abgeleitet

@@ -17,7 +17,7 @@ User-Spec (Original mit Korrektur am Anfang):
 > bohrung hin mit 10 tiefe, oben soll von der unteren kante 10mm und von
 > der linken seite 10mm entfernt eine 18mm bohrung hin mit 10 tiefe.
 
-## Resolver-Mathe (verifiziert gegen src/tools/blueprint_resolver.py)
+## Resolver-Mathe (verifiziert gegen src/tools/blueprint_resolver/)
 
 Wuerfel 200x200x200 → face=>Z, parent_w=parent_h=200, half=100.
 Bohrung ist hole-like → is_box=False → child_half=0.

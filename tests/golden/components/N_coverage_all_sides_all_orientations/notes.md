@@ -39,7 +39,8 @@ Klassifizierer-Hints, `feature_builder` rechnet `laenge`).
 - B3 ✓ (N12)
 - C0 ✓ (N02, N06, N08, N12)
 - C1 ✓ (N01, N03, N05, N07, N11) — Length-Achse != Default-X
-- C2/C3 (rotierte Slots) deferred — siehe unten
+- C2 ✓ (N09) — rotierter Slot CCW +30°
+- C3 ✓ (N10) — rotierter Slot CW -20°
 - **Alle 6 Seiten:** oben (N01-N03, N12), unten (N07), vorne (N06),
   hinten (N08), rechts (N05), links (N11).
 - **Orientierungen:** entlang X (N02, N06, N08, N12),
@@ -57,9 +58,9 @@ Konventions-Wahl pro Achse. Die bereits vorhandenen Normalizer-Demos
 `norm_slot_axb_entlang_laenge_rotation_cw` (N10 CW-Vorbild) decken
 "Nut entlang X-Achse um N° gedreht" stabil ab.
 
-Falls die Heatmap im Real-Run weiter flaky meldet: dedizierter
-Normalizer-Demo mit der exakten N09-/N10-Wording-Variante ergaenzen —
-Phase A bleibt offen bis Real-Run-PASS.
+N09/N10 sind aktiv und nach der Mittellinien-Migration weiterhin
+deterministisch: `abstand_*` setzt den Slot-Mittelpunkt, Rotation ist
+kein Sonderfall.
 
 ## Phase B — N04 aktiviert (2026-05-16)
 
@@ -71,9 +72,9 @@ Schema-getrieben geloest (ADR-0010-Muster):
   zwei Endpunkt-Distanzen + Bezugskante extrahieren, NICHT die Laenge
   rechnen, `richtung` aus den Punkten ableiten.
 - **`feature_builder._resolve_slot_endpoints`** bildet deterministisch
-  `laenge = |ende - anfang|` und `abstand_<kante> = min(anfang, ende)`
-  (frueherer Endpunkt = edge-to-EDGE-Start auf der Length-Achse). Reine
-  Arithmetik — kein Sprachverstaendnis im Code.
+  `laenge = |ende - anfang|` und `abstand_<kante> = (anfang+ende)/2`
+  (Mittelpunkt der Endpunkte = Slot-Mittellinie). Reine Arithmetik —
+  kein Sprachverstaendnis im Code.
 - 2 Klassifizierer-Demos (X-/Y-Achse) + 1 Normalizer-Demo +
   Normalizer-Prompt-Beispiel. N04 als `n04_oben_a1_b2_c0_endpoints` in
   Pipeline + Resolver Golden.
@@ -84,28 +85,27 @@ Der `feature_builder` liest seit dieser Session `rotation_deg` zusaetzlich
 zu `drehung/winkel/angle/rotation` — damit der Klassifizierer-Output-Key
 direkt durchgeht, sobald der Normalizer ihn nicht mehr verschluckt.
 
-## Resolver-Mathe — Slot per-Achsen-DIN
+## Resolver-Mathe — Slot-Mittellinien-Bezug
 
-Slot-Konvention: Length-Achse = edge-to-EDGE (Nut-Endpunkt ist
-fertigungsrelevant), Width-Achse = edge-to-CENTER (Centerline ist
-Werkzeug-Referenz). `angle_deg` bestimmt welche Face-Achse die Laenge
-ist: 0 → face-X, 90 → face-Y.
+Slot-Konvention seit 2026-05-18: `abstand_*` misst auf beiden Achsen
+von der Bauteilkante zur Slot-Mittellinie / zum Slot-Mittelpunkt.
+`pocket_edge_distances` bleibt der explizite edge-to-EDGE-Pfad fuer
+Restwandstaerke-/Endkanten-Bemassung.
 
 Wuerfel 120x90x50 → Face-Half:
 - `>Z`/`<Z`: (60, 45) — `>Y`/`<Y`: (60, 25) — `>X`/`<X`: (45, 25)
 
 Beispiel N01 (oben, angle 90, w5 l40, `edge_distances {left:12, top:18}`):
-- `left` (wx, Width-Achse) edge-to-CENTER: ox = -(60-12) = **-48**
-- `top` (wy, Length-Achse) edge-to-EDGE: oy = +(45 - 18 - 40/2) = **+7**
+- `left` (wx) Mittellinie: ox = -(60-12) = **-48**
+- `top` (wy) Mittellinie: oy = +(45-18) = **+27**
 
 Beispiel N02 (oben, angle 0, w5 l40, `edge_distances {vorne:12, left:18}`):
-- `left` (wx, Length-Achse) edge-to-EDGE: ox = -(60 - 18 - 40/2) = **-22**
-- `vorne` (wy, Width-Achse) edge-to-CENTER: oy = -(45-12) = **-33**
+- `left` (wx) Mittellinie: ox = -(60-18) = **-42**
+- `vorne` (wy) Mittellinie: oy = -(45-12) = **-33**
 
-N09/N10: bei nicht-rechtwinkliger Rotation (30°/-20°) faellt die
-per-Achsen-Logik auf die konservative bbox-Approximation zurueck
-(beide Achsen edge-to-CENTER) — bekannte Limitation, in Konvention 21
-dokumentiert.
+N09/N10: bei nicht-rechtwinkliger Rotation (30°/-20°) bleibt die
+Position Mittelpunkt + Winkel. Die Aussenkontur wird separat durch den
+Restwandstaerke-Validator AABB-bewusst geprueft.
 
 ## Status — Pipeline + Resolver gruen
 
@@ -128,7 +128,7 @@ mit leicht anderem Wording -45.5. Zwei Fixes haben das geloest:
 - Klassifizierer-Pfad fuer Nut auf allen 6 Seiten
 - A1/A2-Disambiguierung (`abstand_*` vs `kante_*`)
 - Orientierungs-Erkennung: "entlang X/Y/Z", Richtungs-Verb, "parallel zu"
-- Slot per-Achsen-DIN (Length edge-to-edge, Width edge-to-center)
+- Slot-Mittellinien-Bezug (`abstand_*` edge-to-center auf beiden Achsen)
 - Resolver-Math fuer alle Edge-Distance-/Center-Offset-Pfade
 - Multi-Feature-Aggregation auf einem Bauteil
 

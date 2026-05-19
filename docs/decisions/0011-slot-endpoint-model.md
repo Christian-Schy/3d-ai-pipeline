@@ -30,8 +30,8 @@ Analog ADR 0010 schema-getrieben, mit klarer Schicht-Trennung:
    Textverstaendnis.
 3. **Der Code rechnet.** `feature_builder._resolve_slot_endpoints`
    bildet `laenge = |ende - anfang|` und
-   `abstand_<kante> = min(anfang, ende)` — der fruehere Endpunkt ist der
-   edge-to-EDGE-Start auf der Length-Achse (DIN-Slot-Konvention 21).
+   `abstand_<kante> = (anfang + ende) / 2` — der Mittelpunkt der beiden
+   Endpunkte ist die Slot-Mittellinie (aktuelle Slot-Konvention 21).
    Reine Arithmetik, kein Sprachverstaendnis.
 
 Die Endpunkt-Aufloesung sitzt im `feature_builder` (vor `_build_params`),
@@ -44,6 +44,13 @@ brauchen keine Parent-Dimensionen, nur die zwei Zahlen.
 - Schema additiv (Schema-Stabilitaet gewahrt).
 - Konsistent mit ADR 0010: LLM = Textverstaendnis, Code = Arithmetik /
   geschlossenes Vokabular.
+
+## Nachtrag 2026-05-18
+
+Konvention 21 wurde von der frueheren per-Achse-Regel auf einheitlichen
+Mittellinien-Bezug umgestellt. Die ADR-Entscheidung bleibt gleich
+(Endpunkte extrahieren, Code rechnet), aber die abgeleitete
+`abstand_*`-Semantik ist jetzt der Mittelwert statt `min(...)`.
 
 ## Grenzen / offen
 

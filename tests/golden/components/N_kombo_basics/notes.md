@@ -16,7 +16,7 @@ User-Spec (Phase N.1 — Combo aus 9 Variationen):
 > rechts eine nut 5x5 entlang y-achse laenge 40mm mittig,
 > oben eine nut 5x5 entlang y-achse laenge 40mm liegt auf rechter kante an,
 > 10mm nach oben versetzt,
-> oben eine nut 5x5 entlang y-achse laenge 30mm obere rechte ecke 10mm nach
+> oben eine nut 5x5 entlang y-achse laenge 30mm obere rechte ecke 25mm nach
 > unten und 20mm nach links versetzt,
 > oben eine nut 5x5 entlang x-achse laenge 50mm 15 grad gegen uhrzeigersinn
 > gedreht zentral.
@@ -37,7 +37,7 @@ User-Spec (Phase N.1 — Combo aus 9 Variationen):
 - Echte Rotation kombiniert mit Achsen-Konvention:
   "entlang x-achse + 15 grad gedreht" → angle = 0 + 15 = 15.
 
-## Resolver-Mathe (verifiziert gegen src/tools/blueprint_resolver.py)
+## Resolver-Mathe (verifiziert gegen src/tools/blueprint_resolver/)
 
 100mm Wuerfel → face >Z: parent_w=parent_h=100, half=50,50.
 Face >X: parent_w=100 (y), parent_h=100 (z), half=50,50.
@@ -100,9 +100,9 @@ versetzt"):
 
 - center_offset (Versatz): nut_versatz_rechts_y_l40, nut_versatz_rechts_x_durchg
 - edge_distances zwei Achsen: nut_kanten_top30_left20_y_l40
-- Mischung Achsen B3: nut_mix_axes_x_l50 (`pocket_edge_distances` + `center_offset`)
+- Mischung Achsen B3: nut_mix_axes_x_l50 (`edge_distances` + `center_offset`)
 - anchor parent_point=edge: nut_anchor_right_edge_y_l40
-- Ecken-Regel (zwei abstand_*, DIN per-Achse): nut_ecke_oben_rechts_y_l30
+- Ecken-Regel (zwei abstand_*, Mittellinien-Bezug): nut_ecke_oben_rechts_y_l30
 - echte Rotation: nut_rotated_x_l50
 - Andere Face (>X): nut_rechts_face_y_l40
 - explizite Laenge vs durchgaengig: alle haben explizite Laenge ausser nut_versatz_rechts_x_durchg

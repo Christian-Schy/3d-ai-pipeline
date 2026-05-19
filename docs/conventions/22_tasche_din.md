@@ -99,7 +99,7 @@ Tasche), soll die User-Spec das explizit sagen ("ragt 5mm ueber den Rand").
 Wenn das **unerwollt** ist, sollte die Phrase A2 (`kante_*`) verwenden
 ("die vordere Taschen-Kante 8mm vom vorderen Rand") — dann passt's.
 
-Der `coordinate_validator` ([`src/tools/coordinate_validator.py`](../../src/tools/coordinate_validator.py))
+Der `coordinate_validator` ([`src/tools/coordinate_validator/`](../../src/tools/coordinate_validator/))
 warnt deterministisch bei pocket-ueberragt. Aktuelle Behandlung: nur
 Warning, nicht harter Fehler — der User darf das wollen.
 
@@ -132,7 +132,7 @@ auf Side-Faces (vorne/hinten/links/rechts) als A2 akzeptieren.
   **TODO:** Trigger-Regel fuer A2 ohne "deren" + explizite A3-Regel ergaenzen.
 - **Feature-Builder:** [`src/tools/feature_builder.py`](../../src/tools/feature_builder.py)
   `_extract_edge_distances` / `_extract_pocket_edge_distances` / `_extract_center_offset`.
-- **Resolver:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
+- **Resolver:** [`src/tools/blueprint_resolver/compose.py`](../../src/tools/blueprint_resolver/compose.py)
   `_compute_offsets` Branch fuer `pocket_rect` — `pocket_edge_distances`
   subtrahiert `pocket_half` von der Distanz, edge-to-edge wird zu
   edge-to-center umgerechnet.

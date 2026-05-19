@@ -1,7 +1,7 @@
 # NEST_kombo_basics — 6 Bohrung-in-Tasche Variationen
 
 Stress-Test fuer den feature-in-feature Resolver-Pfad
-`_resolve_feature_in_feature` in `src/tools/blueprint_resolver.py`. Wenn
+`_resolve_feature_in_feature` in `src/tools/blueprint_resolver/`. Wenn
 `parent_id` auf eine subtraktive Tasche zeigt (`pocket_rect`, `slot`,
 `groove`, `cutout`), berechnet der Resolver die Bohrungs-Offsets im
 LOKAL-FRAME der Tasche (statt im Part-Face-Frame), rotiert sie um den

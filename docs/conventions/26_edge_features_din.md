@@ -139,7 +139,7 @@ implementiert** — Template `chamfer` nimmt nur einen Groessen-Parameter
 - **Feature-Builder:** [`src/tools/feature_builder.py`](../../src/tools/feature_builder.py)
   Branch `feature_type in ("fillet", "chamfer")` — extrahiert `radius`
   bzw. `size` aus Hints, mappt Kanten-Auswahl-Wording auf `edge_selector`.
-- **Resolver:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
+- **Resolver:** [`src/tools/blueprint_resolver/`](../../src/tools/blueprint_resolver/)
   Edge-Features brauchen **keinen** Resolver-Schritt (kein
   Pattern-Center, kein face-aware Offset) — Resolver setzt sie direkt
   durch.

@@ -144,9 +144,10 @@ inkrementell.
 - **Feature-Builder:** [`src/tools/feature_builder.py`](../../src/tools/feature_builder.py)
   `_extract_edge_distances` / `_extract_pocket_edge_distances` /
   `_extract_center_offset`. Mappt Klassifizierer-Output auf Schema-Felder.
-- **Resolver:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
-  `_compute_offsets` und `_apply_edge_distances_axis`. Wendet die
-  geometrische Konvention an.
+- **Resolver:** [`src/tools/blueprint_resolver/compose.py`](../../src/tools/blueprint_resolver/compose.py)
+  `_compute_offsets` und
+  [`offsets.py`](../../src/tools/blueprint_resolver/offsets.py)
+  `_apply_edge_distances_axis`. Wendet die geometrische Konvention an.
 
 ## Tests
 
@@ -171,4 +172,5 @@ inkrementell.
 ## Stand
 
 Aktiv seit Capability 1.0 (heutige Pocket/Bohrung-Logik). Slot-Sub-
-Konvention seit 2026-05-14 (ADR 0008-Foundation, Resolver per-Achse-Logik).
+Konvention seit 2026-05-18 auf Mittellinien-Bezug harmonisiert; die
+fruehere per-Achse-Regel ist abgeloest.

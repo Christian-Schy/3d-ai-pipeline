@@ -123,11 +123,11 @@ die Endkante explizit → `kante_*` (`pocket_edge_distances`, edge-to-EDGE).
   → `kante_*`.
 - **Feature-Builder:** [`src/tools/feature_builder.py`](../../src/tools/feature_builder.py)
   `_SLOT_AXIS_TO_ANGLE` Mapping side+axis → angle_deg. Slot-Length aus
-  Spec ueber `_fill_missing_slot_length` falls fehlend.
-- **Resolver:** [`src/tools/blueprint_resolver.py`](../../src/tools/blueprint_resolver.py)
+  normalisierten Parametern bzw. Anfangs-/Endpunkt-Phrasen.
+- **Resolver:** [`src/tools/blueprint_resolver/compose.py`](../../src/tools/blueprint_resolver/compose.py)
   `_compute_offsets` — Slot-per-Achse-Branch entfernt (2026-05-18);
-  Slot ist `_HOLE_LIKE_PREFIXES` → `is_box=False` → edge-to-CENTER auf
-  beiden Achsen, ohne `child_half`-Abzug, wie bei `hole_single`.
+  Slot ist hole-like → `is_box=False` → edge-to-CENTER auf beiden
+  Achsen, ohne `child_half`-Abzug, wie bei `hole_single`.
 - **Slot-Footprint:** `_get_child_face_size` mit `feat_type="slot"`
   wird fuer `pocket_edge_distances` (explizites edge-to-EDGE) weiter
   gebraucht; fuer den `abstand_*`-Default-Pfad nicht mehr.
@@ -145,12 +145,14 @@ die Endkante explizit → `kante_*` (`pocket_edge_distances`, edge-to-EDGE).
 
 - Unit: [`tests/tools/test_kante_vs_abstand.py`](../../tests/tools/test_kante_vs_abstand.py)
   `test_kante_top_left_on_y_slot_uses_width_and_length` — explizite
-  pocket_edge_distances bei Slot.
+  `pocket_edge_distances` bei Slot; Slot-Footprint aus `length`/`width`
+  wird fuer edge-to-EDGE korrekt genutzt.
 - Component-Goldens: [`tests/golden/components/N_kombo_basics/`](../../tests/golden/components/N_kombo_basics/)
-  `nut_kanten_top30_left20_y_l40` — `abstand_*` mit per-Achse-DIN-Logik
-  (ox=-30 edge-to-CENTER, oy=0 edge-to-EDGE).
+  `nut_kanten_top30_left20_y_l40` — `abstand_*` nach Mittellinien-
+  Konvention (ox=-30, oy=+20).
 - Pipeline-Goldens: [`tests/golden/components/V2_balanced_feature_palette/`](../../tests/golden/components/V2_balanced_feature_palette/)
-  `slot_top_y_edge` — Real-Pipeline-Verifikation, ox=-48, oy=+7.
+  `slot_top_y_edge` — Real-Pipeline-Verifikation, ox=-48, oy=+27
+  nach Mittellinien-Bezug.
 - DSPy-Demos: 8 Slot-Demos in [`data/dspy_training/klassifizierer_traces.py`](../../data/dspy_training/klassifizierer_traces.py)
   (5 mit `abstand_*` fuer "von X-kante", 3 mit `kante_*` fuer "deren
   X-kante" / "die X-kante" / "liegt X-kante an").
@@ -220,7 +222,7 @@ Slot. Test prueft weiterhin, dass der Slot innerhalb des Bauteils landet
 
 - **DIN EN ISO 129-1:2022-02** — Eintragung von Massen und Toleranzen
   (Primaer-Anker; loest die zurueckgezogene DIN 406-12 ab).
-- **DIN EN ISO 5459:2024** — Datums und Datum-Systeme (relevant sobald
+- **DIN EN ISO 5459:2025-12** — Datums und Datum-Systeme (relevant sobald
   Slot-Position toleranzbehaftet auf ein Datum bezogen wird, Cap 7.0).
 - DIN 406-12 — historisch, zurueckgezogen.
 
@@ -228,5 +230,5 @@ Slot. Test prueft weiterhin, dass der Slot innerhalb des Bauteils landet
 
 Mittellinien-Bezug als Konvention seit 2026-05-18 (Schritt 3 Konventions-
 Audit). Die fruehere per-Achse-Regel (implementiert 2026-05-14, Commits
-c5f888d / 4ae367d) ist abgeloest; Code-Umstellung + Slot-Golden-Rework
-offen (Migrations-Status oben).
+c5f888d / 4ae367d) ist abgeloest; Code, Component-Goldens,
+Slot-Template-Endradien und Restwandstaerke-Validator sind migriert.
