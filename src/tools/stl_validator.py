@@ -15,9 +15,10 @@ Why this matters:
   error loop automatically.
 """
 
-import structlog
 from dataclasses import dataclass, field
 from pathlib import Path
+
+import structlog
 
 log = structlog.get_logger()
 

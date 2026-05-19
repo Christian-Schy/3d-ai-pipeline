@@ -9,10 +9,10 @@ Usage in app.py:
     # to update:  gr.update(value=stl_to_iframe_html(stl_path))
 """
 from __future__ import annotations
+
 import base64
 import os
 import struct
-
 
 # --------------------------------------------------------------------------- #
 # Canvas 2D iframe renderer (no WebGL)                                        #

@@ -11,11 +11,12 @@ Common logic lives here once — not repeated in every agent:
 
 import json
 import socket
-import urllib.request
 import urllib.error
-import structlog
+import urllib.request
 from pathlib import Path
-from typing import Optional
+
+import structlog
+
 from src.config.loader import get_config
 
 log = structlog.get_logger()
@@ -49,7 +50,7 @@ class BaseAgent:
     # Subclasses define how to format demos into (user_msg, assistant_msg) pairs.
     # Keys: input_fields (list of demo keys for the user message),
     #        output_field (demo key for the assistant response).
-    dspy_demo_fields: Optional[dict] = None
+    dspy_demo_fields: dict | None = None
 
     def __init__(self):
         self.log = structlog.get_logger().bind(agent=self.name)
@@ -110,7 +111,7 @@ class BaseAgent:
         prompt: str,
         system: str = "",
         json_mode: bool = False,
-        demos: Optional[list[tuple[str, str]]] = None,
+        demos: list[tuple[str, str]] | None = None,
     ) -> str:
         """Send a prompt to Ollama and return the raw response text.
 
@@ -233,7 +234,7 @@ class BaseAgent:
         self,
         prompt: str,
         system: str = "",
-        demos: Optional[list[tuple[str, str]]] = None,
+        demos: list[tuple[str, str]] | None = None,
     ) -> dict:
         """Like call(), but parses the response as JSON and returns a dict.
 
@@ -259,7 +260,7 @@ class BaseAgent:
                 raw2 = self.call(prompt, system=system, json_mode=True, demos=demos)
                 clean2 = self._extract_json(raw2)
                 return json.loads(clean2)
-            except (json.JSONDecodeError, Exception) as e2:
+            except (json.JSONDecodeError, Exception):
                 self.log.error("agent_json_parse_failed",
                                error=str(e), raw_response=raw[:300])
                 raise ValueError(
@@ -350,7 +351,7 @@ class BaseAgent:
                     "Is 'ollama serve' running?"
                 ) from e
 
-            except (TimeoutError, socket.timeout) as e:
+            except TimeoutError as e:
                 if attempt < max_retries - 1:
                     delay = base_delay * (2 ** attempt)
                     structlog.get_logger().warning(

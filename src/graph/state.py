@@ -62,8 +62,9 @@ PipelineState-Felder, gruppiert nach Producer-Node:
 
 import operator
 from typing import Annotated, Any
-from typing_extensions import TypedDict
+
 from langgraph.graph.message import add_messages
+from typing_extensions import TypedDict
 
 
 class PipelineState(TypedDict):

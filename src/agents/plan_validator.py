@@ -17,12 +17,14 @@ Model: qwen3.5:9b — logic validation, no CadQuery knowledge needed.
 """
 
 import json
+
 import structlog
+
 from src.agents.base import BaseAgent
 from src.config.loader import get_config
 from src.graph.state import PipelineState
-from src.utils.prompt_loader import load_prompt
 from src.rag.plan_validator_rag import PlanValidatorRAG
+from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
 

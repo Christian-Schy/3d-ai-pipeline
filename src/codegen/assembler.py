@@ -50,7 +50,7 @@ Feature-Type-Mapping (_generate_subtract):
 """
 
 from __future__ import annotations
-from src.codegen.feature_classifier import is_standard
+
 from src.codegen import templates as T
 
 
@@ -76,7 +76,7 @@ def generate_code(blueprint: dict) -> str:
     lines.append("import cadquery as cq")
     lines.append("from cadquery.selectors import NearestToPointSelector")
     lines.append("")
-    lines.append(f"OUTPUT_PATH = 'output.stl'")
+    lines.append("OUTPUT_PATH = 'output.stl'")
     lines.append("")
 
     # Phase 1: Generate constants
@@ -645,9 +645,7 @@ def _generate_sub_assembly_builds(
             # whose effective body-owner walks back to this sub-assembly
             # (e.g. hole-in-pocket where pocket.parent == sa_fid).
             if op in ("subtract", "cut", "modify"):
-                if feat.get("parent") == sa_fid:
-                    subtract_children.append(fid)
-                elif _resolve_part_root(fid, features) == sa_fid:
+                if feat.get("parent") == sa_fid or _resolve_part_root(fid, features) == sa_fid:
                     subtract_children.append(fid)
 
         if not subtract_children and not add_children:
@@ -664,7 +662,7 @@ def _generate_sub_assembly_builds(
         # after subtractions, which causes drift on later operations).
         # See run 81505d2f for the bug pattern this prevents.
         if subtract_children:
-            lines.append(f"    _ref = result")
+            lines.append("    _ref = result")
 
         # 1) Apply subtract-children (holes, slots, modifiers)
         for child_fid in subtract_children:
@@ -705,7 +703,7 @@ def _generate_sub_assembly_builds(
             lines.append(f"    {clean_child} = {clean_child}.translate({translate_code})")
             lines.append(f"    result = result.union({clean_child}).clean()")
 
-        lines.append(f"    return result")
+        lines.append("    return result")
         lines.append("")
 
     return lines
@@ -740,14 +738,12 @@ def _generate_assemble(
             continue
         # Direct child of root, OR feature-in-feature whose effective
         # body-owner walks back to root (e.g. hole-in-pocket-on-root).
-        if feat.get("parent") == root_id:
-            base_subtract_fids.append(fid)
-        elif _resolve_part_root(fid, features) == root_id:
+        if feat.get("parent") == root_id or _resolve_part_root(fid, features) == root_id:
             base_subtract_fids.append(fid)
 
     # _ref: unmodified body snapshot for stable face origins (see assembler.py:540 comment).
     if base_subtract_fids:
-        lines.append(f"    _ref = result")
+        lines.append("    _ref = result")
     for fid in base_subtract_fids:
         func = func_map.get(fid)
         if func:
@@ -780,7 +776,7 @@ def _generate_assemble(
             build_func = func_map.get(sa_fid, f"make_{sa_fid}")
 
         clean_fid = sa_fid.replace("-", "_").replace(" ", "_")
-        lines.append(f"")
+        lines.append("")
         lines.append(f"    # --- Sub-assembly: {sa_fid} ---")
         lines.append(f"    {clean_fid} = {build_func}()")
 
@@ -865,8 +861,8 @@ def _emit_face_rotation(
     a = float(angle_deg)
     # Map face → axis through centroid. Z-axis rotations translation-invariant.
     axis_map = {
-        ">Z": f"(0, 0, 0), (0, 0, 1)",
-        "<Z": f"(0, 0, 0), (0, 0, 1)",
+        ">Z": "(0, 0, 0), (0, 0, 1)",
+        "<Z": "(0, 0, 0), (0, 0, 1)",
         ">X": f"(0, 0, {sa_z}/2), (1, 0, {sa_z}/2)",
         "<X": f"(0, 0, {sa_z}/2), (1, 0, {sa_z}/2)",
         ">Y": f"(0, 0, {sa_z}/2), (0, 1, {sa_z}/2)",

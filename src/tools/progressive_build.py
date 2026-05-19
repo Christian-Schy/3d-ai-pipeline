@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import ast
 import re
-import textwrap
+
 import structlog
 
 log = structlog.get_logger()

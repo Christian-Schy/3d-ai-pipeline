@@ -20,7 +20,7 @@ shape that downstream nodes already consume.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 import structlog
 
@@ -32,9 +32,9 @@ _ORIENTATION_FLACH = ("flach", "liegend")
 
 
 def aggregate(
-    features: List[Dict[str, Any]],
-    teile: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+    features: list[dict[str, Any]],
+    teile: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Build teil_definitionen[] from per-action features and the teil list.
 
     Args:
@@ -52,7 +52,7 @@ def aggregate(
         `parent` rewritten to the parent-pocket's feature_id where the
         original phrase was nested.
     """
-    by_teil: Dict[str, List[Dict[str, Any]]] = {}
+    by_teil: dict[str, list[dict[str, Any]]] = {}
     for feat in features:
         tid = feat.get("_teil_id") or feat.get("parent") or ""
         if not tid:
@@ -61,7 +61,7 @@ def aggregate(
             continue
         by_teil.setdefault(tid, []).append(feat)
 
-    teil_definitionen: List[Dict[str, Any]] = []
+    teil_definitionen: list[dict[str, Any]] = []
     for teil in teile:
         tid = teil["id"]
         raw = sorted(by_teil.get(tid, []),
@@ -71,7 +71,7 @@ def aggregate(
             f.get("_phrase_idx"): f for f in raw if "_phrase_idx" in f
         }
 
-        cleaned: List[Dict[str, Any]] = []
+        cleaned: list[dict[str, Any]] = []
         for feat in raw:
             cleaned.append(_resolve_and_clean(
                 feat, tid, feature_by_phrase_idx
@@ -89,10 +89,10 @@ def aggregate(
 
 
 def _resolve_and_clean(
-    feature: Dict[str, Any],
+    feature: dict[str, Any],
     teil_id: str,
-    by_phrase_idx: Dict[Any, Dict[str, Any]],
-) -> Dict[str, Any]:
+    by_phrase_idx: dict[Any, dict[str, Any]],
+) -> dict[str, Any]:
     """Return a copy of `feature` with parent resolved and markers stripped."""
     out = dict(feature)
     parent_phrase_idx = out.get("_parent_phrase_idx")
@@ -118,7 +118,7 @@ def _resolve_and_clean(
     return out
 
 
-def _orientation_from_teil(teil: Dict[str, Any]) -> str:
+def _orientation_from_teil(teil: dict[str, Any]) -> str:
     """Heuristic copied from the legacy build_teil_definition: 'hochkant',
     'flach', or 'standard' based on teil.beschreibung keywords."""
     beschreibung = (teil.get("beschreibung") or "").lower()

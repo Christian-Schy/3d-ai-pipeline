@@ -1,18 +1,21 @@
 """Planning node subset split out from planning_nodes.py."""
 from __future__ import annotations
+
 import re
 import time
+
 import structlog
 
-from src.graph.state import PipelineState
 from src.agents.aktions_klassifizierer import AktionsKlassifizierer
 from src.agents.classifier_sub_agents import (
     CLASSIFIER_SUB_AGENT_CLASSES,
     AnchorClassifier,
 )
 from src.config.loader import get_config
+from src.graph.state import PipelineState
 from src.tools.aktions_aggregator import aggregate as aktions_aggregate
 from src.tools.aktions_splitter import split_spec_into_aktionen
+
 from . import _registry
 from ._tracing import _make_trace
 

@@ -13,10 +13,9 @@ generated function gets all the information it needs as plain constants.
 
 import re
 
-from src.graph.feature_tree import FeatureTree, FeatureEntry
+from src.graph.feature_tree import FeatureEntry, FeatureTree
 
 from .naming import detect_slot_axis, prefix_for
-
 
 _SLOT_TYPES = ("slot", "groove")
 

@@ -17,7 +17,7 @@ the entry's `beschreibung`.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any
 
 import structlog
 
@@ -68,10 +68,10 @@ class AktionsKlassifizierer(BaseAgent):
 
     def classify(
         self,
-        phrase_entry: Dict[str, Any],
-        teil: Dict[str, Any],
-        parent_phrase: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        phrase_entry: dict[str, Any],
+        teil: dict[str, Any],
+        parent_phrase: str | None = None,
+    ) -> dict[str, Any]:
         """Classify one action phrase from the splitter.
 
         Args:
@@ -107,9 +107,9 @@ class AktionsKlassifizierer(BaseAgent):
 
     @staticmethod
     def _build_user_prompt(
-        phrase_entry: Dict[str, Any],
-        teil: Dict[str, Any],
-        parent_phrase: Optional[str],
+        phrase_entry: dict[str, Any],
+        teil: dict[str, Any],
+        parent_phrase: str | None,
     ) -> str:
         teil_params = teil.get("raw_params") or {}
         return AKTIONS_KLASSIFIZIERER_TEMPLATE.format(
@@ -120,7 +120,7 @@ class AktionsKlassifizierer(BaseAgent):
         )
 
     @classmethod
-    def _format_demo(cls, ex: Dict[str, Any]) -> tuple[str, str]:
+    def _format_demo(cls, ex: dict[str, Any]) -> tuple[str, str]:
         """Format a static example into a (user, assistant) message pair
         compatible with BaseAgent's few-shot demo injection."""
         user = AKTIONS_KLASSIFIZIERER_TEMPLATE.format(
@@ -136,9 +136,9 @@ class AktionsKlassifizierer(BaseAgent):
 
     @staticmethod
     def _build_result(
-        phrase_entry: Dict[str, Any],
-        llm_out: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        phrase_entry: dict[str, Any],
+        llm_out: dict[str, Any],
+    ) -> dict[str, Any]:
         """Merge the splitter's structural fields with the LLM's
         classification, validate, and apply safe defaults.
 

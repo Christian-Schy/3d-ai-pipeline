@@ -1,5 +1,6 @@
 """Visioner node — image analysis before Interpreter."""
 from __future__ import annotations
+
 import structlog
 
 from src.graph.state import PipelineState

@@ -56,9 +56,8 @@ Schema-Regeln (WICHTIG):
 """
 
 from __future__ import annotations
-from typing import Optional
-from pydantic import BaseModel, Field, model_validator
 
+from pydantic import BaseModel, Field, model_validator
 
 # ═══════════════════════════════════════════════════════════════════
 # SEMANTIC BLUEPRINT — AI fills this
@@ -104,7 +103,7 @@ class SemanticAnchor(BaseModel):
             "of the placement face."
         )
     )
-    offset: Optional[dict[str, float]] = Field(
+    offset: dict[str, float] | None = Field(
         default=None,
         description=(
             "Translation in mm applied AFTER anchoring and pre_rotation. "
@@ -113,7 +112,7 @@ class SemanticAnchor(BaseModel):
             "null = no additional offset."
         )
     )
-    pre_rotation: Optional[dict[str, float]] = Field(
+    pre_rotation: dict[str, float] | None = Field(
         default=None,
         description=(
             "Rotation of the child part BEFORE anchoring, in degrees, around "
@@ -158,7 +157,7 @@ class SemanticPosition(BaseModel):
             "flush_right_top, flush_left_bottom, etc."
         )
     )
-    edge_distances: Optional[dict[str, float]] = Field(
+    edge_distances: dict[str, float] | None = Field(
         default=None,
         description=(
             "Distance from parent edges in mm. Keys: right, left, top, bottom, front, back. "
@@ -166,7 +165,7 @@ class SemanticPosition(BaseModel):
             "null = use alignment instead."
         )
     )
-    center_offset: Optional[dict[str, float]] = Field(
+    center_offset: dict[str, float] | None = Field(
         default=None,
         description=(
             "Offset from center of parent face, in mm toward a named direction. "
@@ -185,7 +184,7 @@ class SemanticPosition(BaseModel):
             "placement normal), use anchor.pre_rotation instead."
         )
     )
-    anchor: Optional[SemanticAnchor] = Field(
+    anchor: SemanticAnchor | None = Field(
         default=None,
         description=(
             "Explicit point-to-point anchoring (child corner/edge/face onto "
@@ -262,7 +261,7 @@ class SemanticFeature(BaseModel):
             "N_hoch = dimension N becomes Z (e.g. '80_hoch')."
         )
     )
-    parent: Optional[str] = Field(
+    parent: str | None = Field(
         default=None,
         description=(
             "ID of parent. May reference either a part (root box/cylinder) or "
@@ -363,7 +362,7 @@ class ResolvedPlacement(BaseModel):
         default=0.0,
         description="Rotation around face normal, in degrees"
     )
-    pre_rotation: Optional[dict[str, float]] = Field(
+    pre_rotation: dict[str, float] | None = Field(
         default=None,
         description=(
             "Full 3D pre-rotation of the child BEFORE placement, in degrees, "
@@ -385,8 +384,8 @@ class ResolvedFeature(BaseModel):
         default_factory=dict,
         description="Geometry params — dimensions AFTER orientation rewrite (x/y/z swapped if needed)"
     )
-    parent: Optional[str] = Field(default=None, description="Parent feature ID or null for root")
-    placement: Optional[ResolvedPlacement] = Field(
+    parent: str | None = Field(default=None, description="Parent feature ID or null for root")
+    placement: ResolvedPlacement | None = Field(
         default=None,
         description="Computed placement. null for root features."
     )

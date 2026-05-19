@@ -17,11 +17,12 @@ Model: qwen3.5:9b — checklist-based, no CadQuery synthesis needed.
 """
 
 import structlog
+
 from src.agents.base import BaseAgent
 from src.config.loader import get_config
 from src.graph.state import PipelineState
-from src.utils.prompt_loader import load_prompt
 from src.rag.code_review_rag import CodeReviewRAG
+from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()
 

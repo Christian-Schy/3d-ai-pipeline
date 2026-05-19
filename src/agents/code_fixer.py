@@ -19,7 +19,9 @@ Model: qwen3:8b — diagnosis doesn't need the big model, Coder does the heavy l
 """
 
 import json
+
 import structlog
+
 from src.agents.base import BaseAgent
 from src.graph.state import PipelineState
 from src.utils.prompt_loader import load_prompt

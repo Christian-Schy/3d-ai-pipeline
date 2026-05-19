@@ -10,6 +10,7 @@ STL paths are stored as-is; if the file was deleted the entry is skipped on load
 
 import json
 from pathlib import Path
+
 import structlog
 
 log = structlog.get_logger()

@@ -23,8 +23,9 @@ Wenn eine der Vorbedingungen fehlt: Skip ohne LLM-Call.
 
 from __future__ import annotations
 
-import re
 import json as _json
+import re
+
 import structlog
 
 from src.agents.base import BaseAgent

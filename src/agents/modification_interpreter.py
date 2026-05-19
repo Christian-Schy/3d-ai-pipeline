@@ -17,6 +17,7 @@ Model: qwen3:8b — classification + extraction, no big model needed.
 """
 
 import structlog
+
 from src.agents.base import BaseAgent
 from src.graph.state import PipelineState
 from src.utils.prompt_loader import load_prompt

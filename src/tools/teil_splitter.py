@@ -17,8 +17,6 @@ context (the Step A micro-call ignores them).
 from __future__ import annotations
 
 import re
-from typing import List
-
 
 _PART_KEYWORDS = (
     r"wuerfel", r"würfel", r"wurfel",
@@ -83,7 +81,7 @@ def _is_part_declaration(segment: str) -> bool:
     return True
 
 
-def split_spec_into_teil_declarations(spec: str) -> List[str]:
+def split_spec_into_teil_declarations(spec: str) -> list[str]:
     """Segment a spec into per-part declaration phrases.
 
     Each returned phrase starts with a part declaration. Comma fragments
@@ -97,7 +95,7 @@ def split_spec_into_teil_declarations(spec: str) -> List[str]:
     """
     if not spec:
         return []
-    phrases: List[str] = []
+    phrases: list[str] = []
     for raw_seg in _TOP_LEVEL_SEP_RE.split(spec):
         seg = raw_seg.strip()
         if not seg:

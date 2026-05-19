@@ -4,6 +4,7 @@ Returns an HTML string with two vertical bars (GPU util + RAM used).
 Updated via gr.Timer every N seconds.
 """
 from __future__ import annotations
+
 import subprocess
 
 

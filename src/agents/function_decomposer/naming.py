@@ -2,7 +2,6 @@
 
 from src.graph.feature_tree import FeatureEntry
 
-
 _HOLE_KEYWORDS = ("hole", "drill", "bore", "cbore", "csk")
 _CUT_KEYWORDS = ("slot", "groove", "pocket", "cut")
 _FILLET_KEYWORDS = ("fillet", "chamfer")

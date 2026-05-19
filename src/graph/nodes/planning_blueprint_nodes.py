@@ -1,11 +1,14 @@
 """Planning node subset split out from planning_nodes.py."""
 from __future__ import annotations
+
 import time
+
 import structlog
 
-from src.graph.state import PipelineState
 from src.agents.function_decomposer import FunctionDecomposerAgent
 from src.graph.feature_tree import FeatureTree
+from src.graph.state import PipelineState
+
 from . import _registry
 from ._tracing import _make_trace
 

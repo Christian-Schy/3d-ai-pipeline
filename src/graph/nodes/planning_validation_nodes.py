@@ -1,11 +1,14 @@
 """Planning node subset split out from planning_nodes.py."""
 from __future__ import annotations
+
 import time
+
 import structlog
 
-from src.graph.state import PipelineState
 from src.agents.plan_validator import PlanValidatorAgent
 from src.graph.feature_tree import FeatureTree
+from src.graph.state import PipelineState
+
 from . import _registry
 from ._tracing import _make_trace
 
@@ -28,7 +31,7 @@ def coordinate_validator_node(state: PipelineState) -> dict:
     if not blueprint:
         return {"coordinate_validation_issues": "", "coordinate_valid": True}
 
-    from src.tools.coordinate_validator import run_coordinate_check, format_issues_for_planner
+    from src.tools.coordinate_validator import format_issues_for_planner, run_coordinate_check
     issues = run_coordinate_check(blueprint)
 
     errors = [i for i in issues if i.severity == "ERROR"]

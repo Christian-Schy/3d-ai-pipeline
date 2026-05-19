@@ -12,6 +12,7 @@ and everything downstream.
 """
 
 import json
+
 import structlog
 
 from src.agents.base import BaseAgent

@@ -12,7 +12,9 @@ The Coder gets two types of RAG context:
 
 import hashlib
 from pathlib import Path
+
 import structlog
+
 from src.rag.base_rag import BaseRAG
 
 log = structlog.get_logger()

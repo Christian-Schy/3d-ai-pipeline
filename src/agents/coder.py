@@ -14,13 +14,15 @@ Model: qwen3:30b — code quality is critical.
 """
 
 import json
+
 import structlog
-from src.config.loader import get_config
+
 from src.agents.base import BaseAgent
+from src.config.loader import get_config
+from src.graph.feature_tree import FeatureTree
+from src.graph.state import PipelineState
 from src.rag.coder_rag import CoderRAG
 from src.tools.code_extractor import CodeExtractor
-from src.graph.state import PipelineState
-from src.graph.feature_tree import FeatureTree
 from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()

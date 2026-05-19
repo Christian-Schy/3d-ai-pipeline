@@ -4,6 +4,7 @@ src/graph/blueprint_utils.py — Utility functions for Blueprint manipulation.
 Extracted from PlannerAgent._apply_diff() to make it reusable.
 """
 import copy
+
 import structlog
 
 log = structlog.get_logger()

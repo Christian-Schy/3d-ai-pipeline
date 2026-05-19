@@ -83,8 +83,8 @@ from __future__ import annotations
 
 import math
 import re
+
 import structlog
-from dataclasses import dataclass
 
 log = structlog.get_logger()
 
@@ -365,7 +365,6 @@ _SIDE_TO_FACE: dict[str, str] = {
     "front":   "<Y",
     "hinten":  ">Y",
     "back":    ">Y",
-    "hinten":  ">Y",
     "zentriert": ">Z",  # default face for centered
     "centered":  ">Z",
 }

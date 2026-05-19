@@ -1,15 +1,18 @@
 """Execution nodes: coder_node, code_fixer_node, code_review_node, executor_node."""
 from __future__ import annotations
-import os
+
 import hashlib
+import os
 import time
+
 import structlog
 
-from src.graph.state import PipelineState
-from src.agents.coder import CoderAgent
 from src.agents.code_fixer import CodeFixerAgent
 from src.agents.code_review import CodeReviewAgent
+from src.agents.coder import CoderAgent
+from src.graph.state import PipelineState
 from src.tools.sandbox import Sandbox
+
 from ._registry import get_agent, get_raw_response
 from ._tracing import _make_trace
 
@@ -17,11 +20,6 @@ log = structlog.get_logger()
 
 STL_OUTPUT_DIR = "data/output"
 os.makedirs(STL_OUTPUT_DIR, exist_ok=True)
-
-
-def _get_sandbox() -> Sandbox:
-    """Return a singleton Sandbox instance."""
-    return get_agent.__wrapped__(Sandbox) if hasattr(get_agent, '__wrapped__') else _sandbox_singleton()
 
 
 # Sandbox needs different singleton handling since it takes a timeout argument
@@ -111,7 +109,7 @@ def code_review_node(state: PipelineState) -> dict:
 
     # ── Fast deterministic linter (no LLM) ───────────────────────────
     try:
-        from src.tools.cq_linter import lint_cadquery_code, format_lint_issues, has_errors
+        from src.tools.cq_linter import format_lint_issues, has_errors, lint_cadquery_code
         lint_issues = lint_cadquery_code(code)
         if has_errors(lint_issues):
             issues_text = format_lint_issues(lint_issues)
@@ -234,7 +232,10 @@ def executor_node(state: PipelineState) -> dict:
         if not is_geometry_error and "def assemble(" in code:
             blueprint = state.get("blueprint", {})
             try:
-                from src.tools.progressive_build import run_progressive_build, format_progressive_error
+                from src.tools.progressive_build import (
+                    format_progressive_error,
+                    run_progressive_build,
+                )
                 pb_result = run_progressive_build(
                     code=code,
                     blueprint=blueprint,

@@ -19,9 +19,9 @@ Flow overview:
 """
 
 import structlog
-from src.graph.state import PipelineState
-from src.config.loader import get_config
 
+from src.config.loader import get_config
+from src.graph.state import PipelineState
 
 log = structlog.get_logger()
 

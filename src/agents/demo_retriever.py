@@ -178,14 +178,14 @@ class DemoRetriever:
 
 
 # Modul-Cache: ein Retriever pro Agent (Pool-Embeddings nur einmal bauen).
-_RETRIEVER_CACHE: dict[str, "DemoRetriever | None"] = {}
+_RETRIEVER_CACHE: dict[str, DemoRetriever | None] = {}
 
 
 def get_demo_retriever(
     agent_name: str,
     input_fields: list[str],
     output_field: str,
-) -> "DemoRetriever | None":
+) -> DemoRetriever | None:
     """Cached DemoRetriever fuer einen Agenten, oder None ohne Pool-Datei."""
     if agent_name in _RETRIEVER_CACHE:
         return _RETRIEVER_CACHE[agent_name]

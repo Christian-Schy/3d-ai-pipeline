@@ -8,7 +8,6 @@ from .grouping import build_assembly_groups
 from .skeleton_linear import generate_linear_skeleton
 from .skeleton_sub_assembly import generate_sub_assembly_skeleton
 
-
 _log = structlog.get_logger()
 
 

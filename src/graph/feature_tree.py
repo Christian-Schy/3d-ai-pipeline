@@ -15,7 +15,7 @@ Detectable via FeatureTree.is_feature_tree(blueprint_dict):
 """
 
 from __future__ import annotations
-from typing import Optional
+
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -26,11 +26,11 @@ class PlacementInfo(BaseModel):
         default=">Z",
         description="CadQuery face selector: >Z (top), <Z (bottom), >X (right), <X (left), >Y (front), <Y (back)"
     )
-    alignment: Optional[str] = Field(
+    alignment: str | None = Field(
         default=None,
         description="Alignment on face: flush_right, flush_left, flush_top, flush_bottom, centered"
     )
-    z_position: Optional[str] = Field(
+    z_position: str | None = Field(
         default=None,
         description="Z-axis placement: on_top (union on top of face), flush (embedded), below"
     )
@@ -41,11 +41,11 @@ class PlacementInfo(BaseModel):
             "offset(dx,dy) — dx/dy in mm from face center"
         )
     )
-    offset_x: Optional[float] = Field(
+    offset_x: float | None = Field(
         default=None,
         description="Explicit X offset in mm from face center. Overrides position string parsing."
     )
-    offset_y: Optional[float] = Field(
+    offset_y: float | None = Field(
         default=None,
         description="Explicit Y offset in mm from face center. Overrides position string parsing."
     )
@@ -76,7 +76,7 @@ class FeatureEntry(BaseModel):
             "slot → {length, width, depth, angle}"
         )
     )
-    parent: Optional[str] = Field(
+    parent: str | None = Field(
         default=None,
         description="ID of parent feature. null = root feature placed at global origin."
     )
@@ -84,11 +84,11 @@ class FeatureEntry(BaseModel):
         default="relative",
         description="'global' for root feature (no parent), 'relative' for all children"
     )
-    position: Optional[dict] = Field(
+    position: dict | None = Field(
         default=None,
         description="Global position {x, y, z} for root features only. Children use placement."
     )
-    placement: Optional[PlacementInfo] = Field(
+    placement: PlacementInfo | None = Field(
         default=None,
         description="Relative placement on parent face. Required when parent is set."
     )
@@ -145,7 +145,7 @@ class FeatureTree(BaseModel):
         return self.model_dump()
 
     @classmethod
-    def from_dict(cls, data: dict) -> "FeatureTree":
+    def from_dict(cls, data: dict) -> FeatureTree:
         """Deserialize from dict stored in PipelineState.blueprint."""
         return cls.model_validate(data)
 

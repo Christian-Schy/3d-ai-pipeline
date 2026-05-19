@@ -50,7 +50,6 @@ from __future__ import annotations
 
 import math
 
-
 # ──────────────────────────────────────────────────────────────────
 # Root body templates (no parent)
 # ──────────────────────────────────────────────────────────────────
@@ -350,9 +349,9 @@ def hole_pattern_linear(
     first_pos = -total_span / 2
 
     lines.append(f"    positions = [{', '.join(str(round(first_pos + i * spacing, 2)) for i in range(count))}]")
-    lines.append(f"    for pos in positions:")
-    lines.append(f"        body = (")
-    lines.append(f"            body")
+    lines.append("    for pos in positions:")
+    lines.append("        body = (")
+    lines.append("            body")
     lines.append(f"            {face_sel}")
 
     # Pattern-Rotation (ADR 0012): jede Bohrungs-Position wird um den
@@ -377,8 +376,8 @@ def hole_pattern_linear(
         lines.append(f"            .center({offset_x}, pos + {-offset_y})")
 
     lines.append(f"            {depth_call}")
-    lines.append(f"        ).clean()")
-    lines.append(f"    return body")
+    lines.append("        ).clean()")
+    lines.append("    return body")
     lines.append("")
 
     return "\n".join(lines) + "\n"

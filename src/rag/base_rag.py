@@ -16,8 +16,9 @@ Subclasses only need to set:
 
 import hashlib
 import os
-import structlog
 from pathlib import Path
+
+import structlog
 
 # Prevent sentence-transformers from checking HuggingFace for updates at startup.
 # The model is fully cached locally — no internet needed.

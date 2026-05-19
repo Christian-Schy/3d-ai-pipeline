@@ -13,10 +13,12 @@ at startup instead of a cryptic crash later.
 """
 
 from __future__ import annotations
+
 from functools import lru_cache
 from pathlib import Path
-from pydantic import BaseModel, Field
+
 import yaml
+from pydantic import BaseModel, Field
 
 # Relative to this file: src/config/loader.py → ../../config/config.yaml
 CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "config.yaml"

@@ -12,6 +12,7 @@ feature dict that the blueprint_resolver can process.
 """
 
 from __future__ import annotations
+
 import structlog
 
 log = structlog.get_logger()

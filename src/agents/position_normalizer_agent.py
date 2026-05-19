@@ -15,7 +15,7 @@ on a top face "oben" is really "hinten" etc.
 
 import structlog
 
-from src.agents.base import BaseAgent, DSPY_DIR
+from src.agents.base import DSPY_DIR, BaseAgent
 from src.config.loader import get_config
 from src.utils.prompt_loader import load_prompt
 

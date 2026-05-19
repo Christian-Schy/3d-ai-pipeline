@@ -11,6 +11,7 @@ One LLM call for all parts at once.
 
 import json
 import re
+
 import structlog
 
 from src.agents.base import BaseAgent

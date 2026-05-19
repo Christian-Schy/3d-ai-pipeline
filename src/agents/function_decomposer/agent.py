@@ -21,7 +21,6 @@ from src.graph.state import PipelineState
 
 from .skeleton import generate_skeleton
 
-
 # Above this fraction of standard features we prefer pure-template emission
 # over mixed-mode (Coder timeouts cost more than skipping the complex few).
 _MIXED_TO_TEMPLATE_RATIO = 0.8

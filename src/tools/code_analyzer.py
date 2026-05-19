@@ -12,8 +12,9 @@ Why this matters:
 
 import ast
 import re
-import structlog
 from dataclasses import dataclass, field
+
+import structlog
 
 log = structlog.get_logger()
 

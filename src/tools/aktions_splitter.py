@@ -24,8 +24,6 @@ Output schema per phrase:
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional
-
 
 # Side keywords mark the start of a top-level action within a comma segment.
 # Matched as bare words only — adjective forms ("rechten", "linken",
@@ -234,8 +232,8 @@ def _is_pre_feature_anchor_prefix(segment: str) -> bool:
 
 def split_spec_into_aktionen(
     specification: str,
-    teile: List[Dict],
-) -> List[Dict]:
+    teile: list[dict],
+) -> list[dict]:
     """Segment a cleaned user spec into action phrases per teil.
 
     Args:
@@ -251,10 +249,10 @@ def split_spec_into_aktionen(
     specification = _insert_missing_commas(specification)
 
     teil_ids = [t["id"] for t in teile]
-    counters: Dict[str, int] = {tid: 0 for tid in teil_ids}
+    counters: dict[str, int] = {tid: 0 for tid in teil_ids}
     last_teil = teil_ids[0]
-    aktionen: List[Dict] = []
-    last_action_idx: Optional[int] = None
+    aktionen: list[dict] = []
+    last_action_idx: int | None = None
     last_segment_was_action = False
     pending_anchor_prefix = ""
 
@@ -313,7 +311,7 @@ def split_spec_into_aktionen(
             continue
 
         parent_text, children = _split_at_nested_markers(seg)
-        parent_idx: Optional[int]
+        parent_idx: int | None
 
         if parent_text:
             parent_idx = counters[seg_teil]
@@ -350,7 +348,7 @@ def split_spec_into_aktionen(
 _TOP_LEVEL_SEP_RE = re.compile(r"[,;]")
 
 
-def _comma_split(spec: str) -> List[str]:
+def _comma_split(spec: str) -> list[str]:
     """Top-level segment-separated chunks. Splits on both ',' and ';' —
     semicolons are a stylistic alternative for separating feature actions
     (User-Spec aus B_kombo_asymmetric_multiface). Empty/whitespace-only
@@ -393,7 +391,7 @@ def _strip_part_declaration(segment: str) -> str:
     return segment.strip()
 
 
-def _split_at_nested_markers(segment: str) -> tuple[str, List[str]]:
+def _split_at_nested_markers(segment: str) -> tuple[str, list[str]]:
     """Return (parent_text, [child_text, ...]).
 
     parent_text is the part before the first nested marker (may be empty).
@@ -404,7 +402,7 @@ def _split_at_nested_markers(segment: str) -> tuple[str, List[str]]:
         return segment.strip(), []
 
     parent_text = segment[:matches[0].start()].strip()
-    children: List[str] = []
+    children: list[str] = []
     for i, m in enumerate(matches):
         end = matches[i + 1].start() if i + 1 < len(matches) else len(segment)
         children.append(segment[m.start():end].strip())
@@ -413,7 +411,7 @@ def _split_at_nested_markers(segment: str) -> tuple[str, List[str]]:
 
 def _assign_teil_id(
     segment: str,
-    teil_ids: List[str],
+    teil_ids: list[str],
     last_teil: str,
 ) -> str:
     """Pick the teil this segment talks about. Single-part: trivial.
@@ -437,7 +435,7 @@ def _assign_teil_id(
     return teil_ids[0]
 
 
-def _last_parent_idx(aktionen: List[Dict], teil_id: str) -> Optional[int]:
+def _last_parent_idx(aktionen: list[dict], teil_id: str) -> int | None:
     """phrase_idx of the most recent parent (parent_phrase_idx is None) for
     the given teil. Returns None if no parent exists yet."""
     for entry in reversed(aktionen):

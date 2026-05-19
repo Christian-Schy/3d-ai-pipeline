@@ -106,8 +106,8 @@ class VisionerAgent(BaseAgent):
         Ollama's vision API expects images as base64 in the 'images' field
         of the message, alongside the text content.
         """
-        import urllib.request
         import urllib.error
+        import urllib.request
 
         cfg = get_config()
         url = cfg.ollama.base_url + "/api/chat"

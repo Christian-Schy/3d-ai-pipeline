@@ -28,7 +28,7 @@ JSONL format (one line per run):
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import structlog
@@ -141,7 +141,7 @@ class SessionLogger:
         run_id = uuid.uuid4().hex[:8]
         entry = {
             "run_id": run_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "user_input": state.get("raw_input") or state.get("modification") or state.get("description", ""),
             "description": state.get("description", ""),
             "specification": state.get("specification", ""),

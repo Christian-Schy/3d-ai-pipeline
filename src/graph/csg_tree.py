@@ -29,9 +29,10 @@ Feature nodes (features list — applied sequentially after root is built):
 """
 
 from __future__ import annotations
-from typing import Literal, Union, Optional
-from pydantic import BaseModel, Field
 
+from typing import Literal, Union
+
+from pydantic import BaseModel, Field
 
 # ------------------------------------------------------------------
 # Position and orientation helpers
@@ -168,7 +169,7 @@ class FeatureHole(BaseModel):
     """
     type: Literal["hole"] = "hole"
     diameter: float = Field(..., gt=0, description="Hole diameter in mm (NOT radius!)")
-    depth: Optional[float] = Field(default=None, description="Depth in mm. null = through-hole.")
+    depth: float | None = Field(default=None, description="Depth in mm. null = through-hole.")
     position: Position = Field(default_factory=Position, description="XY center on the face")
     face: str = Field(default=">Z", description='Face to drill from: ">Z" top, "<Z" bottom, ">X" etc.')
 
@@ -179,7 +180,7 @@ class FeatureHolePattern(BaseModel):
     """
     type: Literal["hole_pattern"] = "hole_pattern"
     diameter: float = Field(..., gt=0, description="Hole diameter in mm")
-    depth: Optional[float] = Field(default=None, description="Depth in mm. null = through-hole.")
+    depth: float | None = Field(default=None, description="Depth in mm. null = through-hole.")
     positions: list[list[float]] = Field(
         ..., description="List of [x, y] positions on the face in mm from center"
     )
@@ -192,7 +193,7 @@ class FeatureHoleGrid(BaseModel):
     """
     type: Literal["hole_grid"] = "hole_grid"
     diameter: float = Field(..., gt=0)
-    depth: Optional[float] = None
+    depth: float | None = None
     x_spacing: float = Field(..., gt=0, description="Spacing between holes in X direction")
     y_spacing: float = Field(..., gt=0, description="Spacing between holes in Y direction")
     x_count: int = Field(..., gt=0, description="Number of holes in X direction")
@@ -208,7 +209,7 @@ class FeatureCboreHole(BaseModel):
     diameter: float = Field(..., gt=0, description="Through-hole diameter in mm")
     cbore_diameter: float = Field(..., gt=0, description="Counterbore diameter in mm")
     cbore_depth: float = Field(..., gt=0, description="Counterbore depth in mm")
-    depth: Optional[float] = Field(default=None, description="Total hole depth. null = through.")
+    depth: float | None = Field(default=None, description="Total hole depth. null = through.")
     position: Position = Field(default_factory=Position)
     face: str = ">Z"
 
@@ -221,7 +222,7 @@ class FeatureCskHole(BaseModel):
     diameter: float = Field(..., gt=0, description="Through-hole diameter in mm")
     csk_diameter: float = Field(..., gt=0, description="Countersink outer diameter in mm")
     csk_angle: float = Field(default=82.0, description="Countersink angle in degrees (82=DIN, 90=common)")
-    depth: Optional[float] = Field(default=None, description="Hole depth. null = through.")
+    depth: float | None = Field(default=None, description="Hole depth. null = through.")
     position: Position = Field(default_factory=Position)
     face: str = ">Z"
 
@@ -234,7 +235,7 @@ class FeatureSlot(BaseModel):
     type: Literal["slot"] = "slot"
     length: float = Field(..., gt=0, description="Running length in mm. Formula: solid_dim_along_slot + slot_width + 2. E.g. 5mm slot through 30mm solid → 37mm. Using solid+2 leaves visible rounded ends!")
     width: float = Field(..., gt=0, description="Slot width in mm")
-    depth: Optional[float] = Field(default=None, description="Groove depth in mm from face. null = through.")
+    depth: float | None = Field(default=None, description="Groove depth in mm from face. null = through.")
     angle: float = Field(default=0.0, description="0 = X-axis slot, 90 = Y-axis slot")
     position: Position = Field(default_factory=Position, description="Center of slot on the face")
     face: str = ">Z"
@@ -328,6 +329,6 @@ class Blueprint(BaseModel):
         return self.model_dump()
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Blueprint":
+    def from_dict(cls, data: dict) -> Blueprint:
         """Deserialize from the dict stored in PipelineState."""
         return cls.model_validate(data)

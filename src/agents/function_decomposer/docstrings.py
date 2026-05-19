@@ -4,7 +4,6 @@ from src.graph.feature_tree import FeatureEntry
 
 from .naming import detect_slot_axis, prefix_for
 
-
 _SLOT_TYPES = ("slot", "groove")
 
 

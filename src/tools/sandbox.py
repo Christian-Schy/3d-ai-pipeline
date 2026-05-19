@@ -8,11 +8,13 @@ Flow:
   4. If clean: run in subprocess with timeout
 """
 
-import sys
 import subprocess
-import structlog
+import sys
 from dataclasses import dataclass
-from src.tools.code_analyzer import CodeAnalyzer, AnalysisResult
+
+import structlog
+
+from src.tools.code_analyzer import CodeAnalyzer
 from src.tools.stl_validator import STLValidator
 
 log = structlog.get_logger()
@@ -65,7 +67,7 @@ class Sandbox:
             log.warning("sandbox_blocked_by_analysis", issues=analysis.issues)
             return ExecutionResult(
                 success=False,
-                error=f"Static analysis failed:\n" + "\n".join(
+                error="Static analysis failed:\n" + "\n".join(
                     f"  - {issue}" for issue in analysis.issues
                 ),
                 was_analyzed=True,
@@ -102,7 +104,7 @@ class Sandbox:
                 log.warning("sandbox_stl_invalid", issues=validation.issues)
                 return ExecutionResult(
                     success=False,
-                    error=f"STL geometry invalid:\n" + "\n".join(
+                    error="STL geometry invalid:\n" + "\n".join(
                         f"  - {issue}" for issue in validation.issues
                     ),
                     was_analyzed=True,

@@ -21,12 +21,13 @@ Model: qwen3:8b — fast enough, semantic reasoning doesn't need 30b.
 """
 
 import json
-import structlog
-from src.config.loader import get_config
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import structlog
+
 from src.agents.base import BaseAgent
+from src.config.loader import get_config
 from src.graph.state import PipelineState
 from src.utils.prompt_loader import load_prompt
 
@@ -123,8 +124,8 @@ class ValidatorAgent(BaseAgent):
             return False, f"STL file not found: {stl_path}", {}
 
         try:
-            import trimesh
             import numpy as np
+            import trimesh
             mesh = trimesh.load(str(path), force="mesh")
         except Exception as e:
             return False, f"Could not load STL: {e}", {}

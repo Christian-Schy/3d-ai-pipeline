@@ -11,6 +11,7 @@ only when the input likely describes multiple bodies.
 """
 
 import re
+
 import structlog
 
 from src.agents.base import BaseAgent

@@ -12,6 +12,7 @@ the original text is kept. Worst case = no change. Best case = commas set.
 """
 
 import re
+
 import structlog
 
 from src.agents.base import BaseAgent

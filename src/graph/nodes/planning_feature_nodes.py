@@ -1,14 +1,16 @@
 """Planning node subset split out from planning_nodes.py."""
 from __future__ import annotations
-import json
+
 import time
+
 import structlog
 
-from src.graph.state import PipelineState
 from src.agents.normalizer_agent import NormalizerAgent
-from src.agents.position_normalizer_agent import PositionNormalizerAgent
 from src.agents.pocket_child_placer import PocketChildPlacer
-from src.tools.position_builder import build_position, build_orientation
+from src.agents.position_normalizer_agent import PositionNormalizerAgent
+from src.graph.state import PipelineState
+from src.tools.position_builder import build_orientation, build_position
+
 from . import _registry
 from ._tracing import _make_trace
 

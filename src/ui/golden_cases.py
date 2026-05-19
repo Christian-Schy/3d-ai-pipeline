@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_GOLDEN_DIR = PROJECT_ROOT / "tests" / "golden"

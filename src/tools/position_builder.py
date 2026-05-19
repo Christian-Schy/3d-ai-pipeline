@@ -10,7 +10,9 @@ Same pattern as feature_builder.py but for part-on-part positioning.
 """
 
 from __future__ import annotations
+
 import re
+
 import structlog
 
 log = structlog.get_logger()

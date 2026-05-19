@@ -1,10 +1,13 @@
 """Validation nodes: validator_node and error_router_node."""
 from __future__ import annotations
+
 import time
+
 import structlog
 
-from src.graph.state import PipelineState
 from src.agents.validator import ValidatorAgent
+from src.graph.state import PipelineState
+
 from ._registry import get_agent, get_raw_response
 from ._tracing import _make_trace
 

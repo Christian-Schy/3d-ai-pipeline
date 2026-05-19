@@ -39,45 +39,46 @@ Convenience:
 """
 
 import uuid
+
 import structlog
-from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 from langgraph.types import Command
 
-from src.graph.state import PipelineState
-from src.graph.run_status import is_successful_state
-from src.graph.nodes import (
-    entry_router_node,
-    visioner_node,
-    interpreter_node,
-    punctuation_node,
-    inventar_node,
-    position_extractor_node,
-    text_splitter_node,
-    feature_definierer_node,
-    platzierer_node,
-    assembly_node,
-    pocket_child_placer_node,
-    blueprint_resolver_node,
-    coordinate_validator_node,
-    plan_validator_node,
-    function_decomposer_node,
-    aktions_splitter_node,
-    aktions_klassifizierer_node,
-    aktions_aggregator_node,
-    coder_node,
-    code_review_node,
-    executor_node,
-    validator_node,
-    error_router_node,
-    code_fixer_node,
-)
 from src.graph.edges import (
     route_after_entry_router,
+    route_after_error_router,
     route_after_executor,
     route_after_validator,
-    route_after_error_router,
 )
+from src.graph.nodes import (
+    aktions_aggregator_node,
+    aktions_klassifizierer_node,
+    aktions_splitter_node,
+    assembly_node,
+    blueprint_resolver_node,
+    code_fixer_node,
+    code_review_node,
+    coder_node,
+    coordinate_validator_node,
+    entry_router_node,
+    error_router_node,
+    executor_node,
+    feature_definierer_node,
+    function_decomposer_node,
+    interpreter_node,
+    inventar_node,
+    plan_validator_node,
+    platzierer_node,
+    pocket_child_placer_node,
+    position_extractor_node,
+    punctuation_node,
+    text_splitter_node,
+    validator_node,
+    visioner_node,
+)
+from src.graph.run_status import is_successful_state
+from src.graph.state import PipelineState
 
 log = structlog.get_logger()
 

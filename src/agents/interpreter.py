@@ -20,11 +20,11 @@ The caller (main.py / app.py) handles showing the question and resuming.
 Model: qwen3:8b — dialog doesn't need the big model, speed matters here.
 """
 
-import json
 import structlog
+
 from src.agents.base import BaseAgent
-from src.rag.interpreter_rag import InterpreterRAG
 from src.graph.state import PipelineState
+from src.rag.interpreter_rag import InterpreterRAG
 from src.utils.prompt_loader import load_prompt
 
 log = structlog.get_logger()

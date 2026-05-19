@@ -5,7 +5,7 @@ features on a sub-assembly are applied to its standalone body, then the
 finished part is positioned and merged into the result.
 """
 
-from src.graph.feature_tree import FeatureTree, FeatureEntry
+from src.graph.feature_tree import FeatureEntry, FeatureTree
 
 from .constants import generate_param_constants
 from .docstrings import make_docstring
