@@ -1,0 +1,94 @@
+{
+  "phrases": [
+    {
+      "phrase": "oben mittig eine 10mm bohrung 15 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 0,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben rechts in der ecke 15mm nach links und 10mm nach unten versetzt eine 6mm bohrung 8 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 1,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben hinten links mit kantenabstand top 20 und left 25 noch eine 6mm bohrung 10 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 2,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben mittig eine tasche 40x25 mit 8mm tiefe",
+      "teil_id": "wuerfel",
+      "phrase_idx": 3,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "in dieser tasche zentral eine 5mm bohrung 4 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 4,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "unten zentral ein lochkreis 50mm mit 6 bohrungen 5mm durchmesser 4 tief mit startwinkel 90",
+      "teil_id": "wuerfel",
+      "phrase_idx": 5,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "unten rechts unten ein 2x3 raster aus 4mm bohrungen mit 20mm rasterabstand 4mm tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 6,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "vorne mittig eine 8mm bohrung 12 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 7,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "vorne in der unteren rechten ecke 15mm nach links und 8mm nach oben versetzt noch eine 5mm bohrung 10 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 8,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "rechts mittig eine nut entlang der z-achse mit länge 30 breite 5 tiefe 4",
+      "teil_id": "wuerfel",
+      "phrase_idx": 9,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "links mittig eine 8mm bohrung 12 tief",
+      "teil_id": "wuerfel",
+      "phrase_idx": 10,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "hinten zentral eine bohrungsreihe aus 4 bohrungen 5mm durchmesser 4 tief mit 15mm abstand entlang der z-achse",
+      "teil_id": "wuerfel",
+      "phrase_idx": 11,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben mittig eine 6mm bohrung 5 tief",
+      "teil_id": "platte",
+      "phrase_idx": 0,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben in der oberen rechten ecke 10mm nach links und 8mm nach unten versetzt noch eine 4mm bohrung 4 tief",
+      "teil_id": "platte",
+      "phrase_idx": 1,
+      "parent_phrase_idx": null
+    },
+    {
+      "phrase": "oben eine tasche 30x20 mit 4mm tiefe rotiert um 30 grad versetzt 15mm nach rechts",
+      "teil_id": "platte",
+      "phrase_idx": 2,
+      "parent_phrase_idx": null
+    }
+  ]
+}
