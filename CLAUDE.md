@@ -84,12 +84,12 @@ Aktualisierung) laeuft. Pickup-Punkt: Memory `rebuild_plan_2026_05_17`.
 - ⚠ **Code-Qualitaet (laufender Refactor-Pass, vorbestehend)**: 59 ruff
   style-Findings + Dateien >500 LOC. Vorbestehend, keine Cap-1.0-Schulden;
   Aufraeumarbeit laeuft als eigener Refactor-Pass parallel zu Cap 2.0.
-  **Stand 2026-05-19**: `blueprint_resolver.py` (1609 LOC) ist in ein
-  Package mit 7 Sub-Modulen zerlegt (core.py nur noch 198 LOC); die
-  beiden genannten Komplexitaets-Findings sind abgearbeitet
-  (`_compute_offsets` F50→D29, `_resolve_feature_in_feature` E31→C15).
-  Verbleibend: `assembler.py` (949 LOC) + `coordinate_validator.py`
-  (911 LOC) analog zerlegen.
+  **Stand 2026-05-19**: `blueprint_resolver.py` (1609 LOC) und
+  `assembler.py` (946 LOC) sind je in ein Package zerlegt (resolver
+  core.py 198 LOC, assembler core.py 151 LOC). Komplexitaets-Findings
+  abgearbeitet: `_compute_offsets` F50→D29, `_resolve_feature_in_feature`
+  E31→C15, `_generate_subtract` F120→C17. Verbleibend:
+  `coordinate_validator.py` (911 LOC) analog zerlegen.
 
 ### Empfohlene Reihenfolge
 
@@ -163,9 +163,9 @@ src/graph/pipeline.py           — LangGraph Verdrahtung
 src/graph/state.py              — PipelineState (TypedDict)
 src/graph/blueprint_schema.py   — Pydantic Schema (Semantic + Resolved)
 src/graph/nodes/                — Alle Pipeline-Nodes
-src/tools/blueprint_resolver/ — Deterministic: semantic → resolved (Package)
+src/tools/blueprint_resolver/   — Deterministic: semantic → resolved (Package)
 src/tools/coordinate_validator.py — Rule-based geometry checks
-src/codegen/assembler.py        — Blueprint → CadQuery Code
+src/codegen/assembler/          — Blueprint → CadQuery Code (Package)
 src/codegen/templates.py        — CadQuery Code-Templates pro Feature
 data/prompts/                   — Alle LLM System Prompts
 config/config.yaml              — Modelle, Timeouts, RAG Config
@@ -206,8 +206,10 @@ data/sessions/runs.jsonl        — Alle Pipeline-Runs mit Traces
 - Haeufigste Fehlerquellen: LLM-Textverstaendnis > Planner-Logik > CadQuery-Kernel
 
 ### STRUKTUR-Header in Kern-Dateien
-- Die 5 Knotenpunkt-Dateien tragen oben einen STRUKTUR-Kommentarblock:
-  pipeline.py, state.py, blueprint_schema.py, assembler.py, templates.py
+- Die 5 Knotenpunkte tragen oben einen STRUKTUR-Kommentarblock:
+  pipeline.py, state.py, blueprint_schema.py, templates.py und
+  assembler/core.py (assembler ist seit 2026-05-19 ein Package — der
+  Block sitzt in core.py).
 - Der Block listet alle Funktionen/Klassen/Abschnitte mit einem Satz zum Zweck
 - Bei jeder Aenderung in einer dieser Dateien: Block pflegen (neue Funktion
   hinzufuegen, entfernte loeschen, umbenannte anpassen). Das ist Teil des Commits.

@@ -10,6 +10,13 @@ Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
 ## 2026-05-19
 
+- **Refactor-Pass: `assembler` zerlegt.** `src/codegen/assembler.py`
+  (946 LOC Monolith) ist jetzt ein Package mit 4 Sub-Modulen
+  (`core`/`feature_codegen`/`assembly`/`transforms`); Public API
+  unveraendert (`generate_code`). Komplexitaets-Finding behoben:
+  `_generate_subtract` F120→C17 (12-Zweig ftype-Dispatch in
+  `_subtract_*`-Handler zerlegt). Toter Code (unbenutzte Locals)
+  entfernt. Commits 02b045f + 7122213.
 - **Refactor-Pass: `blueprint_resolver` zerlegt.** Die monolithische
   `src/tools/blueprint_resolver.py` (1609 LOC) ist jetzt ein Package mit
   7 Sub-Modulen (`orientation`/`face`/`offsets`/`anchor`/`compose`/
