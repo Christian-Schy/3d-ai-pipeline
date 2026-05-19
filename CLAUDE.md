@@ -64,14 +64,29 @@ Merges") war empirisch nicht bestaetigt (0/5316 Features mit
 Mehrfach-Positionierung, ADR 0014 §16). **W9** (diese CLAUDE.md-/docs-
 Aktualisierung) laeuft. Pickup-Punkt: Memory `rebuild_plan_2026_05_17`.
 
-### Aktueller Stand (2026-05-18)
+### Aktueller Stand (2026-05-19)
 
 | Capability | Stand | Coverage |
 |---|---|---|
-| 1.0 Primitive Assembly | gebaut | Cov 3 (Component- + L2-Coverage-Goldens grün); 3/5 STRESS-Goldens (Resolver-Layer) |
+| 1.0 Primitive Assembly | **funktional done** | **Cov 4** (L1 + L2 + 5/5 STRESS-Goldens grün) |
 | 1.5 Extended Primitives | nicht gebaut | Cov 0 |
-| 2.0 Modifications | teilweise (Coder-Pfad) | Cov 0 als Golden |
+| 2.0 Modifications | teilweise (Coder-Pfad) + Edge-Filter-Quick-Wins als Sub-Items | Cov 0 als Golden |
 | 3.0-9.0 | nicht gebaut | Cov 0 |
+
+**Cap 1.0 Done-Review-Stand (ADR 0008):**
+
+- ✅ **Funktional**: L1 Component-Goldens + L2 Coverage-Goldens
+  (B/T/N/M_coverage) + L3 STRESS-Goldens (all_in_one_part,
+  multi_plate_with_features, three_plates, anchor_chain, voice_long) + DSPy-
+  Demos (158 Demos in 7 Pools).
+- ✅ **DIN/ISO**: 10/11/20/21/22/24/25/26-Konventions-Docs + 90 Wording-
+  Beispiele + Konventions-Walkthrough (4afd59a) gegen ISO 129-1.
+- ⚠ **Code-Qualitaet (teilweise, vorbestehend)**: 59 ruff style-
+  Findings + 7 Dateien >500 LOC + komplexe Funktionen
+  (`_compute_offsets` F=50, `_resolve_feature_in_feature` E=31). Diese
+  Dateien existierten vor Cap 1.0 und sind keine Cap-1.0-Schulden;
+  Aufraeumarbeit gehoert in einen eigenen Refactor-Pass parallel zu
+  Cap 2.0.
 
 ### Empfohlene Reihenfolge
 

@@ -8,6 +8,28 @@ Architektur-Entscheidungen liegen als ADRs (Architecture Decision Records)
 in `docs/decisions/` — dort steht das **Warum** zu jeder grundlegenden
 Aenderung. Hier in der Changelog steht das **Was** mit Datum.
 
+## 2026-05-19
+
+- **Cap 1.0 Cov 4 erreicht — funktional done.** L1 + L2 + 5/5 STRESS-
+  Goldens grün (STRESS_anchor_chain Resolver-Layer + STRESS_voice_long
+  Splitter-Layer). 27 Component-Goldens grün. Done-Review-Checkliste
+  (ADR 0008): Funktional + DIN/ISO ✅, Code-Qualitaet ⚠ (59 ruff style-
+  Findings + Datei-Groessen — vorbestehend, separate Aufraeumarbeit).
+- **Cap 1.0 Quick-Win: Pattern `start_angle_deg`-Vokabular.** Lochkreis-
+  Startwinkel via Phrasen "erste Bohrung bei X Grad", "erste Bohrung
+  oben" (=90°), "Startwinkel X". Template+Assembler+Classifier+Demos+
+  Tests. 8/8 live grün.
+- **Cap 1.0 Done-Review: Ruff-Cleanup.** 192 Style-Auto-Fixes + 2 echte
+  Bugs (F821 `_sandbox_singleton` toter Code, F601 doppelter dict-key
+  `"hinten"` in `_FACE_SIDE_MAP`). 402 Tests grün.
+- **Cap 1.0 Doku: `docs/conventions/90_user_wording_examples.md`
+  angelegt.** Wording-Referenz pro Capability — speist DSPy-Demos,
+  agent_regression-Suiten und Goldens.
+- **Edge-Features Quick-Wins zu Cap 2.0 verschoben.** "Innen-/Aussen-
+  kanten-Filter" und "E2-Coverage horizontale Kanten" gehoeren
+  inhaltlich zu Modifications (Templates + Klassifizierer-Vokabular
+  fuer Kanten-Auswahl), nicht zu Primitive Assembly.
+
 ## 2026-05-18
 
 - **W9 — CLAUDE.md auf den aktuellen Architektur-Stand gebracht.**
