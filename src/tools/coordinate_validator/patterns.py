@@ -18,7 +18,8 @@ def _pattern_child_offsets(ftype: str, params: dict) -> list[tuple[float, float]
 
     - Grid: rows×cols Raster mit spacing_x/spacing_y.
     - Linear: count Bohrungen entlang `direction` ("x"/"y") mit spacing.
-    - Circular: count Bohrungen auf pitch_diameter, optional start_angle_deg.
+    - Circular: count Bohrungen auf bolt_circle_diameter/pitch_diameter,
+      optional start_angle_deg.
     """
     if ftype == "hole_pattern_grid":
         try:
@@ -56,7 +57,7 @@ def _pattern_child_offsets(ftype: str, params: dict) -> list[tuple[float, float]
     if ftype == "hole_pattern_circular":
         try:
             count = int(params.get("count") or 0)
-            pitch = float(params.get("pitch_diameter") or 0)
+            pitch = float(_pattern_pitch_diameter(params) or 0)
         except (TypeError, ValueError):
             return []
         try:
@@ -73,6 +74,35 @@ def _pattern_child_offsets(ftype: str, params: dict) -> list[tuple[float, float]
             for i in range(count)
         ]
     return []
+
+
+def _pattern_hole_diameter(params: dict) -> float | None:
+    """Return the canonical pattern child-hole diameter.
+
+    The pipeline schema uses `hole_diameter`; older tests/blueprints used
+    `diameter`. The validator accepts both so schema-correct goldens are
+    actually checked.
+    """
+    value = params.get("hole_diameter")
+    if value is None:
+        value = params.get("diameter")
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _pattern_pitch_diameter(params: dict) -> float | None:
+    """Return the circular-pattern diameter from canonical or legacy keys."""
+    value = params.get("bolt_circle_diameter")
+    if value is None:
+        value = params.get("pitch_diameter")
+    if value is None:
+        value = params.get("circle_diameter")
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 def _check_pattern_child_bounds(
@@ -103,10 +133,10 @@ def _check_pattern_child_bounds(
         return
     params = feat.get("params") or {}
 
-    diameter = params.get("diameter")
-    if not isinstance(diameter, (int, float)) or diameter <= 0:
+    diameter = _pattern_hole_diameter(params)
+    if diameter is None or diameter <= 0:
         return
-    radius = float(diameter) / 2
+    radius = diameter / 2
 
     children = _pattern_child_offsets(ftype, params)
     if not children:
@@ -180,9 +210,9 @@ def _check_pattern_spacing(
     px, py, _ = parent_bbox
     spacing_x = params.get("spacing_x") or params.get("x_spacing")
     spacing_y = params.get("spacing_y") or params.get("y_spacing")
-    count_x = params.get("count_x") or params.get("x_count")
-    count_y = params.get("count_y") or params.get("y_count")
-    diameter = params.get("diameter")
+    count_x = params.get("cols") or params.get("count_x") or params.get("x_count")
+    count_y = params.get("rows") or params.get("count_y") or params.get("y_count")
+    diameter = _pattern_hole_diameter(params)
 
     if not all([spacing_x, count_x, diameter]):
         return

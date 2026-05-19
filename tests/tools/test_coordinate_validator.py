@@ -170,6 +170,15 @@ def test_slot_rotated_45_uses_aabb_aware_clearance():
     assert [i for i in tight_issues if i.check == "slot_restwandstaerke"]
 
 
+def test_slot_offset_bounds_use_length_axis_at_angle_zero():
+    # angle=0 means Slot-Laenge liegt auf face-X. The generic offset-bounds
+    # check must therefore use length/2 on X, not width/2.
+    slot = _slot("nut_x_edge", offset_x=35, offset_y=0)
+    slot["placement"]["angle_deg"] = 0.0
+    issues = run_coordinate_check(_bp(slot))
+    assert [i for i in issues if i.check == "offset_overhang_x"]
+
+
 # ── Rotation-aware AABB fuer Tasche/Pocket (statt axis-aligned x/2,y/2) ──
 
 def _pocket(fid: str, x: float, y: float,
@@ -259,7 +268,7 @@ def test_grid_pattern_inside_no_warning():
     # Aeusserste Bohrungen bei ±20, +/-2.5 → 22.5 < 50. Klar drin.
     pat = _pattern("grid_safe", "hole_pattern_grid",
                    {"rows": 3, "cols": 3, "spacing_x": 20, "spacing_y": 20,
-                    "diameter": 5})
+                    "hole_diameter": 5})
     issues = run_coordinate_check(_bp(pat))
     assert not [i for i in issues if i.check == "pattern_child_bounds"]
 
@@ -270,7 +279,7 @@ def test_grid_pattern_offset_overhang_warns_per_child():
     # 3 Kinder in der rechten Spalte ragen raus (Mitte+oben+unten).
     pat = _pattern("grid_edge", "hole_pattern_grid",
                    {"rows": 3, "cols": 3, "spacing_x": 20, "spacing_y": 20,
-                    "diameter": 10},
+                    "hole_diameter": 10},
                    offset_x=30)
     issues = run_coordinate_check(_bp(pat))
     warns = [i for i in issues if i.check == "pattern_child_bounds"]
@@ -282,7 +291,7 @@ def test_circular_pattern_fits_no_warning():
     # Lochkreis 6 Bohrungen Ø5 auf Teilkreis 40mm, zentriert.
     # Aeusserster Punkt: 20+2.5 = 22.5 < 50.
     pat = _pattern("circ_safe", "hole_pattern_circular",
-                   {"count": 6, "pitch_diameter": 40, "diameter": 5})
+                   {"count": 6, "bolt_circle_diameter": 40, "hole_diameter": 5})
     issues = run_coordinate_check(_bp(pat))
     assert not [i for i in issues if i.check == "pattern_child_bounds"]
 
@@ -292,7 +301,7 @@ def test_circular_pattern_too_big_warns_for_all_holes():
     # Aeusserster Punkt: 47.5+5 = 52.5 > 50 → 2.5mm Ueberhang.
     # Alle 4 Kinder ragen raus (eines pro Seite).
     pat = _pattern("circ_big", "hole_pattern_circular",
-                   {"count": 4, "pitch_diameter": 95, "diameter": 10})
+                   {"count": 4, "bolt_circle_diameter": 95, "hole_diameter": 10})
     issues = run_coordinate_check(_bp(pat))
     warns = [i for i in issues if i.check == "pattern_child_bounds"]
     assert len(warns) == 4
@@ -303,7 +312,7 @@ def test_linear_pattern_x_at_edge_warns_for_outermost():
     # Positionen: -10, +10, +30, +50 (relativ Pattern-Mitte −30 bis +30 + 20).
     # Aeusserste rechts: +50+3=+53 > 50 → 3mm Ueberhang. NUR die rechte.
     pat = _pattern("lin_edge", "hole_pattern_linear",
-                   {"count": 4, "spacing": 20, "direction": "x", "diameter": 6},
+                   {"count": 4, "spacing": 20, "direction": "x", "hole_diameter": 6},
                    offset_x=20)
     issues = run_coordinate_check(_bp(pat))
     warns = [i for i in issues if i.check == "pattern_child_bounds"]
@@ -320,11 +329,11 @@ def test_grid_pattern_rotation_applies_to_child_positions():
     # > 50 → Ueberhang.
     pat_safe = _pattern("grid_rot_safe", "hole_pattern_grid",
                         {"rows": 2, "cols": 2, "spacing_x": 30, "spacing_y": 30,
-                         "diameter": 5},
+                         "hole_diameter": 5},
                         angle_deg=45)
     pat_overhang = _pattern("grid_rot_oh", "hole_pattern_grid",
                             {"rows": 2, "cols": 2, "spacing_x": 70,
-                             "spacing_y": 70, "diameter": 5},
+                             "spacing_y": 70, "hole_diameter": 5},
                             angle_deg=45)
     safe_issues = run_coordinate_check(_bp(pat_safe))
     oh_issues = run_coordinate_check(_bp(pat_overhang))
@@ -339,8 +348,17 @@ def test_pattern_many_overhangs_aggregates():
     # Mit diameter 8: +45+4 = +49 < 50 safe. Bei spacing 32 → +48+2.5 > 50.
     pat = _pattern("grid_many_oh", "hole_pattern_grid",
                    {"rows": 4, "cols": 4, "spacing_x": 32, "spacing_y": 32,
-                    "diameter": 5})
+                    "hole_diameter": 5})
     issues = run_coordinate_check(_bp(pat))
     warns = [i for i in issues if i.check == "pattern_child_bounds"]
     # Max 5 individual warnings, plus optional aggregate.
     assert 1 <= len(warns) <= 6
+
+
+def test_circular_pattern_canonical_schema_triggers_bolt_circle_check():
+    # Canonical pipeline params are bolt_circle_diameter + hole_diameter.
+    # This should not silently skip Check 4.
+    pat = _pattern("circ_too_wide", "hole_pattern_circular",
+                   {"count": 4, "bolt_circle_diameter": 100, "hole_diameter": 10})
+    issues = run_coordinate_check(_bp(pat))
+    assert [i for i in issues if i.check == "bolt_circle_fits"]

@@ -90,8 +90,12 @@ def _check_bolt_circle(
     parent_bbox: tuple[float, float, float] | None, issues: list
 ) -> None:
     """Check 4: bolt-circle radius + hole radius must fit the parent radius."""
-    cd = params.get("circle_diameter")
-    hd = params.get("diameter")
+    cd = (
+        params.get("bolt_circle_diameter")
+        or params.get("pitch_diameter")
+        or params.get("circle_diameter")
+    )
+    hd = params.get("hole_diameter") or params.get("diameter")
     if not (cd and hd and parent_bbox):
         return
     circle_r = float(cd) / 2
@@ -115,7 +119,7 @@ def _check_wall_thickness(
     parent_id: str | None, issues: list
 ) -> None:
     """Check 5: residual wall after a hole should be >= 2mm (WARNING below)."""
-    hd = params.get("diameter")
+    hd = params.get("diameter") or params.get("hole_diameter")
     if not (hd and parent_bbox):
         return
     px, py, _ = parent_bbox

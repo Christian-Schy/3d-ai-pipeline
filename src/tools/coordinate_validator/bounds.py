@@ -79,8 +79,20 @@ def _check_offset_bounds(
             feat_half_x = x_half
             feat_half_y = y_half
     elif params.get("width") and params.get("length"):
-        feat_half_x = float(params["width"]) / 2
-        feat_half_y = float(params["length"]) / 2
+        # Slot template convention: angle=0 => length along face-X,
+        # angle=90 => length along face-Y. Use the rotated AABB here so
+        # generic offset bounds match the dedicated slot-restwall check.
+        width_half = float(params["width"]) / 2
+        length_half = float(params["length"]) / 2
+        angle_deg = float(placement.get("angle_deg", 0.0) or 0.0)
+        if angle_deg:
+            a = math.radians(angle_deg)
+            cos_a, sin_a = abs(math.cos(a)), abs(math.sin(a))
+            feat_half_x = length_half * cos_a + width_half * sin_a
+            feat_half_y = length_half * sin_a + width_half * cos_a
+        else:
+            feat_half_x = length_half
+            feat_half_y = width_half
     else:
         return  # can't determine size
 

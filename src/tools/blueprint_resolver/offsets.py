@@ -229,10 +229,11 @@ def _apply_edge_distances_axis(
 ) -> tuple[float, float, bool, bool]:
     """Same as _apply_edge_distances but also reports which axis was set.
 
-    is_box_wx / is_box_wy override `is_box` per workplane axis. Used by slots
-    where the length axis follows DIN edge-to-EDGE (start/end of slot is the
-    fertigungsrelevante reference) but the width axis stays edge-to-CENTER
-    (the centerline is the natural reference for the milling tool path).
+    is_box_wx / is_box_wy override `is_box` per workplane axis. Used by
+    pattern placement where an A1 edge distance can intentionally refer to
+    the outermost child hole on one or both axes. Slots stay hole-like here:
+    `edge_distances` positions their centerline on both axes; explicit
+    `pocket_edge_distances` is the opt-in edge-to-edge path.
     """
     if is_box_wx is None:
         is_box_wx = is_box
