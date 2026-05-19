@@ -69,6 +69,23 @@ CASES: list[dict] = [
                   "anker-Fragments entschlackte den Prompt — das Modell wendet "
                   "die Ecken-Regel jetzt korrekt an (gleicher Effekt wie hole/W2).",
     },
+
+    # ── Startwinkel (Quick-Win 2026-05-19) ──────────────────────────────
+    # Default 0 = erste Bohrung bei +X (3 Uhr). Explizite Phrasen
+    # "erste Bohrung bei X Grad" / "Startwinkel X" / "erste Bohrung oben"
+    # emittieren startwinkel. CCW positiv, 90 = +Y (12 Uhr).
+    {
+        "id": "07_startwinkel_90_explicit",
+        "phrase": "oben ein lochkreis 60mm mit 6 bohrungen 8mm 5 tief erste bohrung bei 90 grad",
+        "expected": {"anzahl": 6, "kreis_durchmesser": 60, "startwinkel": 90},
+        "covers": "Startwinkel explizit: 'erste Bohrung bei X Grad' → startwinkel",
+    },
+    {
+        "id": "08_startwinkel_oben_synonym",
+        "phrase": "rechts ein lochkreis 50mm mit 4 bohrungen 6mm durchmesser erste bohrung oben",
+        "expected": {"anzahl": 4, "kreis_durchmesser": 50, "startwinkel": 90},
+        "covers": "Startwinkel Synonym: 'erste Bohrung oben' = 90° (CCW von +X)",
+    },
 ]
 
 

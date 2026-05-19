@@ -317,7 +317,7 @@ class CircularClassifier(ClassifierSubAgent):
     allowed_typs = {"lochkreis"}
     allowed_hint_keys = {
         "durchmesser", "bohr_durchmesser", "tiefe", "anzahl",
-        "kreis_durchmesser",
+        "kreis_durchmesser", "startwinkel",
         *_POSITION_HINT_KEYS,
     }
 

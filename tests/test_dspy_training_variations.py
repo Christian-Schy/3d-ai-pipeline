@@ -39,7 +39,7 @@ def test_aktions_klassifizierer_seed_is_trainable():
         "durchmesser", "tiefe", "laenge", "breite", "hoehe", "radius",
         "kantenlaenge", "groesse", "rotation_deg", "richtung",
         "bohr_durchmesser", "anzahl", "kreis_durchmesser", "abstand",
-        "abstand_kante", "start_offset",
+        "abstand_kante", "start_offset", "startwinkel",
         "rows", "cols", "rasterabstand", "rasterabstand_x", "rasterabstand_y",
         "abstand_oben", "abstand_unten", "abstand_rechts", "abstand_links",
         "abstand_vorne", "abstand_hinten",

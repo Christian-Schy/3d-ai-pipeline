@@ -28,6 +28,7 @@ parameter_hints:
   Erlaubte Werte aus der Phrase.
   Zahlen-Keys:
     durchmesser, bohr_durchmesser, tiefe, anzahl, kreis_durchmesser,
+    startwinkel,
     abstand_* / versatz_* (oben/unten/rechts/links/vorne/hinten)
 
 Kreis-Geometrie:
@@ -38,6 +39,14 @@ Kreis-Geometrie:
   "Lochkreis mit 8 Bohrungen"            -> anzahl: 8
   "Lochkreis 8x Ø6"                      -> anzahl: 8, bohr_durchmesser: 6
   "je 10mm Durchmesser"                  -> bohr_durchmesser: 10
+
+Startwinkel (optional, Default 0 = erste Bohrung bei 3 Uhr / +X-Achse):
+  "erste Bohrung bei 0 Grad"             -> startwinkel: 0
+  "erste Bohrung bei 90 Grad"            -> startwinkel: 90
+  "erste Bohrung oben"                   -> startwinkel: 90
+  "Lochkreis um 30 Grad gedreht"         -> startwinkel: 30
+  "Startwinkel 45 Grad"                  -> startwinkel: 45
+  Konvention: CCW positiv, 0 = +X (3 Uhr), 90 = +Y (12 Uhr).
 
 Der Teilkreis-Mittelpunkt ist punktfoermig — seine Lage auf der Face
 folgt der punktfoermigen Positionierung und der Ecken-Regel unten.

@@ -44,6 +44,39 @@
     "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 4, \"anzahl\": 6, \"kreis_durchmesser\": 50, \"versatz_links\": 10, \"versatz_unten\": 5}}"
   },
   {
+    "phrase": "oben lochkreis 60mm mit 6 bohrungen 8mm durchmesser 5 tief erste bohrung bei 90 grad",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 90,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 8, \"tiefe\": 5, \"anzahl\": 6, \"kreis_durchmesser\": 60, \"startwinkel\": 90}}"
+  },
+  {
+    "phrase": "rechts lochkreis 50mm mit 4 bohrungen 6mm durchmesser erste bohrung oben",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 120,
+      "y": 90,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"rechts\", \"parameter_hints\": {\"durchmesser\": 6, \"anzahl\": 4, \"kreis_durchmesser\": 50, \"startwinkel\": 90}}"
+  },
+  {
+    "phrase": "oben teilkreis 40mm 8 bohrungen 5mm durchmesser 4 tief startwinkel 45 grad",
+    "teil_type": "box",
+    "teil_params": {
+      "x": 100,
+      "y": 100,
+      "z": 50
+    },
+    "parent_phrase": "(keine)",
+    "klassifikation": "{\"typ\": \"bohrung\", \"seite\": \"oben\", \"parameter_hints\": {\"durchmesser\": 5, \"tiefe\": 4, \"anzahl\": 8, \"kreis_durchmesser\": 40, \"startwinkel\": 45}}"
+  },
+  {
     "phrase": "oben ein kreismuster aus 6 bohrungen 4mm durchmesser 8 tief, teilkreis-durchmesser 40mm",
     "teil_type": "box",
     "teil_params": {

@@ -273,8 +273,13 @@ def hole_pattern_circular(
     offset_y: float,
     use_ntp: bool = False,
     ntp_point: tuple[float, float, float] | None = None,
+    start_angle_deg: float = 0.0,
 ) -> str:
-    """Circular pattern of holes (bolt circle)."""
+    """Circular pattern of holes (bolt circle).
+
+    start_angle_deg shifts the first hole CCW from the +X (3-o'clock)
+    position. 0° = first hole at 3 o'clock; 90° = first hole at 12 o'clock.
+    """
     face_sel = _face_selection(face, use_ntp, ntp_point)
     depth_call = _hole_depth(hole_diameter, depth)
     radius = bolt_circle_diameter / 2
@@ -286,7 +291,7 @@ def hole_pattern_circular(
         f"        body\n"
         f"        {face_sel}\n"
         f"        .center({offset_x}, {offset_y})\n"
-        f"        .polarArray({radius}, 0, 360, {count})\n"
+        f"        .polarArray({radius}, {start_angle_deg}, 360, {count})\n"
         f"        {depth_call}\n"
         f"    ).clean()\n"
     )

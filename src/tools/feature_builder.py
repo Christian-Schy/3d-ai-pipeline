@@ -343,12 +343,15 @@ def _build_params(feature_type: str, raw: dict) -> dict:
         }
 
     elif feature_type == "hole_pattern_circular":
-        return {
+        out = {
             "bolt_circle_diameter": raw.get("kreis_durchmesser", 60),
             "count": raw.get("anzahl", 6),
             "hole_diameter": raw.get("bohr_durchmesser", raw.get("durchmesser", 10)),
             "depth": raw.get("tiefe"),
         }
+        if raw.get("startwinkel") is not None:
+            out["start_angle_deg"] = float(raw["startwinkel"])
+        return out
 
     elif feature_type == "hole_pattern_grid":
         rows = raw.get("rows")

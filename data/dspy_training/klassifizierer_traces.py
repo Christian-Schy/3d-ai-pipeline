@@ -2014,6 +2014,58 @@ TRACES.extend([
         "source_run": None,
         "bug_pattern": "v2 palette: lochkreis/teilkreis wording with center offset",
     },
+    # ── Lochkreis-Startwinkel (Quick-Win 2026-05-19) ──────────────────────
+    # Default Startwinkel = 0 (erste Bohrung bei 3 Uhr / +X). Explizite
+    # Phrasen "erste Bohrung bei X Grad" / "Startwinkel X" / "erste Bohrung
+    # oben" emittieren startwinkel. Konvention CCW positiv: 90 = 12 Uhr.
+    {
+        "id": "klass_curated_pattern_lochkreis_startwinkel_90",
+        "phrase": "oben lochkreis 60mm mit 6 bohrungen 8mm durchmesser 5 tief erste bohrung bei 90 grad",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 8, "tiefe": 5,
+                                "anzahl": 6, "kreis_durchmesser": 60,
+                                "startwinkel": 90},
+        },
+        "source_run": None,
+        "bug_pattern": "lochkreis Startwinkel explizit: 'erste Bohrung bei X Grad' -> startwinkel",
+    },
+    {
+        "id": "klass_curated_pattern_lochkreis_startwinkel_oben_synonym",
+        "phrase": "rechts lochkreis 50mm mit 4 bohrungen 6mm durchmesser erste bohrung oben",
+        "teil_type": "box",
+        "teil_params": {"x": 120, "y": 90, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "rechts",
+            "parameter_hints": {"durchmesser": 6,
+                                "anzahl": 4, "kreis_durchmesser": 50,
+                                "startwinkel": 90},
+        },
+        "source_run": None,
+        "bug_pattern": "Startwinkel Synonym: 'erste Bohrung oben' = 90° (CCW von +X)",
+    },
+    {
+        "id": "klass_curated_pattern_lochkreis_startwinkel_45",
+        "phrase": "oben teilkreis 40mm 8 bohrungen 5mm durchmesser 4 tief startwinkel 45 grad",
+        "teil_type": "box",
+        "teil_params": {"x": 100, "y": 100, "z": 50},
+        "parent_phrase": "(keine)",
+        "expected": {
+            "typ": "bohrung",
+            "seite": "oben",
+            "parameter_hints": {"durchmesser": 5, "tiefe": 4,
+                                "anzahl": 8, "kreis_durchmesser": 40,
+                                "startwinkel": 45},
+        },
+        "source_run": None,
+        "bug_pattern": "Startwinkel Schluesselwort: 'startwinkel X grad' -> startwinkel",
+    },
     {
         "id": "klass_v2_pattern_grid_right_2x2",
         "phrase": "rechts ein 2x2 lochmuster mit 6mm bohrungen 4 tief randabstand 8mm zur kante",

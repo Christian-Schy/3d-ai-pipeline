@@ -339,8 +339,10 @@ def _generate_subtract(
         depth = _safe_depth(params.get("depth"))
         count = int(params.get("count", 6))
         bolt_d = float(params.get("bolt_circle_diameter") or params.get("diameter") or 60)
+        start_angle = float(params.get("start_angle_deg") or 0.0)
         return T.hole_pattern_circular(
-            func_name, hd, depth, count, bolt_d, face, ox, oy, use_ntp, ntp_point
+            func_name, hd, depth, count, bolt_d, face, ox, oy, use_ntp, ntp_point,
+            start_angle_deg=start_angle,
         )
 
     elif ftype == "hole_pattern_linear":
